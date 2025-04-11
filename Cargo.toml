@@ -1,0 +1,31 @@
+[workspace]
+resolver = "2"
+members = [ "agent"]
+
+[workspace.package]
+edition = "2021"
+homepage = "https://miruml.com"
+rust-version = "1.84.0"
+version = "0.1.0"
+
+[workspace.metadata]
+git_commit = "arglebargle"
+
+[workspace.dependencies]
+axum = "0.8.3"
+hyper = { version = "1.2.0", features = ["server"] }
+reqwest = "0.12.9"
+openssl = "0.10.64" # https://crates.io/crates/openssl-src/versions
+#  OpenSSL version 3.0.8+ LTS is the currently recommended version: https://endoflife.date/openssl. CISA (https://www.cisa.gov/news-events/alerts/2023/02/09/openssl-releases-security-advisory) recognizes 3.0.0 to 3.0.7 as particularly vulnerable and must be avoided. OpenSSL 1.1.1 LTS and 1.0.2 LTS are not recommended due to EOL support. Please update your system to use OpenSSL 3.0.X LTS."
+serde = { version = "1.0.215", features = ["derive"] }
+serde_json = "1.0.132"
+thiserror = "2.0.3"
+tokio = { version = "1.41.1", features = ["rt-multi-thread"] }
+tower-http = { version = "0.6.2", features = ["trace"] }
+tracing = "0.1.40"
+tracing-appender = "0.2.3"
+tracing-subscriber = "0.3.18"
+
+[profile.release]
+debug = false
+opt-level = 3 # use '3' for best compute performance, 'z' for smallest binary size

@@ -1,0 +1,14 @@
+name: miru-build
+services:
+  build:
+    container_name: builder
+    image: builder
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USER_ID: ${UID:-1000}
+        GROUP_ID: ${GID:-1000}
+    volumes:
+      - ..:/app
+

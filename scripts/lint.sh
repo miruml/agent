@@ -1,0 +1,111 @@
+#!/bin/sh
+# This script is used to build the deb package installation locally on the system.
+echo ''
+set -e  # Exit on error
+
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Check if rustup is installed
+if ! command_exists rustup; then
+    echo "Installing Rustup"
+    echo "-----------------"
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    . "$HOME"/.cargo/env
+fi
+
+# update the rust toolchain
+echo "Updating the Rust toolchain"
+echo "---------------------------"
+rustup update
+echo ""
+
+# Install the nightly toolchain if it's not installed
+if ! rustup toolchain list | grep -q 'nightly'; then
+    echo "Installing Rust nightly toolchain"
+    echo "---------------------------------"
+    rustup install nightly
+fi
+
+# Check if cargo fmt is installed (part of rustfmt)
+if ! rustup component list --installed | grep -q 'rustfmt'; then
+    echo "Installing rustfmt (cargo fmt)"
+    echo "-----------------------------"
+    rustup component add rustfmt
+fi
+
+# Check if cargo clippy is installed
+if ! rustup component list --installed | grep -q 'clippy'; then
+    echo "Installing clippy"
+    echo "-----------------"
+    rustup component add clippy
+fi
+
+# Check if cargo machete is installed
+if ! command_exists cargo-machete; then
+    echo "Installing cargo-machete"
+    echo "------------------------"
+    cargo install cargo-machete
+fi
+
+# Check if cargo udeps is installed
+if ! command_exists cargo-udeps; then
+    echo "Installing cargo-udeps"
+    echo "----------------------"
+    cargo install cargo-udeps
+fi
+
+# Check if cargo diet is installed
+if ! command_exists cargo-diet; then
+    echo "Installing cargo-diet"
+    echo "---------------------"
+    cargo install cargo-diet
+fi
+
+# Check if cargo audit is installed
+if ! command_exists cargo-audit; then
+    echo "Installing cargo-audit"
+    echo "----------------------"
+    cargo install cargo-audit
+fi
+
+# update the cargo dependencies
+echo "Updating the Cargo dependencies"
+echo "-------------------------------"
+cargo update --verbose
+echo ""
+
+# auto formats rust code
+echo "Formatting Rust code"
+echo "--------------------"
+cargo fmt
+echo ""
+
+# looks for unused external dependencies 
+echo "Looking for unused external dependencies"
+echo "----------------------------------------"
+cargo machete
+# cargo +nightly udeps
+echo ""
+
+# looks for unused internal code
+echo "Looking for unused internal code"
+echo "--------------------------------"
+cargo diet 
+echo ""
+
+# checks for security vulnerabilities
+echo "Checking for security vulnerabilities"
+echo "-------------------------------------"
+cargo audit
+echo ""
+
+# rust's code quality linter (it's pretty aggressive -ben)
+echo "Running Clippy"
+echo "--------------"
+cargo clippy --fix --allow-dirty
+echo ""
+
+echo "Linting complete"
+echo ""

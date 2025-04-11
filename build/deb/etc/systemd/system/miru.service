@@ -1,0 +1,21 @@
+[Unit]
+Description=Miru OTA deployment manager
+After=network.target
+
+[Service]
+Type=simple
+
+ExecStart=/usr/local/miru/miru-start.sh
+Restart=always
+RestartSec=10
+StartLimitBurst=5
+StartLimitIntervalSec=60
+StartLimitInterval=60s
+
+WorkingDirectory=/var/lib/miru
+StandardOutput=journalctl
+StandardError=journalctl
+SyslogIdentifier=miru
+
+[Install]
+WantedBy=multi-user.target

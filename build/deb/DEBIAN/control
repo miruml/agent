@@ -1,0 +1,7 @@
+Package: Miru
+Version: 0.6.5
+Architecture: amd64
+Priority: optional
+Depends: systemd, pkg-config
+Maintainer: Miru <ben@miruml.com>
+Description: Miru OTA deployment manager

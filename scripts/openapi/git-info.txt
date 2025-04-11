@@ -1,0 +1,4 @@
+Repository Name: git@github.com:miruml/openapi.git
+Branch Name: configs
+Commit Hash: 7310457a81ec4fcbe6b5691c990919163043dfb0
+Commit Message: chore: commit to test rust openapi refresh

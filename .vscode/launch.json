@@ -1,0 +1,158 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'miru'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=miru"
+                ],
+                "filter": {
+                    "name": "miru",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'miru'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=miru",
+                    "--package=miru"
+                ],
+                "filter": {
+                    "name": "miru",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'miru'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=miru",
+                    "--package=miru"
+                ],
+                "filter": {
+                    "name": "miru",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'logs'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=logs",
+                    "--package=miru"
+                ],
+                "filter": {
+                    "name": "logs",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'mod'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=mod",
+                    "--package=miru"
+                ],
+                "filter": {
+                    "name": "mod",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'miru_install'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=miru-install"
+                ],
+                "filter": {
+                    "name": "miru_install",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'miru-install'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=miru-install",
+                    "--package=miru-install"
+                ],
+                "filter": {
+                    "name": "miru-install",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'miru-install'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=miru-install",
+                    "--package=miru-install"
+                ],
+                "filter": {
+                    "name": "miru-install",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
