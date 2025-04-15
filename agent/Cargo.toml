@@ -7,6 +7,8 @@ rust-version = { workspace = true }
 [dependencies]
 axum = { workspace = true }
 hyper = { workspace = true  }
+openapi-client = { workspace = true }
+openapi-server = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }

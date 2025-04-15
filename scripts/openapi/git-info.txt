@@ -1,4 +1,4 @@
 Repository Name: git@github.com:miruml/openapi.git
 Branch Name: configs
-Commit Hash: 7310457a81ec4fcbe6b5691c990919163043dfb0
-Commit Message: chore: commit to test rust openapi refresh
+Commit Hash: cacac711c3c8645cd830189c8379c8d471a1f205
+Commit Message: refactor(concrete_config): limit render latest request args

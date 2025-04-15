@@ -1,8 +1,9 @@
 // internal crates
 use crate::http_client::errors::HTTPErr;
 use crate::http_client::client::HTTPClient;
-use crate::openapi::HashSchemaRequest;
-use crate::openapi::SchemaDigestResponse;
+use openapi_client::models::HashSchemaRequest;
+use openapi_client::models::SchemaDigestResponse;
+
 // external crates
 use std::time::Duration;
 

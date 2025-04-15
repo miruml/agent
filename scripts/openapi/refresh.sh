@@ -1,18 +1,25 @@
 #!/bin/bash
 set -e
 
+this_files_dir=$(pwd)
 openapi_dir=../../../openapi
+openapi_dir=$(realpath $openapi_dir)
 openapi_configs_dir=$openapi_dir/configs
+openapi_all_dir=$openapi_dir/all
 agent_dir=../../
+agent_dir=$(realpath $agent_dir)
 git_info_file=$agent_dir/scripts/openapi/git-info.txt
 gen_dir=./gen
 
-# Check for any changes (staged, unstaged, or untracked)
 cd $openapi_configs_dir
 pwd
-
 make bundle-agent
 
+cd $openapi_all_dir
+pwd
+make bundle-frontend
+
+# Check for any changes (staged, unstaged, or untracked)
 echo ""
 echo "Checking for any changes (staged, unstaged, or untracked)"
 if [ -z "$(git status --porcelain)" ]; then
@@ -25,7 +32,6 @@ repository_name=$(git remote get-url origin)
 branch_name=$(git branch --show-current)
 commit_hash=$(git rev-parse HEAD)
 commit_message=$(git log -1 --pretty=%B)
-cd -
 
 # keep track of the branch name + commit hash
 {
@@ -36,16 +42,32 @@ cd -
 } > $git_info_file
 
 # generate the models
+cd "$this_files_dir"
 make gen
 
-gen_models_dir=$gen_dir/src/models
-target_models_dir=$agent_dir/agent/src/openapi
+# client
+gen_client_models_dir=$gen_dir/client/src/models
+client_models_target_dir=$agent_dir/openapi/client/src/models
 
 # replace the target model directories with the generated ones
-rm -rf "${target_models_dir:?}"/*
+rm -rf "${client_models_target_dir:?}"/*
 
 # copy all the files in the generated models dirs to the target models dirs
-if [ ! -d "$target_models_dir" ]; then
-    mkdir "$target_models_dir"
+if [ ! -d "$client_models_target_dir" ]; then
+    mkdir "$client_models_target_dir"
 fi
-cp -r "$gen_models_dir"/* "$target_models_dir"
+cp -r "$gen_client_models_dir"/* "$client_models_target_dir"
+
+
+# server
+gen_server_models_dir=$gen_dir/server/src/models
+server_models_target_dir=$agent_dir/openapi/server/src/models
+
+# replace the target model directories with the generated ones
+rm -rf "${server_models_target_dir:?}"/*
+
+# copy all the files in the generated models dirs to the target models dirs
+if [ ! -d "$server_models_target_dir" ]; then
+    mkdir "$server_models_target_dir"
+fi
+cp -r "$gen_server_models_dir"/* "$server_models_target_dir"

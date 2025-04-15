@@ -2,7 +2,7 @@
 use crate::env;
 use crate::http_client::errors::{reqwest_err_to_http_client_err, HTTPErr};
 use crate::trace;
-use crate::openapi::ErrorResponse;
+use openapi_client::models::ErrorResponse;
 
 // external crates
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};

@@ -1,7 +1,7 @@
 // internal crates
 use crate::errors::MiruError;
 use crate::errors::Trace;
-use crate::openapi::error_response as openapi;
+use openapi_client::models::ErrorResponse;
 
 // external crates
 use std::time::Duration;
@@ -17,7 +17,7 @@ pub enum HTTPErr {
     #[error("Response Error: {http_code:?} {error:?}")]
     ResponseErr {
         http_code: reqwest::StatusCode,
-        error: openapi::ErrorResponse,
+        error: ErrorResponse,
         trace: Box<Trace>,
     },
     #[error("Timeout Error: {msg}")]
