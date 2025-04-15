@@ -1,16 +1,26 @@
 # Common variables
 OPENAPI_DIR := ../../../openapi
 OPENAPI_AGENT_DIR := $(OPENAPI_DIR)/configs/agent
+OPENAPI_FRONTEND_DIR := $(OPENAPI_DIR)/configs/frontend
 
 # Agent API variables
-OPENAPI_FILE := $(OPENAPI_AGENT_DIR)/openapi.gen.yaml
-GEN := gen
+OPENAPI_SERVER_FILE := $(OPENAPI_AGENT_DIR)/openapi.gen.yaml
+OPENAPI_CLIENT_FILE := $(OPENAPI_FRONTEND_DIR)/openapi.gen.yaml
+SERVER_GEN := gen/server
+CLIENT_GEN := gen/client
 
-gen: clean-agent-golang
+gen-server: clean-agent-golang
 	openapi-generator-cli generate \
-	-i ${OPENAPI_FILE} \
+	-i ${OPENAPI_SERVER_FILE} \
 	-g rust \
-	-o ${GEN}
+	-o ${SERVER_GEN}
 
-clean-agent-golang:
-	rm -rf ${GEN}
+gen-client: clean-agent-golang
+	openapi-generator-cli generate \
+	-i ${OPENAPI_CLIENT_FILE} \
+	-g rust \
+	-o ${CLIENT_GEN}
+
+clean-agent:
+	rm -rf ${SERVER_GEN}
+	rm -rf ${CLIENT_GEN}

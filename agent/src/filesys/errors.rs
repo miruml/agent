@@ -24,10 +24,6 @@ pub enum FileSysErr {
     },
     #[error("CreateHomeDirErr: home directory not found")]
     CreateHomeDirErr,
-    #[error("DirExists: {dir}")]
-    DirExists { dir: Dir, trace: Box<Trace> },
-    #[error("FileExists: {file}")]
-    FileExists { file: File, trace: Box<Trace> },
     #[error("FileNotFound: {file}")]
     FileNotFound { file: File, trace: Box<Trace> },
     #[error("Invalid Dir Name: {name}")]

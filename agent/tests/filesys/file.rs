@@ -3,6 +3,7 @@ mod tests {
     // internal crates
     use config_agent::filesys::{dir::Dir, path::PathExt};
     // external crates
+    use std::path::PathBuf;
     #[allow(unused_imports)]
     use tracing::{debug, error, info, trace, warn};
 
@@ -114,7 +115,7 @@ mod tests {
     #[test]
     fn move_to_same_file() {
         let dir = Dir::create_temp_dir("testing").unwrap();
-        let file = dir.new_file("test-file");
+        let file = dir.file("test-file");
         file.write_string("test").unwrap();
         file.move_to(&file, false).unwrap();
         file.assert_exists().unwrap();
@@ -126,7 +127,7 @@ mod tests {
     #[test]
     fn file_path_success() {
         let dir = Dir::create_temp_dir("testing").unwrap();
-        let file = dir.new_file("test-file");
+        let file = dir.file("test-file");
         assert!(file
             .path()
             .to_str()
@@ -135,9 +136,9 @@ mod tests {
     }
 
     #[test]
-    fn file_path_parent_dir_success() {
+    fn file_path_parent_success() {
         let dir = Dir::create_temp_dir("testing").unwrap();
-        let file = dir.new_file("test-file");
+        let file = dir.file("test-file");
         assert!(file
             .par_dir()
             .unwrap()
@@ -153,7 +154,7 @@ pub mod delete_if_modified_before {
     #[test]
     fn delete_if_modified_before_success_modified() {
         let dir = Dir::create_temp_dir("testing").unwrap();
-        let file = dir.new_file("test-file");
+        let file = dir.file("test-file");
         file.write_string("test").unwrap();
         std::thread::sleep(std::time::Duration::from_millis(10));
         file.delete_if_modified_before(std::time::Duration::from_millis(1))
@@ -164,7 +165,7 @@ pub mod delete_if_modified_before {
     #[test]
     fn delete_if_modified_before_success_not_modified() {
         let dir = Dir::create_temp_dir("testing").unwrap();
-        let file = dir.new_file("test-file");
+        let file = dir.file("test-file");
         file.write_string("test").unwrap();
         file.delete_if_modified_before(std::time::Duration::from_secs(1))
             .unwrap();
@@ -175,8 +176,8 @@ pub mod delete_if_modified_before {
     #[ignore]
     fn delete_if_modified_before_sandbox() {
         let dir = Dir::new_home_dir().unwrap();
-        let subdir = dir.subdir(["test"]);
-        let file = subdir.new_file("test.txt");
+        let subdir = dir.subdir(PathBuf::from("test"));
+        let file = subdir.file("test.txt");
         file.delete_if_modified_before(std::time::Duration::from_secs(90))
             .unwrap();
         assert!(!file.exists());

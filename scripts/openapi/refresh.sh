@@ -39,7 +39,7 @@ cd -
 make gen
 
 gen_models_dir=$gen_dir/src/models
-target_models_dir=$agent_dir/agent/src/models
+target_models_dir=$agent_dir/agent/src/openapi
 
 # replace the target model directories with the generated ones
 rm -rf "${target_models_dir:?}"/*

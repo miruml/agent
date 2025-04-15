@@ -1,9 +1,8 @@
 // internal crates
 use crate::errors::MiruError;
 use crate::errors::Trace;
-use crate::filesys::file::File;
-use crate::http::client::APIResponse;
-use crate::http::client::Code;
+use crate::openapi::error_response as openapi;
+
 // external crates
 use std::time::Duration;
 #[allow(unused_imports)]
@@ -13,44 +12,18 @@ use tracing::{debug, error, info, trace, warn};
 #[derive(Debug, thiserror::Error)]
 pub enum HTTPErr {
     // HTTP errors
-    #[error("File Not Found: {msg}")]
-    FileNotFound { msg: String, trace: Box<Trace> },
-    #[error("Response Data Missing Error: {msg}")]
-    ResponseDataMissingErr { msg: String, trace: Box<Trace> },
-    #[error("Response Error: {http_code:?} {resp:?}")]
+    #[error("Response Body Missing Error: {msg}")]
+    ResponseBodyMissingErr { msg: String, trace: Box<Trace> },
+    #[error("Response Error: {http_code:?} {error:?}")]
     ResponseErr {
         http_code: reqwest::StatusCode,
-        resp: reqwest::Response,
-        trace: Box<Trace>,
-    },
-    #[error("Miru Response Error: {http_code:?} {code:?} {msg}")]
-    MiruResponseErr {
-        http_code: reqwest::StatusCode,
-        code: Code,
-        msg: String,
+        error: openapi::ErrorResponse,
         trace: Box<Trace>,
     },
     #[error("Timeout Error: {msg}")]
     TimeoutErr {
         msg: String,
         timeout: Duration,
-        trace: Box<Trace>,
-    },
-
-    // internal crate errors
-    #[error("Crypt Error: {source}")]
-    AuthErr {
-        source: crate::auth::errors::AuthErr,
-        trace: Box<Trace>,
-    },
-    #[error("File System Error: {source}")]
-    FileSysErr {
-        source: crate::filesys::errors::FileSysErr,
-        trace: Box<Trace>,
-    },
-    #[error("Storage Error: {source}")]
-    StorageErr {
-        source: crate::storage::errors::StorageErr,
         trace: Box<Trace>,
     },
 
@@ -71,22 +44,8 @@ pub enum HTTPErr {
         source: reqwest::header::InvalidHeaderValue,
         trace: Box<Trace>,
     },
-    #[error("Mutex Error: {msg}")]
-    MutexErr { msg: String, trace: Box<Trace> },
-    #[error("OpenFileErr: {source}")]
-    OpenFileErr {
-        source: std::io::Error,
-        file: File,
-        trace: Box<Trace>,
-    },
     #[error("Parse JSON Error: {source}")]
     ParseJSONErr {
-        source: serde_json::Error,
-        trace: Box<Trace>,
-    },
-    #[error("Parse API Response Error: {source}")]
-    ParseAPIResponseErr {
-        api_resp: APIResponse,
         source: serde_json::Error,
         trace: Box<Trace>,
     },
@@ -95,28 +54,11 @@ pub enum HTTPErr {
         source: reqwest::Error,
         trace: Box<Trace>,
     },
-    #[error("StreamBytesErr: {source}")]
-    StreamBytesErr {
-        source: reqwest::Error,
-        trace: Box<Trace>,
-    },
-    #[error("WriteFileErr: {source}")]
-    WriteFileErr {
-        source: std::io::Error,
-        file: File,
-        trace: Box<Trace>,
-    },
 }
 
 impl AsRef<dyn MiruError> for HTTPErr {
     fn as_ref(&self) -> &(dyn MiruError + 'static) {
         self
-    }
-}
-
-impl HTTPErr {
-    pub fn is_error_type(&self, c: Code) -> bool {
-        matches!(self, HTTPErr::MiruResponseErr { code, .. } if *code == c)
     }
 }
 

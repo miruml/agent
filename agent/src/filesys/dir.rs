@@ -47,7 +47,7 @@ impl PathExt for Dir {
 impl Dir {
     /// Create a new Dir instance. Dir paths must be absolute but do not need to exist
     /// to create a valid Dir instance.
-    pub fn new<T: Into<PathBuf>>(path: T) -> Self {
+    pub fn new<T: Into<PathBuf>>(path: T) -> Dir {
         let _path: PathBuf = path.into();
         if _path.is_relative() {
             warn!(
@@ -59,21 +59,27 @@ impl Dir {
     }
 
     /// Create a new Dir instance for the home directory
-    pub fn new_home_dir() -> Result<Self, FileSysErr> {
+    pub fn new_home_dir() -> Result<Dir, FileSysErr> {
         let home_dir = std::env::var("HOME")
             .map_err(|_| FileSysErr::CreateHomeDirErr)
             .map(PathBuf::from)?;
         Ok(Dir { path: home_dir })
     }
 
-    pub fn create_temp_dir(prefix: &str) -> Result<Self, FileSysErr> {
+    /// Create a new Dir instance for the ~/.miru directory
+    pub fn new_miru_app_dir() -> Dir {
+        let miru_path = PathBuf::from("var").join("lib").join("miru");
+        Dir::new(miru_path)
+    }
+
+    pub fn create_temp_dir(prefix: &str) -> Result<Dir, FileSysErr> {
         let temp_dir = Dir::new(env::temp_dir());
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
             .as_nanos();
         let subdir_name = format!("{}_{}", prefix, timestamp);
-        let temp_dir = temp_dir.subdir([subdir_name]);
+        let temp_dir = temp_dir.subdir(PathBuf::from(subdir_name));
         temp_dir.create(true)?;
         Ok(temp_dir)
     }
@@ -99,7 +105,7 @@ impl Dir {
         }
     }
 
-    pub fn parent_dir(&self) -> Result<Dir, FileSysErr> {
+    pub fn parent(&self) -> Result<Dir, FileSysErr> {
         let parent = self
             .path
             .parent()
@@ -140,25 +146,10 @@ impl Dir {
     }
 
     /// Create a new Dir instance using a relative path from the current directory
-    pub fn subdir<I>(&self, rel_path: I) -> Dir
-    where
-        I: IntoIterator,
-        I::Item: AsRef<str>,
-    {
+    pub fn subdir<T: Into<PathBuf>>(&self, rel_path: T) -> Dir {
         let mut new_dir = self.path.clone();
-        for dir in rel_path {
-            new_dir = new_dir.join(dir.as_ref());
-        }
+        new_dir = new_dir.join(rel_path.into());
         Dir::new(new_dir)
-    }
-
-    /// Create a new Dir instance for the ~/.miru directory
-    pub fn new_miru_app_dir() -> Dir {
-        let mut miru_path = PathBuf::new();
-        miru_path.push("/var");
-        miru_path.push("lib");
-        miru_path.push("miru");
-        Dir::new(miru_path)
     }
 
     /// Create a new directory in the filesystem and any missing parent directories at
@@ -189,13 +180,13 @@ impl Dir {
     }
 
     /// Create a new File instance using a filename appended to this directory
-    pub fn new_file(&self, file_name: &str) -> File {
+    pub fn file(&self, file_name: &str) -> File {
         let file_path = self.path.join(file_name);
         File::new(file_path)
     }
 
     /// Return the subdirectories of this directory
-    pub fn list_subdirs(&self) -> Result<Vec<Dir>, FileSysErr> {
+    pub fn subdirs(&self) -> Result<Vec<Dir>, FileSysErr> {
         let mut dirs = Vec::new();
         for entry in std::fs::read_dir(self.to_string()).map_err(|e| FileSysErr::ReadDirErr {
             source: e,
@@ -217,7 +208,7 @@ impl Dir {
     }
 
     // Return the files in this directory
-    pub fn list_files(&self) -> Result<Vec<File>, FileSysErr> {
+    pub fn files(&self) -> Result<Vec<File>, FileSysErr> {
         let mut files = Vec::new();
         for entry in std::fs::read_dir(self.to_string()).map_err(|e| FileSysErr::ReadDirErr {
             source: e,
@@ -242,10 +233,10 @@ impl Dir {
         if !self.exists() {
             return Ok(());
         }
-        if !self.list_files()?.is_empty() {
+        if !self.files()?.is_empty() {
             return Ok(());
         }
-        if !self.list_subdirs()?.is_empty() {
+        if !self.subdirs()?.is_empty() {
             return Ok(());
         }
         self.delete()?;
@@ -254,32 +245,17 @@ impl Dir {
 
     /// Recursively deletes all contents of this directory and its subdirectories which
     /// were modified before the given duration
-    pub fn delete_all_modified_before(&self, ago: Duration) -> Result<(), FileSysErr> {
+    pub fn delete_contents_modified_before(&self, ago: Duration) -> Result<(), FileSysErr> {
         if !self.exists() {
             return Ok(());
         }
-        for subdir in self.list_subdirs()? {
-            subdir.delete_all_modified_before(ago)?;
+        for subdir in self.subdirs()? {
+            subdir.delete_contents_modified_before(ago)?;
         }
-        for file in self.list_files()? {
+        for file in self.files()? {
             file.delete_if_modified_before(ago)?;
         }
         self.delete_if_empty()?;
         Ok(())
-    }
-
-    /// Create a new Dir instance using a relative path from the current directory
-    pub fn create_subdir<I>(&self, rel_path: I, overwrite: bool) -> Result<Dir, FileSysErr>
-    where
-        I: IntoIterator,
-        I::Item: AsRef<str>,
-    {
-        let subdir = self.subdir(rel_path);
-        // delete the subdir if overwriting
-        if overwrite {
-            subdir.delete()?;
-        }
-        subdir.create_if_absent()?;
-        Ok(subdir)
     }
 }

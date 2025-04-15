@@ -94,8 +94,8 @@ impl File {
 
         // check not overwriting new file if it exist
         if !overwrite && new_file.exists() {
-            return Err(FileSysErr::FileExists {
-                file: new_file.clone(),
+            return Err(FileSysErr::PathExists {
+                path: new_file.path().clone(),
                 trace: trace!(),
             });
         }
@@ -130,8 +130,8 @@ impl File {
 
         // check not overwriting new file if it exist
         if !overwrite && new_file.exists() {
-            return Err(FileSysErr::FileExists {
-                file: new_file.clone(),
+            return Err(FileSysErr::PathExists {
+                path: new_file.path().clone(),
                 trace: trace!(),
             });
         }
@@ -185,7 +185,7 @@ impl File {
         Ok(())
     }
 
-    pub fn parent_dir_exists(&self) -> Result<bool, FileSysErr> {
+    pub fn parent_exists(&self) -> Result<bool, FileSysErr> {
         // check parent directory exists
         let parent = self.par_dir()?;
         Ok(parent.exists())
@@ -316,8 +316,8 @@ impl File {
     pub fn create_symlink(&self, link: &File, overwrite: bool) -> Result<(), FileSysErr> {
         self.assert_exists()?;
         if !overwrite && link.exists() {
-            return Err(FileSysErr::FileExists {
-                file: link.clone(),
+            return Err(FileSysErr::PathExists {
+                path: link.path().clone(),
                 trace: trace!(),
             });
         }
