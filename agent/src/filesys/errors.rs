@@ -153,7 +153,7 @@ pub enum FileSysErr {
 }
 
 impl MiruError for FileSysErr {
-    fn is_poor_signal_error(&self) -> bool {
+    fn network_connection_error(&self) -> bool {
         false
     }
 }

@@ -270,8 +270,20 @@ impl File {
     }
 
     /// Write a JSON object to a file. Overwrites the file if it exists.
-    pub fn write_json<T: serde::Serialize>(&self, obj: &T) -> Result<(), FileSysErr> {
+    pub fn write_json<T: serde::Serialize>(
+        &self,
+        obj: &T,
+        overwrite: bool,
+    ) -> Result<(), FileSysErr> {
         self.assert_path_contains(".json")?;
+
+        // if file exists and overwrite is false, return an error
+        if !overwrite && self.exists() {
+            return Err(FileSysErr::PathExists {
+                path: self.path().clone(),
+                trace: trace!(),
+            });
+        }
 
         // Convert to JSON bytes first
         let json_bytes = serde_json::to_vec(obj).map_err(|e| FileSysErr::ParseJSONErr {
@@ -369,4 +381,15 @@ impl File {
         }
         Ok(())
     }
+}
+
+pub fn sanitize_filename(name: &str) -> String {
+    name.chars()
+        .map(|c| match c {
+            // Allow alphanumeric and some safe characters
+            'a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '_' | '.' => c,
+            // Replace everything else with underscore
+            _ => '_'
+        })
+        .collect()
 }

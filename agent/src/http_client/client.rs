@@ -64,7 +64,7 @@ impl HTTPClient {
             base = "https://dev.api.miruml.com".to_string();
         }
 
-        let client = CLIENT.get_or_init(|| init_client()).await;
+        let client = CLIENT.get_or_init(init_client).await;
 
         HTTPClient {
             client: client.clone(),
@@ -114,13 +114,13 @@ impl HTTPClient {
         Ok(request)
     }
 
-    // pub(crate) fn build_get_request(
-    //     &self,
-    //     url: &str,
-    //     token: Option<&str>,
-    // ) -> Result<reqwest::RequestBuilder, HTTPErr> {
-    //     self.build_request(reqwest::Method::GET, url, None, token)
-    // }
+    pub(crate) fn build_get_request(
+        &self,
+        url: &str,
+        token: Option<&str>,
+    ) -> Result<reqwest::RequestBuilder, HTTPErr> {
+        self.build_request(reqwest::Method::GET, url, None, token)
+    }
 
     pub(crate) fn build_post_request(
         &self,

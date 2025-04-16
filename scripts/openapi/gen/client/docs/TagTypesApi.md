@@ -104,7 +104,7 @@ Name | Type | Description  | Required | Notes
 
 ## get_tag_types
 
-> models::TagTypeList get_tag_types(workspace_id, offset, limit, order_by, expand_left_square_bracket_right_square_bracket, search)
+> models::TagTypeList get_tag_types(offset, limit, order_by, expand_left_square_bracket_right_square_bracket, search)
 List the tag types in a workspace
 
 ### Parameters
@@ -112,7 +112,6 @@ List the tag types in a workspace
 
 Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
-**workspace_id** | **String** | The unique identifier of the workspace | [required] |
 **offset** | Option<**i32**> | The offset to begin returning results from |  |[default to 0]
 **limit** | Option<**i32**> | The number of items to return |  |[default to 10]
 **order_by** | Option<[**Vec<models::TagTypeOrderBy>**](models::TagTypeOrderBy.md)> |  |  |

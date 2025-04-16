@@ -25,10 +25,14 @@ pub struct BackendConcreteConfig {
     pub config_schema_id: String,
     #[serde(rename = "concrete_config", deserialize_with = "Option::deserialize")]
     pub concrete_config: Option<serde_json::Value>,
+    #[serde(rename = "client", deserialize_with = "Option::deserialize")]
+    pub client: Option<Box<models::Client>>,
+    #[serde(rename = "config_schema", deserialize_with = "Option::deserialize")]
+    pub config_schema: Option<Box<models::ConfigSchema>>,
 }
 
 impl BackendConcreteConfig {
-    pub fn new(object: Object, id: String, created_at: Option<String>, client_id: String, config_schema_id: String, concrete_config: Option<serde_json::Value>) -> BackendConcreteConfig {
+    pub fn new(object: Object, id: String, created_at: Option<String>, client_id: String, config_schema_id: String, concrete_config: Option<serde_json::Value>, client: Option<models::Client>, config_schema: Option<models::ConfigSchema>) -> BackendConcreteConfig {
         BackendConcreteConfig {
             object,
             id,
@@ -36,6 +40,8 @@ impl BackendConcreteConfig {
             client_id,
             config_schema_id,
             concrete_config,
+            client: if let Some(x) = client {Some(Box::new(x))} else {None},
+            config_schema: if let Some(x) = config_schema {Some(Box::new(x))} else {None},
         }
     }
 }

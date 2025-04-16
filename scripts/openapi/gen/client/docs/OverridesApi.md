@@ -15,7 +15,7 @@ Method | HTTP request | Description
 
 ## create_override
 
-> models::Override create_override(create_override_request, expand)
+> models::Override create_override(create_override_request, expand_left_square_bracket_right_square_bracket)
 Create an override
 
 ### Parameters
@@ -24,7 +24,7 @@ Create an override
 Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
 **create_override_request** | [**CreateOverrideRequest**](CreateOverrideRequest.md) |  | [required] |
-**expand** | Option<[**Vec<models::OverrideExpand>**](models::OverrideExpand.md)> |  |  |
+**expand_left_square_bracket_right_square_bracket** | Option<[**Vec<models::OverrideExpand>**](models::OverrideExpand.md)> |  |  |
 
 ### Return type
 
@@ -44,7 +44,7 @@ Name | Type | Description  | Required | Notes
 
 ## delete_override
 
-> models::Override delete_override(override_id, expand)
+> models::Override delete_override(override_id, expand_left_square_bracket_right_square_bracket)
 Delete an override
 
 ### Parameters
@@ -53,7 +53,7 @@ Delete an override
 Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
 **override_id** | **String** | The unique identifier of the override | [required] |
-**expand** | Option<[**Vec<models::OverrideExpand>**](models::OverrideExpand.md)> |  |  |
+**expand_left_square_bracket_right_square_bracket** | Option<[**Vec<models::OverrideExpand>**](models::OverrideExpand.md)> |  |  |
 
 ### Return type
 
@@ -73,7 +73,7 @@ Name | Type | Description  | Required | Notes
 
 ## get_override
 
-> models::Override get_override(override_id, expand)
+> models::Override get_override(override_id, expand_left_square_bracket_right_square_bracket)
 Get an override
 
 ### Parameters
@@ -82,7 +82,7 @@ Get an override
 Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
 **override_id** | **String** | The unique identifier of the override | [required] |
-**expand** | Option<[**Vec<models::OverrideExpand>**](models::OverrideExpand.md)> |  |  |
+**expand_left_square_bracket_right_square_bracket** | Option<[**Vec<models::OverrideExpand>**](models::OverrideExpand.md)> |  |  |
 
 ### Return type
 
@@ -102,7 +102,7 @@ Name | Type | Description  | Required | Notes
 
 ## list_overrides
 
-> models::OverrideList list_overrides(offset, limit, order_by, expand, search)
+> models::OverrideList list_overrides(offset, limit, order_by, expand_left_square_bracket_right_square_bracket, search)
 List the overrides in a workspace
 
 ### Parameters
@@ -113,7 +113,7 @@ Name | Type | Description  | Required | Notes
 **offset** | Option<**i32**> | The offset to begin returning results from |  |[default to 0]
 **limit** | Option<**i32**> | The number of items to return |  |[default to 10]
 **order_by** | Option<[**Vec<models::OverrideOrderBy>**](models::OverrideOrderBy.md)> |  |  |
-**expand** | Option<[**Vec<models::OverrideExpand>**](models::OverrideExpand.md)> |  |  |
+**expand_left_square_bracket_right_square_bracket** | Option<[**Vec<models::OverrideExpand>**](models::OverrideExpand.md)> |  |  |
 **search** | Option<[**Vec<models::OverrideSearch>**](models::OverrideSearch.md)> |  |  |
 
 ### Return type
@@ -164,7 +164,7 @@ Name | Type | Description  | Required | Notes
 
 ## update_override
 
-> models::Override update_override(override_id, update_override_request, expand)
+> models::Override update_override(override_id, update_override_request, expand_left_square_bracket_right_square_bracket)
 Update an override
 
 ### Parameters
@@ -174,7 +174,7 @@ Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
 **override_id** | **String** | The unique identifier of the override | [required] |
 **update_override_request** | [**UpdateOverrideRequest**](UpdateOverrideRequest.md) |  | [required] |
-**expand** | Option<[**Vec<models::OverrideExpand>**](models::OverrideExpand.md)> |  |  |
+**expand_left_square_bracket_right_square_bracket** | Option<[**Vec<models::OverrideExpand>**](models::OverrideExpand.md)> |  |  |
 
 ### Return type
 

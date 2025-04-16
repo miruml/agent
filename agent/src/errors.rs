@@ -9,17 +9,17 @@ pub trait MiruError
 where
     Self: Debug,
 {
-    fn is_poor_signal_error(&self) -> bool;
+    fn network_connection_error(&self) -> bool;
 }
 
-pub fn are_all_poor_signal_errors<I>(errors: I) -> bool
+pub fn are_all_network_connection_errors<I>(errors: I) -> bool
 where
     I: IntoIterator,
     I::Item: AsRef<dyn MiruError>,
 {
     errors
         .into_iter()
-        .all(|e| e.as_ref().is_poor_signal_error())
+        .all(|e| e.as_ref().network_connection_error())
 }
 
 #[derive(Debug, Clone)]

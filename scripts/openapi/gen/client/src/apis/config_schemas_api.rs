@@ -58,18 +58,18 @@ pub enum RenderConfigSchemaError {
 }
 
 
-pub async fn create_config_schema(configuration: &configuration::Configuration, create_config_schema_request: models::CreateConfigSchemaRequest, expand: Option<Vec<models::ConfigSchemaExpand>>) -> Result<models::ConfigSchema, Error<CreateConfigSchemaError>> {
+pub async fn create_config_schema(configuration: &configuration::Configuration, create_config_schema_request: models::CreateConfigSchemaRequest, expand_left_square_bracket_right_square_bracket: Option<Vec<models::ConfigSchemaExpand>>) -> Result<models::ConfigSchema, Error<CreateConfigSchemaError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_create_config_schema_request = create_config_schema_request;
-    let p_expand = expand;
+    let p_expand_left_square_bracket_right_square_bracket = expand_left_square_bracket_right_square_bracket;
 
     let uri_str = format!("{}/config_schemas", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
 
-    if let Some(ref param_value) = p_expand {
+    if let Some(ref param_value) = p_expand_left_square_bracket_right_square_bracket {
         req_builder = match "multi" {
-            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
-            _ => req_builder.query(&[("expand", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand[]".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("expand[]", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
         };
     }
     if let Some(ref user_agent) = configuration.user_agent {
@@ -105,18 +105,18 @@ pub async fn create_config_schema(configuration: &configuration::Configuration, 
     }
 }
 
-pub async fn delete_config_schema(configuration: &configuration::Configuration, config_schema_id: &str, expand: Option<Vec<models::ConfigSchemaExpand>>) -> Result<models::ConfigSchema, Error<DeleteConfigSchemaError>> {
+pub async fn delete_config_schema(configuration: &configuration::Configuration, config_schema_id: &str, expand_left_square_bracket_right_square_bracket: Option<Vec<models::ConfigSchemaExpand>>) -> Result<models::ConfigSchema, Error<DeleteConfigSchemaError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_config_schema_id = config_schema_id;
-    let p_expand = expand;
+    let p_expand_left_square_bracket_right_square_bracket = expand_left_square_bracket_right_square_bracket;
 
     let uri_str = format!("{}/config_schemas/{config_schema_id}", configuration.base_path, config_schema_id=crate::apis::urlencode(p_config_schema_id));
     let mut req_builder = configuration.client.request(reqwest::Method::DELETE, &uri_str);
 
-    if let Some(ref param_value) = p_expand {
+    if let Some(ref param_value) = p_expand_left_square_bracket_right_square_bracket {
         req_builder = match "multi" {
-            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
-            _ => req_builder.query(&[("expand", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand[]".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("expand[]", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
         };
     }
     if let Some(ref user_agent) = configuration.user_agent {
@@ -151,18 +151,18 @@ pub async fn delete_config_schema(configuration: &configuration::Configuration, 
     }
 }
 
-pub async fn get_config_schema(configuration: &configuration::Configuration, config_schema_id: &str, expand: Option<Vec<models::ConfigSchemaExpand>>) -> Result<models::ConfigSchema, Error<GetConfigSchemaError>> {
+pub async fn get_config_schema(configuration: &configuration::Configuration, config_schema_id: &str, expand_left_square_bracket_right_square_bracket: Option<Vec<models::ConfigSchemaExpand>>) -> Result<models::ConfigSchema, Error<GetConfigSchemaError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_config_schema_id = config_schema_id;
-    let p_expand = expand;
+    let p_expand_left_square_bracket_right_square_bracket = expand_left_square_bracket_right_square_bracket;
 
     let uri_str = format!("{}/config_schemas/{config_schema_id}", configuration.base_path, config_schema_id=crate::apis::urlencode(p_config_schema_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
-    if let Some(ref param_value) = p_expand {
+    if let Some(ref param_value) = p_expand_left_square_bracket_right_square_bracket {
         req_builder = match "multi" {
-            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
-            _ => req_builder.query(&[("expand", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand[]".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("expand[]", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
         };
     }
     if let Some(ref user_agent) = configuration.user_agent {
@@ -237,16 +237,15 @@ pub async fn hash_config_schema(configuration: &configuration::Configuration, ha
     }
 }
 
-pub async fn list_config_schemas(configuration: &configuration::Configuration, workspace_id: &str, offset: Option<i32>, limit: Option<i32>, order_by: Option<Vec<models::ConfigSchemaOrderBy>>, search: Option<Vec<models::ConfigSchemaSearch>>, expand: Option<Vec<models::ConfigSchemaExpand>>) -> Result<models::ConfigSchemaList, Error<ListConfigSchemasError>> {
+pub async fn list_config_schemas(configuration: &configuration::Configuration, offset: Option<i32>, limit: Option<i32>, order_by: Option<Vec<models::ConfigSchemaOrderBy>>, search: Option<Vec<models::ConfigSchemaSearch>>, expand_left_square_bracket_right_square_bracket: Option<Vec<models::ConfigSchemaExpand>>) -> Result<models::ConfigSchemaList, Error<ListConfigSchemasError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_workspace_id = workspace_id;
     let p_offset = offset;
     let p_limit = limit;
     let p_order_by = order_by;
     let p_search = search;
-    let p_expand = expand;
+    let p_expand_left_square_bracket_right_square_bracket = expand_left_square_bracket_right_square_bracket;
 
-    let uri_str = format!("{}/config_schemas", configuration.base_path, workspace_id=crate::apis::urlencode(p_workspace_id));
+    let uri_str = format!("{}/config_schemas", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_offset {
@@ -267,10 +266,10 @@ pub async fn list_config_schemas(configuration: &configuration::Configuration, w
             _ => req_builder.query(&[("search", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
         };
     }
-    if let Some(ref param_value) = p_expand {
+    if let Some(ref param_value) = p_expand_left_square_bracket_right_square_bracket {
         req_builder = match "multi" {
-            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
-            _ => req_builder.query(&[("expand", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand[]".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("expand[]", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
         };
     }
     if let Some(ref user_agent) = configuration.user_agent {
@@ -305,19 +304,19 @@ pub async fn list_config_schemas(configuration: &configuration::Configuration, w
     }
 }
 
-pub async fn render_config_schema(configuration: &configuration::Configuration, config_schema_id: &str, render_config_schema_request: models::RenderConfigSchemaRequest, expand: Option<Vec<models::RenderedConfigSchemaExpand>>) -> Result<models::RenderedConfigSchema, Error<RenderConfigSchemaError>> {
+pub async fn render_config_schema(configuration: &configuration::Configuration, config_schema_id: &str, render_config_schema_request: models::RenderConfigSchemaRequest, expand_left_square_bracket_right_square_bracket: Option<Vec<models::RenderedConfigSchemaExpand>>) -> Result<models::RenderedConfigSchema, Error<RenderConfigSchemaError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_config_schema_id = config_schema_id;
     let p_render_config_schema_request = render_config_schema_request;
-    let p_expand = expand;
+    let p_expand_left_square_bracket_right_square_bracket = expand_left_square_bracket_right_square_bracket;
 
     let uri_str = format!("{}/config_schemas/{config_schema_id}/render", configuration.base_path, config_schema_id=crate::apis::urlencode(p_config_schema_id));
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
 
-    if let Some(ref param_value) = p_expand {
+    if let Some(ref param_value) = p_expand_left_square_bracket_right_square_bracket {
         req_builder = match "multi" {
-            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
-            _ => req_builder.query(&[("expand", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand[]".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("expand[]", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
         };
     }
     if let Some(ref user_agent) = configuration.user_agent {

@@ -30,17 +30,17 @@ pub enum UpdateUserError {
 }
 
 
-pub async fn get_user(configuration: &configuration::Configuration, expand: Option<Vec<models::UserExpand>>) -> Result<models::User, Error<GetUserError>> {
+pub async fn get_user(configuration: &configuration::Configuration, expand_left_square_bracket_right_square_bracket: Option<Vec<models::UserExpand>>) -> Result<models::User, Error<GetUserError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_expand = expand;
+    let p_expand_left_square_bracket_right_square_bracket = expand_left_square_bracket_right_square_bracket;
 
     let uri_str = format!("{}/user", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
-    if let Some(ref param_value) = p_expand {
+    if let Some(ref param_value) = p_expand_left_square_bracket_right_square_bracket {
         req_builder = match "multi" {
-            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
-            _ => req_builder.query(&[("expand", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand[]".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("expand[]", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
         };
     }
     if let Some(ref user_agent) = configuration.user_agent {
@@ -75,18 +75,18 @@ pub async fn get_user(configuration: &configuration::Configuration, expand: Opti
     }
 }
 
-pub async fn update_user(configuration: &configuration::Configuration, update_user_request: models::UpdateUserRequest, expand: Option<Vec<models::UserExpand>>) -> Result<models::User, Error<UpdateUserError>> {
+pub async fn update_user(configuration: &configuration::Configuration, update_user_request: models::UpdateUserRequest, expand_left_square_bracket_right_square_bracket: Option<Vec<models::UserExpand>>) -> Result<models::User, Error<UpdateUserError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_update_user_request = update_user_request;
-    let p_expand = expand;
+    let p_expand_left_square_bracket_right_square_bracket = expand_left_square_bracket_right_square_bracket;
 
     let uri_str = format!("{}/user", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::PUT, &uri_str);
 
-    if let Some(ref param_value) = p_expand {
+    if let Some(ref param_value) = p_expand_left_square_bracket_right_square_bracket {
         req_builder = match "multi" {
-            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
-            _ => req_builder.query(&[("expand", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand[]".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("expand[]", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
         };
     }
     if let Some(ref user_agent) = configuration.user_agent {

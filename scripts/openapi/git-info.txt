@@ -1,4 +1,4 @@
 Repository Name: git@github.com:miruml/openapi.git
 Branch Name: configs
-Commit Hash: cacac711c3c8645cd830189c8379c8d471a1f205
-Commit Message: refactor(concrete_config): limit render latest request args
+Commit Hash: 799b9782e87e13c9cf880e78cfaa9d81b8efa370
+Commit Message: feat(concrete_configs): add read and list apis

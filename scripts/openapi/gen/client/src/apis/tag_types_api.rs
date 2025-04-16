@@ -199,16 +199,15 @@ pub async fn get_tag_type(configuration: &configuration::Configuration, tag_type
     }
 }
 
-pub async fn get_tag_types(configuration: &configuration::Configuration, workspace_id: &str, offset: Option<i32>, limit: Option<i32>, order_by: Option<Vec<models::TagTypeOrderBy>>, expand_left_square_bracket_right_square_bracket: Option<Vec<models::TagTypeExpand>>, search: Option<Vec<models::TagTypeSearch>>) -> Result<models::TagTypeList, Error<GetTagTypesError>> {
+pub async fn get_tag_types(configuration: &configuration::Configuration, offset: Option<i32>, limit: Option<i32>, order_by: Option<Vec<models::TagTypeOrderBy>>, expand_left_square_bracket_right_square_bracket: Option<Vec<models::TagTypeExpand>>, search: Option<Vec<models::TagTypeSearch>>) -> Result<models::TagTypeList, Error<GetTagTypesError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_workspace_id = workspace_id;
     let p_offset = offset;
     let p_limit = limit;
     let p_order_by = order_by;
     let p_expand_left_square_bracket_right_square_bracket = expand_left_square_bracket_right_square_bracket;
     let p_search = search;
 
-    let uri_str = format!("{}/tag_types", configuration.base_path, workspace_id=crate::apis::urlencode(p_workspace_id));
+    let uri_str = format!("{}/tag_types", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_offset {

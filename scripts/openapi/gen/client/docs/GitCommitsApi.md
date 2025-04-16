@@ -10,7 +10,7 @@ Method | HTTP request | Description
 
 ## get_git_commits
 
-> models::GitCommitList get_git_commits(workspace_id, offset, limit, order_by, expand, search)
+> models::GitCommitList get_git_commits(offset, limit, order_by, expand_left_square_bracket_right_square_bracket, search)
 Get the git commits for a workspace
 
 ### Parameters
@@ -18,11 +18,10 @@ Get the git commits for a workspace
 
 Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
-**workspace_id** | **String** | The unique identifier of the workspace | [required] |
 **offset** | Option<**i32**> | The offset to begin returning results from |  |[default to 0]
 **limit** | Option<**i32**> | The number of items to return |  |[default to 10]
 **order_by** | Option<[**Vec<models::GitCommitOrderBy>**](models::GitCommitOrderBy.md)> |  |  |
-**expand** | Option<[**Vec<models::GitCommitExpand>**](models::GitCommitExpand.md)> |  |  |
+**expand_left_square_bracket_right_square_bracket** | Option<[**Vec<models::GitCommitExpand>**](models::GitCommitExpand.md)> |  |  |
 **search** | Option<[**Vec<models::GitCommitSearch>**](models::GitCommitSearch.md)> |  |  |
 
 ### Return type

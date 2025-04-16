@@ -23,16 +23,15 @@ pub enum GetGitCommitsError {
 }
 
 
-pub async fn get_git_commits(configuration: &configuration::Configuration, workspace_id: &str, offset: Option<i32>, limit: Option<i32>, order_by: Option<Vec<models::GitCommitOrderBy>>, expand: Option<Vec<models::GitCommitExpand>>, search: Option<Vec<models::GitCommitSearch>>) -> Result<models::GitCommitList, Error<GetGitCommitsError>> {
+pub async fn get_git_commits(configuration: &configuration::Configuration, offset: Option<i32>, limit: Option<i32>, order_by: Option<Vec<models::GitCommitOrderBy>>, expand_left_square_bracket_right_square_bracket: Option<Vec<models::GitCommitExpand>>, search: Option<Vec<models::GitCommitSearch>>) -> Result<models::GitCommitList, Error<GetGitCommitsError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_workspace_id = workspace_id;
     let p_offset = offset;
     let p_limit = limit;
     let p_order_by = order_by;
-    let p_expand = expand;
+    let p_expand_left_square_bracket_right_square_bracket = expand_left_square_bracket_right_square_bracket;
     let p_search = search;
 
-    let uri_str = format!("{}/git_commits", configuration.base_path, workspace_id=crate::apis::urlencode(p_workspace_id));
+    let uri_str = format!("{}/git_commits", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_offset {
@@ -47,10 +46,10 @@ pub async fn get_git_commits(configuration: &configuration::Configuration, works
             _ => req_builder.query(&[("order_by", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
         };
     }
-    if let Some(ref param_value) = p_expand {
+    if let Some(ref param_value) = p_expand_left_square_bracket_right_square_bracket {
         req_builder = match "multi" {
-            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
-            _ => req_builder.query(&[("expand", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand[]".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("expand[]", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
         };
     }
     if let Some(ref param_value) = p_search {

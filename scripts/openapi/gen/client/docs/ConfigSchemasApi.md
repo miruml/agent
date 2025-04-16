@@ -15,7 +15,7 @@ Method | HTTP request | Description
 
 ## create_config_schema
 
-> models::ConfigSchema create_config_schema(create_config_schema_request, expand)
+> models::ConfigSchema create_config_schema(create_config_schema_request, expand_left_square_bracket_right_square_bracket)
 Create a config schema
 
 ### Parameters
@@ -24,7 +24,7 @@ Create a config schema
 Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
 **create_config_schema_request** | [**CreateConfigSchemaRequest**](CreateConfigSchemaRequest.md) |  | [required] |
-**expand** | Option<[**Vec<models::ConfigSchemaExpand>**](models::ConfigSchemaExpand.md)> |  |  |
+**expand_left_square_bracket_right_square_bracket** | Option<[**Vec<models::ConfigSchemaExpand>**](models::ConfigSchemaExpand.md)> |  |  |
 
 ### Return type
 
@@ -44,7 +44,7 @@ Name | Type | Description  | Required | Notes
 
 ## delete_config_schema
 
-> models::ConfigSchema delete_config_schema(config_schema_id, expand)
+> models::ConfigSchema delete_config_schema(config_schema_id, expand_left_square_bracket_right_square_bracket)
 Delete a config schema
 
 ### Parameters
@@ -53,7 +53,7 @@ Delete a config schema
 Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
 **config_schema_id** | **String** | The unique identifier of the config schema | [required] |
-**expand** | Option<[**Vec<models::ConfigSchemaExpand>**](models::ConfigSchemaExpand.md)> |  |  |
+**expand_left_square_bracket_right_square_bracket** | Option<[**Vec<models::ConfigSchemaExpand>**](models::ConfigSchemaExpand.md)> |  |  |
 
 ### Return type
 
@@ -73,7 +73,7 @@ Name | Type | Description  | Required | Notes
 
 ## get_config_schema
 
-> models::ConfigSchema get_config_schema(config_schema_id, expand)
+> models::ConfigSchema get_config_schema(config_schema_id, expand_left_square_bracket_right_square_bracket)
 Get a config schema
 
 ### Parameters
@@ -82,7 +82,7 @@ Get a config schema
 Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
 **config_schema_id** | **String** | The unique identifier of the config schema | [required] |
-**expand** | Option<[**Vec<models::ConfigSchemaExpand>**](models::ConfigSchemaExpand.md)> |  |  |
+**expand_left_square_bracket_right_square_bracket** | Option<[**Vec<models::ConfigSchemaExpand>**](models::ConfigSchemaExpand.md)> |  |  |
 
 ### Return type
 
@@ -130,7 +130,7 @@ Name | Type | Description  | Required | Notes
 
 ## list_config_schemas
 
-> models::ConfigSchemaList list_config_schemas(workspace_id, offset, limit, order_by, search, expand)
+> models::ConfigSchemaList list_config_schemas(offset, limit, order_by, search, expand_left_square_bracket_right_square_bracket)
 List the config schemas for a workspace
 
 ### Parameters
@@ -138,12 +138,11 @@ List the config schemas for a workspace
 
 Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
-**workspace_id** | **String** | The unique identifier of the workspace | [required] |
 **offset** | Option<**i32**> | The offset to begin returning results from |  |[default to 0]
 **limit** | Option<**i32**> | The number of items to return |  |[default to 10]
 **order_by** | Option<[**Vec<models::ConfigSchemaOrderBy>**](models::ConfigSchemaOrderBy.md)> |  |  |
 **search** | Option<[**Vec<models::ConfigSchemaSearch>**](models::ConfigSchemaSearch.md)> |  |  |
-**expand** | Option<[**Vec<models::ConfigSchemaExpand>**](models::ConfigSchemaExpand.md)> |  |  |
+**expand_left_square_bracket_right_square_bracket** | Option<[**Vec<models::ConfigSchemaExpand>**](models::ConfigSchemaExpand.md)> |  |  |
 
 ### Return type
 
@@ -163,7 +162,7 @@ Name | Type | Description  | Required | Notes
 
 ## render_config_schema
 
-> models::RenderedConfigSchema render_config_schema(config_schema_id, render_config_schema_request, expand)
+> models::RenderedConfigSchema render_config_schema(config_schema_id, render_config_schema_request, expand_left_square_bracket_right_square_bracket)
 Render a config schema
 
 ### Parameters
@@ -173,7 +172,7 @@ Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
 **config_schema_id** | **String** | The unique identifier of the config schema | [required] |
 **render_config_schema_request** | [**RenderConfigSchemaRequest**](RenderConfigSchemaRequest.md) |  | [required] |
-**expand** | Option<[**Vec<models::RenderedConfigSchemaExpand>**](models::RenderedConfigSchemaExpand.md)> |  |  |
+**expand_left_square_bracket_right_square_bracket** | Option<[**Vec<models::RenderedConfigSchemaExpand>**](models::RenderedConfigSchemaExpand.md)> |  |  |
 
 ### Return type
 

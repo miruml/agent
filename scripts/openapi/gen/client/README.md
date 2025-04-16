@@ -36,9 +36,11 @@ Class | Method | HTTP request | Description
 *ClientsApi* | [**create_client**](docs/ClientsApi.md#create_client) | **POST** /clients | Create a client
 *ClientsApi* | [**delete_client**](docs/ClientsApi.md#delete_client) | **DELETE** /clients/{client_id} | Delete a client
 *ClientsApi* | [**get_client**](docs/ClientsApi.md#get_client) | **GET** /clients/{client_id} | Get a client
-*ClientsApi* | [**get_clients**](docs/ClientsApi.md#get_clients) | **GET** /clients | List clients in a workspace
+*ClientsApi* | [**list_clients**](docs/ClientsApi.md#list_clients) | **GET** /clients | List clients in a workspace
 *ClientsApi* | [**update_client**](docs/ClientsApi.md#update_client) | **PUT** /clients/{client_id} | Update a client
 *ComposeFileApi* | [**verify_compose_file**](docs/ComposeFileApi.md#verify_compose_file) | **POST** /workspaces/{workspace_id}/compose/verify | Verify a compose file
+*ConcreteConfigsApi* | [**get_concrete_config**](docs/ConcreteConfigsApi.md#get_concrete_config) | **GET** /concrete_configs/{concrete_config_id} | Get a concrete config
+*ConcreteConfigsApi* | [**list_concrete_configs**](docs/ConcreteConfigsApi.md#list_concrete_configs) | **GET** /concrete_configs | List concrete configs in a workspace
 *ConcreteConfigsApi* | [**render_latest_concrete_config**](docs/ConcreteConfigsApi.md#render_latest_concrete_config) | **POST** /concrete_configs/render_latest | Render the latest concrete config for a client
 *ConfigSchemasApi* | [**create_config_schema**](docs/ConfigSchemasApi.md#create_config_schema) | **POST** /config_schemas | Create a config schema
 *ConfigSchemasApi* | [**delete_config_schema**](docs/ConfigSchemasApi.md#delete_config_schema) | **DELETE** /config_schemas/{config_schema_id} | Delete a config schema
@@ -157,6 +159,10 @@ Class | Method | HTTP request | Description
  - [ComposeFileImageList](docs/ComposeFileImageList.md)
  - [ComposeFileVerification](docs/ComposeFileVerification.md)
  - [ComposeFileVerificationRequest](docs/ComposeFileVerificationRequest.md)
+ - [ConcreteConfigExpand](docs/ConcreteConfigExpand.md)
+ - [ConcreteConfigList](docs/ConcreteConfigList.md)
+ - [ConcreteConfigOrderBy](docs/ConcreteConfigOrderBy.md)
+ - [ConcreteConfigSearch](docs/ConcreteConfigSearch.md)
  - [Config](docs/Config.md)
  - [ConfigExpand](docs/ConfigExpand.md)
  - [ConfigList](docs/ConfigList.md)

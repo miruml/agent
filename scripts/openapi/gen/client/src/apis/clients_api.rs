@@ -36,10 +36,10 @@ pub enum GetClientError {
     UnknownValue(serde_json::Value),
 }
 
-/// struct for typed errors of method [`get_clients`]
+/// struct for typed errors of method [`list_clients`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum GetClientsError {
+pub enum ListClientsError {
     UnknownValue(serde_json::Value),
 }
 
@@ -191,16 +191,15 @@ pub async fn get_client(configuration: &configuration::Configuration, client_id:
     }
 }
 
-pub async fn get_clients(configuration: &configuration::Configuration, workspace_id: &str, offset: Option<i32>, limit: Option<i32>, order_by: Option<Vec<models::ClientOrderBy>>, expand_left_square_bracket_right_square_bracket: Option<Vec<models::ClientExpand>>, search: Option<Vec<models::ClientSearch>>) -> Result<models::ClientList, Error<GetClientsError>> {
+pub async fn list_clients(configuration: &configuration::Configuration, offset: Option<i32>, limit: Option<i32>, order_by: Option<Vec<models::ClientOrderBy>>, expand_left_square_bracket_right_square_bracket: Option<Vec<models::ClientExpand>>, search: Option<Vec<models::ClientSearch>>) -> Result<models::ClientList, Error<ListClientsError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_workspace_id = workspace_id;
     let p_offset = offset;
     let p_limit = limit;
     let p_order_by = order_by;
     let p_expand_left_square_bracket_right_square_bracket = expand_left_square_bracket_right_square_bracket;
     let p_search = search;
 
-    let uri_str = format!("{}/clients", configuration.base_path, workspace_id=crate::apis::urlencode(p_workspace_id));
+    let uri_str = format!("{}/clients", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_offset {
@@ -254,7 +253,7 @@ pub async fn get_clients(configuration: &configuration::Configuration, workspace
         }
     } else {
         let content = resp.text().await?;
-        let entity: Option<GetClientsError> = serde_json::from_str(&content).ok();
+        let entity: Option<ListClientsError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

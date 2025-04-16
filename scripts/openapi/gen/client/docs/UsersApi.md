@@ -11,7 +11,7 @@ Method | HTTP request | Description
 
 ## get_user
 
-> models::User get_user(expand)
+> models::User get_user(expand_left_square_bracket_right_square_bracket)
 Get a user
 
 ### Parameters
@@ -19,7 +19,7 @@ Get a user
 
 Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
-**expand** | Option<[**Vec<models::UserExpand>**](models::UserExpand.md)> |  |  |
+**expand_left_square_bracket_right_square_bracket** | Option<[**Vec<models::UserExpand>**](models::UserExpand.md)> |  |  |
 
 ### Return type
 
@@ -39,7 +39,7 @@ Name | Type | Description  | Required | Notes
 
 ## update_user
 
-> models::User update_user(update_user_request, expand)
+> models::User update_user(update_user_request, expand_left_square_bracket_right_square_bracket)
 Update a user
 
 ### Parameters
@@ -48,7 +48,7 @@ Update a user
 Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
 **update_user_request** | [**UpdateUserRequest**](UpdateUserRequest.md) |  | [required] |
-**expand** | Option<[**Vec<models::UserExpand>**](models::UserExpand.md)> |  |  |
+**expand_left_square_bracket_right_square_bracket** | Option<[**Vec<models::UserExpand>**](models::UserExpand.md)> |  |  |
 
 ### Return type
 

@@ -63,7 +63,7 @@ impl AsRef<dyn MiruError> for HTTPErr {
 }
 
 impl MiruError for HTTPErr {
-    fn is_poor_signal_error(&self) -> bool {
+    fn network_connection_error(&self) -> bool {
         matches!(
             self,
             HTTPErr::ConnectionErr { .. } | HTTPErr::TimeoutErr { .. }

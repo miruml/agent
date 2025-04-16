@@ -43,6 +43,10 @@ docs/ComposeFileImage.md
 docs/ComposeFileImageList.md
 docs/ComposeFileVerification.md
 docs/ComposeFileVerificationRequest.md
+docs/ConcreteConfigExpand.md
+docs/ConcreteConfigList.md
+docs/ConcreteConfigOrderBy.md
+docs/ConcreteConfigSearch.md
 docs/ConcreteConfigsApi.md
 docs/Config.md
 docs/ConfigExpand.md
@@ -290,6 +294,10 @@ src/models/compose_file_image.rs
 src/models/compose_file_image_list.rs
 src/models/compose_file_verification.rs
 src/models/compose_file_verification_request.rs
+src/models/concrete_config_expand.rs
+src/models/concrete_config_list.rs
+src/models/concrete_config_order_by.rs
+src/models/concrete_config_search.rs
 src/models/config.rs
 src/models/config_expand.rs
 src/models/config_list.rs

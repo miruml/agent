@@ -7,7 +7,7 @@ Method | HTTP request | Description
 [**create_client**](ClientsApi.md#create_client) | **POST** /clients | Create a client
 [**delete_client**](ClientsApi.md#delete_client) | **DELETE** /clients/{client_id} | Delete a client
 [**get_client**](ClientsApi.md#get_client) | **GET** /clients/{client_id} | Get a client
-[**get_clients**](ClientsApi.md#get_clients) | **GET** /clients | List clients in a workspace
+[**list_clients**](ClientsApi.md#list_clients) | **GET** /clients | List clients in a workspace
 [**update_client**](ClientsApi.md#update_client) | **PUT** /clients/{client_id} | Update a client
 
 
@@ -100,9 +100,9 @@ Name | Type | Description  | Required | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
-## get_clients
+## list_clients
 
-> models::ClientList get_clients(workspace_id, offset, limit, order_by, expand_left_square_bracket_right_square_bracket, search)
+> models::ClientList list_clients(offset, limit, order_by, expand_left_square_bracket_right_square_bracket, search)
 List clients in a workspace
 
 ### Parameters
@@ -110,7 +110,6 @@ List clients in a workspace
 
 Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
-**workspace_id** | **String** | The unique identifier of the workspace | [required] |
 **offset** | Option<**i32**> | The offset to begin returning results from |  |[default to 0]
 **limit** | Option<**i32**> | The number of items to return |  |[default to 10]
 **order_by** | Option<[**Vec<models::ClientOrderBy>**](models::ClientOrderBy.md)> |  |  |

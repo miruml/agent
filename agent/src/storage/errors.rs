@@ -1,5 +1,4 @@
 // internal crates
-use crate::auth::errors::AuthErr;
 use crate::errors::{MiruError, Trace};
 use crate::filesys::{errors::FileSysErr, file::File};
 
@@ -43,8 +42,6 @@ pub enum StorageErr {
     RegexCaptureErr { msg: String, trace: Box<Trace> },
 
     // internal crate errors
-    #[error("Auth Error: {source}")]
-    AuthErr { source: AuthErr, trace: Box<Trace> },
     #[error("File System Error: {source}")]
     FileSysErr {
         source: FileSysErr,
@@ -57,15 +54,10 @@ pub enum StorageErr {
         source: std::num::ParseIntError,
         trace: Box<Trace>,
     },
-    #[error("Regex Error: {source}")]
-    RegexErr {
-        source: regex::Error,
-        trace: Box<Trace>,
-    },
 }
 
 impl MiruError for StorageErr {
-    fn is_poor_signal_error(&self) -> bool {
+    fn network_connection_error(&self) -> bool {
         false
     }
 }

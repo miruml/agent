@@ -102,7 +102,7 @@ Name | Type | Description  | Required | Notes
 
 ## get_configs
 
-> models::ConfigList get_configs(workspace_id, offset, limit, order_by, expand_left_square_bracket_right_square_bracket, search)
+> models::ConfigList get_configs(offset, limit, order_by, expand_left_square_bracket_right_square_bracket, search)
 List the configs in a workspace
 
 ### Parameters
@@ -110,7 +110,6 @@ List the configs in a workspace
 
 Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
-**workspace_id** | **String** | The unique identifier of the workspace | [required] |
 **offset** | Option<**i32**> | The offset to begin returning results from |  |[default to 0]
 **limit** | Option<**i32**> | The number of items to return |  |[default to 10]
 **order_by** | Option<[**Vec<models::ConfigOrderBy>**](models::ConfigOrderBy.md)> |  |  |
