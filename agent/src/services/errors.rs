@@ -10,4 +10,10 @@ pub enum ServiceErr {
     StorageErr { source: StorageErr, trace: Box<Trace> },
     #[error("HTTP Error: {source}")]
     HTTPErr { source: HTTPErr, trace: Box<Trace> },
+    #[error("Latest Concrete Config Not Found: {config_slug} {config_schema_digest}")]
+    LatestConcreteConfigNotFound { 
+        config_slug: String,
+        config_schema_digest: String,
+        trace: Box<Trace> 
+    },
 }

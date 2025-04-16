@@ -1,8 +1,8 @@
 // internal crates
 use crate::filesys::dir::Dir;
 use crate::filesys::file::File;
-use crate::storage::errors::StorageErr;
 use crate::storage::cfg_sch_digest_reg::ConfigSchemaDigestRegistry;
+use crate::storage::cncr_cfg_reg::LatestConcreteConfigRegistry;
 
 // external crates
 use std::path::PathBuf;
@@ -16,15 +16,15 @@ pub struct StorageLayout {
 
 impl StorageLayout {
 
-    pub fn new(root: Dir) -> Result<Self, StorageErr> {
-        Ok(Self { root })
+    pub fn new(root: Dir) -> Self {
+        Self { root }
     }
 
     pub fn default_root_dir() -> Dir {
         Dir::new(PathBuf::from("var").join("lib").join("miru"))
     }
 
-    pub fn new_default() -> Result<Self, StorageErr> {
+    pub fn new_default() -> Self {
         Self::new(Self::default_root_dir())
     }
 
@@ -33,14 +33,10 @@ impl StorageLayout {
     }
 
     pub fn cfg_sch_digest_registry(&self) -> ConfigSchemaDigestRegistry {
-        ConfigSchemaDigestRegistry::new(self.root.subdir("config_schema_digest_cache"))
+        ConfigSchemaDigestRegistry::new(self.root.subdir("config_schema_digests"))
     }
 
-    pub fn concrete_config_cache_index(&self) -> File {
-        self.root.file("concrete_config_cache_index.json")
-    }
-
-    pub fn concrete_configs(&self) -> Dir {
-        self.root.subdir("concrete_configs")
+    pub fn latest_cncr_cfg_registry(&self) -> LatestConcreteConfigRegistry {
+        LatestConcreteConfigRegistry::new(self.root.subdir("concrete_configs"))
     }
 }

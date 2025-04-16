@@ -15,11 +15,7 @@ pub async fn hash_schema(schema: &Value) -> Result<String, ServiceErr> {
     let raw_digest = utils::hash_json(schema);
 
     // check for the raw digest in the storage for the known schema digest
-    let storage_layout = StorageLayout::new_default()
-        .map_err(|e| ServiceErr::StorageErr {
-            source: e,
-            trace: trace!(),
-        })?;
+    let storage_layout = StorageLayout::new_default();
 
     let cfg_sch_digest_registry = storage_layout.cfg_sch_digest_registry();
     let resolved_digest = cfg_sch_digest_registry.read_resolved_digest(&raw_digest)

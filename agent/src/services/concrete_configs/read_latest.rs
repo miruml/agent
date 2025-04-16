@@ -2,7 +2,7 @@
 use crate::http_client::client::HTTPClient;
 use crate::errors::MiruError;
 use crate::services::errors::ServiceErr;
-use crate::storage::StorageLayout;
+use crate::storage::layout::StorageLayout;
 use crate::trace;
 use openapi_client::models::BackendConcreteConfig;
 
@@ -20,39 +20,57 @@ pub async fn read_latest(
 
     // if not a network connection error, return the error (ignore network connection
     // errors)
-    if let Err(e) = result {
-        if !e.is_poor_signal_error() {
-            return Err(ServiceErr::HTTPErr {
+    let result = match result {
+        Ok(result) => result,
+        Err(e) => {
+            if !e.network_connection_error() {
+                return Err(ServiceErr::HTTPErr {
+                    source: e,
+                    trace: trace!(),
+                });
+            }
+            // if is a network connection error, then just return None and continue
+            None
+        }
+    };
+
+    let storage_layout = StorageLayout::new_default();
+    let latest_cncr_cfg_reg = storage_layout.latest_cncr_cfg_registry();
+
+    // if successful, update the concrete config in storage and return it
+    if let Some(concrete_config) = result {
+        latest_cncr_cfg_reg.insert(
+            config_slug,
+            config_schema_digest,
+            &concrete_config,
+            true,
+            ).map_err(|e| ServiceErr::StorageErr {
                 source: e,
                 trace: trace!(),
-            });
-        }
+            })?;
+        return Ok(concrete_config);
     }
 
-    let storage_layout = StorageLayout::new_default()
-        .map_err(|e| ServiceErr::StorageErr {
-            source: e,
-            trace: trace!(),
-        })?;
-    
-    return Err(ServiceErr::HTTPErr {
-        source: result,
+    // if unsuccessful, attempt to read the latest concrete config from storage
+    let latest_cncr_cfg_reg = storage_layout.latest_cncr_cfg_registry();
+    let latest_concrete_config = latest_cncr_cfg_reg.read(
+        config_slug,
+        config_schema_digest,
+    ).map_err(|e| ServiceErr::StorageErr {
+        source: e,
         trace: trace!(),
-    });
+    })?;
+
+    match latest_concrete_config {
+        Some(latest_concrete_config) => {
+            Ok(latest_concrete_config)
+        }
+        None => {
+            Err(ServiceErr::LatestConcreteConfigNotFound {
+                config_slug: config_slug.to_string(),
+                config_schema_digest: config_schema_digest.to_string(),
+                trace: trace!(),
+            })
+        }
+    }
 }
-
-
-// if success
-//      create or update the concrete config in the storage module 
-//      update the concrete config cache information in the storage module
-//      return the concrete config
-
-// use the digest + config slug to get the cached schema id
-
-// if not found, return not found error
-
-// use the cached schema id to get the latest concrete config
-
-// if not found, return not found error
-
-// return the latest concrete config
