@@ -11,18 +11,27 @@ use crate::trace;
 // external crates
 use serde::Deserialize;
 use serde::Serialize;
+use tokio::sync::mpsc::{self, Receiver, Sender};
+use tokio::sync::oneshot;
+use tracing::error;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ConfigSchemaDigests {
     pub raw: String,
     pub resolved: String,
 }
 
-pub struct ConfigSchemaDigestRegistry {
+
+
+
+
+// ============================== SYNC IMPLEMENTATION ============================= //
+
+pub struct SyncConfigSchemaDigestCache {
     pub dir: Dir,
 }
 
-impl ConfigSchemaDigestRegistry {
+impl SyncConfigSchemaDigestCache {
     pub fn new(dir: Dir) -> Self {
         Self { dir }
     }
@@ -33,10 +42,10 @@ impl ConfigSchemaDigestRegistry {
         self.dir.file(&filename)
     }
 
-    pub fn read_resolved_digest(
+    pub fn read(
         &self,
         raw_digest: &str,
-    ) -> Result<Option<String>, StorageErr> {
+    ) -> Result<Option<ConfigSchemaDigests>, StorageErr> {
         let digest_file = self.digest_file(raw_digest);
         if !digest_file.exists() {
             return Ok(None);
@@ -46,21 +55,15 @@ impl ConfigSchemaDigestRegistry {
             source: e,
             trace: trace!(),
         })?;
-        Ok(Some(digests.resolved))
+        Ok(Some(digests))
     }
 
     pub fn insert(
         &self,
-        raw_digest: &str,
-        resolved_digest: &str,
+        digests: &ConfigSchemaDigests,
         overwrite: bool,
     ) -> Result<(), StorageErr> {
-        let digests = ConfigSchemaDigests {
-            raw: raw_digest.to_string(),
-            resolved: resolved_digest.to_string(),
-        };
-
-        let digest_file = self.digest_file(raw_digest);
+        let digest_file = self.digest_file(digests.raw.as_str());
         digest_file.write_json(
             &digests,
             overwrite,
@@ -70,4 +73,114 @@ impl ConfigSchemaDigestRegistry {
         })
     }
 
+}
+
+
+
+
+
+
+
+// ============================== ASYNC IMPLEMENTATION ============================= //
+
+// Commands that can be sent to the actor
+enum WorkerCommand {
+    Read {
+        raw_digest: String,
+        respond_to: oneshot::Sender<Result<Option<ConfigSchemaDigests>, StorageErr>>,
+    },
+    Insert {
+        digests: ConfigSchemaDigests,
+        overwrite: bool,
+        respond_to: oneshot::Sender<Result<(), StorageErr>>,
+    },
+}
+
+// This struct is responsible for doing the actual work of reading and writing to the
+// cache.
+struct Worker {
+    cache: SyncConfigSchemaDigestCache,
+    receiver: Receiver<WorkerCommand>,
+}
+
+impl Worker {
+    async fn run(mut self) {
+        while let Some(cmd) = self.receiver.recv().await {
+            match cmd {
+                WorkerCommand::Read { 
+                    raw_digest,
+                    respond_to 
+                } => {
+                    let result = self.cache.read(&raw_digest);
+                    if let Err(e) = respond_to.send(result) {
+                        error!("Actor failed to read config schema digests: {:?}", e);
+                    }
+                },
+                WorkerCommand::Insert {
+                    digests,
+                    overwrite,
+                    respond_to,
+                } => {
+                    let result = self.cache.insert(&digests, overwrite);
+                    if let Err(e) = respond_to.send(result) {
+                        error!("Actor failed to insert the config schema digests: {:?}", e);
+                    }
+                }
+            }
+        }
+    }
+}
+
+// This struct is the public interface for the cache. In practice, it just forwards
+// commands to the actor and returns the results once they are ready.
+#[derive(Clone)]
+pub struct AsyncConfigSchemaDigestCache {
+    sender: Sender<WorkerCommand>,
+}
+
+impl AsyncConfigSchemaDigestCache {
+    pub fn spawn(cache: SyncConfigSchemaDigestCache) -> AsyncConfigSchemaDigestCache {
+        let (sender, receiver) = mpsc::channel(32);
+        let worker = Worker { cache, receiver };
+
+        tokio::spawn(worker.run());
+        AsyncConfigSchemaDigestCache { sender }
+    }
+
+    pub async fn read(&self, raw_digest: &str) -> Result<Option<ConfigSchemaDigests>, StorageErr> {
+        let (send, recv) = oneshot::channel();
+        self.sender.send(WorkerCommand::Read {
+            raw_digest: raw_digest.to_string(),
+            respond_to: send,
+        }).await.map_err(|e| StorageErr::SendActorMessageErr {
+            source: Box::new(e),
+            trace: trace!(),
+        })?;
+        
+        recv.await.map_err(|e| StorageErr::ReceiveActorMessageErr {
+            source: Box::new(e),
+            trace: trace!(),
+        })?
+    }
+
+    pub async fn insert(
+        &self,
+        digests: ConfigSchemaDigests,
+        overwrite: bool,
+    ) -> Result<(), StorageErr> {
+        let (send, recv) = oneshot::channel();
+        self.sender.send(WorkerCommand::Insert {
+            digests,
+            overwrite,
+            respond_to: send,
+        }).await.map_err(|e| StorageErr::SendActorMessageErr {
+            source: Box::new(e),
+            trace: trace!(),
+        })?;
+
+        recv.await.map_err(|e| StorageErr::ReceiveActorMessageErr {
+            source: Box::new(e),
+            trace: trace!(),
+        })?
+    }
 }

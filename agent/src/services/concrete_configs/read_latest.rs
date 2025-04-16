@@ -3,6 +3,7 @@ use crate::http_client::client::HTTPClient;
 use crate::errors::MiruError;
 use crate::services::errors::ServiceErr;
 use crate::storage::layout::StorageLayout;
+use crate::storage::cncr_cfg_reg::LatestConcreteConfigRegistry;
 use crate::trace;
 use openapi_client::models::BackendConcreteConfig;
 
@@ -35,7 +36,9 @@ pub async fn read_latest(
     };
 
     let storage_layout = StorageLayout::new_default();
-    let latest_cncr_cfg_reg = storage_layout.latest_cncr_cfg_registry();
+    let latest_cncr_cfg_reg = LatestConcreteConfigRegistry::new(
+        storage_layout.latest_cncr_cfg_registry(),
+    );
 
     // if successful, update the concrete config in storage and return it
     if let Some(concrete_config) = result {
@@ -52,7 +55,6 @@ pub async fn read_latest(
     }
 
     // if unsuccessful, attempt to read the latest concrete config from storage
-    let latest_cncr_cfg_reg = storage_layout.latest_cncr_cfg_registry();
     let latest_concrete_config = latest_cncr_cfg_reg.read(
         config_slug,
         config_schema_digest,

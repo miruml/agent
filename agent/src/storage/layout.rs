@@ -1,8 +1,6 @@
 // internal crates
 use crate::filesys::dir::Dir;
 use crate::filesys::file::File;
-use crate::storage::cfg_sch_digest_reg::ConfigSchemaDigestRegistry;
-use crate::storage::cncr_cfg_reg::LatestConcreteConfigRegistry;
 
 // external crates
 use std::path::PathBuf;
@@ -32,11 +30,11 @@ impl StorageLayout {
         self.root.file("agent_config.json")
     }
 
-    pub fn cfg_sch_digest_registry(&self) -> ConfigSchemaDigestRegistry {
-        ConfigSchemaDigestRegistry::new(self.root.subdir("config_schema_digests"))
+    pub fn cfg_sch_digest_registry(&self) -> Dir {
+        self.root.subdir("config_schema_digests")
     }
 
-    pub fn latest_cncr_cfg_registry(&self) -> LatestConcreteConfigRegistry {
-        LatestConcreteConfigRegistry::new(self.root.subdir("concrete_configs"))
+    pub fn latest_cncr_cfg_registry(&self) -> Dir {
+        self.root.subdir("concrete_configs")
     }
 }

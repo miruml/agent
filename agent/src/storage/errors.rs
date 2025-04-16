@@ -54,6 +54,16 @@ pub enum StorageErr {
         source: std::num::ParseIntError,
         trace: Box<Trace>,
     },
+    #[error("Send Actor Message Error: {source}")]
+    SendActorMessageErr {
+        source: Box<dyn std::error::Error + Send + Sync>,
+        trace: Box<Trace>,
+    },
+    #[error("Receive Actor Message Error: {source}")]
+    ReceiveActorMessageErr {
+        source: Box<dyn std::error::Error + Send + Sync>,
+        trace: Box<Trace>,
+    },
 }
 
 impl MiruError for StorageErr {
