@@ -101,7 +101,7 @@ impl File {
         }
 
         // ensure the parent directory of the new file exists and create it if not
-        new_file.par_dir()?.create_if_absent()?;
+        new_file.parent()?.create_if_absent()?;
         if overwrite {
             new_file.delete()?;
         }
@@ -137,7 +137,7 @@ impl File {
         }
 
         // ensure the parent directory of the new file exists and create it if not
-        new_file.par_dir()?.create_if_absent()?;
+        new_file.parent()?.create_if_absent()?;
         if overwrite {
             new_file.delete()?;
         }
@@ -187,7 +187,7 @@ impl File {
 
     pub fn parent_exists(&self) -> Result<bool, FileSysErr> {
         // check parent directory exists
-        let parent = self.par_dir()?;
+        let parent = self.parent()?;
         Ok(parent.exists())
     }
 
@@ -244,9 +244,9 @@ impl File {
     /// Write bytes to a file. Overwrites the file if it exists.
     pub fn write_bytes(&self, buf: &[u8]) -> Result<(), FileSysErr> {
         // ensure parent directory exists
-        let par_dir = self.par_dir()?;
-        if !par_dir.exists() {
-            par_dir.create_if_absent()?;
+        let parent = self.parent()?;
+        if !parent.exists() {
+            parent.create_if_absent()?;
         }
 
         let mut file =
@@ -297,7 +297,7 @@ impl File {
 
     // Create a new Dir instance from the parent directory of the path for this File
     // instance
-    pub fn par_dir(&self) -> Result<Dir, FileSysErr> {
+    pub fn parent(&self) -> Result<Dir, FileSysErr> {
         let parent = self
             .path
             .parent()

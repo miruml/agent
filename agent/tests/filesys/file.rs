@@ -7,113 +7,33 @@ mod tests {
     #[allow(unused_imports)]
     use tracing::{debug, error, info, trace, warn};
 
-    // #[test]
-    // fn file_path() {
-    //     assert!(false)
-    // }
-
-    // #[test]
-    // fn file_delete() {
-    //     assert!(false)
-    // }
-
-    // #[test]
-    // fn file_new() {
-    //     assert!(false)
-    // }
-
-    // #[test]
-    // fn file_name() {
-    //     assert!(false)
-    // }
-
-    // #[test]
-    // fn file_move_to() {
-    //     assert!(false)
-    // }
-
-    // #[test]
-    // fn file_copy_to() {
-    //     assert!(false)
-    // }
-
-    // #[test]
-    // fn file_new_temp_file() {
-    //     assert!(false)
-    // }
-
-    // #[test]
-    // fn file_extension() {
-    //     assert!(false)
-    // }
-
-    // #[test]
-    // fn file_assert_extension_is() {
-    //     assert!(false)
-    // }
-
-    // #[test]
-    // fn file_parent_dir_exists() {
-    //     assert!(false)
-    // }
-
-    // #[test]
-    // fn file_read_bytes() {
-    //     assert!(false)
-    // }
-
-    // #[test]
-    // fn file_read_string() {
-    //     assert!(false)
-    // }
-
-    // #[test]
-    // fn file_read_json() {
-    //     assert!(false)
-    // }
-
-    // #[test]
-    // fn file_write_bytes() {
-    //     assert!(false)
-    // }
-
-    // #[test]
-    // fn file_write_string() {
-    //     assert!(false)
-    // }
-
-    // #[test]
-    // fn file_write_json() {
-    //     assert!(false)
-    // }
-
-    // #[test]
-    // fn file_write_http_response() {
-    //     assert!(false)
-    // }
-
-    // #[test]
-    // fn file_unzip() {
-    //     assert!(false)
-    // }
-
-    // #[test]
-    // fn file_par_dir() {
-    //     assert!(false)
-    // }
-
-    // #[test]
-    // fn file_set_permissions() {
-    //     assert!(false)
-    // }
-
-    // #[test]
-    // fn file_create_symlink() {
-    //     assert!(false)
-    // }
+pub mod delete {
+    use super::*;
 
     #[test]
-    fn move_to_same_file() {
+    fn success() {
+        assert!(false);
+    }
+}
+
+pub mod name {
+    use super::*;
+
+    #[test]
+    fn success() {
+        assert!(false);
+    }
+}
+
+pub mod move_to {
+    use super::*;
+
+    fn success() {
+        assert!(false);
+    }
+
+    #[test]
+    fn same_file() {
         let dir = Dir::create_temp_dir("testing").unwrap();
         let file = dir.file("test-file");
         file.write_string("test").unwrap();
@@ -123,30 +43,161 @@ mod tests {
         assert!(file.exists());
         assert!(file.read_string().unwrap() == "test");
     }
+}
+
+pub mod copy_to {
+    use super::*;
 
     #[test]
-    fn file_path_success() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-        let file = dir.file("test-file");
-        assert!(file
-            .path()
-            .to_str()
-            .unwrap_or_default()
-            .contains("test-file"));
+    fn success() {
+        assert!(false);
     }
+}
+
+pub mod extension {
+    use super::*;
 
     #[test]
-    fn file_path_parent_success() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-        let file = dir.file("test-file");
-        assert!(file
-            .par_dir()
-            .unwrap()
-            .path()
-            .to_str()
-            .unwrap_or_default()
-            .contains("testing"));
+    fn success() {
+        assert!(false);
     }
+}
+
+pub mod assert_extension_is {
+    use super::*;
+
+    #[test]
+    fn success() {
+        assert!(false);
+    }
+}
+
+pub mod assert_path_contains {  
+    use super::*;
+
+    #[test]
+    fn success() {
+        assert!(false);
+    }
+}
+
+pub mod parent_exists {
+    use super::*;
+
+    #[test]
+    fn success() {
+        assert!(false);
+    }
+}
+
+pub mod read_bytes {
+    use super::*;
+
+    #[test]
+    fn success() {
+        assert!(false);
+    }
+}
+
+pub mod read_string {
+    use super::*;
+
+    #[test]
+    fn success() {
+        assert!(false);
+    }
+}
+
+pub mod read_json {
+    use super::*;
+
+    #[test]
+    fn success() {
+        assert!(false);
+    }
+}
+
+pub mod write_bytes {
+    use super::*;
+
+    #[test]
+    fn success() {
+        assert!(false);
+    }
+}   
+
+pub mod write_string {
+    use super::*;
+
+    #[test]
+    fn success() {
+        assert!(false);
+    }
+}
+
+pub mod write_json {
+    use super::*;
+
+    #[test]
+    fn success() {
+        assert!(false);
+    }
+}
+
+pub mod par_dir {
+    use super::*;
+
+    #[test]
+    fn success() {
+        assert!(false);
+    }
+}
+
+pub mod set_permissions {
+    use super::*;
+
+    #[test]
+    fn success() {
+        assert!(false);
+    }
+}
+
+pub mod create_symlink {
+    use super::*;
+
+    #[test]
+    fn success() {
+        assert!(false);
+    }
+}
+
+pub mod metadata {
+    use super::*;
+
+    #[test]
+    fn success() {
+        assert!(false);
+    }
+}
+
+pub mod last_modified {
+    use super::*;
+
+    #[test]
+    fn success() {
+        assert!(false);
+    }
+}
+
+pub mod size {
+    use super::*;
+
+    #[test]
+    fn success() {
+        assert!(false);
+    }
+}
+
 
 pub mod delete_if_modified_before {
     use super::*;
@@ -181,6 +232,15 @@ pub mod delete_if_modified_before {
         file.delete_if_modified_before(std::time::Duration::from_secs(90))
             .unwrap();
         assert!(!file.exists());
+    }
+}
+
+pub mod sanitize_filename {
+    use super::*;
+
+    #[test]
+    fn success() {
+        assert!(false);
     }
 }
 

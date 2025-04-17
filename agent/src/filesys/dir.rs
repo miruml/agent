@@ -66,10 +66,13 @@ impl Dir {
         Ok(Dir { path: home_dir })
     }
 
-    /// Create a new Dir instance for the ~/.miru directory
-    pub fn new_miru_app_dir() -> Dir {
-        let miru_path = PathBuf::from("var").join("lib").join("miru");
-        Dir::new(miru_path)
+    pub fn new_current_dir() -> Result<Dir, FileSysErr> {
+        let current_dir = std::env::current_dir()
+            .map_err(|e| FileSysErr::UnknownCurrentDirErr {
+                source: e,
+                trace: trace!(),
+            })?;
+        Ok(Dir { path: current_dir })
     }
 
     pub fn create_temp_dir(prefix: &str) -> Result<Dir, FileSysErr> {
@@ -106,8 +109,8 @@ impl Dir {
     }
 
     pub fn parent(&self) -> Result<Dir, FileSysErr> {
-        let parent = self
-            .path
+        let abs_path = self.abs_path()?;
+        let parent = abs_path
             .parent()
             .ok_or(FileSysErr::UnknownDirParentDirErr {
                 dir: self.clone(),

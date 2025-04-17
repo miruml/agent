@@ -46,6 +46,8 @@ pub enum FileSysErr {
     UnknownDirParentDirErr { dir: Dir, trace: Box<Trace> },
     #[error("UnknownParentDirErr: {file}")]
     UnknownFileParentDirErr { file: File, trace: Box<Trace> },
+    #[error("UnknownCurrentDirErr: {source}")]
+    UnknownCurrentDirErr { source: std::io::Error, trace: Box<Trace> },
 
     // internal crate errors
 
