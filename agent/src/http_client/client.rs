@@ -127,7 +127,7 @@ impl HTTPClient {
         Ok(request)
     }
 
-    pub(crate) fn build_get_request(
+    pub fn build_get_request(
         &self,
         url: &str,
         token: Option<&str>,
@@ -135,7 +135,7 @@ impl HTTPClient {
         self.build_request(reqwest::Method::GET, url, None, token)
     }
 
-    pub(crate) fn build_post_request(
+    pub fn build_post_request(
         &self,
         url: &str,
         body: String,
@@ -144,7 +144,7 @@ impl HTTPClient {
         self.build_request(reqwest::Method::POST, url, Some(body), token)
     }
 
-    pub(crate) async fn send(
+    pub async fn send(
         &self,
         request: reqwest::RequestBuilder,
         time_limit: Duration,
@@ -161,14 +161,36 @@ impl HTTPClient {
         Ok(response)
     }
 
-    pub(crate) async fn send_cached(
+    pub async fn send_cached(
+        &self,
+        key: RequestKey,
+        request: reqwest::RequestBuilder,
+        time_limit: Duration,
+    ) -> Result<String, HTTPErr> {
+        println!("cache size {}", self.cache.len());
+        println!("cache ttl {:?}", self.cache_ttl);
+        timeout(
+            time_limit, async {
+                let result = self.send_cached_helper(key.clone(), request, time_limit).await;
+                self.schedule_cache_cleanup(key);
+                result
+            }
+        ).await
+            .map_err(|e| HTTPErr::TimeoutErr {
+                msg: e.to_string(),
+                timeout: time_limit,
+                trace: trace!(),
+            })?
+    }
+
+    async fn send_cached_helper(
         &self,
         key: RequestKey,
         request: reqwest::RequestBuilder,
         time_limit: Duration,
     ) -> Result<String, HTTPErr> {
         let cache_entry = self.cache
-            .entry(key.clone())
+            .entry(key)
             .or_insert_with(|| Arc::new(RwLock::new(None)));
 
         // read the cache
@@ -176,6 +198,7 @@ impl HTTPClient {
         if let Some(result) = guard.as_ref() {
             return Ok(result.clone());
         }
+        drop(guard);
         
         // attempt to write to the cache but exit if another thread is already writing
         let mut guard = cache_entry.write().await;
@@ -186,11 +209,16 @@ impl HTTPClient {
         // send the request and add the result to the cache
         let response = self.send(request, time_limit).await?;
         let text = self.handle_response(response).await?;
-            
         *guard = Some(text.clone());
         drop(guard);
 
-        // clean up after a delay
+        Ok(text)
+    }
+
+    fn schedule_cache_cleanup(
+        &self,
+        key: RequestKey,
+    ) {
         let cache = self.cache.clone();
         let key = key.clone();
         let ttl = self.cache_ttl;
@@ -198,11 +226,9 @@ impl HTTPClient {
             tokio::time::sleep(ttl).await;
             cache.remove(&key);
         });
-        
-        Ok(text)
     }
 
-    pub(crate) fn marshal_json_request<T>(
+    pub fn marshal_json_request<T>(
         &self,
         request: &T,
     ) -> Result<String, HTTPErr> where T: Serialize {
@@ -212,30 +238,32 @@ impl HTTPClient {
         })
     }
 
-    pub(crate) async fn handle_response(
+    pub async fn handle_response(
         &self,
         response: reqwest::Response,
     ) -> Result<String, HTTPErr> {
-        // get the api response
-        let http_status = response.status();
+        let status = response.status();
+
+        // check for an error response
+        if !status.is_success() {
+            let url = response.url().to_string();
+            let error_response = match response.text().await {
+                Ok(text) => self.parse_json_response_text::<ErrorResponse>(text).await.ok(),
+                Err(_) => None,
+            };
+            return Err(HTTPErr::ResponseFailed {
+                status,
+                url,
+                error: error_response,
+                trace: trace!(),
+            });
+        }
 
         let text = response
             .text()
             .await
             .map_err(|e| reqwest_err_to_http_client_err(e, trace!()))?;
-
-        // parse the expected object
-        if http_status.is_success() {
-            Ok(text)
-        // parse the error object
-        } else {
-            let error_response = self.parse_json_response_text::<ErrorResponse>(text).await?;
-            Err(HTTPErr::ResponseErr {
-                http_code: http_status,
-                error: error_response,
-                trace: trace!(),
-            })
-        }
+        Ok(text)
     }
 
     pub(crate) async fn parse_json_response_text<T>(
@@ -247,24 +275,32 @@ impl HTTPClient {
             trace: trace!(),
         })
     }
+
+    #[doc(hidden)]
+    pub fn new_with(
+        base_url: &str,
+        timeout: Duration,
+        cache: DashMap<RequestKey, Arc<RwLock<Option<String>>>>,
+        cache_ttl: Duration,
+    ) -> Self {
+        HTTPClient {
+            client: reqwest::Client::new(),
+            base_url: base_url.to_string(),
+            timeout,
+            cache,
+            cache_ttl,
+        }
+    }
 }
 
-
-
 // Testing helper methods
+#[cfg(test)]
 impl HTTPClient {
-    /// Set the Miru base URL for testing purposes. This method is only available
-    /// in tests. Adjusting the Miru base URL is a simple way to test connectivity
-    /// errors by inputting a URL that doesn't exist.
-    ///
-    /// ### Arguments
-    ///
-    /// * `url` - The URL to set as the Miru base URL.
-    ///
-    /// ### Returns
-    ///
-    /// Returns nothing.
     pub fn test_utils_set_base_url(&mut self, url: &str) {
         self.base_url = url.to_string();
+    }
+
+    pub fn test_utils_get_cache(&mut self) -> &mut DashMap<RequestKey, Arc<RwLock<Option<String>>>> {
+        &mut self.cache
     }
 }

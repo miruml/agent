@@ -1,6 +1,7 @@
 // internal crates
-use crate::storage::errors::StorageErr;
+use crate::errors::MiruError;
 use crate::errors::Trace;
+use crate::storage::errors::StorageErr;
 use crate::http_client::errors::HTTPErr;
 
 #[non_exhaustive]
@@ -16,4 +17,19 @@ pub enum ServiceErr {
         config_schema_digest: String,
         trace: Box<Trace> 
     },
+}
+
+impl AsRef<dyn MiruError> for ServiceErr {
+    fn as_ref(&self) -> &(dyn MiruError + 'static) {
+        self
+    }
+}
+
+impl MiruError for ServiceErr {
+    fn is_network_connection_error(&self) -> bool {
+        matches!(
+            self,
+            ServiceErr::HTTPErr { source: HTTPErr::ConnectionErr { .. }, .. } 
+        )
+    }
 }

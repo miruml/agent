@@ -24,7 +24,7 @@ pub async fn read_latest<T: ConcreteConfigsExt>(
     let result = match result {
         Ok(result) => result,
         Err(e) => {
-            if !e.network_connection_error() {
+            if !e.is_network_connection_error() {
                 return Err(ServiceErr::HTTPErr {
                     source: e,
                     trace: trace!(),

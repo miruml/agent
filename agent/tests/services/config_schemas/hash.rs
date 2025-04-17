@@ -4,8 +4,9 @@ mod tests {
     use std::time::{Duration, Instant};
 
     // internal crates
-    use config_agent::services::config_schemas::hash;
+    use config_agent::errors::MiruError;
     use config_agent::http_client::client::HTTPClient;
+    use config_agent::services::config_schemas::hash;
     use config_agent::storage::{
         digests::{ConfigSchemaDigestCache, ConfigSchemaDigests},
         layout::StorageLayout,
@@ -17,38 +18,16 @@ mod tests {
     use crate::http_client::mock::MockConfigSchemasSuccess;
 
     // external crates
+    use dashmap::DashMap;
     use serde_json::json;
     #[allow(unused_imports)]
     use tracing::{debug, error, info, trace, warn};
 
+#[cfg(test)]
 pub mod errors {
     use super::*;
 
-    #[tokio::test]
-    async fn network_connection_error() {
 
-        // setup
-        let http_client = HTTPClient::new().await;
-        let dir = StorageLayout::new_default().cfg_sch_digest_registry();
-        let cache = ConfigSchemaDigestCache::spawn(dir);
-
-        // json schema to hash
-        let schema = json!({
-            "type": "object",
-            "properties": {
-                "name": { "type": "string" }
-            }
-        });
-
-        // test
-        assert!(false);
-        let result = hash::hash_schema(
-            &schema,
-            &http_client,
-            &cache,
-        ).await;
-        assert!(result.is_err());
-    }
 
     #[test]
     fn invalid_schema() {

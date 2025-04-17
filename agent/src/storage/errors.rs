@@ -72,7 +72,7 @@ pub enum StorageErr {
 }
 
 impl MiruError for StorageErr {
-    fn network_connection_error(&self) -> bool {
+    fn is_network_connection_error(&self) -> bool {
         false
     }
 }

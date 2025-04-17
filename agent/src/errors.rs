@@ -9,7 +9,7 @@ pub trait MiruError
 where
     Self: Debug,
 {
-    fn network_connection_error(&self) -> bool;
+    fn is_network_connection_error(&self) -> bool;
 }
 
 pub fn are_all_network_connection_errors<I>(errors: I) -> bool
@@ -19,7 +19,7 @@ where
 {
     errors
         .into_iter()
-        .all(|e| e.as_ref().network_connection_error())
+        .all(|e| e.as_ref().is_network_connection_error())
 }
 
 #[derive(Debug, Clone)]

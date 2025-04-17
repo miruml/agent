@@ -14,10 +14,11 @@ pub enum HTTPErr {
     // HTTP errors
     #[error("Response Body Missing Error: {msg}")]
     ResponseBodyMissingErr { msg: String, trace: Box<Trace> },
-    #[error("Response Error: {http_code:?} {error:?}")]
-    ResponseErr {
-        http_code: reqwest::StatusCode,
-        error: ErrorResponse,
+    #[error("Response Failed: {url:?} {status:?} {error:?}")]
+    ResponseFailed {
+        status: reqwest::StatusCode,
+        url: String,
+        error: Option<ErrorResponse>,
         trace: Box<Trace>,
     },
     #[error("Timeout Error: {msg}")]
@@ -49,8 +50,8 @@ pub enum HTTPErr {
         source: serde_json::Error,
         trace: Box<Trace>,
     },
-    #[error("Request Error: {source}")]
-    RequestErr {
+    #[error("Reqwest Error: {source}")]
+    ReqwestErr {
         source: reqwest::Error,
         trace: Box<Trace>,
     },
@@ -63,7 +64,7 @@ impl AsRef<dyn MiruError> for HTTPErr {
 }
 
 impl MiruError for HTTPErr {
-    fn network_connection_error(&self) -> bool {
+    fn is_network_connection_error(&self) -> bool {
         matches!(
             self,
             HTTPErr::ConnectionErr { .. } | HTTPErr::TimeoutErr { .. }
@@ -77,6 +78,6 @@ pub fn reqwest_err_to_http_client_err(e: reqwest::Error, trace: Box<Trace>) -> H
     } else if e.is_decode() {
         HTTPErr::DecodeRespBodyErr { source: e, trace }
     } else {
-        HTTPErr::RequestErr { source: e, trace }
+        HTTPErr::ReqwestErr { source: e, trace }
     }
 }

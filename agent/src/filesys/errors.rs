@@ -161,7 +161,7 @@ pub enum FileSysErr {
 }
 
 impl MiruError for FileSysErr {
-    fn network_connection_error(&self) -> bool {
+    fn is_network_connection_error(&self) -> bool {
         false
     }
 }
