@@ -2,8 +2,8 @@
 use crate::http_client::prelude::*;
 use crate::services::errors::ServiceErr;
 use crate::storage::digests::{
-    AsyncConfigSchemaDigestCache,
     ConfigSchemaDigests,
+    ConfigSchemaDigestCache,
 };
 use crate::trace;
 use crate::utils;
@@ -15,7 +15,7 @@ use serde_json::Value;
 pub async fn hash_schema<T: ConfigSchemasExt>(
     schema: &Value,
     http_client: &T,
-    cache: &AsyncConfigSchemaDigestCache,
+    cache: &ConfigSchemaDigestCache,
 ) -> Result<String, ServiceErr> {
 
     // raw digest of the schema (but we need the digest of the resolved schema)

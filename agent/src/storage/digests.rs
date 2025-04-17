@@ -22,14 +22,13 @@ pub struct ConfigSchemaDigests {
 }
 
 
-// ============================== SYNC IMPLEMENTATION ============================= //
-
-pub struct SyncConfigSchemaDigestCache {
-    pub dir: Dir,
+// ========================= SINGLE THREADED IMPLEMENTATION ======================== //
+struct ConfigSchemaDigestCacheImplementation {
+    dir: Dir,
 }
 
-impl SyncConfigSchemaDigestCache {
-    pub fn new(dir: Dir) -> Self {
+impl ConfigSchemaDigestCacheImplementation {
+    fn new(dir: Dir) -> Self {
         Self { dir }
     }
 
@@ -39,7 +38,7 @@ impl SyncConfigSchemaDigestCache {
         self.dir.file(&filename)
     }
 
-    pub fn read_optional(
+    async fn read_optional(
         &self,
         raw_digest: &str,
     ) -> Result<Option<ConfigSchemaDigests>, StorageErr> {
@@ -48,18 +47,18 @@ impl SyncConfigSchemaDigestCache {
             return Ok(None);
         }
 
-        let digests = digest_file.read_json::<ConfigSchemaDigests>().map_err(|e| StorageErr::FileSysErr {
+        let digests = digest_file.read_json::<ConfigSchemaDigests>().await.map_err(|e| StorageErr::FileSysErr {
             source: e,
             trace: trace!(),
         })?;
         Ok(Some(digests))
     }
 
-    pub fn read(
+    async fn read(
         &self,
         raw_digest: &str,
     ) -> Result<ConfigSchemaDigests, StorageErr> {
-        let result = self.read_optional(raw_digest)?;
+        let result = self.read_optional(raw_digest).await?;
         match result {
             Some(digests) => Ok(digests),
             None => Err(StorageErr::CacheElementNotFound {
@@ -69,7 +68,7 @@ impl SyncConfigSchemaDigestCache {
         }
     }
 
-    pub fn write(
+    async fn write(
         &self,
         digests: ConfigSchemaDigests,
         overwrite: bool,
@@ -79,13 +78,11 @@ impl SyncConfigSchemaDigestCache {
             &digests,
             overwrite,
             true,
-        ).map_err(|e| StorageErr::FileSysErr {
+        ).await.map_err(|e| StorageErr::FileSysErr {
             source: e,
             trace: trace!(),
         })
     }
-
-
 }
 
 
@@ -93,7 +90,7 @@ impl SyncConfigSchemaDigestCache {
 
 
 
-// ============================== ASYNC IMPLEMENTATION ============================= //
+// ============================== MULTI-THREADED IMPLEMENTATION ============================= //
 
 // Commands that can be sent to the actor
 enum WorkerCommand {
@@ -115,7 +112,7 @@ enum WorkerCommand {
 // This struct is responsible for doing the actual work of reading and writing to the
 // cache.
 struct Worker {
-    cache: SyncConfigSchemaDigestCache,
+    cache: ConfigSchemaDigestCacheImplementation,
     receiver: Receiver<WorkerCommand>,
 }
 
@@ -127,7 +124,7 @@ impl Worker {
                     raw_digest,
                     respond_to,
                 } => {
-                    let result = self.cache.read_optional(&raw_digest);
+                    let result = self.cache.read_optional(&raw_digest).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to read config schema digests: {:?}", e);
                     }
@@ -136,7 +133,7 @@ impl Worker {
                     raw_digest,
                     respond_to 
                 } => {
-                    let result = self.cache.read(&raw_digest);
+                    let result = self.cache.read(&raw_digest).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to read config schema digests: {:?}", e);
                     }
@@ -146,7 +143,7 @@ impl Worker {
                     overwrite,
                     respond_to,
                 } => {
-                    let result = self.cache.write(digests, overwrite);
+                    let result = self.cache.write(digests, overwrite).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to write the config schema digests: {:?}", e);
                     }
@@ -159,17 +156,17 @@ impl Worker {
 // This struct is the public interface for the cache. In practice, it just forwards
 // commands to the actor and returns the results once they are ready.
 #[derive(Clone)]
-pub struct AsyncConfigSchemaDigestCache {
+pub struct ConfigSchemaDigestCache {
     sender: Sender<WorkerCommand>,
 }
 
-impl AsyncConfigSchemaDigestCache {
-    pub fn spawn(dir: Dir) -> AsyncConfigSchemaDigestCache {
+impl ConfigSchemaDigestCache {
+    pub fn spawn(dir: Dir) -> ConfigSchemaDigestCache {
         let (sender, receiver) = mpsc::channel(32);
-        let worker = Worker { cache: SyncConfigSchemaDigestCache::new(dir), receiver };
+        let worker = Worker { cache: ConfigSchemaDigestCacheImplementation::new(dir), receiver };
 
         tokio::spawn(worker.run());
-        AsyncConfigSchemaDigestCache { sender }
+        ConfigSchemaDigestCache { sender }
     }
 
     pub async fn read_optional(&self, raw_digest: &str) -> Result<Option<ConfigSchemaDigests>, StorageErr> {

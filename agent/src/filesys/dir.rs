@@ -2,7 +2,6 @@
 use std::fmt::Display;
 use std::env;
 use std::path::PathBuf;
-use std::time::Duration;
 
 // internal crates
 use crate::filesys::errors::FileSysErr;
@@ -10,6 +9,7 @@ use crate::filesys::file::File;
 use crate::filesys::path::PathExt;
 use crate::trace;
 
+// external crates
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
 
@@ -29,33 +29,13 @@ impl PathExt for Dir {
     fn path(&self) -> &PathBuf {
         &self.path
     }
-
-    /// Delete a directory and all its contents
-    fn delete(&self) -> Result<(), FileSysErr> {
-        if !self.exists() {
-            return Ok(());
-        }
-        std::fs::remove_dir_all(self.path()).map_err(|e| FileSysErr::DeleteDirErr {
-            source: e,
-            dir: self.clone(),
-            trace: trace!(),
-        })?;
-        Ok(())
-    }
 }
 
 impl Dir {
     /// Create a new Dir instance. Dir paths must be absolute but do not need to exist
     /// to create a valid Dir instance.
     pub fn new<T: Into<PathBuf>>(path: T) -> Dir {
-        let _path: PathBuf = path.into();
-        if _path.is_relative() {
-            warn!(
-                "Path '{}' must be an absolute path",
-                _path.to_str().unwrap_or("")
-            );
-        }
-        Dir { path: _path }
+        Dir { path: path.into() }
     }
 
     /// Create a new Dir instance for the home directory
@@ -75,7 +55,7 @@ impl Dir {
         Ok(Dir { path: current_dir })
     }
 
-    pub fn create_temp_dir(prefix: &str) -> Result<Dir, FileSysErr> {
+    pub async fn create_temp_dir(prefix: &str) -> Result<Dir, FileSysErr> {
         let temp_dir = Dir::new(env::temp_dir());
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -83,7 +63,7 @@ impl Dir {
             .as_nanos();
         let subdir_name = format!("{}_{}", prefix, timestamp);
         let temp_dir = temp_dir.subdir(PathBuf::from(subdir_name));
-        temp_dir.create(true)?;
+        temp_dir.create(true).await?;
         Ok(temp_dir)
     }
 
@@ -158,13 +138,26 @@ impl Dir {
     /// Create a new directory in the filesystem and any missing parent directories at
     /// the specified path of this Dir instance. If the directory already exists, it is
     /// deleted if overwrite is true but an error is thrown if overwrite is false.
-    pub fn create(&self, overwrite: bool) -> Result<(), FileSysErr> {
+    pub async fn create(&self, overwrite: bool) -> Result<(), FileSysErr> {
         if !overwrite {
             self.assert_doesnt_exist()?;
         } else {
-            self.delete()?;
+            self.delete().await?;
         }
-        std::fs::create_dir_all(self.to_string()).map_err(|e| FileSysErr::CreateDirErr {
+        tokio::fs::create_dir_all(self.to_string()).await.map_err(|e| FileSysErr::CreateDirErr {
+            source: e,
+            dir: self.clone(),
+            trace: trace!(),
+        })?;
+        Ok(())
+    }
+
+    /// Delete a directory and all its contents
+    pub async fn delete(&self) -> Result<(), FileSysErr> {
+        if !self.exists() {
+            return Ok(());
+        }
+        tokio::fs::remove_dir_all(self.path()).await.map_err(|e| FileSysErr::DeleteDirErr {
             source: e,
             dir: self.clone(),
             trace: trace!(),
@@ -174,11 +167,11 @@ impl Dir {
 
     /// Create a new directory in the filesystem and any missing parent directories at
     /// the specified path of this Dir instance
-    pub fn create_if_absent(&self) -> Result<(), FileSysErr> {
+    pub async fn create_if_absent(&self) -> Result<(), FileSysErr> {
         if self.exists() {
             return Ok(());
         }
-        self.create(false)?;
+        self.create(false).await?;
         Ok(())
     }
 
@@ -189,18 +182,19 @@ impl Dir {
     }
 
     /// Return the subdirectories of this directory
-    pub fn subdirs(&self) -> Result<Vec<Dir>, FileSysErr> {
+    pub async fn subdirs(&self) -> Result<Vec<Dir>, FileSysErr> {
         let mut dirs = Vec::new();
-        for entry in std::fs::read_dir(self.to_string()).map_err(|e| FileSysErr::ReadDirErr {
+        let mut entries = tokio::fs::read_dir(self.to_string()).await.map_err(|e| FileSysErr::ReadDirErr {
+            source: e,
+            dir: self.clone(),
+            trace: trace!(),
+        })?;
+        
+        while let Some(entry) = entries.next_entry().await.map_err(|e| FileSysErr::ReadDirErr {
             source: e,
             dir: self.clone(),
             trace: trace!(),
         })? {
-            let entry = entry.map_err(|e| FileSysErr::ReadDirErr {
-                source: e,
-                dir: self.clone(),
-                trace: trace!(),
-            })?;
             if entry.path().is_dir() {
                 let dir = Dir::new(entry.path());
                 dir.assert_exists()?;
@@ -211,18 +205,20 @@ impl Dir {
     }
 
     // Return the files in this directory
-    pub fn files(&self) -> Result<Vec<File>, FileSysErr> {
+    pub async fn files(&self) -> Result<Vec<File>, FileSysErr> {
         let mut files = Vec::new();
-        for entry in std::fs::read_dir(self.to_string()).map_err(|e| FileSysErr::ReadDirErr {
+
+        let mut entries = tokio::fs::read_dir(self.to_string()).await.map_err(|e| FileSysErr::ReadDirErr {
+            source: e,
+            dir: self.clone(),
+            trace: trace!(),
+        })?;
+        
+        while let Some(entry) = entries.next_entry().await.map_err(|e| FileSysErr::ReadDirErr {
             source: e,
             dir: self.clone(),
             trace: trace!(),
         })? {
-            let entry = entry.map_err(|e| FileSysErr::ReadDirErr {
-                source: e,
-                dir: self.clone(),
-                trace: trace!(),
-            })?;
             if entry.path().is_file() {
                 let file = File::new(entry.path());
                 file.assert_exists()?;
@@ -232,33 +228,17 @@ impl Dir {
         Ok(files)
     }
 
-    pub fn delete_if_empty(&self) -> Result<(), FileSysErr> {
+    pub async fn delete_if_empty(&self) -> Result<(), FileSysErr> {
         if !self.exists() {
             return Ok(());
         }
-        if !self.files()?.is_empty() {
+        if !self.files().await?.is_empty() {
             return Ok(());
         }
-        if !self.subdirs()?.is_empty() {
+        if !self.subdirs().await?.is_empty() {
             return Ok(());
         }
-        self.delete()?;
-        Ok(())
-    }
-
-    /// Recursively deletes all contents of this directory and its subdirectories which
-    /// were modified before the given duration
-    pub fn delete_contents_modified_before(&self, ago: Duration) -> Result<(), FileSysErr> {
-        if !self.exists() {
-            return Ok(());
-        }
-        for subdir in self.subdirs()? {
-            subdir.delete_contents_modified_before(ago)?;
-        }
-        for file in self.files()? {
-            file.delete_if_modified_before(ago)?;
-        }
-        self.delete_if_empty()?;
+        self.delete().await?;
         Ok(())
     }
 }

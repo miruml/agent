@@ -18,7 +18,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
 thiserror = { workspace = true }
-tokio = { workspace = true, features = ["rt-multi-thread"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "fs"] }
 tower-http = { workspace = true, features = ["trace"] }
 tracing = { workspace = true }
 tracing-appender = { workspace = true }

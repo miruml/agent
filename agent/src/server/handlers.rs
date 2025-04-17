@@ -3,7 +3,7 @@ use std::sync::Arc;
 // internal crates
 use crate::http_client::client::HTTPClient;
 use crate::services::config_schemas::hash;
-use crate::storage::digests::AsyncConfigSchemaDigestCache;
+use crate::storage::digests::ConfigSchemaDigestCache;
 use openapi_server::models::SchemaDigestResponse;
 use openapi_server::models::HashSchemaRequest;
 
@@ -18,7 +18,7 @@ use tracing::error;
 pub async fn hash_schema(
     Json(payload): Json<HashSchemaRequest>,
     http_client: Arc<HTTPClient>,
-    cache: Arc<AsyncConfigSchemaDigestCache>,
+    cache: Arc<ConfigSchemaDigestCache>,
 ) -> (StatusCode, Json<serde_json::Value>) {
     let digest = hash::hash_schema(
         &payload.schema,

@@ -34,7 +34,7 @@ impl LatestConcreteConfigRegistry {
         self.dir.file(&filename)
     }
 
-    pub fn read(
+    pub async fn read(
         &self,
         config_slug: &str,
         config_schema_digest: &str,
@@ -44,14 +44,14 @@ impl LatestConcreteConfigRegistry {
             return Ok(None);
         }
 
-        let config = config_file.read_json::<BackendConcreteConfig>().map_err(|e| StorageErr::FileSysErr {
+        let config = config_file.read_json::<BackendConcreteConfig>().await.map_err(|e| StorageErr::FileSysErr {
             source: e,
             trace: trace!(),
         })?;
         Ok(Some(config))
     }
 
-    pub fn insert(
+    pub async fn insert(
         &self,
         config_slug: &str,
         config_schema_digest: &str,
@@ -59,7 +59,7 @@ impl LatestConcreteConfigRegistry {
         overwrite: bool,
     ) -> Result<(), StorageErr> {
         let config_file = self.config_schema_file(config_slug, config_schema_digest);
-        config_file.write_json(config, overwrite, true).map_err(|e| StorageErr::FileSysErr {
+        config_file.write_json(config, overwrite, true).await.map_err(|e| StorageErr::FileSysErr {
             source: e,
             trace: trace!(),
         })?;

@@ -47,10 +47,10 @@ pub async fn read_latest<T: ConcreteConfigsExt>(
             config_schema_digest,
             &concrete_config,
             true,
-            ).map_err(|e| ServiceErr::StorageErr {
-                source: e,
-                trace: trace!(),
-            })?;
+        ).await.map_err(|e| ServiceErr::StorageErr {
+            source: e,
+            trace: trace!(),
+        })?;
         return Ok(concrete_config);
     }
 
@@ -58,7 +58,7 @@ pub async fn read_latest<T: ConcreteConfigsExt>(
     let latest_concrete_config = latest_cncr_cfg_reg.read(
         config_slug,
         config_schema_digest,
-    ).map_err(|e| ServiceErr::StorageErr {
+    ).await.map_err(|e| ServiceErr::StorageErr {
         source: e,
         trace: trace!(),
     })?;

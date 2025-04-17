@@ -18,24 +18,31 @@ mod tests {
     #[allow(unused_imports)]
     use tracing::{debug, error, info, trace, warn};
 
+// Helper function to create a blocking wrapper
+fn block_on<F: std::future::Future>(future: F) -> F::Output {
+    tokio::runtime::Runtime::new()
+        .unwrap()
+        .block_on(future)
+}
+
 pub mod delete {
     use super::*;
 
-    #[test]
-    fn exists() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn exists() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let file = dir.file("test-file");
-        file.write_string("test", false, false).unwrap();
+        file.write_string("test", false, false).await.unwrap();
         assert!(file.exists());
-        file.delete().unwrap();
+        file.delete().await.unwrap();
         assert!(!file.exists());
     }
 
-    #[test]
-    fn doesnt_exist() {
+    #[tokio::test]
+    async fn doesnt_exist() {
         let file = File::new(PathBuf::from("doesnt_exist"));
         assert!(!file.exists());
-        file.delete().unwrap();
+        file.delete().await.unwrap();
         assert!(!file.exists());
     }
 }
@@ -43,8 +50,8 @@ pub mod delete {
 pub mod name {
     use super::*;
 
-    #[test]
-    fn basic_names() {
+    #[tokio::test]
+    async fn basic_names() {
         let file = File::new(PathBuf::from("lebron").join("james.txt"));
         assert_eq!(file.name().unwrap(), "james.txt");
 
@@ -52,8 +59,8 @@ pub mod name {
         assert_eq!(file.name().unwrap(), "james.txt");
     }
 
-    #[test]
-    fn with_special_characters() {
+    #[tokio::test]
+    async fn with_special_characters() {
         let file = File::new(PathBuf::from("path").join("my-file_123.txt"));
         assert_eq!(file.name().unwrap(), "my-file_123.txt");
 
@@ -64,8 +71,8 @@ pub mod name {
         assert_eq!(file.name().unwrap(), "file with spaces.txt");
     }
 
-    #[test]
-    fn with_unicode() {
+    #[tokio::test]
+    async fn with_unicode() {
         let file = File::new(PathBuf::from("path").join("文件.txt"));
         assert_eq!(file.name().unwrap(), "文件.txt");
 
@@ -80,35 +87,35 @@ pub mod name {
 pub mod move_to {
     use super::*;
 
-    #[test]
-    fn src_doesnt_exist() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn src_doesnt_exist() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let file = dir.file("test-file");
 
         // overwrite false
         assert!(matches!(
-            file.move_to(&file, false).unwrap_err(),
+            file.move_to(&file, false).await.unwrap_err(),
             FileSysErr::PathDoesNotExist { .. }
         ));
 
         // overwrite true
         assert!(matches!(
-            file.move_to(&file, false).unwrap_err(),
+            file.move_to(&file, false).await.unwrap_err(),
             FileSysErr::PathDoesNotExist { .. }
         ));
     }
 
-    #[test]
-    fn dest_doesnt_exist() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn dest_doesnt_exist() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let src = dir.file("src-file");
-        src.write_string("test", false, false).unwrap();
+        src.write_string("test", false, false).await.unwrap();
         let dest = dir.file("dest-file");
 
         // overwrite false
         assert!(src.exists());
         assert!(!dest.exists());
-        src.move_to(&dest, false).unwrap();
+        src.move_to(&dest, false).await.unwrap();
         assert!(dest.exists());
         assert!(!src.exists());
 
@@ -118,70 +125,70 @@ pub mod move_to {
         let dest = tmp;
         assert!(src.exists());
         assert!(!dest.exists());
-        src.move_to(&dest, true).unwrap();
+        src.move_to(&dest, true).await.unwrap();
         assert!(dest.exists());
         assert!(!src.exists());
     }
 
-    #[test]
-    fn dest_exists_overwrite_false() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn dest_exists_overwrite_false() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let src = dir.file("src-file");
-        src.write_string("src", false, false).unwrap();
+        src.write_string("src", false, false).await.unwrap();
         let dest = dir.file("dest-file");
-        dest.write_string("dest", false, false).unwrap();
+        dest.write_string("dest", false, false).await.unwrap();
 
         // overwrite false
         assert!(src.exists());
         assert!(dest.exists());
         assert!(matches!(
-            src.move_to(&dest, false).unwrap_err(),
+            src.move_to(&dest, false).await.unwrap_err(),
             FileSysErr::PathExists { .. }
         ));
     }
 
-    #[test]
-    fn dest_exists_overwrite_true() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn dest_exists_overwrite_true() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let src = dir.file("src-file");
-        src.write_string("src", false, false).unwrap();
+        src.write_string("src", false, false).await.unwrap();
         let dest = dir.file("dest-file");
-        dest.write_string("dest", false, false).unwrap();
+        dest.write_string("dest", false, false).await.unwrap();
 
         // overwrite false
         assert!(src.exists());
         assert!(dest.exists());
-        src.move_to(&dest, true).unwrap();
+        src.move_to(&dest, true).await.unwrap();
         assert!(dest.exists());
         assert!(!src.exists());
     }
 
-    #[test]
-    fn src_and_dest_are_same_file() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn src_and_dest_are_same_file() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let file = dir.file("test-file");
-        file.write_string("test", false, false).unwrap();
-        file.move_to(&file, false).unwrap();
+        file.write_string("test", false, false).await.unwrap();
+        file.move_to(&file, false).await.unwrap();
         file.assert_exists().unwrap();
-        file.move_to(&file, true).unwrap();
+        file.move_to(&file, true).await.unwrap();
         assert!(file.exists());
-        assert!(file.read_string().unwrap() == "test");
+        assert!(file.read_string().await.unwrap() == "test");
     }
 }
 
 pub mod parent_exists {
     use super::*;
 
-    #[test]
-    fn exists() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn exists() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let file = dir.file("test-file");
-        file.write_string("test", false, false).unwrap();
+        file.write_string("test", false, false).await.unwrap();
         assert!(file.parent_exists().unwrap());
     }
 
-    #[test]
-    fn doesnt_exist() {
+    #[tokio::test]
+    async fn doesnt_exist() {
         let file = File::new(PathBuf::from("doesnt_exist").join("test-file.json"));
         assert!(!file.parent_exists().unwrap());
     }
@@ -190,63 +197,63 @@ pub mod parent_exists {
 pub mod read_bytes {
     use super::*;
 
-    #[test]
-    fn read_doesnt_exist() {
+    #[tokio::test]
+    async fn read_doesnt_exist() {
         let file = File::new(PathBuf::from("doesnt_exist").join("test-file.json"));
         assert!(matches!(
-            file.read_bytes().unwrap_err(),
+            file.read_bytes().await.unwrap_err(),
             FileSysErr::PathDoesNotExist { .. }
         ));
     }
 
-    #[test]
-    fn read_success() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn read_success() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let file = dir.file("test-file");
-        file.write_string("arglebargle", false, false).unwrap();
-        assert_eq!(file.read_bytes().unwrap(), b"arglebargle");
+        file.write_string("arglebargle", false, false).await.unwrap();
+        assert_eq!(file.read_bytes().await.unwrap(), b"arglebargle");
     }
 }
 
 pub mod read_string {
     use super::*;
 
-    #[test]
-    fn read_doesnt_exist() {
+    #[tokio::test]
+    async fn read_doesnt_exist() {
         let file = File::new(PathBuf::from("doesnt_exist").join("test-file.json"));
         assert!(matches!(
-            file.read_string().unwrap_err(),
+            file.read_string().await.unwrap_err(),
             FileSysErr::PathDoesNotExist { .. }
         ));
     }
 
-    #[test]
-    fn read_success() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn read_success() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let file = dir.file("test-file");
-        file.write_string("arglebargle", false, false).unwrap();
-        assert_eq!(file.read_string().unwrap(), "arglebargle");
+        file.write_string("arglebargle", false, false).await.unwrap();
+        assert_eq!(file.read_string().await.unwrap(), "arglebargle");
     }
 }
 
 pub mod read_json {
     use super::*;
 
-    #[test]
-    fn read_doesnt_exist() {
+    #[tokio::test]
+    async fn read_doesnt_exist() {
         let file = File::new(PathBuf::from("doesnt_exist").join("test-file.json"));
         assert!(matches!(
-            file.read_json::<String>().unwrap_err(),
+            file.read_json::<String>().await.unwrap_err(),
             FileSysErr::PathDoesNotExist { .. }
         ));
     }
 
-    #[test]
-    fn read_success() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn read_success() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let file = dir.file("test-file");
-        file.write_string("{\"test\": \"arglebargle\"}", false, false).unwrap();
-        assert_eq!(file.read_json::<serde_json::Value>().unwrap(), serde_json::json!({"test": "arglebargle"}));
+        file.write_string("{\"test\": \"arglebargle\"}", false, false).await.unwrap();
+        assert_eq!(file.read_json::<serde_json::Value>().await.unwrap(), serde_json::json!({"test": "arglebargle"}));
     }
 }
 
@@ -254,40 +261,40 @@ pub mod write_bytes {
     use super::*;
 
     fn write_bytes_atomic(file: &File, buf: &[u8], overwrite: bool) -> Result<(), FileSysErr> {
-        file.write_bytes(buf, overwrite, true)
+        block_on(file.write_bytes(buf, overwrite, true))
     }
     fn write_bytes_non_atomic(file: &File, buf: &[u8], overwrite: bool) -> Result<(), FileSysErr> {
-        file.write_bytes(buf, overwrite, false)
+        block_on(file.write_bytes(buf, overwrite, false))
     }
 
-    #[test]
-    fn doesnt_exist() {
+    #[tokio::test]
+    async fn doesnt_exist() {
         for write_bytes in [write_bytes_atomic, write_bytes_non_atomic] {
-            let dir = Dir::create_temp_dir("testing").unwrap();
+            let dir = Dir::create_temp_dir("testing").await.unwrap();
             let file = dir.file("test-file");
             write_bytes(&file, b"arglebargle", false).unwrap();
-            assert_eq!(file.read_bytes().unwrap(), b"arglebargle");
+            assert_eq!(file.read_bytes().await.unwrap(), b"arglebargle");
         }
     }
 
-    #[test]
-    fn parent_doesnt_exist  () {
+    #[tokio::test]
+    async fn parent_doesnt_exist() {
         for write_bytes in [write_bytes_atomic, write_bytes_non_atomic] {
-            let dir = Dir::create_temp_dir("testing").unwrap();
+            let dir = Dir::create_temp_dir("testing").await.unwrap();
             let subdir = dir.subdir(PathBuf::from("nested").join("subdir"));
             let file = subdir.file("test-file");
             write_bytes(&file, b"arglebargle", false).unwrap();
-            assert_eq!(file.read_bytes().unwrap(), b"arglebargle");
+            assert_eq!(file.read_bytes().await.unwrap(), b"arglebargle");
         }
     }
 
-    #[test]
-    fn exists_overwrite_false() {
+    #[tokio::test]
+    async fn exists_overwrite_false() {
         for write_bytes in [write_bytes_atomic, write_bytes_non_atomic] {
-            let dir = Dir::create_temp_dir("testing").unwrap();
+            let dir = Dir::create_temp_dir("testing").await.unwrap();
             let file = dir.file("test-file");
-            file.write_bytes(b"arglebargle", false, false).unwrap();
-            assert_eq!(file.read_bytes().unwrap(), b"arglebargle");
+            write_bytes(&file, b"arglebargle", false).unwrap();
+            assert_eq!(file.read_bytes().await.unwrap(), b"arglebargle");
 
         // should fail when writing again
             assert!(matches!(
@@ -297,17 +304,17 @@ pub mod write_bytes {
         }
     }
 
-    #[test]
-    fn exists_overwrite_true() {
+    #[tokio::test]
+    async fn exists_overwrite_true() {
         for write_bytes in [write_bytes_atomic, write_bytes_non_atomic] {
-            let dir = Dir::create_temp_dir("testing").unwrap();
+            let dir = Dir::create_temp_dir("testing").await.unwrap();
             let file = dir.file("test-file");
-            file.write_bytes(b"arglebargle", false, false).unwrap();
-            assert_eq!(file.read_bytes().unwrap(), b"arglebargle");
+            write_bytes(&file, b"arglebargle", false).unwrap();
+            assert_eq!(file.read_bytes().await.unwrap(), b"arglebargle");
 
             // should succeed when writing again
             write_bytes(&file, b"arglebargle", true).unwrap();
-            assert_eq!(file.read_bytes().unwrap(), b"arglebargle");
+            assert_eq!(file.read_bytes().await.unwrap(), b"arglebargle");
         }
     }
 }   
@@ -316,40 +323,40 @@ pub mod write_string {
     use super::*;
 
     fn write_string_atomic(file: &File, s: &str, overwrite: bool) -> Result<(), FileSysErr> {
-        file.write_string(s, overwrite, true)
+        block_on(file.write_string(s, overwrite, true))
     }
     fn write_string_non_atomic(file: &File, s: &str, overwrite: bool) -> Result<(), FileSysErr> {
-        file.write_string(s, overwrite, false)
+        block_on(file.write_string(s, overwrite, false))
     }
 
-    #[test]
-    fn doesnt_exist() {
+    #[tokio::test]
+    async fn doesnt_exist() {
         for write_string in [write_string_atomic, write_string_non_atomic] {
-            let dir = Dir::create_temp_dir("testing").unwrap();
+            let dir = Dir::create_temp_dir("testing").await.unwrap();
             let file = dir.file("test-file");
             write_string(&file, "hello world", false).unwrap();
-            assert_eq!(file.read_string().unwrap(), "hello world");
+            assert_eq!(file.read_string().await.unwrap(), "hello world");
         }
     }
 
-    #[test]
-    fn parent_doesnt_exist() {
+    #[tokio::test]
+    async fn parent_doesnt_exist() {
         for write_string in [write_string_atomic, write_string_non_atomic] {
-            let dir = Dir::create_temp_dir("testing").unwrap();
+            let dir = Dir::create_temp_dir("testing").await.unwrap();
             let subdir = dir.subdir(PathBuf::from("nested").join("subdir"));
             let file = subdir.file("test-file");
             write_string(&file, "hello world", false).unwrap();
-            assert_eq!(file.read_string().unwrap(), "hello world");
+            assert_eq!(file.read_string().await.unwrap(), "hello world");
         }
     }
 
-    #[test]
-    fn exists_overwrite_false() {
+    #[tokio::test]
+    async fn exists_overwrite_false() {
         for write_string in [write_string_atomic, write_string_non_atomic] {
-            let dir = Dir::create_temp_dir("testing").unwrap();
+            let dir = Dir::create_temp_dir("testing").await.unwrap();
             let file = dir.file("test-file");
-            file.write_string("hello world", false, false).unwrap();
-            assert_eq!(file.read_string().unwrap(), "hello world");
+            write_string(&file, "hello world", false).unwrap();
+            assert_eq!(file.read_string().await.unwrap(), "hello world");
 
             // should fail when writing again
             assert!(matches!(
@@ -359,17 +366,17 @@ pub mod write_string {
         }
     }
 
-    #[test]
-    fn exists_overwrite_true() {
+    #[tokio::test]
+    async fn exists_overwrite_true() {
         for write_string in [write_string_atomic, write_string_non_atomic] {
-            let dir = Dir::create_temp_dir("testing").unwrap();
+            let dir = Dir::create_temp_dir("testing").await.unwrap();
             let file = dir.file("test-file");
-            file.write_string("hello world", false, false).unwrap();
-            assert_eq!(file.read_string().unwrap(), "hello world");
+            write_string(&file, "hello world", false).unwrap();
+            assert_eq!(file.read_string().await.unwrap(), "hello world");
 
             // should succeed when writing again
             write_string(&file, "new content", true).unwrap();
-            assert_eq!(file.read_string().unwrap(), "new content");
+            assert_eq!(file.read_string().await.unwrap(), "new content");
         }
     }
 }
@@ -378,31 +385,31 @@ mod write_json {
     use super::*;
 
     fn write_json_atomic(file: &File, data: &serde_json::Value, overwrite: bool) -> Result<(), FileSysErr> {
-        file.write_json(data, overwrite, true)
+        block_on(file.write_json(data, overwrite, true))
     }
     fn write_json_non_atomic(file: &File, data: &serde_json::Value, overwrite: bool) -> Result<(), FileSysErr> {
-        file.write_json(data, overwrite, false)
+        block_on(file.write_json(data, overwrite, false))
     }
 
-    #[test]
-    fn doesnt_exist() {
+    #[tokio::test]
+    async fn doesnt_exist() {
         for write_json in [write_json_atomic, write_json_non_atomic] {
-            let dir = Dir::create_temp_dir("testing").unwrap();
+            let dir = Dir::create_temp_dir("testing").await.unwrap();
             let file = dir.file("test-file");
             let data = json!({
                 "name": "test",
                 "value": 42
                 });
             write_json(&file, &data, false).unwrap();
-            let read_data: serde_json::Value = file.read_json().unwrap();
+            let read_data: serde_json::Value = file.read_json().await.unwrap();
             assert_eq!(read_data, data);
         }
     }
 
-    #[test]
-    fn parent_doesnt_exist() {
+    #[tokio::test]
+    async fn parent_doesnt_exist() {
         for write_json in [write_json_atomic, write_json_non_atomic] {
-            let dir = Dir::create_temp_dir("testing").unwrap();
+            let dir = Dir::create_temp_dir("testing").await.unwrap();
             let subdir = dir.subdir(PathBuf::from("nested").join("subdir"));
             let file = subdir.file("test-file");
             let data = json!({
@@ -410,22 +417,22 @@ mod write_json {
             "value": 42
             });
             write_json(&file, &data, false).unwrap();
-            let read_data: serde_json::Value = file.read_json().unwrap();
+            let read_data: serde_json::Value = file.read_json().await.unwrap();
             assert_eq!(read_data, data);
         }
     }
 
-    #[test]
-    fn exists_overwrite_false() {
+    #[tokio::test]
+    async fn exists_overwrite_false() {
         for write_json in [write_json_atomic, write_json_non_atomic] {
-            let dir = Dir::create_temp_dir("testing").unwrap();
+            let dir = Dir::create_temp_dir("testing").await.unwrap();
             let file = dir.file("test-file");
             let data = json!({
             "name": "test",
             "value": 42
             });
             write_json(&file, &data, false).unwrap();
-            let read_data: serde_json::Value = file.read_json().unwrap();
+            let read_data: serde_json::Value = file.read_json().await.unwrap();
             assert_eq!(read_data, data);
 
             // should fail when writing again
@@ -440,17 +447,17 @@ mod write_json {
         }
     }
 
-    #[test]
-    fn exists_overwrite_true() {
+    #[tokio::test]
+    async fn exists_overwrite_true() {
         for write_json in [write_json_atomic, write_json_non_atomic] {
-            let dir = Dir::create_temp_dir("testing").unwrap();
+            let dir = Dir::create_temp_dir("testing").await.unwrap();
             let file = dir.file("test-file");
             let data = json!({
             "name": "test",
             "value": 42
             });
             write_json(&file, &data, false).unwrap();
-            let read_data: serde_json::Value = file.read_json().unwrap();
+            let read_data: serde_json::Value = file.read_json().await.unwrap();
             assert_eq!(read_data, data);
 
             // should succeed when writing again
@@ -459,7 +466,7 @@ mod write_json {
                 "value": 100
             });
             write_json(&file, &new_data, true).unwrap();
-            let read_data: serde_json::Value = file.read_json().unwrap();
+            let read_data: serde_json::Value = file.read_json().await.unwrap();
             assert_eq!(read_data, new_data);
         }
     }
@@ -468,49 +475,49 @@ mod write_json {
 pub mod set_permissions {
     use super::*;
 
-    #[test]
-    fn doesnt_exist() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn doesnt_exist() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let file = dir.file("nonexistent-file");
         
         // Should fail because file doesn't exist
         assert!(matches!(
-            file.set_permissions(0o644).unwrap_err(),
+            file.set_permissions(0o644).await.unwrap_err(),
             FileSysErr::PathDoesNotExist { .. }
         ));
     }
 
     #[cfg(unix)]
-    #[test]
-    fn basic_permissions() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn basic_permissions() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let file = dir.file("test-file");
         
         // Create the file first
-        file.write_string("test content", false, false).unwrap();
+        file.write_string("test content", false, false).await.unwrap();
         
         // Test read-only (444 in octal)
-        file.set_permissions(0o444).unwrap();
-        let perms = file.permissions().unwrap();
+        file.set_permissions(0o444).await.unwrap();
+        let perms = file.permissions().await.unwrap();
         assert_eq!(perms.mode() & 0o777, 0o444);
         
         // Test read-write (644 in octal)
-        file.set_permissions(0o644).unwrap();
-        let perms = file.permissions().unwrap();
+        file.set_permissions(0o644).await.unwrap();
+        let perms = file.permissions().await.unwrap();
         assert_eq!(perms.mode() & 0o777, 0o644);
         
         // Test executable (755 in octal)
-        file.set_permissions(0o755).unwrap();
-        let perms = file.permissions().unwrap();
+        file.set_permissions(0o755).await.unwrap();
+        let perms = file.permissions().await.unwrap();
         assert_eq!(perms.mode() & 0o777, 0o755);
     }
 
     #[cfg(unix)]
-    #[test]
-    fn all_permission_combinations() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn all_permission_combinations() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let file = dir.file("test-file");
-        file.write_string("test content", false, false).unwrap();
+        file.write_string("test content", false, false).await.unwrap();
 
         // Test various permission combinations
         let permissions = [
@@ -524,8 +531,8 @@ pub mod set_permissions {
         ];
 
         for mode in permissions {
-            file.set_permissions(mode).unwrap();
-            let perms = file.permissions().unwrap();
+            file.set_permissions(mode).await.unwrap();
+            let perms = file.permissions().await.unwrap();
             assert_eq!(perms.mode() & 0o777, mode);
         }
     }
@@ -534,70 +541,70 @@ pub mod set_permissions {
 pub mod create_symlink {
     use super::*;
 
-    #[test]
-    fn src_doesnt_exist() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn src_doesnt_exist() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let file = dir.file("nonexistent-file");
         let link = dir.file("link");
         assert!(matches!(
-            file.create_symlink(&link, false).unwrap_err(),
+            file.create_symlink(&link, false).await.unwrap_err(),
             FileSysErr::PathDoesNotExist { .. }
         ));
     }
 
-    #[test]
-    fn dest_doesnt_exist_overwrite_false() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn dest_doesnt_exist_overwrite_false() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let file = dir.file("test-file");
-        file.write_string("test", false, false).unwrap();
+        file.write_string("test", false, false).await.unwrap();
         let link = dir.file("link");
 
         // overwrite false
-        file.create_symlink(&link, false).unwrap();
+        file.create_symlink(&link, false).await.unwrap();
         file.assert_exists().unwrap();
         link.assert_exists().unwrap();
     }
 
-    #[test]
-    fn dest_doesnt_exist_overwrite_true() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn dest_doesnt_exist_overwrite_true() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let file = dir.file("test-file");
-        file.write_string("test", false, false).unwrap();
+        file.write_string("test", false, false).await.unwrap();
         let link = dir.file("link");
 
         // overwrite true
-        file.create_symlink(&link, true).unwrap();
+        file.create_symlink(&link, true).await.unwrap();
         file.assert_exists().unwrap();
         link.assert_exists().unwrap();
     }
 
-    #[test]
-    fn dest_exists_overwrite_false() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn dest_exists_overwrite_false() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let file = dir.file("test-file");
-        file.write_string("test", false, false).unwrap();
+        file.write_string("test", false, false).await.unwrap();
         let link = dir.file("link");
-        file.create_symlink(&link, true).unwrap();
+        file.create_symlink(&link, true).await.unwrap();
 
         file.assert_exists().unwrap();
         link.assert_exists().unwrap();
         assert!(matches!(
-            file.create_symlink(&link, false).unwrap_err(),
+            file.create_symlink(&link, false).await.unwrap_err(),
             FileSysErr::PathExists { .. }
         ));
     }
 
-    #[test]
-    fn dest_exists_overwrite_true() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn dest_exists_overwrite_true() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let file = dir.file("test-file");
-        file.write_string("test", false, false).unwrap();
+        file.write_string("test", false, false).await.unwrap();
         let link = dir.file("link");
-        file.create_symlink(&link, true).unwrap();
+        file.create_symlink(&link, true).await.unwrap();
 
         file.assert_exists().unwrap();
         link.assert_exists().unwrap();
-        file.create_symlink(&link, true).unwrap();
+        file.create_symlink(&link, true).await.unwrap();
         file.assert_exists().unwrap();
         link.assert_exists().unwrap();
     }
@@ -608,40 +615,40 @@ pub mod create_symlink {
 pub mod permissions {
     use super::*;
 
-    #[test]
-    fn doesnt_exist() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn doesnt_exist() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let file = dir.file("nonexistent-file");
         
         // Should fail because file doesn't exist
         assert!(matches!(
-            file.permissions().unwrap_err(),
+            file.permissions().await.unwrap_err(),
             FileSysErr::PathDoesNotExist { .. }
         ));
     }
 
     #[cfg(unix)]
-    #[test]
-    fn basic_permissions() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn basic_permissions() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let file = dir.file("test-file");
         
         // Create the file first
-        file.write_string("test content", false, false).unwrap();
+        file.write_string("test content", false, false).await.unwrap();
         
         // Test read-only (444 in octal)
-        file.set_permissions(0o444).unwrap();
-        let perms = file.permissions().unwrap();
+        file.set_permissions(0o444).await.unwrap();
+        let perms = file.permissions().await.unwrap();
         assert_eq!(perms.mode() & 0o777, 0o444);
         
         // Test read-write (644 in octal)
-        file.set_permissions(0o644).unwrap();
-        let perms = file.permissions().unwrap();
+        file.set_permissions(0o644).await.unwrap();
+        let perms = file.permissions().await.unwrap();
         assert_eq!(perms.mode() & 0o777, 0o644);
         
         // Test executable (755 in octal)
-        file.set_permissions(0o755).unwrap();
-        let perms = file.permissions().unwrap();
+        file.set_permissions(0o755).await.unwrap();
+        let perms = file.permissions().await.unwrap();
         assert_eq!(perms.mode() & 0o777, 0o755);
     }
 }
@@ -649,24 +656,24 @@ pub mod permissions {
 pub mod last_modified {
     use super::*;
 
-    #[test]
-    fn doesnt_exist() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn doesnt_exist() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let file = dir.file("nonexistent-file");
         
         // Should fail because file doesn't exist
         assert!(matches!(
-            file.last_modified().unwrap_err(),
+            file.last_modified().await.unwrap_err(),
             FileSysErr::PathDoesNotExist { .. }
         ));
     }
 
-    #[test]
-    fn success() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn success() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let file = dir.file("test-file");
-        file.write_string("test", false, false).unwrap();
-        let modified = file.last_modified().unwrap();
+        file.write_string("test", false, false).await.unwrap();
+        let modified = file.last_modified().await.unwrap();
         assert!(modified.elapsed().unwrap() < std::time::Duration::from_secs(1));
     }
 }
@@ -674,50 +681,24 @@ pub mod last_modified {
 pub mod size {
     use super::*;
 
-    #[test]
-    fn doesnt_exist() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn doesnt_exist() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let file = dir.file("nonexistent-file");
         
         // Should fail because file doesn't exist
         assert!(matches!(
-            file.size().unwrap_err(),
+            file.size().await.unwrap_err(),
             FileSysErr::PathDoesNotExist { .. }
         ));
     }
 
-    #[test]
-    fn success() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn success() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let file = dir.file("test-file");
-        file.write_string("test", false, false).unwrap();
-        assert_eq!(file.size().unwrap(), 4);
-    }
-}
-
-
-pub mod delete_if_modified_before {
-    use super::*;
-
-    #[test]
-    fn delete_if_modified_before_success_modified() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-        let file = dir.file("test-file");
-        file.write_string("test", false, false).unwrap();
-        std::thread::sleep(std::time::Duration::from_millis(10));
-        file.delete_if_modified_before(std::time::Duration::from_millis(1))
-            .unwrap();
-        assert!(!file.exists());
-    }
-
-    #[test]
-    fn delete_if_modified_before_success_not_modified() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-        let file = dir.file("test-file");
-        file.write_string("test", false, false).unwrap();
-        file.delete_if_modified_before(std::time::Duration::from_secs(1))
-            .unwrap();
-        assert!(file.exists());
+        file.write_string("test", false, false).await.unwrap();
+        assert_eq!(file.size().await.unwrap(), 4);
     }
 }
 

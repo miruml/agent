@@ -38,7 +38,7 @@ pub async fn refresh_latest<T: ConcreteConfigsExt>(
         config_schema_digest,
         &result,
         true,
-    ).map_err(|e| ServiceErr::StorageErr {
+    ).await.map_err(|e| ServiceErr::StorageErr {
         source: e,
         trace: trace!(),
     })?;

@@ -10,19 +10,19 @@ mod tests {
 pub mod delete {
     use super::*;
 
-    #[test]
-    fn exists() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn exists() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         assert!(dir.exists());
-        dir.delete().unwrap();
+        dir.delete().await.unwrap();
         assert!(!dir.exists());
     }
 
-    #[test]
-    fn doesnt_exist() {
+    #[tokio::test]
+    async fn doesnt_exist() {
         let dir = Dir::new(PathBuf::from("doesnt_exist"));
         assert!(!dir.exists());
-        dir.delete().unwrap();
+        dir.delete().await.unwrap();
         assert!(!dir.exists());
     }
 }
@@ -43,9 +43,9 @@ pub mod new_home_dir {
 pub mod create_temp_dir {
     use super::*;
 
-    #[test]
-    fn success() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn success() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         assert!(dir.exists());
         assert!(dir.path().to_str().unwrap().contains("testing"));
     }
@@ -320,38 +320,38 @@ mod create {
 mod success {
     use super::*;
 
-    #[test]
-    fn doesnt_exist_with_overwrite() {
-        let temp_dir= Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn doesnt_exist_with_overwrite() {
+        let temp_dir= Dir::create_temp_dir("testing").await.unwrap();
 
         let subdir = temp_dir.subdir(PathBuf::from("subdir"));
-        subdir.create(true).unwrap();
+        subdir.create(true).await.unwrap();
         assert!(subdir.exists());
     }
 
-    #[test]
-    fn doesnt_exist_no_overwrite() {
-        let temp_dir= Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn doesnt_exist_no_overwrite() {
+        let temp_dir= Dir::create_temp_dir("testing").await.unwrap();
 
         let subdir = temp_dir.subdir(PathBuf::from("subdir"));
-        subdir.create(false).unwrap();
+        subdir.create(false).await.unwrap();
         assert!(subdir.exists());
     }
 
-    #[test]
-    fn exists_with_overwrite() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-        dir.create(true).unwrap();
+    #[tokio::test]
+    async fn exists_with_overwrite() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        dir.create(true).await.unwrap();
         assert!(dir.exists());
     }
 
-    #[test]
-    fn exists_no_overwrite() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn exists_no_overwrite() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
 
-        println!("ERROR: {:?}", dir.create(false).unwrap_err());
+        println!("ERROR: {:?}", dir.create(false).await.unwrap_err());
         assert!(matches!(
-            dir.create(false).unwrap_err(), FileSysErr::PathExists { .. }
+            dir.create(false).await.unwrap_err(), FileSysErr::PathExists { .. }
         ));
     }
 }
@@ -360,25 +360,25 @@ mod success {
 mod create_if_absent {
     use super::*;
 
-    #[test]
-    fn doesnt_exist() {
-        let temp_dir= Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn doesnt_exist() {
+        let temp_dir= Dir::create_temp_dir("testing").await.unwrap();
 
         let subdir = temp_dir.subdir(PathBuf::from("subdir"));
-        subdir.create_if_absent().unwrap();
+        subdir.create_if_absent().await.unwrap();
         assert!(subdir.exists());
     }
 
-    #[test]
-    fn exists() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn exists() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
 
         // create some files in the directory to check if they exist afterward
         let file = dir.file("test-file");
-        file.write_string("arglebargle", false, false).unwrap();
+        file.write_string("arglebargle", false, false).await.unwrap();
 
         // create the directory
-        dir.create_if_absent().unwrap();
+        dir.create_if_absent().await.unwrap();
         assert!(dir.exists());
         assert!(file.exists());
     }
@@ -463,26 +463,26 @@ mod file {
 mod subdirs {
     use super::*;
 
-    #[test]
-    fn empty() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-        assert_eq!(dir.subdirs().unwrap().len(), 0);
+    #[tokio::test]
+    async fn empty() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        assert_eq!(dir.subdirs().await.unwrap().len(), 0);
     }
 
-    #[test]
-    fn success() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn success() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
 
         // create some subdirs
         let subdir1 = dir.subdir(PathBuf::from("subdir1"));
-        subdir1.create(true).unwrap();
+        subdir1.create(true).await.unwrap();
         let subdir2 = dir.subdir(PathBuf::from("subdir2"));
-        subdir2.create(true).unwrap();
+        subdir2.create(true).await.unwrap();
         assert!(subdir1.exists());
         assert!(subdir2.exists());
 
         // get the subdirs
-        let subdirs = dir.subdirs().unwrap();
+        let subdirs = dir.subdirs().await.unwrap();
         assert_eq!(subdirs.len(), 2);
         assert!(subdirs.iter().any(|d| d.path() == subdir1.path()));
         assert!(subdirs.iter().any(|d| d.path() == subdir2.path()));
@@ -492,24 +492,24 @@ mod subdirs {
 mod files {
     use super::*;
 
-    #[test]
-    fn empty() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-        assert_eq!(dir.files().unwrap().len(), 0);
+    #[tokio::test]
+    async fn empty() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        assert_eq!(dir.files().await.unwrap().len(), 0);
     }
 
-    #[test]
-    fn success() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn success() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
 
         // create some files
         let file1 = dir.file("file1.txt");
-        file1.write_string("arglebargle", false, false).unwrap();
+        file1.write_string("arglebargle", false, false).await.unwrap();
         let file2 = dir.file("file2.txt");
-        file2.write_string("arglebargle", false, false).unwrap();
+        file2.write_string("arglebargle", false, false).await.unwrap();
 
         // get the files
-        let files = dir.files().unwrap();
+        let files = dir.files().await.unwrap();
         assert_eq!(files.len(), 2);
         assert!(files.iter().any(|f| f.path() == file1.path()));
         assert!(files.iter().any(|f| f.path() == file2.path()));
@@ -519,144 +519,29 @@ mod files {
 mod delete_if_empty {
     use super::*;
 
-    #[test]
-    fn success() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-        dir.delete_if_empty().unwrap();
+    #[tokio::test]
+    async fn success() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        dir.delete_if_empty().await.unwrap();
         assert!(!dir.exists());
     }
 
-    #[test]
-    fn has_files() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn has_files() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let file = dir.file("test");
-        file.write_string("arglechargle", false, false).unwrap();
-        dir.delete_if_empty().unwrap();
+        file.write_string("arglechargle", false, false).await.unwrap();
+        dir.delete_if_empty().await.unwrap();
         assert!(dir.exists());
     }
 
-    #[test]
-    fn has_subdirs() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
+    #[tokio::test]
+    async fn has_subdirs() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let subdir = dir.subdir(PathBuf::from("test"));
-        subdir.create(true).unwrap();
-        dir.delete_if_empty().unwrap();
+        subdir.create(true).await.unwrap();
+        dir.delete_if_empty().await.unwrap();
         assert!(dir.exists());
-    }
-}
-
-mod delete_contents_modified_before {
-    use super::*;
-
-    #[test]
-    fn success_deleted() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-
-        let n = 10;
-        for i in 0..n {
-            let file = dir.file(&format!("test-file-{}", i));
-            file.write_string("test", false, false).unwrap();
-        }
-        std::thread::sleep(std::time::Duration::from_millis(10));
-        dir.delete_contents_modified_before(std::time::Duration::from_millis(1))
-            .unwrap();
-        assert!(!dir.exists());
-    }
-
-    #[test]
-    fn success_not_deleted() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-
-        let n = 10;
-        for i in 0..n {
-            let file = dir.file(&format!("test-file-{}", i));
-            file.write_string("test", false, false).unwrap();
-        }
-        dir.delete_contents_modified_before(std::time::Duration::from_secs(1))
-            .unwrap();
-        assert!(dir.exists());
-    }
-
-    #[test]
-    fn success_recursive_deleted() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-
-        // parent directory
-        let n = 10;
-        for i in 0..n {
-            let file = dir.file(&format!("test-file-{}", i));
-            file.write_string("test", false, false).unwrap();
-        }
-
-        // child directory
-        let subdir = dir.subdir(PathBuf::from("test"));
-        for i in 0..n {
-            let file = subdir.file(&format!("test-file-{}", i));
-            file.write_string("test", false, false).unwrap();
-        }
-
-        std::thread::sleep(std::time::Duration::from_millis(10));
-        dir.delete_contents_modified_before(std::time::Duration::from_millis(1))
-            .unwrap();
-        assert!(!dir.exists());
-    }
-
-    #[test]
-    fn success_recursive_not_deleted1() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-
-        // parent directory
-        let n = 10;
-        for i in 0..n {
-            let file = dir.file(&format!("test-file-{}", i));
-            file.write_string("test", false, false).unwrap();
-        }
-
-        // child directory
-        let subdir = dir.subdir(PathBuf::from("test"));
-        for i in 0..n {
-            let file = subdir.file(&format!("test-file-{}", i));
-            file.write_string("test", false, false).unwrap();
-        }
-
-        dir.delete_contents_modified_before(std::time::Duration::from_secs(1))
-            .unwrap();
-        assert!(dir.exists());
-    }
-
-    #[test]
-    fn success_recursive_not_deleted2() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-
-        // parent directory
-        let n = 10;
-        for i in 0..n {
-            let file = dir.file(&format!("test-file-{}", i));
-            file.write_string("test", false, false).unwrap();
-        }
-
-        // child directory 1
-        let subdir1 = dir.subdir(PathBuf::from("test1"));
-        for i in 0..n {
-            let file = subdir1.file(&format!("test-file-{}", i));
-            file.write_string("test", false, false).unwrap();
-        }
-
-        std::thread::sleep(std::time::Duration::from_millis(10));
-
-        // child directory 2
-        let subdir2 = dir.subdir(PathBuf::from("test2"));
-        for i in 0..n {
-            let file = subdir2.file(&format!("test-file-{}", i));
-            file.write_string("test", false, false).unwrap();
-        }
-
-        dir.delete_contents_modified_before(std::time::Duration::from_millis(10))
-            .unwrap();
-        assert!(dir.exists());
-        assert_eq!(dir.files().unwrap().len(), 0);
-        assert!(!subdir1.exists());
-        assert!(subdir2.exists());
     }
 }
 }

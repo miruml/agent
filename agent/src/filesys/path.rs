@@ -23,8 +23,6 @@ pub trait PathExt {
         Ok(clean(path))
     }
 
-    fn delete(&self) -> Result<(), FileSysErr>;
-
     fn exists(&self) -> bool {
         self.path().exists()
     }

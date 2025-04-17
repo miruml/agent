@@ -6,7 +6,7 @@ use crate::http_client::client::HTTPClient;
 use crate::logs::{init, LogLevel};
 use crate::server::handlers;
 use crate::storage::layout::StorageLayout;
-use crate::storage::digests::AsyncConfigSchemaDigestCache;
+use crate::storage::digests::ConfigSchemaDigestCache;
 
 // external
 use axum::{
@@ -28,7 +28,7 @@ pub async fn server() {
     // setup the caches
     let layout = StorageLayout::new_default();
     let dir = layout.cfg_sch_digest_registry();
-    let cache = Arc::new(AsyncConfigSchemaDigestCache::spawn(dir));
+    let cache = Arc::new(ConfigSchemaDigestCache::spawn(dir));
 
     // build the app with the test route
     let app = Router::new()

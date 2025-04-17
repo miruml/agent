@@ -7,7 +7,7 @@ mod tests {
     use config_agent::services::config_schemas::hash;
     use config_agent::http_client::client::HTTPClient;
     use config_agent::storage::{
-        digests::{AsyncConfigSchemaDigestCache, ConfigSchemaDigests},
+        digests::{ConfigSchemaDigestCache, ConfigSchemaDigests},
         layout::StorageLayout,
     };
     use config_agent::utils;
@@ -30,7 +30,7 @@ pub mod errors {
         // setup
         let http_client = HTTPClient::new().await;
         let dir = StorageLayout::new_default().cfg_sch_digest_registry();
-        let cache = AsyncConfigSchemaDigestCache::spawn(dir);
+        let cache = ConfigSchemaDigestCache::spawn(dir);
 
         // json schema to hash
         let schema = json!({
@@ -63,8 +63,8 @@ pub mod success {
 
     #[tokio::test]
     async fn from_storage() {
-        let dir = Dir::create_temp_dir("pulled_from_server_resp").unwrap();
-        let cache = AsyncConfigSchemaDigestCache::spawn(dir);
+        let dir = Dir::create_temp_dir("pulled_from_server_resp").await.unwrap();
+        let cache = ConfigSchemaDigestCache::spawn(dir);
 
         // define the schema
         let schema = json!({
@@ -113,8 +113,8 @@ pub mod success {
 
     #[tokio::test]
     async fn from_server() {
-        let dir = Dir::create_temp_dir("pulled_from_server_resp").unwrap();
-        let cache = AsyncConfigSchemaDigestCache::spawn(dir);
+        let dir = Dir::create_temp_dir("pulled_from_server_resp").await.unwrap();
+        let cache = ConfigSchemaDigestCache::spawn(dir);
 
         // create the mock
         let mut mock_client = MockConfigSchemasSuccess::default();
