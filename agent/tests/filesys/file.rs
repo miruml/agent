@@ -25,7 +25,7 @@ pub mod delete {
     fn exists() {
         let dir = Dir::create_temp_dir("testing").unwrap();
         let file = dir.file("test-file");
-        file.write_string("test", false).unwrap();
+        file.write_string("test", false, false).unwrap();
         assert!(file.exists());
         file.delete().unwrap();
         assert!(!file.exists());
@@ -102,7 +102,7 @@ pub mod move_to {
     fn dest_doesnt_exist() {
         let dir = Dir::create_temp_dir("testing").unwrap();
         let src = dir.file("src-file");
-        src.write_string("test", false).unwrap();
+        src.write_string("test", false, false).unwrap();
         let dest = dir.file("dest-file");
 
         // overwrite false
@@ -127,9 +127,9 @@ pub mod move_to {
     fn dest_exists_overwrite_false() {
         let dir = Dir::create_temp_dir("testing").unwrap();
         let src = dir.file("src-file");
-        src.write_string("src", false).unwrap();
+        src.write_string("src", false, false).unwrap();
         let dest = dir.file("dest-file");
-        dest.write_string("dest", false).unwrap();
+        dest.write_string("dest", false, false).unwrap();
 
         // overwrite false
         assert!(src.exists());
@@ -144,9 +144,9 @@ pub mod move_to {
     fn dest_exists_overwrite_true() {
         let dir = Dir::create_temp_dir("testing").unwrap();
         let src = dir.file("src-file");
-        src.write_string("src", false).unwrap();
+        src.write_string("src", false, false).unwrap();
         let dest = dir.file("dest-file");
-        dest.write_string("dest", false).unwrap();
+        dest.write_string("dest", false, false).unwrap();
 
         // overwrite false
         assert!(src.exists());
@@ -160,7 +160,7 @@ pub mod move_to {
     fn src_and_dest_are_same_file() {
         let dir = Dir::create_temp_dir("testing").unwrap();
         let file = dir.file("test-file");
-        file.write_string("test", false).unwrap();
+        file.write_string("test", false, false).unwrap();
         file.move_to(&file, false).unwrap();
         file.assert_exists().unwrap();
         file.move_to(&file, true).unwrap();
@@ -176,7 +176,7 @@ pub mod parent_exists {
     fn exists() {
         let dir = Dir::create_temp_dir("testing").unwrap();
         let file = dir.file("test-file");
-        file.write_string("test", false).unwrap();
+        file.write_string("test", false, false).unwrap();
         assert!(file.parent_exists().unwrap());
     }
 
@@ -203,7 +203,7 @@ pub mod read_bytes {
     fn read_success() {
         let dir = Dir::create_temp_dir("testing").unwrap();
         let file = dir.file("test-file");
-        file.write_string("arglebargle", false).unwrap();
+        file.write_string("arglebargle", false, false).unwrap();
         assert_eq!(file.read_bytes().unwrap(), b"arglebargle");
     }
 }
@@ -224,7 +224,7 @@ pub mod read_string {
     fn read_success() {
         let dir = Dir::create_temp_dir("testing").unwrap();
         let file = dir.file("test-file");
-        file.write_string("arglebargle", false).unwrap();
+        file.write_string("arglebargle", false, false).unwrap();
         assert_eq!(file.read_string().unwrap(), "arglebargle");
     }
 }
@@ -245,7 +245,7 @@ pub mod read_json {
     fn read_success() {
         let dir = Dir::create_temp_dir("testing").unwrap();
         let file = dir.file("test-file");
-        file.write_string("{\"test\": \"arglebargle\"}", false).unwrap();
+        file.write_string("{\"test\": \"arglebargle\"}", false, false).unwrap();
         assert_eq!(file.read_json::<serde_json::Value>().unwrap(), serde_json::json!({"test": "arglebargle"}));
     }
 }
@@ -253,170 +253,215 @@ pub mod read_json {
 pub mod write_bytes {
     use super::*;
 
+    fn write_bytes_atomic(file: &File, buf: &[u8], overwrite: bool) -> Result<(), FileSysErr> {
+        file.write_bytes(buf, overwrite, true)
+    }
+    fn write_bytes_non_atomic(file: &File, buf: &[u8], overwrite: bool) -> Result<(), FileSysErr> {
+        file.write_bytes(buf, overwrite, false)
+    }
+
     #[test]
     fn doesnt_exist() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-        let file = dir.file("test-file");
-        file.write_bytes(b"arglebargle", false).unwrap();
-        assert_eq!(file.read_bytes().unwrap(), b"arglebargle");
+        for write_bytes in [write_bytes_atomic, write_bytes_non_atomic] {
+            let dir = Dir::create_temp_dir("testing").unwrap();
+            let file = dir.file("test-file");
+            write_bytes(&file, b"arglebargle", false).unwrap();
+            assert_eq!(file.read_bytes().unwrap(), b"arglebargle");
+        }
     }
 
     #[test]
     fn parent_doesnt_exist  () {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-        let subdir = dir.subdir(PathBuf::from("nested").join("subdir"));
-        let file = subdir.file("test-file");
-        file.write_bytes(b"arglebargle", false).unwrap();
-        assert_eq!(file.read_bytes().unwrap(), b"arglebargle");
+        for write_bytes in [write_bytes_atomic, write_bytes_non_atomic] {
+            let dir = Dir::create_temp_dir("testing").unwrap();
+            let subdir = dir.subdir(PathBuf::from("nested").join("subdir"));
+            let file = subdir.file("test-file");
+            write_bytes(&file, b"arglebargle", false).unwrap();
+            assert_eq!(file.read_bytes().unwrap(), b"arglebargle");
+        }
     }
 
     #[test]
     fn exists_overwrite_false() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-        let file = dir.file("test-file");
-        file.write_bytes(b"arglebargle", false).unwrap();
-        assert_eq!(file.read_bytes().unwrap(), b"arglebargle");
+        for write_bytes in [write_bytes_atomic, write_bytes_non_atomic] {
+            let dir = Dir::create_temp_dir("testing").unwrap();
+            let file = dir.file("test-file");
+            file.write_bytes(b"arglebargle", false, false).unwrap();
+            assert_eq!(file.read_bytes().unwrap(), b"arglebargle");
 
         // should fail when writing again
-        assert!(matches!(
-            file.write_bytes(b"arglebargle", false).unwrap_err(),
-            FileSysErr::PathExists { .. }
-        ));
+            assert!(matches!(
+                write_bytes(&file, b"arglebargle", false).unwrap_err(),
+                FileSysErr::PathExists { .. }
+            ));
+        }
     }
 
     #[test]
     fn exists_overwrite_true() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-        let file = dir.file("test-file");
-        file.write_bytes(b"arglebargle", false).unwrap();
-        assert_eq!(file.read_bytes().unwrap(), b"arglebargle");
+        for write_bytes in [write_bytes_atomic, write_bytes_non_atomic] {
+            let dir = Dir::create_temp_dir("testing").unwrap();
+            let file = dir.file("test-file");
+            file.write_bytes(b"arglebargle", false, false).unwrap();
+            assert_eq!(file.read_bytes().unwrap(), b"arglebargle");
 
-        // should succeed when writing again
-        file.write_bytes(b"arglebargle", true).unwrap();
-        assert_eq!(file.read_bytes().unwrap(), b"arglebargle");
+            // should succeed when writing again
+            write_bytes(&file, b"arglebargle", true).unwrap();
+            assert_eq!(file.read_bytes().unwrap(), b"arglebargle");
+        }
     }
 }   
 
 pub mod write_string {
     use super::*;
 
+    fn write_string_atomic(file: &File, s: &str, overwrite: bool) -> Result<(), FileSysErr> {
+        file.write_string(s, overwrite, true)
+    }
+    fn write_string_non_atomic(file: &File, s: &str, overwrite: bool) -> Result<(), FileSysErr> {
+        file.write_string(s, overwrite, false)
+    }
+
     #[test]
     fn doesnt_exist() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-        let file = dir.file("test-file");
-        file.write_string("hello world", false).unwrap();
-        assert_eq!(file.read_string().unwrap(), "hello world");
+        for write_string in [write_string_atomic, write_string_non_atomic] {
+            let dir = Dir::create_temp_dir("testing").unwrap();
+            let file = dir.file("test-file");
+            write_string(&file, "hello world", false).unwrap();
+            assert_eq!(file.read_string().unwrap(), "hello world");
+        }
     }
 
     #[test]
     fn parent_doesnt_exist() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-        let subdir = dir.subdir(PathBuf::from("nested").join("subdir"));
-        let file = subdir.file("test-file");
-        file.write_string("hello world", false).unwrap();
-        assert_eq!(file.read_string().unwrap(), "hello world");
+        for write_string in [write_string_atomic, write_string_non_atomic] {
+            let dir = Dir::create_temp_dir("testing").unwrap();
+            let subdir = dir.subdir(PathBuf::from("nested").join("subdir"));
+            let file = subdir.file("test-file");
+            write_string(&file, "hello world", false).unwrap();
+            assert_eq!(file.read_string().unwrap(), "hello world");
+        }
     }
 
     #[test]
     fn exists_overwrite_false() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-        let file = dir.file("test-file");
-        file.write_string("hello world", false).unwrap();
-        assert_eq!(file.read_string().unwrap(), "hello world");
+        for write_string in [write_string_atomic, write_string_non_atomic] {
+            let dir = Dir::create_temp_dir("testing").unwrap();
+            let file = dir.file("test-file");
+            file.write_string("hello world", false, false).unwrap();
+            assert_eq!(file.read_string().unwrap(), "hello world");
 
-        // should fail when writing again
-        assert!(matches!(
-            file.write_string("new content", false).unwrap_err(),
-            FileSysErr::PathExists { .. }
-        ));
+            // should fail when writing again
+            assert!(matches!(
+                write_string(&file, "new content", false).unwrap_err(),
+                FileSysErr::PathExists { .. }
+            ));
+        }
     }
 
     #[test]
     fn exists_overwrite_true() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-        let file = dir.file("test-file");
-        file.write_string("hello world", false).unwrap();
-        assert_eq!(file.read_string().unwrap(), "hello world");
+        for write_string in [write_string_atomic, write_string_non_atomic] {
+            let dir = Dir::create_temp_dir("testing").unwrap();
+            let file = dir.file("test-file");
+            file.write_string("hello world", false, false).unwrap();
+            assert_eq!(file.read_string().unwrap(), "hello world");
 
-        // should succeed when writing again
-        file.write_string("new content", true).unwrap();
-        assert_eq!(file.read_string().unwrap(), "new content");
+            // should succeed when writing again
+            write_string(&file, "new content", true).unwrap();
+            assert_eq!(file.read_string().unwrap(), "new content");
+        }
     }
 }
 
 mod write_json {
     use super::*;
 
+    fn write_json_atomic(file: &File, data: &serde_json::Value, overwrite: bool) -> Result<(), FileSysErr> {
+        file.write_json(data, overwrite, true)
+    }
+    fn write_json_non_atomic(file: &File, data: &serde_json::Value, overwrite: bool) -> Result<(), FileSysErr> {
+        file.write_json(data, overwrite, false)
+    }
+
     #[test]
     fn doesnt_exist() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-        let file = dir.file("test-file");
-        let data = json!({
-            "name": "test",
-            "value": 42
-        });
-        file.write_json(&data, false).unwrap();
-        let read_data: serde_json::Value = file.read_json().unwrap();
-        assert_eq!(read_data, data);
+        for write_json in [write_json_atomic, write_json_non_atomic] {
+            let dir = Dir::create_temp_dir("testing").unwrap();
+            let file = dir.file("test-file");
+            let data = json!({
+                "name": "test",
+                "value": 42
+                });
+            write_json(&file, &data, false).unwrap();
+            let read_data: serde_json::Value = file.read_json().unwrap();
+            assert_eq!(read_data, data);
+        }
     }
 
     #[test]
     fn parent_doesnt_exist() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-        let subdir = dir.subdir(PathBuf::from("nested").join("subdir"));
-        let file = subdir.file("test-file");
-        let data = json!({
+        for write_json in [write_json_atomic, write_json_non_atomic] {
+            let dir = Dir::create_temp_dir("testing").unwrap();
+            let subdir = dir.subdir(PathBuf::from("nested").join("subdir"));
+            let file = subdir.file("test-file");
+            let data = json!({
             "name": "test",
             "value": 42
-        });
-        file.write_json(&data, false).unwrap();
-        let read_data: serde_json::Value = file.read_json().unwrap();
-        assert_eq!(read_data, data);
+            });
+            write_json(&file, &data, false).unwrap();
+            let read_data: serde_json::Value = file.read_json().unwrap();
+            assert_eq!(read_data, data);
+        }
     }
 
     #[test]
     fn exists_overwrite_false() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-        let file = dir.file("test-file");
-        let data = json!({
+        for write_json in [write_json_atomic, write_json_non_atomic] {
+            let dir = Dir::create_temp_dir("testing").unwrap();
+            let file = dir.file("test-file");
+            let data = json!({
             "name": "test",
             "value": 42
-        });
-        file.write_json(&data, false).unwrap();
-        let read_data: serde_json::Value = file.read_json().unwrap();
-        assert_eq!(read_data, data);
+            });
+            write_json(&file, &data, false).unwrap();
+            let read_data: serde_json::Value = file.read_json().unwrap();
+            assert_eq!(read_data, data);
 
-        // should fail when writing again
-        let new_data = json!({
-            "name": "updated",
-            "value": 100
-        });
-        assert!(matches!(
-            file.write_json(&new_data, false).unwrap_err(),
-            FileSysErr::PathExists { .. }
-        ));
+            // should fail when writing again
+            let new_data = json!({
+                "name": "updated",
+                "value": 100
+            });
+            assert!(matches!(
+                write_json(&file, &new_data, false).unwrap_err(),
+                FileSysErr::PathExists { .. }
+            ));
+        }
     }
 
     #[test]
     fn exists_overwrite_true() {
-        let dir = Dir::create_temp_dir("testing").unwrap();
-        let file = dir.file("test-file");
-        let data = json!({
+        for write_json in [write_json_atomic, write_json_non_atomic] {
+            let dir = Dir::create_temp_dir("testing").unwrap();
+            let file = dir.file("test-file");
+            let data = json!({
             "name": "test",
             "value": 42
-        });
-        file.write_json(&data, false).unwrap();
-        let read_data: serde_json::Value = file.read_json().unwrap();
-        assert_eq!(read_data, data);
+            });
+            write_json(&file, &data, false).unwrap();
+            let read_data: serde_json::Value = file.read_json().unwrap();
+            assert_eq!(read_data, data);
 
-        // should succeed when writing again
-        let new_data = json!({
-            "name": "updated",
-            "value": 100
-        });
-        file.write_json(&new_data, true).unwrap();
-        let read_data: serde_json::Value = file.read_json().unwrap();
-        assert_eq!(read_data, new_data);
+            // should succeed when writing again
+            let new_data = json!({
+                "name": "updated",
+                "value": 100
+            });
+            write_json(&file, &new_data, true).unwrap();
+            let read_data: serde_json::Value = file.read_json().unwrap();
+            assert_eq!(read_data, new_data);
+        }
     }
 }
 
@@ -442,7 +487,7 @@ pub mod set_permissions {
         let file = dir.file("test-file");
         
         // Create the file first
-        file.write_string("test content", false).unwrap();
+        file.write_string("test content", false, false).unwrap();
         
         // Test read-only (444 in octal)
         file.set_permissions(0o444).unwrap();
@@ -465,7 +510,7 @@ pub mod set_permissions {
     fn all_permission_combinations() {
         let dir = Dir::create_temp_dir("testing").unwrap();
         let file = dir.file("test-file");
-        file.write_string("test content", false).unwrap();
+        file.write_string("test content", false, false).unwrap();
 
         // Test various permission combinations
         let permissions = [
@@ -504,7 +549,7 @@ pub mod create_symlink {
     fn dest_doesnt_exist_overwrite_false() {
         let dir = Dir::create_temp_dir("testing").unwrap();
         let file = dir.file("test-file");
-        file.write_string("test", false).unwrap();
+        file.write_string("test", false, false).unwrap();
         let link = dir.file("link");
 
         // overwrite false
@@ -517,7 +562,7 @@ pub mod create_symlink {
     fn dest_doesnt_exist_overwrite_true() {
         let dir = Dir::create_temp_dir("testing").unwrap();
         let file = dir.file("test-file");
-        file.write_string("test", false).unwrap();
+        file.write_string("test", false, false).unwrap();
         let link = dir.file("link");
 
         // overwrite true
@@ -530,7 +575,7 @@ pub mod create_symlink {
     fn dest_exists_overwrite_false() {
         let dir = Dir::create_temp_dir("testing").unwrap();
         let file = dir.file("test-file");
-        file.write_string("test", false).unwrap();
+        file.write_string("test", false, false).unwrap();
         let link = dir.file("link");
         file.create_symlink(&link, true).unwrap();
 
@@ -546,7 +591,7 @@ pub mod create_symlink {
     fn dest_exists_overwrite_true() {
         let dir = Dir::create_temp_dir("testing").unwrap();
         let file = dir.file("test-file");
-        file.write_string("test", false).unwrap();
+        file.write_string("test", false, false).unwrap();
         let link = dir.file("link");
         file.create_symlink(&link, true).unwrap();
 
@@ -582,7 +627,7 @@ pub mod permissions {
         let file = dir.file("test-file");
         
         // Create the file first
-        file.write_string("test content", false).unwrap();
+        file.write_string("test content", false, false).unwrap();
         
         // Test read-only (444 in octal)
         file.set_permissions(0o444).unwrap();
@@ -620,7 +665,7 @@ pub mod last_modified {
     fn success() {
         let dir = Dir::create_temp_dir("testing").unwrap();
         let file = dir.file("test-file");
-        file.write_string("test", false).unwrap();
+        file.write_string("test", false, false).unwrap();
         let modified = file.last_modified().unwrap();
         assert!(modified.elapsed().unwrap() < std::time::Duration::from_secs(1));
     }
@@ -645,7 +690,7 @@ pub mod size {
     fn success() {
         let dir = Dir::create_temp_dir("testing").unwrap();
         let file = dir.file("test-file");
-        file.write_string("test", false).unwrap();
+        file.write_string("test", false, false).unwrap();
         assert_eq!(file.size().unwrap(), 4);
     }
 }
@@ -658,7 +703,7 @@ pub mod delete_if_modified_before {
     fn delete_if_modified_before_success_modified() {
         let dir = Dir::create_temp_dir("testing").unwrap();
         let file = dir.file("test-file");
-        file.write_string("test", false).unwrap();
+        file.write_string("test", false, false).unwrap();
         std::thread::sleep(std::time::Duration::from_millis(10));
         file.delete_if_modified_before(std::time::Duration::from_millis(1))
             .unwrap();
@@ -669,7 +714,7 @@ pub mod delete_if_modified_before {
     fn delete_if_modified_before_success_not_modified() {
         let dir = Dir::create_temp_dir("testing").unwrap();
         let file = dir.file("test-file");
-        file.write_string("test", false).unwrap();
+        file.write_string("test", false, false).unwrap();
         file.delete_if_modified_before(std::time::Duration::from_secs(1))
             .unwrap();
         assert!(file.exists());

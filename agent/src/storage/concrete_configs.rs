@@ -59,7 +59,7 @@ impl LatestConcreteConfigRegistry {
         overwrite: bool,
     ) -> Result<(), StorageErr> {
         let config_file = self.config_schema_file(config_slug, config_schema_digest);
-        config_file.write_json(config, overwrite).map_err(|e| StorageErr::FileSysErr {
+        config_file.write_json(config, overwrite, true).map_err(|e| StorageErr::FileSysErr {
             source: e,
             trace: trace!(),
         })?;

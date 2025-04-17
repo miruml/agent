@@ -163,9 +163,17 @@ impl File {
     }
 
     /// Write bytes to a file. Overwrites the file if it exists.
-    pub fn write_bytes(&self, buf: &[u8], atomic: bool) -> Result<(), FileSysErr> {
+    pub fn write_bytes(
+        &self,
+        buf: &[u8],
+        overwrite: bool,
+        atomic: bool,
+    ) -> Result<(), FileSysErr> {
         // ensure parent directory exists
         self.parent()?.create_if_absent()?;
+
+        // validate overwrite
+        File::validate_overwrite(self, overwrite)?;
 
         if atomic {
             let af = AtomicFile::new(self.to_string(), AllowOverwrite);
@@ -192,12 +200,22 @@ impl File {
     }
 
     /// Write a string to a file. Overwrites the file if it exists.
-    pub fn write_string(&self, s: &str, atomic: bool) -> Result<(), FileSysErr> {
-        self.write_bytes(s.as_bytes(), atomic)
+    pub fn write_string(
+        &self,
+        s: &str,
+        overwrite: bool,
+        atomic: bool,
+    ) -> Result<(), FileSysErr> {
+        self.write_bytes(s.as_bytes(), overwrite, atomic)
     }
 
     /// Write a JSON object to a file. Overwrites the file if it exists.
-    pub fn write_json<T: serde::Serialize>(&self, obj: &T, atomic: bool) -> Result<(), FileSysErr> {
+    pub fn write_json<T: serde::Serialize>(
+        &self,
+        obj: &T,
+        overwrite: bool,
+        atomic: bool,
+    ) -> Result<(), FileSysErr> {
         // Convert to JSON bytes first
         let json_bytes = serde_json::to_vec(obj).map_err(|e| FileSysErr::ParseJSONErr {
             source: e,
@@ -205,7 +223,7 @@ impl File {
             trace: trace!(),
         })?;
 
-        self.write_bytes(&json_bytes, atomic)
+        self.write_bytes(&json_bytes, overwrite, atomic)
     }
 
     /// Rename this file to a new file. Overwrites the new file if it exists.

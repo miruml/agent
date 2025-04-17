@@ -78,6 +78,7 @@ impl SyncConfigSchemaDigestCache {
         digest_file.write_json(
             &digests,
             overwrite,
+            true,
         ).map_err(|e| StorageErr::FileSysErr {
             source: e,
             trace: trace!(),
