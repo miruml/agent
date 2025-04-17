@@ -6,6 +6,8 @@ rust-version = { workspace = true }
 
 [dependencies]
 axum = { workspace = true }
+dashmap = { workspace = true }
+futures = { workspace = true }
 hex = { workspace = true }
 hyper = { workspace = true  }
 openapi-client = { workspace = true }

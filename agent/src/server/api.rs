@@ -2,6 +2,7 @@
 use std::sync::Arc;
 
 // internal crates
+use crate::http_client::client::HTTPClient;
 use crate::logs::{init, LogLevel};
 use crate::server::handlers;
 use crate::storage::layout::StorageLayout;
@@ -24,6 +25,8 @@ pub async fn server() {
         println!("Failed to initialize logging: {}", e);
     }
 
+    // setup the http client
+    let http_client = Arc::new(HTTPClient::new().await);
 
     // setup the caches
     let layout = StorageLayout::new_default();
@@ -51,7 +54,11 @@ pub async fn server() {
         "/v1/config_schemas/hash",
         post({
             let cache = Arc::clone(&cache);
-            move |payload| handlers::hash_schema(payload, cache)
+            move |payload| handlers::hash_schema(
+                payload,
+                http_client,
+                cache,
+            )
         }),
     );
 

@@ -14,6 +14,7 @@ use serde_json::Value;
 
 pub async fn hash_schema(
     schema: &Value,
+    http_client: &HTTPClient,
     cache: &AsyncConfigSchemaDigestCache,
 ) -> Result<String, ServiceErr> {
 
@@ -32,7 +33,6 @@ pub async fn hash_schema(
     }
 
     // if not found, send the hash request to the server
-    let http_client = HTTPClient::new().await;
     let hash_request = HashSchemaRequest { schema: schema.clone() };
     let digest_response = http_client.hash_schema(&hash_request).await
         .map_err(|e| ServiceErr::HTTPErr {

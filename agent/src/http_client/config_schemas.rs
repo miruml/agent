@@ -3,9 +3,7 @@ use crate::http_client::errors::HTTPErr;
 use crate::http_client::client::HTTPClient;
 use openapi_client::models::HashSchemaRequest;
 use openapi_client::models::SchemaDigestResponse;
-
-// external crates
-use std::time::Duration;
+use crate::utils;
 
 impl HTTPClient {
     pub async fn hash_schema(
@@ -14,6 +12,11 @@ impl HTTPClient {
     ) -> Result<SchemaDigestResponse, HTTPErr> {
         // build the request
         let url = format!("{}/config_schemas/hash", self.base_url);
+        let key = format!(
+            "{}:{}",
+            url,
+            utils::hash_json(&request.schema),
+        );
         let request = self.build_post_request(
             &url,
             self.marshal_json_request(request)?,
@@ -21,13 +24,14 @@ impl HTTPClient {
         )?;
 
         // send the request
-        let response = self.send(
+        let response = self.send_cached(
+            key,
             request,
-            Duration::from_secs(10),
+            self.timeout,
         ).await?;
 
         // parse the response
-        let response = self.parse_json_response::<SchemaDigestResponse>(response).await?;
+        let response = self.parse_json_response_text::<SchemaDigestResponse>(response).await?;
         Ok(response)
     }
 }

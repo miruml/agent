@@ -5,9 +5,6 @@ use openapi_client::models::RenderLatestConcreteConfigRequest;
 use openapi_client::models::BackendConcreteConfig;
 use openapi_client::models::ConcreteConfigList;
 
-// external crates
-use std::time::Duration;
-
 impl HTTPClient {
     pub async fn read_latest_concrete_config(
         &self,
@@ -19,13 +16,14 @@ impl HTTPClient {
         let request = self.build_get_request(&url, None)?;
 
         // send the request
-        let response = self.send(
+        let response = self.send_cached(
+            url,
             request,
-            Duration::from_secs(10),
+            self.timeout,
         ).await?;
 
         // parse the response
-        let cncr_cfg_list= self.parse_json_response::<ConcreteConfigList>(response).await?;
+        let cncr_cfg_list = self.parse_json_response_text::<ConcreteConfigList>(response).await?;
         if cncr_cfg_list.data.is_empty() {
             Ok(None)
         } else {
@@ -39,6 +37,12 @@ impl HTTPClient {
     ) -> Result<BackendConcreteConfig, HTTPErr> {
         // build the request
         let url = format!("{}/render_latest", self.base_url);
+        let key = format!(
+            "{}:{}:{}",
+            url,
+            request.config_slug,
+            request.config_schema_digest,
+        );
         let request = self.build_post_request(
             &url,
             self.marshal_json_request(request)?,
@@ -46,13 +50,14 @@ impl HTTPClient {
         )?;
 
         // send the request
-        let response = self.send(
+        let response = self.send_cached(
+            key,
             request,
-            Duration::from_secs(10),
+            self.timeout,
         ).await?;
         
         // parse the response
-        let response = self.parse_json_response::<BackendConcreteConfig>(response).await?;
+        let response = self.parse_json_response_text::<BackendConcreteConfig>(response).await?;
         Ok(response)
     }
 }

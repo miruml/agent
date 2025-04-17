@@ -1,3 +1,6 @@
+// std
+use std::sync::Arc;
+
 // internal crates
 use crate::env;
 use crate::http_client::errors::{reqwest_err_to_http_client_err, HTTPErr};
@@ -5,12 +8,16 @@ use crate::trace;
 use openapi_client::models::ErrorResponse;
 
 // external crates
+use dashmap::DashMap;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::time::{sleep, timeout, Duration};
 use tokio::sync::OnceCell;
+use tokio::sync::RwLock;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
+
+type RequestKey = String;
 
 // status codes
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
@@ -22,11 +29,14 @@ pub enum Code {
     Unknown,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Debug, Default)]
 pub struct HTTPClient {
     // allow crate access since this struct is defined throughout the crate
     pub(crate) client: reqwest::Client,
     pub(crate) base_url: String,
+    pub(crate) timeout: Duration,
+    cache: DashMap<RequestKey, Arc<RwLock<Option<String>>>>,
+    cache_ttl: Duration,
 }
 
 // Use Lazy to implement the Singleton(ish) Pattern for the reqwest client (see the
@@ -69,6 +79,9 @@ impl HTTPClient {
         HTTPClient {
             client: client.clone(),
             base_url: base + "/internal/devices/v1",
+            timeout: Duration::from_secs(10),
+            cache: DashMap::new(),
+            cache_ttl: Duration::from_secs(60),
         }
     }
 
@@ -148,6 +161,47 @@ impl HTTPClient {
         Ok(response)
     }
 
+    pub(crate) async fn send_cached(
+        &self,
+        key: RequestKey,
+        request: reqwest::RequestBuilder,
+        time_limit: Duration,
+    ) -> Result<String, HTTPErr> {
+        let cache_entry = self.cache
+            .entry(key.clone())
+            .or_insert_with(|| Arc::new(RwLock::new(None)));
+
+        // read the cache
+        let guard = cache_entry.read().await;
+        if let Some(result) = guard.as_ref() {
+            return Ok(result.clone());
+        }
+        
+        // attempt to write to the cache but exit if another thread is already writing
+        let mut guard = cache_entry.write().await;
+        if let Some(result) = guard.as_ref() {
+            return Ok(result.clone());
+        }
+
+        // send the request and add the result to the cache
+        let response = self.send(request, time_limit).await?;
+        let text = self.handle_response(response).await?;
+            
+        *guard = Some(text.clone());
+        drop(guard);
+
+        // clean up after a delay
+        let cache = self.cache.clone();
+        let key = key.clone();
+        let ttl = self.cache_ttl;
+        tokio::spawn(async move {
+            tokio::time::sleep(ttl).await;
+            cache.remove(&key);
+        });
+        
+        Ok(text)
+    }
+
     pub(crate) fn marshal_json_request<T>(
         &self,
         request: &T,
@@ -158,10 +212,10 @@ impl HTTPClient {
         })
     }
 
-    pub(crate) async fn parse_json_response<T>(
+    pub(crate) async fn handle_response(
         &self,
         response: reqwest::Response,
-    ) -> Result<T, HTTPErr> where T: DeserializeOwned {
+    ) -> Result<String, HTTPErr> {
         // get the api response
         let http_status = response.status();
 
@@ -172,17 +226,10 @@ impl HTTPClient {
 
         // parse the expected object
         if http_status.is_success() {
-            serde_json::from_str::<T>(&text).map_err(
-                |e| HTTPErr::ParseJSONErr {
-                    source: e,
-                    trace: trace!(),
-            })
+            Ok(text)
         // parse the error object
         } else {
-            let error_response: ErrorResponse = serde_json::from_str(&text).map_err(|e| HTTPErr::ParseJSONErr {
-                source: e,
-                trace: trace!(),
-            })?;
+            let error_response = self.parse_json_response_text::<ErrorResponse>(text).await?;
             Err(HTTPErr::ResponseErr {
                 http_code: http_status,
                 error: error_response,
@@ -190,7 +237,19 @@ impl HTTPClient {
             })
         }
     }
+
+    pub(crate) async fn parse_json_response_text<T>(
+        &self,
+        text: String,
+    ) -> Result<T, HTTPErr> where T: DeserializeOwned {
+        serde_json::from_str::<T>(&text).map_err(|e| HTTPErr::ParseJSONErr {
+            source: e,
+            trace: trace!(),
+        })
+    }
 }
+
+
 
 // Testing helper methods
 impl HTTPClient {
