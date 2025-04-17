@@ -82,40 +82,16 @@ impl File {
         }
     }
 
-    /// Rename this file to a new file. Overwrites the new file if it exists.
-    pub fn move_to(&self, new_file: &File, overwrite: bool) -> Result<(), FileSysErr> {
-        // source file must exist
-        self.assert_exists()?;
-
-        // if this file and the new file are the same, nothing needs to be done
-        if self.path() == new_file.path() {
-            return Ok(());
-        }
-
-        // check not overwriting new file if it exist
-        if !overwrite && new_file.exists() {
-            return Err(FileSysErr::PathExists {
-                path: new_file.path().clone(),
+    // Create a new Dir instance from the parent directory of the path for this File
+    // instance
+    pub fn parent(&self) -> Result<Dir, FileSysErr> {
+        let parent = self.path
+            .parent()
+            .ok_or(FileSysErr::UnknownFileParentDirErr {
+                file: self.clone(),
                 trace: trace!(),
-            });
-        }
-
-        // ensure the parent directory of the new file exists and create it if not
-        new_file.parent()?.create_if_absent()?;
-        if overwrite {
-            new_file.delete()?;
-        }
-
-        // move this file to the new file
-        std::fs::rename(self.to_string(), new_file.to_string()).map_err(|e| {
-            FileSysErr::MoveFileErr {
-                source: e,
-                src_file: self.clone(),
-                dest_file: new_file.clone(),
-                trace: trace!(),
-            }
-        })?;
-        Ok(())
+            })?;
+        Ok(Dir::new(parent))
     }
 
     pub fn parent_exists(&self) -> Result<bool, FileSysErr> {
@@ -173,13 +149,29 @@ impl File {
         Ok(obj)
     }
 
+    fn validate_overwrite(dest: &File, overwrite: bool) -> Result<(), FileSysErr> {
+        if !overwrite && dest.exists() {
+            return Err(FileSysErr::PathExists {
+                path: dest.path().clone(),
+                trace: trace!(),
+            });
+        }
+        Ok(())
+    }
+
     /// Write bytes to a file. Overwrites the file if it exists.
-    pub fn write_bytes(&self, buf: &[u8]) -> Result<(), FileSysErr> {
+    pub fn write_bytes(
+        &self,
+        buf: &[u8],
+        overwrite: bool,
+    ) -> Result<(), FileSysErr> {
         // ensure parent directory exists
         let parent = self.parent()?;
         if !parent.exists() {
             parent.create_if_absent()?;
         }
+
+        File::validate_overwrite(self, overwrite)?;
 
         let mut file =
             fs::File::create(self.to_string()).map_err(|e| FileSysErr::OpenFileErr {
@@ -197,8 +189,8 @@ impl File {
     }
 
     /// Write a string to a file. Overwrites the file if it exists.
-    pub fn write_string(&self, s: &str) -> Result<(), FileSysErr> {
-        self.write_bytes(s.as_bytes())
+    pub fn write_string(&self, s: &str, overwrite: bool) -> Result<(), FileSysErr> {
+        self.write_bytes(s.as_bytes(), overwrite)
     }
 
     /// Write a JSON object to a file. Overwrites the file if it exists.
@@ -207,13 +199,7 @@ impl File {
         obj: &T,
         overwrite: bool,
     ) -> Result<(), FileSysErr> {
-        // if file exists and overwrite is false, return an error
-        if !overwrite && self.exists() {
-            return Err(FileSysErr::PathExists {
-                path: self.path().clone(),
-                trace: trace!(),
-            });
-        }
+        File::validate_overwrite(self, overwrite)?;
 
         // Convert to JSON bytes first
         let json_bytes = serde_json::to_vec(obj).map_err(|e| FileSysErr::ParseJSONErr {
@@ -222,19 +208,37 @@ impl File {
             trace: trace!(),
         })?;
 
-        self.write_bytes(&json_bytes)
+        self.write_bytes(&json_bytes, overwrite)
     }
 
-    // Create a new Dir instance from the parent directory of the path for this File
-    // instance
-    pub fn parent(&self) -> Result<Dir, FileSysErr> {
-        let parent = self.path
-            .parent()
-            .ok_or(FileSysErr::UnknownFileParentDirErr {
-                file: self.clone(),
+    /// Rename this file to a new file. Overwrites the new file if it exists.
+    pub fn move_to(&self, new_file: &File, overwrite: bool) -> Result<(), FileSysErr> {
+        // source file must exist
+        self.assert_exists()?;
+
+        // if this file and the new file are the same, nothing needs to be done
+        if self.path() == new_file.path() {
+            return Ok(());
+        }
+
+        File::validate_overwrite(new_file, overwrite)?;
+
+        // ensure the parent directory of the new file exists and create it if not
+        new_file.parent()?.create_if_absent()?;
+        if overwrite {
+            new_file.delete()?;
+        }
+
+        // move this file to the new file
+        std::fs::rename(self.to_string(), new_file.to_string()).map_err(|e| {
+            FileSysErr::MoveFileErr {
+                source: e,
+                src_file: self.clone(),
+                dest_file: new_file.clone(),
                 trace: trace!(),
-            })?;
-        Ok(Dir::new(parent))
+            }
+        })?;
+        Ok(())
     }
 
     // Set the file permissions using octal
@@ -256,12 +260,7 @@ impl File {
     // overwrites a symlink if it already exists
     pub fn create_symlink(&self, link: &File, overwrite: bool) -> Result<(), FileSysErr> {
         self.assert_exists()?;
-        if !overwrite && link.exists() {
-            return Err(FileSysErr::PathExists {
-                path: link.path().clone(),
-                trace: trace!(),
-            });
-        }
+        File::validate_overwrite(link, overwrite)?;
         link.delete()?;
 
         // create symlink
@@ -276,7 +275,7 @@ impl File {
         Ok(())
     }
 
-    pub fn metadata(&self) -> Result<std::fs::Metadata, FileSysErr> {
+    fn metadata(&self) -> Result<std::fs::Metadata, FileSysErr> {
         self.assert_exists()?;
         std::fs::metadata(self.to_string()).map_err(|e| FileSysErr::FileMetaDataErr {
             source: e,
@@ -284,13 +283,16 @@ impl File {
         })
     }
 
+    pub fn permissions(&self) -> Result<std::fs::Permissions, FileSysErr> {
+        Ok(self.metadata()?.permissions())
+    }
+
     pub fn last_modified(&self) -> Result<SystemTime, FileSysErr> {
-        self.metadata()
-            .map(|m| m.modified().unwrap_or(SystemTime::now()))
+        Ok(self.metadata()?.modified().unwrap_or(SystemTime::now()))
     }
 
     pub fn size(&self) -> Result<u64, FileSysErr> {
-        self.metadata().map(|m| m.len())
+        Ok(self.metadata()?.len())
     }
 
     pub fn delete_if_modified_before(&self, ago: Duration) -> Result<(), FileSysErr> {

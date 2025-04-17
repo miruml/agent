@@ -375,7 +375,7 @@ mod create_if_absent {
 
         // create some files in the directory to check if they exist afterward
         let file = dir.file("test-file");
-        file.write_string("arglebargle").unwrap();
+        file.write_string("arglebargle", false).unwrap();
 
         // create the directory
         dir.create_if_absent().unwrap();
@@ -504,9 +504,9 @@ mod files {
 
         // create some files
         let file1 = dir.file("file1.txt");
-        file1.write_string("arglebargle").unwrap();
+        file1.write_string("arglebargle", false).unwrap();
         let file2 = dir.file("file2.txt");
-        file2.write_string("arglebargle").unwrap();
+        file2.write_string("arglebargle", false).unwrap();
 
         // get the files
         let files = dir.files().unwrap();
@@ -530,7 +530,7 @@ mod delete_if_empty {
     fn has_files() {
         let dir = Dir::create_temp_dir("testing").unwrap();
         let file = dir.file("test");
-        file.write_string("arglechargle").unwrap();
+        file.write_string("arglechargle", false).unwrap();
         dir.delete_if_empty().unwrap();
         assert!(dir.exists());
     }
@@ -555,7 +555,7 @@ mod delete_contents_modified_before {
         let n = 10;
         for i in 0..n {
             let file = dir.file(&format!("test-file-{}", i));
-            file.write_string("test").unwrap();
+            file.write_string("test", false).unwrap();
         }
         std::thread::sleep(std::time::Duration::from_millis(10));
         dir.delete_contents_modified_before(std::time::Duration::from_millis(1))
@@ -570,7 +570,7 @@ mod delete_contents_modified_before {
         let n = 10;
         for i in 0..n {
             let file = dir.file(&format!("test-file-{}", i));
-            file.write_string("test").unwrap();
+            file.write_string("test", false).unwrap();
         }
         dir.delete_contents_modified_before(std::time::Duration::from_secs(1))
             .unwrap();
@@ -585,14 +585,14 @@ mod delete_contents_modified_before {
         let n = 10;
         for i in 0..n {
             let file = dir.file(&format!("test-file-{}", i));
-            file.write_string("test").unwrap();
+            file.write_string("test", false).unwrap();
         }
 
         // child directory
         let subdir = dir.subdir(PathBuf::from("test"));
         for i in 0..n {
             let file = subdir.file(&format!("test-file-{}", i));
-            file.write_string("test").unwrap();
+            file.write_string("test", false).unwrap();
         }
 
         std::thread::sleep(std::time::Duration::from_millis(10));
@@ -609,14 +609,14 @@ mod delete_contents_modified_before {
         let n = 10;
         for i in 0..n {
             let file = dir.file(&format!("test-file-{}", i));
-            file.write_string("test").unwrap();
+            file.write_string("test", false).unwrap();
         }
 
         // child directory
         let subdir = dir.subdir(PathBuf::from("test"));
         for i in 0..n {
             let file = subdir.file(&format!("test-file-{}", i));
-            file.write_string("test").unwrap();
+            file.write_string("test", false).unwrap();
         }
 
         dir.delete_contents_modified_before(std::time::Duration::from_secs(1))
@@ -632,14 +632,14 @@ mod delete_contents_modified_before {
         let n = 10;
         for i in 0..n {
             let file = dir.file(&format!("test-file-{}", i));
-            file.write_string("test").unwrap();
+            file.write_string("test", false).unwrap();
         }
 
         // child directory 1
         let subdir1 = dir.subdir(PathBuf::from("test1"));
         for i in 0..n {
             let file = subdir1.file(&format!("test-file-{}", i));
-            file.write_string("test").unwrap();
+            file.write_string("test", false).unwrap();
         }
 
         std::thread::sleep(std::time::Duration::from_millis(10));
@@ -648,7 +648,7 @@ mod delete_contents_modified_before {
         let subdir2 = dir.subdir(PathBuf::from("test2"));
         for i in 0..n {
             let file = subdir2.file(&format!("test-file-{}", i));
-            file.write_string("test").unwrap();
+            file.write_string("test", false).unwrap();
         }
 
         dir.delete_contents_modified_before(std::time::Duration::from_millis(10))
