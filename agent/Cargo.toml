@@ -5,6 +5,7 @@ edition = { workspace = true }
 rust-version = { workspace = true }
 
 [dependencies]
+atomicwrites = "0.4.4"
 axum = { workspace = true }
 dashmap = { workspace = true }
 futures = { workspace = true }

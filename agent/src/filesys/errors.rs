@@ -52,6 +52,12 @@ pub enum FileSysErr {
     // internal crate errors
 
     // external crate errors
+    #[error("AtomicWriteFileErr: {source}")]
+    AtomicWriteFileErr {
+        source: std::io::Error,
+        file: File,
+        trace: Box<Trace>,
+    },
     #[error("ConvertUTF8Err: {source}")]
     ConvertUTF8Err {
         source: std::str::Utf8Error,

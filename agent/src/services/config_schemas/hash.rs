@@ -1,7 +1,7 @@
 // internal crates
-use crate::http_client::client::HTTPClient;
+use crate::http_client::prelude::*;
 use crate::services::errors::ServiceErr;
-use crate::storage::cfg_sch_digest_reg::{
+use crate::storage::digests::{
     AsyncConfigSchemaDigestCache,
     ConfigSchemaDigests,
 };
@@ -12,9 +12,9 @@ use openapi_client::models::HashSchemaRequest;
 // external crates
 use serde_json::Value;
 
-pub async fn hash_schema(
+pub async fn hash_schema<T: ConfigSchemasExt>(
     schema: &Value,
-    http_client: &HTTPClient,
+    http_client: &T,
     cache: &AsyncConfigSchemaDigestCache,
 ) -> Result<String, ServiceErr> {
 
@@ -46,7 +46,7 @@ pub async fn hash_schema(
         raw: raw_digest,
         resolved: resolved_digest.clone(),
     };
-    cache.insert(
+    cache.write(
         digests,
         true,
     ).await

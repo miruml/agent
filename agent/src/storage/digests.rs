@@ -69,7 +69,7 @@ impl SyncConfigSchemaDigestCache {
         }
     }
 
-    pub fn insert(
+    pub fn write(
         &self,
         digests: ConfigSchemaDigests,
         overwrite: bool,
@@ -104,7 +104,7 @@ enum WorkerCommand {
         raw_digest: String,
         respond_to: oneshot::Sender<Result<Option<ConfigSchemaDigests>, StorageErr>>,
     },
-    Insert {
+    Write {
         digests: ConfigSchemaDigests,
         overwrite: bool,
         respond_to: oneshot::Sender<Result<(), StorageErr>>,
@@ -140,14 +140,14 @@ impl Worker {
                         error!("Actor failed to read config schema digests: {:?}", e);
                     }
                 },
-                WorkerCommand::Insert {
+                WorkerCommand::Write {
                     digests,
                     overwrite,
                     respond_to,
                 } => {
-                    let result = self.cache.insert(digests, overwrite);
+                    let result = self.cache.write(digests, overwrite);
                     if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to insert the config schema digests: {:?}", e);
+                        error!("Actor failed to write the config schema digests: {:?}", e);
                     }
                 }
             }
@@ -203,13 +203,13 @@ impl AsyncConfigSchemaDigestCache {
         })?
     }
 
-    pub async fn insert(
+    pub async fn write(
         &self,
         digests: ConfigSchemaDigests,
         overwrite: bool,
     ) -> Result<(), StorageErr> {
         let (send, recv) = oneshot::channel();
-        self.sender.send(WorkerCommand::Insert {
+        self.sender.send(WorkerCommand::Write {
             digests,
             overwrite,
             respond_to: send,

@@ -6,12 +6,15 @@ use std::io::{Read, Write};
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
+
 // internal crates
 use crate::filesys::dir::Dir;
 use crate::filesys::errors::FileSysErr;
 use crate::filesys::path::PathExt;
 use crate::trace;
+
 // external crates
+use atomicwrites::{AllowOverwrite, AtomicFile};
 use serde::de::DeserializeOwned;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
@@ -160,47 +163,41 @@ impl File {
     }
 
     /// Write bytes to a file. Overwrites the file if it exists.
-    pub fn write_bytes(
-        &self,
-        buf: &[u8],
-        overwrite: bool,
-    ) -> Result<(), FileSysErr> {
+    pub fn write_bytes(&self, buf: &[u8], atomic: bool) -> Result<(), FileSysErr> {
         // ensure parent directory exists
-        let parent = self.parent()?;
-        if !parent.exists() {
-            parent.create_if_absent()?;
-        }
+        self.parent()?.create_if_absent()?;
 
-        File::validate_overwrite(self, overwrite)?;
-
-        let mut file =
-            fs::File::create(self.to_string()).map_err(|e| FileSysErr::OpenFileErr {
+        if atomic {
+            let af = AtomicFile::new(self.to_string(), AllowOverwrite);
+            af.write(|f| f.write_all(buf))
+                .map_err(|e| FileSysErr::AtomicWriteFileErr {
+                    source: e.into(),
+                    file: self.clone(),
+                    trace: trace!(),
+                })?;
+        } else {
+            let mut file =
+                fs::File::create(self.to_string()).map_err(|e| FileSysErr::OpenFileErr {
+                    source: e,
+                    file: self.clone(),
+                    trace: trace!(),
+                })?;
+            file.write_all(buf).map_err(|e| FileSysErr::WriteFileErr {
                 source: e,
                 file: self.clone(),
                 trace: trace!(),
             })?;
-        file.write_all(buf).map_err(|e| FileSysErr::WriteFileErr {
-            source: e,
-            file: self.clone(),
-            trace: trace!(),
-        })?;
-
+        }
         Ok(())
     }
 
     /// Write a string to a file. Overwrites the file if it exists.
-    pub fn write_string(&self, s: &str, overwrite: bool) -> Result<(), FileSysErr> {
-        self.write_bytes(s.as_bytes(), overwrite)
+    pub fn write_string(&self, s: &str, atomic: bool) -> Result<(), FileSysErr> {
+        self.write_bytes(s.as_bytes(), atomic)
     }
 
     /// Write a JSON object to a file. Overwrites the file if it exists.
-    pub fn write_json<T: serde::Serialize>(
-        &self,
-        obj: &T,
-        overwrite: bool,
-    ) -> Result<(), FileSysErr> {
-        File::validate_overwrite(self, overwrite)?;
-
+    pub fn write_json<T: serde::Serialize>(&self, obj: &T, atomic: bool) -> Result<(), FileSysErr> {
         // Convert to JSON bytes first
         let json_bytes = serde_json::to_vec(obj).map_err(|e| FileSysErr::ParseJSONErr {
             source: e,
@@ -208,7 +205,7 @@ impl File {
             trace: trace!(),
         })?;
 
-        self.write_bytes(&json_bytes, overwrite)
+        self.write_bytes(&json_bytes, atomic)
     }
 
     /// Rename this file to a new file. Overwrites the new file if it exists.

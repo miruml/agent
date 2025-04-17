@@ -5,8 +5,21 @@ use openapi_client::models::RenderLatestConcreteConfigRequest;
 use openapi_client::models::BackendConcreteConfig;
 use openapi_client::models::ConcreteConfigList;
 
-impl HTTPClient {
-    pub async fn read_latest_concrete_config(
+#[allow(async_fn_in_trait)]
+pub trait ConcreteConfigsExt: Send + Sync {
+    async fn read_latest_concrete_config(
+        &self,
+        config_slug: &str,
+        config_schema_digest: &str,
+    ) -> Result<Option<BackendConcreteConfig>, HTTPErr>;
+    async fn refresh_latest_concrete_config(
+        &self,
+        request: &RenderLatestConcreteConfigRequest,
+    ) -> Result<BackendConcreteConfig, HTTPErr>;
+}
+
+impl ConcreteConfigsExt for HTTPClient {
+    async fn read_latest_concrete_config(
         &self,
         config_slug: &str,
         config_schema_digest: &str,
@@ -31,7 +44,7 @@ impl HTTPClient {
         }
     }
 
-    pub async fn refresh_latest_concrete_config(
+    async fn refresh_latest_concrete_config(
         &self,
         request: &RenderLatestConcreteConfigRequest,
     ) -> Result<BackendConcreteConfig, HTTPErr> {

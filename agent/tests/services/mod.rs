@@ -1,2 +1,2 @@
 pub mod concrete_configs;
-pub mod digests;
+pub mod config_schemas;

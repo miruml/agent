@@ -1,19 +1,19 @@
 // internal crates
-use crate::http_client::client::HTTPClient;
+use crate::http_client::prelude::*;
 use crate::errors::MiruError;
 use crate::services::errors::ServiceErr;
 use crate::storage::layout::StorageLayout;
-use crate::storage::cncr_cfg_reg::LatestConcreteConfigRegistry;
+use crate::storage::concrete_configs::LatestConcreteConfigRegistry;
 use crate::trace;
 use openapi_client::models::BackendConcreteConfig;
 
-pub async fn read_latest(
+pub async fn read_latest<T: ConcreteConfigsExt>(
+    http_client: &T,
     config_slug: &str,
     config_schema_digest: &str,
 ) -> Result<BackendConcreteConfig, ServiceErr> {
 
     // read the latest concrete config from the server
-    let http_client = HTTPClient::new().await;
     let result = http_client.read_latest_concrete_config(
         config_slug,
         config_schema_digest,

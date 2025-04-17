@@ -1,3 +1,6 @@
+// std
+use std::sync::Arc;
+
 // internal crates
 use crate::http_client::errors::HTTPErr;
 use crate::http_client::client::HTTPClient;
@@ -5,8 +8,16 @@ use openapi_client::models::HashSchemaRequest;
 use openapi_client::models::SchemaDigestResponse;
 use crate::utils;
 
-impl HTTPClient {
-    pub async fn hash_schema(
+#[allow(async_fn_in_trait)]
+pub trait ConfigSchemasExt: Send + Sync {
+    async fn hash_schema(
+        &self,
+        request: &HashSchemaRequest,
+    ) -> Result<SchemaDigestResponse, HTTPErr>;
+}
+
+impl ConfigSchemasExt for HTTPClient {
+    async fn hash_schema(
         &self,
         request: &HashSchemaRequest,
     ) -> Result<SchemaDigestResponse, HTTPErr> {
@@ -33,5 +44,14 @@ impl HTTPClient {
         // parse the response
         let response = self.parse_json_response_text::<SchemaDigestResponse>(response).await?;
         Ok(response)
+    }
+}
+
+impl ConfigSchemasExt for Arc<HTTPClient> {
+    async fn hash_schema(
+        &self,
+        request: &HashSchemaRequest,
+    ) -> Result<SchemaDigestResponse, HTTPErr> {
+        self.as_ref().hash_schema(request).await
     }
 }

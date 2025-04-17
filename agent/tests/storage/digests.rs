@@ -6,7 +6,7 @@ mod tests {
     // internal crates
     use config_agent::filesys::{dir::Dir, path::PathExt};
     use config_agent::storage::{
-        cfg_sch_digest_reg::{
+        digests::{
             AsyncConfigSchemaDigestCache,
             ConfigSchemaDigests,
             SyncConfigSchemaDigestCache,
@@ -55,7 +55,7 @@ pub mod read {
             raw: "1234567890".to_string(),
             resolved: "1234567890".to_string(),
         };
-        cache.insert(digests.clone(), false).unwrap();
+        cache.write(digests.clone(), false).unwrap();
 
         // reading the digests should return the digests
         let read_digests = cache.read("1234567890").unwrap();
@@ -82,13 +82,13 @@ pub mod read_optional {
             raw: "1234567890".to_string(),
             resolved: "1234567890".to_string(),
         };
-        cache.insert(digests.clone(), false).unwrap();
+        cache.write(digests.clone(), false).unwrap();
         let read_digests = cache.read_optional("1234567890").unwrap().unwrap();
         assert_eq!(read_digests, digests);
     }
 }
 
-pub mod insert {
+pub mod write {
     use super::*;
 
     #[test]
@@ -99,7 +99,7 @@ pub mod insert {
             raw: "1234567890".to_string(),
             resolved: "1234567890".to_string(),
         };
-        cache.insert(digests.clone(), false).unwrap();
+        cache.write(digests.clone(), false).unwrap();
 
         // the directory should exist now
         assert!(dir.exists());
@@ -117,7 +117,7 @@ pub mod insert {
             raw: "1234567890".to_string(),
             resolved: "1234567890".to_string(),
         };
-        cache.insert(digests.clone(), true).unwrap();
+        cache.write(digests.clone(), true).unwrap();
 
         // the directory should exist now
         assert!(dir.exists());
@@ -135,11 +135,11 @@ pub mod insert {
             raw: "1234567890".to_string(),
             resolved: "1234567890".to_string(),
         };
-        cache.insert(digests.clone(), false).unwrap();
+        cache.write(digests.clone(), false).unwrap();
 
         // should throw an error since already exists
         assert!(matches!(
-            cache.insert(digests.clone(), false).unwrap_err(),
+            cache.write(digests.clone(), false).unwrap_err(),
             StorageErr::FileSysErr { .. }
         ));
     }
@@ -152,7 +152,7 @@ pub mod insert {
             raw: "1234567890".to_string(),
             resolved: "1234567890".to_string(),
         };
-        cache.insert(digests.clone(), true).unwrap();
+        cache.write(digests.clone(), true).unwrap();
 
         // the directory should exist now
         assert!(dir.exists());
@@ -200,7 +200,7 @@ pub mod read {
             raw: "1234567890".to_string(),
             resolved: "1234567890".to_string(),
         };
-        cache.insert(digests.clone(), false).await.unwrap();
+        cache.write(digests.clone(), false).await.unwrap();
 
         // reading the digests should return the digests
         let read_digests = cache.read("1234567890").await.unwrap();
@@ -227,13 +227,13 @@ pub mod read_optional {
             raw: "1234567890".to_string(),
             resolved: "1234567890".to_string(),
         };
-        cache.insert(digests.clone(), false).await.unwrap();
+        cache.write(digests.clone(), false).await.unwrap();
         let read_digests = cache.read_optional("1234567890").await.unwrap().unwrap();
         assert_eq!(read_digests, digests);
     }
 }
 
-pub mod insert {
+pub mod write {
     use super::*;
 
     #[tokio::test]
@@ -244,7 +244,7 @@ pub mod insert {
             raw: "1234567890".to_string(),
             resolved: "1234567890".to_string(),
         };
-        cache.insert(digests.clone(), false).await.unwrap();
+        cache.write(digests.clone(), false).await.unwrap();
 
         // the directory should exist now
         assert!(dir.exists());
@@ -262,7 +262,7 @@ pub mod insert {
             raw: "1234567890".to_string(),
             resolved: "1234567890".to_string(),
         };
-        cache.insert(digests.clone(), true).await.unwrap();
+        cache.write(digests.clone(), true).await.unwrap();
 
         // the directory should exist now
         assert!(dir.exists());
@@ -280,11 +280,11 @@ pub mod insert {
             raw: "1234567890".to_string(),
             resolved: "1234567890".to_string(),
         };
-        cache.insert(digests.clone(), false).await.unwrap();
+        cache.write(digests.clone(), false).await.unwrap();
 
         // should throw an error since already exists
         assert!(matches!(
-            cache.insert(digests.clone(), false).await.unwrap_err(),
+            cache.write(digests.clone(), false).await.unwrap_err(),
             StorageErr::FileSysErr { .. }
         ));
     }
@@ -297,7 +297,7 @@ pub mod insert {
             raw: "1234567890".to_string(),
             resolved: "1234567890".to_string(),
         };
-        cache.insert(digests.clone(), true).await.unwrap();
+        cache.write(digests.clone(), true).await.unwrap();
 
         // the directory should exist now
         assert!(dir.exists());
