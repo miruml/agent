@@ -51,7 +51,7 @@ pub trait PathExt {
 }
 
 
-/// Source code was take from path-clean crate
+/// Source code was taken from path-clean crate
 /// https://github.com/danreeves/path-clean/blob/3876d7cb5367997bcda17ce165bf69c4f434cb93/src/lib.rs#L57
 /// 
 /// The core implementation. It performs the following, lexically:

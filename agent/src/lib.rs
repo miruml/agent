@@ -1,4 +1,3 @@
-pub mod cache;
 pub mod errors;
 pub mod env;
 pub mod filesys;

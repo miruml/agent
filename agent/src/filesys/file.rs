@@ -118,73 +118,6 @@ impl File {
         Ok(())
     }
 
-    /// Copy this file to a new file. Overwrites the new file if it exists.
-    pub fn copy_to(&self, new_file: &File, overwrite: bool) -> Result<(), FileSysErr> {
-        // source file must exist
-        self.assert_exists()?;
-
-        // if this file and the new file are the same, nothing needs to be done
-        if self.path() == new_file.path() {
-            return Ok(());
-        }
-
-        // check not overwriting new file if it exist
-        if !overwrite && new_file.exists() {
-            return Err(FileSysErr::PathExists {
-                path: new_file.path().clone(),
-                trace: trace!(),
-            });
-        }
-
-        // ensure the parent directory of the new file exists and create it if not
-        new_file.parent()?.create_if_absent()?;
-        if overwrite {
-            new_file.delete()?;
-        }
-
-        std::fs::copy(self.to_string(), new_file.to_string()).map_err(|e| {
-            FileSysErr::CopyFileErr {
-                source: e,
-                src_file: self.clone(),
-                dest_file: new_file.clone(),
-                trace: trace!(),
-            }
-        })?;
-        Ok(())
-    }
-
-    /// Return's the file path's extension
-    pub fn extension(&self) -> Option<&str> {
-        self.path
-            .extension()
-            .map(|ext| ext.to_str().unwrap_or_default())
-    }
-
-    /// Check if the file has the given extension. Returns an error if not.
-    pub fn assert_extension_is(&self, ext: &str) -> Result<(), FileSysErr> {
-        if !self.extension().unwrap_or_default().eq(ext) {
-            return Err(FileSysErr::BadFileExtensionErr {
-                expected: ext.to_string(),
-                actual: self.extension().unwrap_or_default().to_string(),
-                file: self.clone(),
-                trace: trace!(),
-            });
-        }
-        Ok(())
-    }
-
-    pub fn assert_path_contains(&self, expr: &str) -> Result<(), FileSysErr> {
-        if !self.path().to_str().unwrap_or_default().contains(expr) {
-            return Err(FileSysErr::BadFilePathExprErr {
-                expected: expr.to_string(),
-                actual: self.extension().unwrap_or_default().to_string(),
-                file: self.clone(),
-                trace: trace!(),
-            });
-        }
-        Ok(())
-    }
-
     pub fn parent_exists(&self) -> Result<bool, FileSysErr> {
         // check parent directory exists
         let parent = self.parent()?;
@@ -224,7 +157,6 @@ impl File {
     /// Read the contents of a file as json
     pub fn read_json<T: DeserializeOwned>(&self) -> Result<T, FileSysErr> {
         self.assert_exists()?;
-        self.assert_path_contains(".json")?;
 
         // read file
         let file = fs::File::open(self.to_string()).map_err(|e| FileSysErr::OpenFileErr {
@@ -275,8 +207,6 @@ impl File {
         obj: &T,
         overwrite: bool,
     ) -> Result<(), FileSysErr> {
-        self.assert_path_contains(".json")?;
-
         // if file exists and overwrite is false, return an error
         if !overwrite && self.exists() {
             return Err(FileSysErr::PathExists {
@@ -298,8 +228,7 @@ impl File {
     // Create a new Dir instance from the parent directory of the path for this File
     // instance
     pub fn parent(&self) -> Result<Dir, FileSysErr> {
-        let parent = self
-            .path
+        let parent = self.path
             .parent()
             .ok_or(FileSysErr::UnknownFileParentDirErr {
                 file: self.clone(),
