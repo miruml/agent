@@ -30,10 +30,8 @@ pub async fn server() {
 
     // setup the caches
     let layout = StorageLayout::new_default();
-    let sync_cache = SyncConfigSchemaDigestCache::new(
-        layout.cfg_sch_digest_registry(),
-    );
-    let cache = Arc::new(AsyncConfigSchemaDigestCache::spawn(sync_cache));
+    let dir = layout.cfg_sch_digest_registry();
+    let cache = Arc::new(AsyncConfigSchemaDigestCache::spawn(dir));
 
     // build the app with the test route
     let app = Router::new()

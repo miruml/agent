@@ -22,7 +22,7 @@ pub async fn hash_schema(
     let raw_digest = utils::hash_json(schema);
 
     // check for the raw digest in the storage for the known schema digest
-    let digests= cache.read(&raw_digest).await
+    let digests= cache.read_optional(&raw_digest).await
         .map_err(|e| ServiceErr::StorageErr {
             source: e,
             trace: trace!(),

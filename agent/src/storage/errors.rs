@@ -13,6 +13,11 @@ pub enum StorageErr {
         backup_file: File,
         trace: Box<Trace>,
     },
+    #[error("CacheElementNotFound: {msg}")]
+    CacheElementNotFound {
+        msg: String,
+        trace: Box<Trace>,
+    },
     #[error("Invalid Dir Name: {name}")]
     InvalidDirName {
         name: String,
