@@ -38,7 +38,7 @@ pub mod read {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
         let cache = ConfigSchemaDigestCache::spawn(dir.clone());
         assert!(matches!(
-            cache.read("1234567890").await.unwrap_err(),
+            cache.read("1234567890".to_string()).await.unwrap_err(),
             StorageErr::CacheElementNotFound { .. }
         ));
     }
@@ -51,10 +51,11 @@ pub mod read {
             raw: "1234567890".to_string(),
             resolved: "1234567890".to_string(),
         };
-        cache.write(digests.clone(), false).await.unwrap();
+        let key = "1234567890".to_string();
+        cache.write(key.clone(), digests.clone(), false).await.unwrap();
 
         // reading the digests should return the digests
-        let read_digests = cache.read("1234567890").await.unwrap();
+        let read_digests = cache.read(key.clone()).await.unwrap();
         assert_eq!(read_digests, digests);
     }
 }
@@ -66,7 +67,8 @@ pub mod read_optional {
     async fn doesnt_exist() {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
         let cache = ConfigSchemaDigestCache::spawn(dir.clone());
-        let read_digests = cache.read_optional("1234567890").await.unwrap();
+        let key = "1234567890".to_string();
+        let read_digests = cache.read_optional(key.clone()).await.unwrap();
         assert_eq!(read_digests, None);
     }
 
@@ -78,8 +80,9 @@ pub mod read_optional {
             raw: "1234567890".to_string(),
             resolved: "1234567890".to_string(),
         };
-        cache.write(digests.clone(), false).await.unwrap();
-        let read_digests = cache.read_optional("1234567890").await.unwrap().unwrap();
+        let key = "1234567890".to_string();
+        cache.write(key.clone(), digests.clone(), false).await.unwrap();
+        let read_digests = cache.read_optional(key.clone()).await.unwrap().unwrap();
         assert_eq!(read_digests, digests);
     }
 }
@@ -95,13 +98,14 @@ pub mod write {
             raw: "1234567890".to_string(),
             resolved: "1234567890".to_string(),
         };
-        cache.write(digests.clone(), false).await.unwrap();
+        let key = "1234567890".to_string();
+        cache.write(key.clone(), digests.clone(), false).await.unwrap();
 
         // the directory should exist now
         assert!(dir.exists());
 
         // reading the digests should return the digests
-        let read_digests = cache.read("1234567890").await.unwrap();
+        let read_digests = cache.read(key.clone()).await.unwrap();
         assert_eq!(read_digests, digests);
     }
 
@@ -113,13 +117,14 @@ pub mod write {
             raw: "1234567890".to_string(),
             resolved: "1234567890".to_string(),
         };
-        cache.write(digests.clone(), true).await.unwrap();
+        let key = "1234567890".to_string();
+        cache.write(key.clone(), digests.clone(), true).await.unwrap();
 
         // the directory should exist now
         assert!(dir.exists());
 
         // reading the digests should return the digests
-        let read_digests = cache.read("1234567890").await.unwrap();
+        let read_digests = cache.read(key.clone()).await.unwrap();
         assert_eq!(read_digests, digests);
     }
 
@@ -131,11 +136,12 @@ pub mod write {
             raw: "1234567890".to_string(),
             resolved: "1234567890".to_string(),
         };
-        cache.write(digests.clone(), false).await.unwrap();
+        let key = "1234567890".to_string();
+        cache.write(key.clone(), digests.clone(), false).await.unwrap();
 
         // should throw an error since already exists
         assert!(matches!(
-            cache.write(digests.clone(), false).await.unwrap_err(),
+            cache.write(key.clone(), digests.clone(), false).await.unwrap_err(),
             StorageErr::FileSysErr { .. }
         ));
     }
@@ -148,14 +154,49 @@ pub mod write {
             raw: "1234567890".to_string(),
             resolved: "1234567890".to_string(),
         };
-        cache.write(digests.clone(), false).await.unwrap();
+        let key = "1234567890".to_string();
+        cache.write(key.clone(), digests.clone(), false).await.unwrap();
 
         // should not throw an error since overwrite is true
-        cache.write(digests.clone(), true).await.unwrap();
+        cache.write(key.clone(), digests.clone(), true).await.unwrap();
 
         // reading the digests should return the digests
-        let read_digests = cache.read("1234567890").await.unwrap();
+        let read_digests = cache.read(key.clone()).await.unwrap();
         assert_eq!(read_digests, digests);
+    }
+}
+
+
+pub mod delete {
+    use super::*;
+
+    #[tokio::test]
+    async fn doesnt_exist() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+        let key = "1234567890".to_string();
+        cache.delete(key.clone()).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn exists() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+        let digests = ConfigSchemaDigests {
+            raw: "1234567890".to_string(),
+            resolved: "1234567890".to_string(),
+        };
+        let key = "1234567890".to_string();
+        cache.write(key.clone(), digests.clone(), false).await.unwrap();
+
+        // should not throw an error since it exists
+        cache.delete(key.clone()).await.unwrap();
+
+        // the cache should not exist now
+        assert!(matches!(
+            cache.read(key.clone()).await.unwrap_err(),
+            StorageErr::CacheElementNotFound { .. }
+        ));
     }
 }
 }

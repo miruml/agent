@@ -5,8 +5,8 @@ use std::sync::Arc;
 use crate::http_client::client::HTTPClient;
 use crate::logs::{init, LogLevel};
 use crate::server::handlers;
-use crate::storage::layout::StorageLayout;
 use crate::storage::digests::ConfigSchemaDigestCache;
+use crate::storage::layout::StorageLayout;
 
 // external
 use axum::{

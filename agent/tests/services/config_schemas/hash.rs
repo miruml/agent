@@ -58,7 +58,7 @@ pub mod success {
             raw: raw_digest.clone(),
             resolved: resolved_digest.to_string(),
         };
-        cache.write(digests, false).await.unwrap();
+        cache.write(raw_digest.clone(), digests, false).await.unwrap();
 
         let http_client = HTTPClient::new().await;
 
@@ -126,7 +126,7 @@ pub mod success {
         assert!(duration < Duration::from_millis(20));
 
         // expect the digest to be cached
-        let cached_digest = cache.read(&raw_digest).await.unwrap();
+        let cached_digest = cache.read(raw_digest).await.unwrap();
         assert_eq!(cached_digest.resolved, resolved_digest);
     }
 }

@@ -13,7 +13,11 @@ mod tests {
         },
         errors::ServiceErr,
     };
-    use config_agent::storage::concrete_configs::{ConcreteConfig, ConcreteConfigCache};
+    use config_agent::storage::concrete_configs::{
+        ConcreteConfig,
+        ConcreteConfigCache,
+        ConcreteConfigCacheKey,
+    };
     use config_agent::trace;
     use openapi_client::models::BackendConcreteConfig;
 
@@ -106,7 +110,15 @@ mod tests {
                 config_schema_digest: config_schema_digest.to_string(),
                 ..Default::default()
             };
-            cache.write(concrete_config.clone(), false).await.unwrap();
+            let key = ConcreteConfigCacheKey {
+                config_slug: config_slug.to_string(),
+                config_schema_digest: config_schema_digest.to_string(),
+            };
+            cache.write(
+                key,
+                concrete_config.clone(),
+                false,
+            ).await.unwrap();
 
             // create the mock http client
             let mut http_client = MockConcreteConfigsClient::default();
@@ -147,7 +159,13 @@ mod tests {
                 config_schema_digest: config_schema_digest.to_string(),
                 ..Default::default()
             };
-            cache.write(concrete_config.clone(), false).await.unwrap();
+            let key = ConcreteConfigCacheKey {
+                config_slug: config_slug.to_string(),
+                config_schema_digest: config_schema_digest.to_string(),
+            };
+            cache.write(
+                key,
+                concrete_config.clone(), false).await.unwrap();
 
             // create the mock http client
             let mut http_client = MockConcreteConfigsClient::default();
@@ -203,10 +221,11 @@ mod tests {
             assert_eq!(result, expected);
 
             // cache should have been updated
-            let cached_concrete_config = cache.read(
-                args.config_slug(),
-                args.config_schema_digest(),
-            ).await.unwrap();
+            let key = ConcreteConfigCacheKey {
+                config_slug: args.config_slug().to_string(),
+                config_schema_digest: args.config_schema_digest().to_string(),
+            };
+            let cached_concrete_config = cache.read(key).await.unwrap();
             assert_eq!(cached_concrete_config, storage_concrete_config);
         }
     }

@@ -2,6 +2,8 @@
 use sha2::{Sha256, Digest};
 use serde_json::Value;
 
+pub const PATH_DELIMITER: &str = "__SEP__";
+
 pub fn hash_json(json: &Value) -> String {
     hash_bytes(json.to_string().as_bytes())
 }

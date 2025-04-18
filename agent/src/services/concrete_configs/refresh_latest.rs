@@ -2,7 +2,10 @@
 use crate::http_client::prelude::*;
 use crate::services::errors::ServiceErr;
 use crate::services::concrete_configs::utils;
-use crate::storage::concrete_configs::ConcreteConfigCache;
+use crate::storage::concrete_configs::{
+    ConcreteConfigCache,
+    ConcreteConfigCacheKey,
+};
 use crate::trace;
 use openapi_client::models::RenderLatestConcreteConfigRequest;
 
@@ -48,7 +51,12 @@ pub async fn refresh_latest<ArgsT: RefreshLatestArgsI, HTTPClientT: ConcreteConf
         args.config_slug().to_string(),
         args.config_schema_digest().to_string(),
     );
+    let key = ConcreteConfigCacheKey {
+        config_slug: args.config_slug().to_string(),
+        config_schema_digest: args.config_schema_digest().to_string(),
+    };  
     cache.write(
+        key,
         cncr_cfg.clone(),
         true,
     ).await.map_err(|e| ServiceErr::StorageErr {

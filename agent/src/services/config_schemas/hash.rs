@@ -1,10 +1,7 @@
 // internal crates
 use crate::http_client::prelude::*;
 use crate::services::errors::ServiceErr;
-use crate::storage::digests::{
-    ConfigSchemaDigests,
-    ConfigSchemaDigestCache,
-};
+use crate::storage::digests::{ConfigSchemaDigestCache, ConfigSchemaDigests};
 use crate::trace;
 use crate::utils;
 use openapi_client::models::HashSchemaRequest;
@@ -34,7 +31,7 @@ pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
     let raw_digest = utils::hash_json(args.schema());
 
     // check for the raw digest in the storage for the known schema digest
-    let digests= cache.read_optional(&raw_digest).await
+    let digests= cache.read_optional(raw_digest.clone()).await
         .map_err(|e| ServiceErr::StorageErr {
             source: e,
             trace: trace!(),
@@ -55,10 +52,11 @@ pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
     // save the hash to the storage module
     let resolved_digest = digest_response.digest;
     let digests = ConfigSchemaDigests {
-        raw: raw_digest,
+        raw: raw_digest.clone(),
         resolved: resolved_digest.clone(),
     };
     cache.write(
+        raw_digest,
         digests,
         // this overwrite shouldn't ever occur since we check the storage first but no
         // reason to throw an error
