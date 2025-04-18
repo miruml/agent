@@ -48,7 +48,9 @@ pub async fn hash_schema<T: ConfigSchemasExt>(
     };
     cache.write(
         digests,
-        true,
+        // this overwrite shouldn't ever occur since we check the storage first but no
+        // reason to throw an error
+        true, 
     ).await
     .map_err(|e| ServiceErr::StorageErr {
         source: e,

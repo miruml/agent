@@ -77,6 +77,7 @@ impl ConfigSchemaDigestCacheImplementation {
         digest_file.write_json(
             &digests,
             overwrite,
+            // important that atomic writes are used here
             true,
         ).await.map_err(|e| StorageErr::FileSysErr {
             source: e,

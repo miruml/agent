@@ -1,8 +1,7 @@
 // internal crates
 use crate::http_client::prelude::*;
 use crate::services::errors::ServiceErr;
-use crate::storage::layout::StorageLayout;
-use crate::storage::concrete_configs::LatestConcreteConfigRegistry;
+use crate::storage::concrete_configs::ConcreteConfigCache;
 use crate::trace;
 use openapi_client::models::BackendConcreteConfig;
 use openapi_client::models::RenderLatestConcreteConfigRequest;
@@ -11,6 +10,7 @@ pub async fn refresh_latest<T: ConcreteConfigsExt>(
     http_client: &T,
     config_slug: &str,
     config_schema_digest: &str,
+    cache: &ConcreteConfigCache,
 ) -> Result<BackendConcreteConfig, ServiceErr> {
     // this should be retrieved from the agent config
     let client_id = "FIXME";
@@ -21,7 +21,7 @@ pub async fn refresh_latest<T: ConcreteConfigsExt>(
         config_slug: config_slug.to_string(),
         config_schema_digest: config_schema_digest.to_string(),
     };
-    let result = http_client.refresh_latest_concrete_config(
+    let cncr_cfg= http_client.refresh_latest_concrete_config(
         &payload
     ).await.map_err(|e| ServiceErr::HTTPErr {
         source: e,
@@ -29,19 +29,15 @@ pub async fn refresh_latest<T: ConcreteConfigsExt>(
     })?;
 
     // update the concrete config in storage
-    let storage_layout = StorageLayout::new_default();
-    let latest_cncr_cfg_reg = LatestConcreteConfigRegistry::new(
-        storage_layout.latest_cncr_cfg_registry(),
-    );
-    latest_cncr_cfg_reg.insert(
+    cache.write(
         config_slug,
         config_schema_digest,
-        &result,
+        cncr_cfg.clone(),
         true,
     ).await.map_err(|e| ServiceErr::StorageErr {
         source: e,
         trace: trace!(),
     })?;
 
-    Ok(result)
+    Ok(cncr_cfg)
 }

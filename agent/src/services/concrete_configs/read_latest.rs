@@ -2,15 +2,15 @@
 use crate::http_client::prelude::*;
 use crate::errors::MiruError;
 use crate::services::errors::ServiceErr;
-use crate::storage::layout::StorageLayout;
-use crate::storage::concrete_configs::LatestConcreteConfigRegistry;
+use crate::storage::concrete_configs::ConcreteConfigCache;
 use crate::trace;
 use openapi_client::models::BackendConcreteConfig;
 
 pub async fn read_latest<T: ConcreteConfigsExt>(
-    http_client: &T,
     config_slug: &str,
     config_schema_digest: &str,
+    http_client: &T,
+    cache: &ConcreteConfigCache,
 ) -> Result<BackendConcreteConfig, ServiceErr> {
 
     // read the latest concrete config from the server
@@ -35,17 +35,12 @@ pub async fn read_latest<T: ConcreteConfigsExt>(
         }
     };
 
-    let storage_layout = StorageLayout::new_default();
-    let latest_cncr_cfg_reg = LatestConcreteConfigRegistry::new(
-        storage_layout.latest_cncr_cfg_registry(),
-    );
-
     // if successful, update the concrete config in storage and return it
     if let Some(concrete_config) = result {
-        latest_cncr_cfg_reg.insert(
+        cache.write(
             config_slug,
             config_schema_digest,
-            &concrete_config,
+            concrete_config.clone(),
             true,
         ).await.map_err(|e| ServiceErr::StorageErr {
             source: e,
@@ -55,7 +50,7 @@ pub async fn read_latest<T: ConcreteConfigsExt>(
     }
 
     // if unsuccessful, attempt to read the latest concrete config from storage
-    let latest_concrete_config = latest_cncr_cfg_reg.read(
+    let latest_concrete_config = cache.read_optional(
         config_slug,
         config_schema_digest,
     ).await.map_err(|e| ServiceErr::StorageErr {

@@ -30,11 +30,11 @@ impl StorageLayout {
         self.root.file("agent_config.json")
     }
 
-    pub fn cfg_sch_digest_registry(&self) -> Dir {
+    pub fn config_schema_digest_cache(&self) -> Dir {
         self.root.subdir("config_schema_digests")
     }
 
-    pub fn latest_cncr_cfg_registry(&self) -> Dir {
+    pub fn concrete_config_cache(&self) -> Dir {
         self.root.subdir("concrete_configs")
     }
 }

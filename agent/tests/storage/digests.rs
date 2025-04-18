@@ -148,10 +148,10 @@ pub mod write {
             raw: "1234567890".to_string(),
             resolved: "1234567890".to_string(),
         };
-        cache.write(digests.clone(), true).await.unwrap();
+        cache.write(digests.clone(), false).await.unwrap();
 
-        // the directory should exist now
-        assert!(dir.exists());
+        // should not throw an error since overwrite is true
+        cache.write(digests.clone(), true).await.unwrap();
 
         // reading the digests should return the digests
         let read_digests = cache.read("1234567890").await.unwrap();

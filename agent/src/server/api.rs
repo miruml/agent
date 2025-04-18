@@ -27,32 +27,37 @@ pub async fn server() {
 
     // setup the caches
     let layout = StorageLayout::new_default();
-    let dir = layout.cfg_sch_digest_registry();
-    let cache = Arc::new(ConfigSchemaDigestCache::spawn(dir));
+    let config_schema_digest_cache = Arc::new(
+        ConfigSchemaDigestCache::spawn(layout.config_schema_digest_cache())
+    );
+    // let concrete_config_cache = Arc::new(
+    //     ConcreteConfigCache::spawn(layout.concrete_config_cache())
+    // );
 
     // build the app with the test route
     let app = Router::new()
         .route("/v1/test", get(test))
 
     // ============================ CONCRETE CONFIGS ============================== //
-    // app.route(
+    // .route(
     //     "/v1/concrete_configs/latest",
     //     get(read_latest_concrete_config),
-    // );
-    // app.route(
+    // )
+
+    // .route(
     //     "/v1/concrete_configs/refresh_latest",
     //     post(refresh_latest_concrete_config),
-    // );
+    // )
 
     // ============================ CONFIG SCHEMAS ============================== //
     .route(
         "/v1/config_schemas/hash",
         post({
-            let cache = Arc::clone(&cache);
+            let config_schema_digest_cache = Arc::clone(&config_schema_digest_cache);
             move |payload| handlers::hash_schema(
                 payload,
                 http_client,
-                cache,
+                config_schema_digest_cache,
             )
         }),
     );

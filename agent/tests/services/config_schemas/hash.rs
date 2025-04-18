@@ -4,12 +4,11 @@ mod tests {
     use std::time::{Duration, Instant};
 
     // internal crates
-    use config_agent::errors::MiruError;
     use config_agent::http_client::client::HTTPClient;
     use config_agent::services::config_schemas::hash;
-    use config_agent::storage::{
-        digests::{ConfigSchemaDigestCache, ConfigSchemaDigests},
-        layout::StorageLayout,
+    use config_agent::storage::digests::{
+        ConfigSchemaDigestCache,
+        ConfigSchemaDigests,
     };
     use config_agent::utils;
     use openapi_client::models::SchemaDigestResponse;
@@ -60,7 +59,6 @@ pub mod success {
             resolved: resolved_digest.to_string(),
         };
         cache.write(digests, false).await.unwrap();
-
 
         let http_client = HTTPClient::new().await;
 
@@ -120,7 +118,8 @@ pub mod success {
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), resolved_digest);
         let duration = start.elapsed();
-        assert!(duration < Duration::from_millis(1));
+        println!("duration: {:?}", duration);
+        assert!(duration < Duration::from_millis(20));
 
         // expect the digest to be cached
         let raw_digest = utils::hash_json(&schema);

@@ -6,11 +6,13 @@ use crate::services::config_schemas::hash;
 use crate::storage::digests::ConfigSchemaDigestCache;
 use openapi_server::models::SchemaDigestResponse;
 use openapi_server::models::HashSchemaRequest;
+use openapi_server::models::RenderLatestConcreteConfigRequest;
 
 // external
 use axum::{
     http::StatusCode,
     Json,
+    extract::Query,
 };
 use serde_json::json;
 use tracing::error;
@@ -35,6 +37,23 @@ pub async fn hash_schema(
     }
 }
 
+// async fn read_latest_concrete_config(
+//     Query(payload): Query<RenderLatestConcreteConfigRequest>,
+// ) -> (StatusCode, Json<serde_json::Value>) {
+//     (StatusCode::OK, Json(json!({
+//         "object": "concrete_config",
+//         "id": "cncr_cfg_123",
+//         "created_at": "2021-01-01T00:00:00Z",
+//         "created_by_id": "usr_123",
+//         "client_id": "cli_123",
+//         "config_schema_id": "cfg_sch_123",
+//         "concrete_config": {
+//             "device_id": "device_23jt0321p9123434gsdf",
+//             "speed": 100
+//         }
+//     })))
+// }
+
 // async fn refresh_latest_concrete_config(
 //     payload: Query<RenderLatestConcreteConfigRequest>,
 // ) -> (StatusCode, Json<serde_json::Value>) {
@@ -52,19 +71,3 @@ pub async fn hash_schema(
 //     })))
 // }
 
-// async fn read_latest_concrete_config(
-//     Query(payload): Query<RenderLatestConcreteConfigRequest>,
-// ) -> (StatusCode, Json<serde_json::Value>) {
-//     (StatusCode::OK, Json(json!({
-//         "object": "concrete_config",
-//         "id": "cncr_cfg_123",
-//         "created_at": "2021-01-01T00:00:00Z",
-//         "created_by_id": "usr_123",
-//         "client_id": "cli_123",
-//         "config_schema_id": "cfg_sch_123",
-//         "concrete_config": {
-//             "device_id": "device_23jt0321p9123434gsdf",
-//             "speed": 100
-//         }
-//     })))
-// }
