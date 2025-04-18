@@ -18,7 +18,7 @@ mod tests {
     use tracing::{debug, error, info, trace, warn};
 
 
-pub mod new {
+pub mod spawn {
     use super::*;
 
     #[tokio::test]
@@ -27,6 +27,33 @@ pub mod new {
         let _ = ConfigSchemaDigestCache::spawn(dir.clone());
         // the directory should not exist yet
         assert!(!dir.exists());
+    }
+}
+
+pub mod read_optional {
+    use super::*;
+
+    #[tokio::test]
+    async fn doesnt_exist() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+        let key = "1234567890".to_string();
+        let read_digests = cache.read_optional(key.clone()).await.unwrap();
+        assert_eq!(read_digests, None);
+    }
+
+    #[tokio::test]
+    async fn exists() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+        let digests = ConfigSchemaDigests {
+            raw: "1234567890".to_string(),
+            resolved: "1234567890".to_string(),
+        };
+        let key = "1234567890".to_string();
+        cache.write(key.clone(), digests.clone(), false).await.unwrap();
+        let read_digests = cache.read_optional(key.clone()).await.unwrap().unwrap();
+        assert_eq!(read_digests, digests);
     }
 }
 
@@ -56,33 +83,6 @@ pub mod read {
 
         // reading the digests should return the digests
         let read_digests = cache.read(key.clone()).await.unwrap();
-        assert_eq!(read_digests, digests);
-    }
-}
-
-pub mod read_optional {
-    use super::*;
-
-    #[tokio::test]
-    async fn doesnt_exist() {
-        let dir = Dir::create_temp_dir("testing").await.unwrap();
-        let cache = ConfigSchemaDigestCache::spawn(dir.clone());
-        let key = "1234567890".to_string();
-        let read_digests = cache.read_optional(key.clone()).await.unwrap();
-        assert_eq!(read_digests, None);
-    }
-
-    #[tokio::test]
-    async fn exists() {
-        let dir = Dir::create_temp_dir("testing").await.unwrap();
-        let cache = ConfigSchemaDigestCache::spawn(dir.clone());
-        let digests = ConfigSchemaDigests {
-            raw: "1234567890".to_string(),
-            resolved: "1234567890".to_string(),
-        };
-        let key = "1234567890".to_string();
-        cache.write(key.clone(), digests.clone(), false).await.unwrap();
-        let read_digests = cache.read_optional(key.clone()).await.unwrap().unwrap();
         assert_eq!(read_digests, digests);
     }
 }
@@ -198,5 +198,51 @@ pub mod delete {
             StorageErr::CacheElementNotFound { .. }
         ));
     }
+}
+
+pub mod entries {
+    use super::*;
+
+    #[tokio::test]
+    async fn empty() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+
+        let entries = cache.entries().await.unwrap();
+        assert_eq!(entries.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn one_entry() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+
+        // create a new entry
+        let key = "1234567890".to_string();
+        let digests = ConfigSchemaDigests {
+            raw: "1234567890".to_string(),
+            resolved: "1234567890".to_string(),
+        };
+        cache.write(key.clone(), digests.clone(), false).await.unwrap();
+
+        // read the entry
+        let read_digests = cache.read(key.clone()).await.unwrap();
+        assert_eq!(read_digests, digests);
+
+        // get the entries
+        let entries = cache.entries().await.unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].key, key);
+        assert_eq!(entries[0].value, digests);
+    }
+
+    #[tokio::test]
+    async fn multiple_entries() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+        
+        
+    }
+
 }
 }

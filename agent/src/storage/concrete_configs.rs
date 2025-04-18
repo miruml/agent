@@ -1,3 +1,6 @@
+// standard crates
+use std::fmt::Display;
+
 // internal crates
 use crate::storage::cache::Cache;
 use crate::utils::PATH_DELIMITER;
@@ -8,14 +11,15 @@ use serde::Serialize;
 
 pub type ConcreteConfigCache = Cache<ConcreteConfigCacheKey, ConcreteConfig>;
 
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct ConcreteConfigCacheKey {
     pub config_slug: String,
     pub config_schema_digest: String,
 }
 
-impl ToString for ConcreteConfigCacheKey {
-    fn to_string(&self) -> String {
-        format!("{}{}{}", self.config_slug, PATH_DELIMITER, self.config_schema_digest)
+impl Display for ConcreteConfigCacheKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}{}{}", self.config_slug, PATH_DELIMITER, self.config_schema_digest)
     }
 }
 

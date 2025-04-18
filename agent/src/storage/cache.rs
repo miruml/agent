@@ -14,25 +14,31 @@ use crate::trace;
 // external crates
 use chrono::{DateTime, Utc};
 use serde::de::DeserializeOwned;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio::sync::oneshot;
 use tracing::error;
+use futures::future::try_join_all;
 
-pub struct CacheEntry<T> 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CacheEntry<K, V> 
 where
-    T: Serialize + DeserializeOwned,
+    K: ToString + Serialize,
+    V: Serialize,
 {
-    pub value: T,
+    pub key: K,
+    pub value: V,
     pub last_accessed: DateTime<Utc>,
 }
 
-impl<T> CacheEntry<T> 
+impl<K, V> CacheEntry<K, V>
 where
-    T: Serialize + DeserializeOwned,
+    K: ToString + Serialize + DeserializeOwned,
+    V: Serialize + DeserializeOwned,
 {
-    pub fn new(value: T) -> Self {
+    pub fn new(key: K, value: V) -> Self {
         Self {
+            key,
             value,
             last_accessed: Utc::now(),
         }
@@ -52,7 +58,7 @@ where
 
 impl<K, V> SingleThreadCache<K, V> 
 where
-    K: ToString,
+    K: ToString + Serialize + DeserializeOwned,
     V: Serialize + DeserializeOwned,
 {
     pub fn new(dir: Dir) -> Self {
@@ -69,29 +75,29 @@ where
         self.dir.file(&filename)
     }
 
-    async fn read_optional(
+    async fn read_entry_optional(
         &self,
         key: &K,
-    ) -> Result<Option<V>, StorageErr> {
+    ) -> Result<Option<CacheEntry<K, V>>, StorageErr> {
         let config_file = self.cache_entry_file(key);
         if !config_file.exists() {
             return Ok(None);
         }
 
-        let config = config_file.read_json::<V>().await.map_err(|e| StorageErr::FileSysErr {
+        let entry = config_file.read_json::<CacheEntry<K, V>>().await.map_err(|e| StorageErr::FileSysErr {
             source: e,
             trace: trace!(),
         })?;
-        Ok(Some(config))
+        Ok(Some(entry))
     }
 
-    async fn read(
+    async fn read_entry(
         &self,
         key: &K,
-    ) -> Result<V, StorageErr> {
-        let result = self.read_optional(key).await?;
+    ) -> Result<CacheEntry<K, V>, StorageErr> {
+        let result = self.read_entry_optional(key).await?;
         match result {
-            Some(config) => Ok(config),
+            Some(entry) => Ok(entry),
             None => Err(StorageErr::CacheElementNotFound {
                 msg: format!("Unable to find cache entry with key: '{}'", key.to_string()),
                 trace: trace!(),
@@ -99,16 +105,38 @@ where
         }
     }
 
-    async fn write(
+    async fn read_optional(
         &self,
         key: &K,
-        value: &V,
+    ) -> Result<Option<V>, StorageErr> {
+        let entry = self.read_entry_optional(key).await?;
+        match entry {
+            Some(entry) => Ok(Some(entry.value)),
+            None => Err(StorageErr::CacheElementNotFound {
+                msg: format!("Unable to find cache entry with key: '{}'", key.to_string()),
+                trace: trace!(),
+            }),
+        }
+    }
+
+    async fn read(
+        &self,
+        key: &K,
+    ) -> Result<V, StorageErr> {
+        Ok(self.read_entry(key).await?.value)
+    }
+
+    async fn write(
+        &self,
+        key: K,
+        value: V,
         overwrite: bool,
     ) -> Result<(), StorageErr> {
-        let config_file = self.cache_entry_file(key);
+        let config_file = self.cache_entry_file(&key);
         // important that atomic writes are used here
+        let entry = CacheEntry::new(key, value);
         config_file.write_json(
-            value,
+            &entry,
             overwrite,
             // important that atomic writes are used here
             true,
@@ -130,6 +158,26 @@ where
         })
     }
 
+    async fn prune(&self, max_size: usize) -> Result<(), StorageErr> {
+        // check if there are too many files
+        let size = self.size().await?;
+        if size <= max_size {
+            return Ok(());
+        }
+
+        // prune the invalid entries first
+        self.prune_invalid_entries().await?;
+
+        // prune by last accessed time
+        let entries = self.entries().await?;
+        let mut entries = entries.into_iter().collect::<Vec<_>>();
+        entries.sort_by_key(|entry| entry.last_accessed);
+        for entry in entries.into_iter().skip(max_size) {
+            self.delete(&entry.key).await?;
+        }
+        Ok(())
+    }
+
     async fn size(&self) -> Result<usize, StorageErr> {
         let files = self.dir.files().await.map_err(|e| StorageErr::FileSysErr {
             source: e,
@@ -137,14 +185,47 @@ where
         })?;
         Ok(files.len())
     }
+
+    async fn entries(&self) -> Result<Vec<CacheEntry<K, V>>, StorageErr> {
+        let files = self.dir.files().await.map_err(|e| StorageErr::FileSysErr {
+            source: e,
+            trace: trace!(),
+        })?;
+        let futures = files.into_iter().map(|file| async move {
+            match file.read_json::<CacheEntry<K, V>>().await {
+                Ok(entry) => Ok(Some(entry)),
+                Err(_) => Ok(None),
+            }
+        });
+        let entries = try_join_all(futures).await?;
+        Ok(entries.into_iter().flatten().collect())
+    }
+
+    async fn prune_invalid_entries(&self) -> Result<(), StorageErr> {
+        let files = self.dir.files().await.map_err(|e| StorageErr::FileSysErr {
+            source: e,
+            trace: trace!(),
+        })?;
+        let futures = files.into_iter().map(|file| async move {
+            match file.read_json::<CacheEntry<K, V>>().await {
+                Ok(_) => Ok(()),
+                Err(_) => file.delete().await.map_err(|e| StorageErr::FileSysErr {
+                    source: e,
+                    trace: trace!(),
+                }),
+            }
+        });
+        try_join_all(futures).await?;
+        Ok(())
+    }
 }
 
 
 // ========================== MULTI-THREADED IMPLEMENTATION ======================== //
-pub enum WorkerCommand<K, V> 
+enum WorkerCommand<K, V> 
 where
-    K: Send + Sync,
-    V: Send + Sync,
+    K: Send + Sync + ToString + Serialize + DeserializeOwned,
+    V: Send + Sync + Serialize + DeserializeOwned,
 {
     ReadOptional {
         key: K,
@@ -164,14 +245,15 @@ where
         key: K,
         respond_to: oneshot::Sender<Result<(), StorageErr>>,
     },
-    Size {
-        respond_to: oneshot::Sender<Result<usize, StorageErr>>,
+    Prune {
+        max_size: usize,
+        respond_to: oneshot::Sender<Result<(), StorageErr>>,
     },
 }
 
 struct Worker<K, V> 
 where
-    K: ToString + Send + Sync,
+    K: ToString + Send + Sync + Serialize + DeserializeOwned,
     V: Send + Sync + Serialize + DeserializeOwned,
 {
     cache: SingleThreadCache<K, V>,
@@ -180,7 +262,7 @@ where
 
 impl<K, V> Worker<K, V> 
 where
-    K: ToString + Send + Sync,
+    K: Debug + ToString + Send + Sync + Serialize + DeserializeOwned,
     V: Debug + Send + Sync + Serialize + DeserializeOwned,
 {
     async fn run(mut self) {
@@ -199,7 +281,7 @@ where
                     }
                 },
                 WorkerCommand::Write { key, value, overwrite, respond_to } => {
-                    let result = self.cache.write(&key, &value, overwrite).await;
+                    let result = self.cache.write(key, value, overwrite).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to write cache entry: {:?}", e);
                     }
@@ -210,10 +292,10 @@ where
                         error!("Actor failed to delete cache entry: {:?}", e);
                     }
                 },
-                WorkerCommand::Size { respond_to } => {
-                    let result = self.cache.size().await;
+                WorkerCommand::Prune { max_size, respond_to } => {
+                    let result = self.cache.prune(max_size).await;
                     if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to get cache size: {:?}", e);
+                        error!("Actor failed to prune cache: {:?}", e);
                     }
                 },
             }
@@ -224,7 +306,7 @@ where
 
 pub struct Cache<K, V> 
 where
-    K: Send + Sync + ToString + 'static,
+    K: Send + Sync + ToString + Serialize + DeserializeOwned + 'static,
     V: Debug + Send + Sync + Serialize + DeserializeOwned + 'static,
 {
     sender: Sender<WorkerCommand<K, V>>,
@@ -232,7 +314,7 @@ where
 
 impl<K, V> Cache<K, V> 
 where
-    K: Send + Sync + ToString + 'static,
+    K: Debug + Send + Sync + ToString + Serialize + DeserializeOwned + 'static,
     V: Debug + Send + Sync + Serialize + DeserializeOwned + 'static,
 {
     pub fn spawn(dir: Dir) -> Self {
@@ -323,11 +405,13 @@ where
         })?
     }
 
-    pub async fn size(
+    pub async fn prune(
         &self,
-    ) -> Result<usize, StorageErr> {
+        max_size: usize,
+    ) -> Result<(), StorageErr> {
         let (send, recv) = oneshot::channel();
-        self.sender.send(WorkerCommand::Size {
+        self.sender.send(WorkerCommand::Prune {
+            max_size,
             respond_to: send,
         }).await.map_err(|e| StorageErr::SendActorMessageErr {
             source: Box::new(e),
