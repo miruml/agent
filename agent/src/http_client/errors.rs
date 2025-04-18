@@ -29,6 +29,7 @@ pub enum HTTPErr {
     },
     #[error("Cache Error: {msg}")]
     CacheErr {
+        is_network_connection_error: bool,
         msg: String,
         trace: Box<Trace>,
     },
@@ -70,10 +71,14 @@ impl AsRef<dyn MiruError> for HTTPErr {
 
 impl MiruError for HTTPErr {
     fn is_network_connection_error(&self) -> bool {
-        matches!(
-            self,
-            HTTPErr::ConnectionErr { .. } | HTTPErr::TimeoutErr { .. }
-        )
+        if let HTTPErr::CacheErr { is_network_connection_error, .. } = self {
+            *is_network_connection_error
+        } else {
+            matches!(
+                self,
+                HTTPErr::ConnectionErr { .. } | HTTPErr::TimeoutErr { .. }
+            )
+        }
     }
 }
 

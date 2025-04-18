@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 // internal crates
 use crate::env;
+use crate::errors::MiruError;
 use crate::http_client::errors::{reqwest_err_to_http_client_err, HTTPErr};
 use crate::trace;
 use openapi_client::models::ErrorResponse;
@@ -13,10 +14,13 @@ use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::time::{sleep, timeout, Duration};
 use tokio::sync::OnceCell;
-#[allow(unused_imports)]
-use tracing::{debug, error, info, warn};
+use uuid::Uuid;
 
+// type aliases
 type RequestKey = String;
+type Response = String;
+type RequestID = Uuid;
+type IsCacheHit = bool;
 
 // status codes
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
@@ -34,7 +38,7 @@ pub struct HTTPClient {
     pub(crate) client: reqwest::Client,
     pub(crate) base_url: String,
     pub(crate) timeout: Duration,
-    cache: Cache<RequestKey, String>,
+    cache: Cache<RequestKey, (Response, RequestID)>,
 }
 
 // Use Lazy to implement the Singleton(ish) Pattern for the reqwest client (see the
@@ -165,18 +169,24 @@ impl HTTPClient {
         key: RequestKey,
         request: reqwest::RequestBuilder,
         time_limit: Duration,
-    ) -> Result<String, HTTPErr> {
+    ) -> Result<(String, IsCacheHit), HTTPErr> {
+        let id = Uuid::new_v4();
         let result = self.cache
-            .try_get_with(key, async {
-                let response = self.send(request, time_limit).await?;
-                Ok(self.handle_response(response).await?)
-            })
+            .try_get_with(
+                key,
+                async move {
+                    let response = self.send(request, time_limit).await?;
+                    Ok((self.handle_response(response).await?, id))
+                }
+            )
             .await
-            .map_err(|e: Arc<Box<dyn std::error::Error + Send + Sync>>| HTTPErr::CacheErr {
+            .map_err(|e: Arc<HTTPErr>| HTTPErr::CacheErr {
+                is_network_connection_error: e.is_network_connection_error(),
                 msg: e.to_string(),
                 trace: trace!(),
             })?;
-        Ok(result)
+        let is_cache_hit = result.1 != id;
+        Ok((result.0, is_cache_hit))
     }
 
     pub fn marshal_json_request<T>(
@@ -231,7 +241,7 @@ impl HTTPClient {
     pub fn new_with(
         base_url: &str,
         timeout: Duration,
-        cache: Cache<String, String>,
+        cache: Cache<String, (String, Uuid)>,
     ) -> Self {
         HTTPClient {
             client: reqwest::Client::new(),
@@ -249,7 +259,7 @@ impl HTTPClient {
         self.base_url = url.to_string();
     }
 
-    pub fn test_utils_get_cache(&mut self) -> &mut Cache<String, String> {
+    pub fn test_utils_get_cache(&mut self) -> &mut Cache<String, (String, Uuid)> {
         &mut self.cache
     }
 }

@@ -39,7 +39,7 @@ impl ConfigSchemasExt for HTTPClient {
             key,
             request,
             self.timeout,
-        ).await?;
+        ).await?.0;
 
         // parse the response
         let response = self.parse_json_response_text::<SchemaDigestResponse>(response).await?;

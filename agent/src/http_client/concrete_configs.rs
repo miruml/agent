@@ -33,7 +33,7 @@ impl ConcreteConfigsExt for HTTPClient {
             url,
             request,
             self.timeout,
-        ).await?;
+        ).await?.0;
 
         // parse the response
         let cncr_cfg_list = self.parse_json_response_text::<ConcreteConfigList>(response).await?;
@@ -67,7 +67,7 @@ impl ConcreteConfigsExt for HTTPClient {
             key,
             request,
             self.timeout,
-        ).await?;
+        ).await?.0;
         
         // parse the response
         let response = self.parse_json_response_text::<BackendConcreteConfig>(response).await?;

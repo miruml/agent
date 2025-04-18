@@ -2,6 +2,7 @@
 mod tests {
     // internal crates
     use std::time::{Duration, Instant};
+    use std::sync::Arc;
 
     // internal crates
     use config_agent::errors::MiruError;
@@ -12,11 +13,13 @@ mod tests {
     use moka::future::Cache;
     #[allow(unused_imports)]
     use tracing::{debug, error, info, trace, warn};
+    use futures::future::join_all;
 
 pub mod build_get_request {
     use super::*;
 
     #[tokio::test]
+    #[serial_test::serial(example_dot_com)]
     async fn get_example_dot_com() {
         let http_client = HTTPClient::new().await;
         let request = http_client.build_get_request(
@@ -64,6 +67,7 @@ pub mod success {
     use super::*;
 
     #[tokio::test]
+    #[serial_test::serial(example_dot_com)]
     async fn get_example_dot_com() {
         let http_client = HTTPClient::new().await;
         let request = http_client.build_get_request(
@@ -90,6 +94,7 @@ pub mod errors {
     }
 
     #[tokio::test]
+    #[serial_test::serial(example_dot_com)]
     async fn timeout_error() {
         let http_client = HTTPClient::new().await;
         let request = http_client.build_get_request(
@@ -109,6 +114,7 @@ pub mod success {
     use super::*;
 
     #[tokio::test]
+    #[serial_test::serial(example_dot_com)]
     async fn sequential_cache_hit() {
         let http_client = HTTPClient::new().await;
         let url = "https://example.com/";
@@ -119,11 +125,12 @@ pub mod success {
             url,
             None,
         ).unwrap();
-        http_client.send_cached(
+        let is_cache_hit = http_client.send_cached(
             url.to_string(),
             request,
             Duration::from_secs(1),
-        ).await.unwrap();
+        ).await.unwrap().1;
+        assert!(!is_cache_hit);
         let duration = start.elapsed();
         println!("duration {}", duration.as_millis());
         assert!(duration > Duration::from_millis(10));
@@ -135,14 +142,58 @@ pub mod success {
                 url,
                 None,
             ).unwrap();
-            http_client.send_cached(
+            let is_cache_hit = http_client.send_cached(
                 url.to_string(),
                 request,
                 Duration::from_secs(1),
-            ).await.unwrap();
+            ).await.unwrap().1;
+            assert!(is_cache_hit);
             let duration = start.elapsed();
             println!("duration {}", duration.as_millis());
             assert!(duration < Duration::from_millis(300));
+        }
+    }
+
+    #[tokio::test]
+    #[serial_test::serial(example_dot_com)]
+    async fn concurrent_cache_hit() {
+        let http_client = Arc::new(HTTPClient::new().await);
+        let url = "https://example.com/";
+
+        let start = Instant::now();
+        let mut handles = Vec::new();
+
+        // spawn a bunch of concurrent requests
+        let num_requests = 50;
+        for _ in 0..num_requests {
+            let http_client = http_client.clone();
+            let url = url.to_string();
+            let handle = tokio::spawn(async move {
+                let request = http_client.build_get_request(&url, None).unwrap();
+                http_client.send_cached(
+                    url.to_string(),
+                    request,
+                    Duration::from_secs(1),
+                ).await.unwrap().1
+            });
+            handles.push(handle);
+        }
+
+        // Wait for all requests to complete
+        let results = join_all(handles).await;
+
+        // should only have one request that is not cached
+        let cache_hits = results.iter()
+            .filter(|r| *r.as_ref().unwrap())  // First unwrap for JoinHandle, second for Result
+            .count();
+        assert_eq!(cache_hits, num_requests - 1);
+        let duration = start.elapsed();
+        println!("duration for 20 requests: {}", duration.as_millis());
+        assert!(duration < Duration::from_millis(500));
+
+        // Verify all requests succeeded
+        for result in results {
+            result.unwrap(); // Unwrap JoinHandle result
         }
     }
 
@@ -185,6 +236,7 @@ pub mod success {
     }
 
     #[tokio::test]
+    #[serial_test::serial(example_dot_com)]
     async fn cache_expired() {
         let url = "https://example.com/";
         let http_client = HTTPClient::new_with(
@@ -249,6 +301,7 @@ pub mod errors {
     }
 
     #[tokio::test]
+    #[serial_test::serial(example_dot_com)]
     async fn timeout_error() {
         let http_client = HTTPClient::new().await;
         let request = http_client.build_get_request(
@@ -260,7 +313,7 @@ pub mod errors {
             request,
             Duration::from_millis(1),
         ).await.unwrap_err();
-        assert!(matches!(result, HTTPErr::TimeoutErr { .. }));
+        assert!(matches!(result, HTTPErr::CacheErr { .. }));
     }
 }
 }
