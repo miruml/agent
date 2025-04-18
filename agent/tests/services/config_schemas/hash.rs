@@ -10,11 +10,12 @@ mod tests {
         ConfigSchemaDigestCache,
         ConfigSchemaDigests,
     };
+    use config_agent::http_client::errors::HTTPErr;
     use config_agent::utils;
     use openapi_client::models::SchemaDigestResponse;
 
     // test crates
-    use crate::http_client::mock::MockConfigSchemasSuccess;
+    use crate::http_client::mock::MockConfigSchemasClient;
 
     // external crates
     use serde_json::json;
@@ -25,10 +26,8 @@ mod tests {
 pub mod errors {
     use super::*;
 
-
-
     #[test]
-    fn invalid_schema() {
+    fn error_propagation() {
         assert!(false);
     }
 }
@@ -93,12 +92,14 @@ pub mod success {
         let cache = ConfigSchemaDigestCache::spawn(dir);
 
         // create the mock
-        let mut mock_client = MockConfigSchemasSuccess::default();
+        let mut mock_client = MockConfigSchemasClient::default();
         let resolved_digest = "sha256:a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r";
-        let server_resp = SchemaDigestResponse {
-            digest: resolved_digest.to_string(),
+        let server_resp = || -> Result<SchemaDigestResponse, HTTPErr> {
+            Ok(SchemaDigestResponse {
+                digest: resolved_digest.to_string(),
+            })
         };
-        mock_client.set_hash_schema_result(server_resp);
+        mock_client.set_hash_schema(server_resp);
 
         // create the schema
         let schema = json!({

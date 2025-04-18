@@ -12,6 +12,7 @@ pub trait ConcreteConfigsExt: Send + Sync {
         config_slug: &str,
         config_schema_digest: &str,
     ) -> Result<Option<BackendConcreteConfig>, HTTPErr>;
+
     async fn refresh_latest_concrete_config(
         &self,
         request: &RenderLatestConcreteConfigRequest,

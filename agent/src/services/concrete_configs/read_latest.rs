@@ -7,6 +7,7 @@ use crate::storage::concrete_configs::ConcreteConfigCache;
 use crate::trace;
 use openapi_server::models::BaseConcreteConfig;
 
+
 pub async fn read_latest<T: ConcreteConfigsExt>(
     config_slug: &str,
     config_schema_digest: &str,

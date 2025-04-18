@@ -1,32 +1,84 @@
 // internal crates
 use config_agent::http_client::errors::HTTPErr;
 use config_agent::http_client::config_schemas::ConfigSchemasExt;
+use config_agent::http_client::prelude::*;
 use openapi_client::models::HashSchemaRequest;
 use openapi_client::models::SchemaDigestResponse;
+use openapi_client::models::RenderLatestConcreteConfigRequest;
+use openapi_client::models::BackendConcreteConfig;
 
-#[derive(Default)]
-pub struct MockConfigSchemasSuccess {
-    pub hash_schema_result: SchemaDigestResponse,
+
+pub struct MockConfigSchemasClient {
+    pub hash_schema_result: Box<dyn Fn() -> Result<SchemaDigestResponse, HTTPErr> + Send + Sync>,
 }
 
-impl MockConfigSchemasSuccess {
-    pub fn set_hash_schema_result(
-        &mut self,
-        hash_schema_result: SchemaDigestResponse,
-    ) {
-        self.hash_schema_result = hash_schema_result;
+impl Default for MockConfigSchemasClient {
+    fn default() -> Self {
+        Self { hash_schema_result: Box::new(|| Ok(SchemaDigestResponse::default())) }
     }
 }
 
-impl ConfigSchemasExt for MockConfigSchemasSuccess {
+impl MockConfigSchemasClient {
+    pub fn set_hash_schema<F>(
+        &mut self,
+        hash_schema_result: F,
+    ) where F: Fn() -> Result<SchemaDigestResponse, HTTPErr> + Send + Sync + 'static {
+        self.hash_schema_result = Box::new(hash_schema_result);
+    }
+}
 
-
+impl ConfigSchemasExt for MockConfigSchemasClient {
     async fn hash_schema(
         &self,
         _request: &HashSchemaRequest,
     ) -> Result<SchemaDigestResponse, HTTPErr> {
-        Ok(self.hash_schema_result.clone())
+        (self.hash_schema_result)()
     }
 }
 
+pub struct MockConcreteConfigsClient {
+    pub read_latest_result: Box<dyn Fn() -> Result<Option<BackendConcreteConfig>, HTTPErr> + Send + Sync>,
+    pub refresh_latest_result: Box<dyn Fn() -> Result<BackendConcreteConfig, HTTPErr> + Send + Sync>,
+}
 
+impl Default for MockConcreteConfigsClient {
+    fn default() -> Self {
+        Self {
+            read_latest_result: Box::new(|| Ok(None)),
+            refresh_latest_result: Box::new(|| Ok(BackendConcreteConfig::default())),
+        }
+    }
+}
+
+impl MockConcreteConfigsClient {
+    pub fn set_read_latest<F>(
+        &mut self,
+        read_latest_result: F,
+    ) where F: Fn() -> Result<Option<BackendConcreteConfig>, HTTPErr> + Send + Sync + 'static {
+        self.read_latest_result = Box::new(read_latest_result);
+    }
+
+    pub fn set_refresh_latest<F>(
+        &mut self,
+        refresh_latest_result: F,
+    ) where F: Fn() -> Result<BackendConcreteConfig, HTTPErr> + Send + Sync + 'static {
+        self.refresh_latest_result = Box::new(refresh_latest_result);
+    }
+}
+
+impl ConcreteConfigsExt for MockConcreteConfigsClient {
+    async fn read_latest_concrete_config(
+        &self,
+        _: &str,
+        _: &str,
+    ) -> Result<Option<BackendConcreteConfig>, HTTPErr> {
+        (self.read_latest_result)()
+    }
+
+    async fn refresh_latest_concrete_config(
+        &self,
+        _: &RenderLatestConcreteConfigRequest,
+    ) -> Result<BackendConcreteConfig, HTTPErr> {
+        (self.refresh_latest_result)()
+    }
+}
