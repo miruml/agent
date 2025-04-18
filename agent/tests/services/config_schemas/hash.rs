@@ -18,7 +18,6 @@ mod tests {
     use crate::http_client::mock::MockConfigSchemasSuccess;
 
     // external crates
-    use dashmap::DashMap;
     use serde_json::json;
     #[allow(unused_imports)]
     use tracing::{debug, error, info, trace, warn};

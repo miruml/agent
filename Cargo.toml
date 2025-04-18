@@ -14,10 +14,10 @@ git_commit = "arglebargle"
 [workspace.dependencies]
 atomicwrites = "0.4.4"
 axum = { version = "0.8.3" }
-dashmap = "6.1.0"
 futures = "0.3.31"
 hex = "0.4.3"
 hyper = { version = "1.2.0", features = ["server"] }
+moka = { version = "0.12.10", features = ["future"] }
 reqwest = "0.12.9"
 openapi-client = { path = "openapi/client"}
 openapi-server = { path = "openapi/server"}

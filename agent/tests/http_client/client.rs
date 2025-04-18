@@ -9,8 +9,7 @@ mod tests {
     use config_agent::http_client::errors::HTTPErr;
 
     // external crates
-    use dashmap::DashMap;
-    use serde_json::json;
+    use moka::future::Cache;
     #[allow(unused_imports)]
     use tracing::{debug, error, info, trace, warn};
 
@@ -188,12 +187,12 @@ pub mod success {
     #[tokio::test]
     async fn cache_expired() {
         let url = "https://example.com/";
-        let cache_ttl = Duration::from_millis(100);
         let http_client = HTTPClient::new_with(
             url,
             Duration::from_secs(1),
-            DashMap::new(),
-            cache_ttl,
+            Cache::builder()
+                .time_to_live(Duration::from_millis(100))
+                .build(),
         );
 
         // send the first request
@@ -212,7 +211,7 @@ pub mod success {
         assert!(duration > Duration::from_millis(10));
 
         // wait for the cache to expire
-        std::thread::sleep(Duration::from_secs(3));
+        std::thread::sleep(Duration::from_secs(1));
 
         // send subsequent requests and check they are not cached
         let start = Instant::now();

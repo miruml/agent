@@ -27,6 +27,11 @@ pub enum HTTPErr {
         timeout: Duration,
         trace: Box<Trace>,
     },
+    #[error("Cache Error: {msg}")]
+    CacheErr {
+        msg: String,
+        trace: Box<Trace>,
+    },
 
     // external crate errors
     #[error("Connection Error: {source}")]

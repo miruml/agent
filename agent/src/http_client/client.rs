@@ -8,12 +8,11 @@ use crate::trace;
 use openapi_client::models::ErrorResponse;
 
 // external crates
-use dashmap::DashMap;
+use moka::future::Cache;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::time::{sleep, timeout, Duration};
 use tokio::sync::OnceCell;
-use tokio::sync::RwLock;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
 
@@ -29,14 +28,13 @@ pub enum Code {
     Unknown,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct HTTPClient {
     // allow crate access since this struct is defined throughout the crate
     pub(crate) client: reqwest::Client,
     pub(crate) base_url: String,
     pub(crate) timeout: Duration,
-    cache: DashMap<RequestKey, Arc<RwLock<Option<String>>>>,
-    cache_ttl: Duration,
+    cache: Cache<RequestKey, String>,
 }
 
 // Use Lazy to implement the Singleton(ish) Pattern for the reqwest client (see the
@@ -80,8 +78,9 @@ impl HTTPClient {
             client: client.clone(),
             base_url: base + "/internal/devices/v1",
             timeout: Duration::from_secs(10),
-            cache: DashMap::new(),
-            cache_ttl: Duration::from_secs(60),
+            cache: Cache::builder()
+                .time_to_live(Duration::from_secs(30))
+                .build(),
         }
     }
 
@@ -167,65 +166,17 @@ impl HTTPClient {
         request: reqwest::RequestBuilder,
         time_limit: Duration,
     ) -> Result<String, HTTPErr> {
-        println!("cache size {}", self.cache.len());
-        println!("cache ttl {:?}", self.cache_ttl);
-        timeout(
-            time_limit, async {
-                let result = self.send_cached_helper(key.clone(), request, time_limit).await;
-                self.schedule_cache_cleanup(key);
-                result
-            }
-        ).await
-            .map_err(|e| HTTPErr::TimeoutErr {
+        let result = self.cache
+            .try_get_with(key, async {
+                let response = self.send(request, time_limit).await?;
+                Ok(self.handle_response(response).await?)
+            })
+            .await
+            .map_err(|e: Arc<Box<dyn std::error::Error + Send + Sync>>| HTTPErr::CacheErr {
                 msg: e.to_string(),
-                timeout: time_limit,
                 trace: trace!(),
-            })?
-    }
-
-    async fn send_cached_helper(
-        &self,
-        key: RequestKey,
-        request: reqwest::RequestBuilder,
-        time_limit: Duration,
-    ) -> Result<String, HTTPErr> {
-        let cache_entry = self.cache
-            .entry(key)
-            .or_insert_with(|| Arc::new(RwLock::new(None)));
-
-        // read the cache
-        let guard = cache_entry.read().await;
-        if let Some(result) = guard.as_ref() {
-            return Ok(result.clone());
-        }
-        drop(guard);
-        
-        // attempt to write to the cache but exit if another thread is already writing
-        let mut guard = cache_entry.write().await;
-        if let Some(result) = guard.as_ref() {
-            return Ok(result.clone());
-        }
-
-        // send the request and add the result to the cache
-        let response = self.send(request, time_limit).await?;
-        let text = self.handle_response(response).await?;
-        *guard = Some(text.clone());
-        drop(guard);
-
-        Ok(text)
-    }
-
-    fn schedule_cache_cleanup(
-        &self,
-        key: RequestKey,
-    ) {
-        let cache = self.cache.clone();
-        let key = key.clone();
-        let ttl = self.cache_ttl;
-        tokio::spawn(async move {
-            tokio::time::sleep(ttl).await;
-            cache.remove(&key);
-        });
+            })?;
+        Ok(result)
     }
 
     pub fn marshal_json_request<T>(
@@ -280,15 +231,13 @@ impl HTTPClient {
     pub fn new_with(
         base_url: &str,
         timeout: Duration,
-        cache: DashMap<RequestKey, Arc<RwLock<Option<String>>>>,
-        cache_ttl: Duration,
+        cache: Cache<String, String>,
     ) -> Self {
         HTTPClient {
             client: reqwest::Client::new(),
             base_url: base_url.to_string(),
             timeout,
             cache,
-            cache_ttl,
         }
     }
 }
@@ -300,7 +249,7 @@ impl HTTPClient {
         self.base_url = url.to_string();
     }
 
-    pub fn test_utils_get_cache(&mut self) -> &mut DashMap<RequestKey, Arc<RwLock<Option<String>>>> {
+    pub fn test_utils_get_cache(&mut self) -> &mut Cache<String, String> {
         &mut self.cache
     }
 }

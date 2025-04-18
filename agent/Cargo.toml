@@ -5,12 +5,12 @@ edition = { workspace = true }
 rust-version = { workspace = true }
 
 [dependencies]
-atomicwrites = "0.4.4"
+atomicwrites = { workspace = true }
 axum = { workspace = true }
-dashmap = { workspace = true }
 futures = { workspace = true }
 hex = { workspace = true }
 hyper = { workspace = true  }
+moka = { workspace = true, features = ["future"] }
 openapi-client = { workspace = true }
 openapi-server = { workspace = true }
 reqwest = { workspace = true }
