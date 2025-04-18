@@ -19,13 +19,6 @@ mod tests {
     #[allow(unused_imports)]
     use tracing::{debug, error, info, trace, warn};
 
-// Helper function to create a blocking wrapper
-fn block_on<F: std::future::Future>(future: F) -> F::Output {
-    tokio::runtime::Runtime::new()
-        .unwrap()
-        .block_on(future)
-}
-
 pub mod delete {
     use super::*;
 
