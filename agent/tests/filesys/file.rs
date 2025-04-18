@@ -3,6 +3,7 @@ mod tests {
     // standard library
     use std::os::unix::fs::PermissionsExt;
     use std::path::PathBuf;
+    use std::future::Future;
 
     // internal crates
     use config_agent::filesys::{
@@ -260,19 +261,25 @@ pub mod read_json {
 pub mod write_bytes {
     use super::*;
 
-    fn write_bytes_atomic(file: &File, buf: &[u8], overwrite: bool) -> Result<(), FileSysErr> {
-        block_on(file.write_bytes(buf, overwrite, true))
+    fn write_bytes_atomic(file: &File, buf: &[u8], overwrite: bool) -> std::pin::Pin<Box<dyn Future<Output = Result<(), FileSysErr>> + Send>> {
+        let file = file.clone();
+        let buf = buf.to_vec();
+        Box::pin(async move { file.write_bytes(&buf, overwrite, true).await })
     }
-    fn write_bytes_non_atomic(file: &File, buf: &[u8], overwrite: bool) -> Result<(), FileSysErr> {
-        block_on(file.write_bytes(buf, overwrite, false))
+
+    fn write_bytes_non_atomic(file: &File, buf: &[u8], overwrite: bool) -> std::pin::Pin<Box<dyn Future<Output = Result<(), FileSysErr>> + Send>> {
+        let file = file.clone();
+        let buf = buf.to_vec();
+        Box::pin(async move { file.write_bytes(&buf, overwrite, false).await })
     }
 
     #[tokio::test]
     async fn doesnt_exist() {
-        for write_bytes in [write_bytes_atomic, write_bytes_non_atomic] {
+        let write_funcs = &[write_bytes_atomic, write_bytes_non_atomic];
+        for write_bytes in write_funcs {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
             let file = dir.file("test-file");
-            write_bytes(&file, b"arglebargle", false).unwrap();
+            write_bytes(&file, b"arglebargle", false).await.unwrap();
             assert_eq!(file.read_bytes().await.unwrap(), b"arglebargle");
         }
     }
@@ -283,7 +290,7 @@ pub mod write_bytes {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
             let subdir = dir.subdir(PathBuf::from("nested").join("subdir"));
             let file = subdir.file("test-file");
-            write_bytes(&file, b"arglebargle", false).unwrap();
+            write_bytes(&file, b"arglebargle", false).await.unwrap();
             assert_eq!(file.read_bytes().await.unwrap(), b"arglebargle");
         }
     }
@@ -293,12 +300,12 @@ pub mod write_bytes {
         for write_bytes in [write_bytes_atomic, write_bytes_non_atomic] {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
             let file = dir.file("test-file");
-            write_bytes(&file, b"arglebargle", false).unwrap();
+            write_bytes(&file, b"arglebargle", false).await.unwrap();
             assert_eq!(file.read_bytes().await.unwrap(), b"arglebargle");
 
         // should fail when writing again
             assert!(matches!(
-                write_bytes(&file, b"arglebargle", false).unwrap_err(),
+                write_bytes(&file, b"arglebargle", false).await.unwrap_err(),
                 FileSysErr::PathExists { .. }
             ));
         }
@@ -309,11 +316,11 @@ pub mod write_bytes {
         for write_bytes in [write_bytes_atomic, write_bytes_non_atomic] {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
             let file = dir.file("test-file");
-            write_bytes(&file, b"arglebargle", false).unwrap();
+            write_bytes(&file, b"arglebargle", false).await.unwrap();
             assert_eq!(file.read_bytes().await.unwrap(), b"arglebargle");
 
             // should succeed when writing again
-            write_bytes(&file, b"arglebargle", true).unwrap();
+            write_bytes(&file, b"arglebargle", true).await.unwrap();
             assert_eq!(file.read_bytes().await.unwrap(), b"arglebargle");
         }
     }
@@ -322,11 +329,15 @@ pub mod write_bytes {
 pub mod write_string {
     use super::*;
 
-    fn write_string_atomic(file: &File, s: &str, overwrite: bool) -> Result<(), FileSysErr> {
-        block_on(file.write_string(s, overwrite, true))
+    fn write_string_atomic(file: &File, s: &str, overwrite: bool) -> std::pin::Pin<Box<dyn Future<Output = Result<(), FileSysErr>> + Send>> {
+        let file = file.clone();
+        let s = s.to_string();
+        Box::pin(async move { file.write_string(&s, overwrite, true).await })
     }
-    fn write_string_non_atomic(file: &File, s: &str, overwrite: bool) -> Result<(), FileSysErr> {
-        block_on(file.write_string(s, overwrite, false))
+    fn write_string_non_atomic(file: &File, s: &str, overwrite: bool) -> std::pin::Pin<Box<dyn Future<Output = Result<(), FileSysErr>> + Send>> {
+        let file = file.clone();
+        let s = s.to_string();
+        Box::pin(async move { file.write_string(&s, overwrite, false).await })
     }
 
     #[tokio::test]
@@ -334,7 +345,7 @@ pub mod write_string {
         for write_string in [write_string_atomic, write_string_non_atomic] {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
             let file = dir.file("test-file");
-            write_string(&file, "hello world", false).unwrap();
+            write_string(&file, "hello world", false).await.unwrap();
             assert_eq!(file.read_string().await.unwrap(), "hello world");
         }
     }
@@ -345,7 +356,7 @@ pub mod write_string {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
             let subdir = dir.subdir(PathBuf::from("nested").join("subdir"));
             let file = subdir.file("test-file");
-            write_string(&file, "hello world", false).unwrap();
+            write_string(&file, "hello world", false).await.unwrap();
             assert_eq!(file.read_string().await.unwrap(), "hello world");
         }
     }
@@ -355,12 +366,12 @@ pub mod write_string {
         for write_string in [write_string_atomic, write_string_non_atomic] {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
             let file = dir.file("test-file");
-            write_string(&file, "hello world", false).unwrap();
+            write_string(&file, "hello world", false).await.unwrap();
             assert_eq!(file.read_string().await.unwrap(), "hello world");
 
             // should fail when writing again
             assert!(matches!(
-                write_string(&file, "new content", false).unwrap_err(),
+                write_string(&file, "new content", false).await.unwrap_err(),
                 FileSysErr::PathExists { .. }
             ));
         }
@@ -371,11 +382,11 @@ pub mod write_string {
         for write_string in [write_string_atomic, write_string_non_atomic] {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
             let file = dir.file("test-file");
-            write_string(&file, "hello world", false).unwrap();
+            write_string(&file, "hello world", false).await.unwrap();
             assert_eq!(file.read_string().await.unwrap(), "hello world");
 
             // should succeed when writing again
-            write_string(&file, "new content", true).unwrap();
+            write_string(&file, "new content", true).await.unwrap();
             assert_eq!(file.read_string().await.unwrap(), "new content");
         }
     }
@@ -384,11 +395,15 @@ pub mod write_string {
 mod write_json {
     use super::*;
 
-    fn write_json_atomic(file: &File, data: &serde_json::Value, overwrite: bool) -> Result<(), FileSysErr> {
-        block_on(file.write_json(data, overwrite, true))
+    fn write_json_atomic(file: &File, data: &serde_json::Value, overwrite: bool) -> std::pin::Pin<Box<dyn Future<Output = Result<(), FileSysErr>> + Send>> {
+        let file = file.clone();
+        let data = data.clone();
+        Box::pin(async move { file.write_json(&data, overwrite, true).await })
     }
-    fn write_json_non_atomic(file: &File, data: &serde_json::Value, overwrite: bool) -> Result<(), FileSysErr> {
-        block_on(file.write_json(data, overwrite, false))
+    fn write_json_non_atomic(file: &File, data: &serde_json::Value, overwrite: bool) -> std::pin::Pin<Box<dyn Future<Output = Result<(), FileSysErr>> + Send>> {
+        let file = file.clone();
+        let data = data.clone();
+        Box::pin(async move { file.write_json(&data, overwrite, false).await })
     }
 
     #[tokio::test]
@@ -399,8 +414,8 @@ mod write_json {
             let data = json!({
                 "name": "test",
                 "value": 42
-                });
-            write_json(&file, &data, false).unwrap();
+            });
+            write_json(&file, &data, false).await.unwrap();
             let read_data: serde_json::Value = file.read_json().await.unwrap();
             assert_eq!(read_data, data);
         }
@@ -416,7 +431,7 @@ mod write_json {
             "name": "test",
             "value": 42
             });
-            write_json(&file, &data, false).unwrap();
+            write_json(&file, &data, false).await.unwrap();
             let read_data: serde_json::Value = file.read_json().await.unwrap();
             assert_eq!(read_data, data);
         }
@@ -431,7 +446,7 @@ mod write_json {
             "name": "test",
             "value": 42
             });
-            write_json(&file, &data, false).unwrap();
+            write_json(&file, &data, false).await.unwrap();
             let read_data: serde_json::Value = file.read_json().await.unwrap();
             assert_eq!(read_data, data);
 
@@ -441,7 +456,7 @@ mod write_json {
                 "value": 100
             });
             assert!(matches!(
-                write_json(&file, &new_data, false).unwrap_err(),
+                write_json(&file, &new_data, false).await.unwrap_err(),
                 FileSysErr::PathExists { .. }
             ));
         }
@@ -456,7 +471,7 @@ mod write_json {
             "name": "test",
             "value": 42
             });
-            write_json(&file, &data, false).unwrap();
+            write_json(&file, &data, false).await.unwrap();
             let read_data: serde_json::Value = file.read_json().await.unwrap();
             assert_eq!(read_data, data);
 
@@ -465,7 +480,7 @@ mod write_json {
                 "name": "updated",
                 "value": 100
             });
-            write_json(&file, &new_data, true).unwrap();
+            write_json(&file, &new_data, true).await.unwrap();
             let read_data: serde_json::Value = file.read_json().await.unwrap();
             assert_eq!(read_data, new_data);
         }
