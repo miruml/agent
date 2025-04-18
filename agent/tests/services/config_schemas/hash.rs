@@ -51,6 +51,7 @@ pub mod success {
         });
         let raw_digest = utils::hash_json(&schema);
         let resolved_digest = "resolved_digest";
+        let args = hash::HashSchemaArgs { schema };
 
         // save the digest to the storage
         let digests = ConfigSchemaDigests {
@@ -64,7 +65,7 @@ pub mod success {
         // first access should be less than 100ms
         let start = Instant::now();
         let result = hash::hash_schema(
-            &schema,
+            &args,
             &http_client,
             &cache,
         ).await;
@@ -76,7 +77,7 @@ pub mod success {
         // second access should be less than 1ms
         let start = Instant::now();
         let result = hash::hash_schema(
-            &schema,
+            &args,
             &http_client,
             &cache,
         ).await;
@@ -108,11 +109,13 @@ pub mod success {
                 "name": { "type": "string" }
             }
         });
+        let raw_digest = utils::hash_json(&schema);
+        let args = hash::HashSchemaArgs { schema };
 
         // run the test
         let start = Instant::now();
         let result = hash::hash_schema(
-            &schema,
+            &args,
             &mock_client,
             &cache,
         ).await;
@@ -123,7 +126,6 @@ pub mod success {
         assert!(duration < Duration::from_millis(20));
 
         // expect the digest to be cached
-        let raw_digest = utils::hash_json(&schema);
         let cached_digest = cache.read(&raw_digest).await.unwrap();
         assert_eq!(cached_digest.resolved, resolved_digest);
     }

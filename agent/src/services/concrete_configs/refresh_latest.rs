@@ -6,10 +6,24 @@ use crate::storage::concrete_configs::ConcreteConfigCache;
 use crate::trace;
 use openapi_client::models::RenderLatestConcreteConfigRequest;
 
-pub async fn refresh_latest<T: ConcreteConfigsExt>(
-    http_client: &T,
-    config_slug: &str,
-    config_schema_digest: &str,
+pub trait RefreshLatestArgsI {
+    fn config_slug(&self) -> &str;
+    fn config_schema_digest(&self) -> &str;
+}
+
+pub struct RefreshLatestArgs {
+    pub config_slug: String,
+    pub config_schema_digest: String,
+}
+
+impl RefreshLatestArgsI for RefreshLatestArgs {
+    fn config_slug(&self) -> &str { &self.config_slug }
+    fn config_schema_digest(&self) -> &str { &self.config_schema_digest }
+}
+
+pub async fn refresh_latest<ArgsT: RefreshLatestArgsI, HTTPClientT: ConcreteConfigsExt>(
+    args: &ArgsT,
+    http_client: &HTTPClientT,
     cache: &ConcreteConfigCache,
 ) -> Result<openapi_server::models::BaseConcreteConfig, ServiceErr> {
     // this should be retrieved from the agent config
@@ -18,8 +32,8 @@ pub async fn refresh_latest<T: ConcreteConfigsExt>(
     // read the latest concrete config from the server
     let payload = RenderLatestConcreteConfigRequest {
         client_id: client_id.to_string(),
-        config_slug: config_slug.to_string(),
-        config_schema_digest: config_schema_digest.to_string(),
+        config_slug: args.config_slug().to_string(),
+        config_schema_digest: args.config_schema_digest().to_string(),
     };
     let cncr_cfg= http_client.refresh_latest_concrete_config(
         &payload
@@ -31,8 +45,8 @@ pub async fn refresh_latest<T: ConcreteConfigsExt>(
     // update the concrete config in storage
     let cncr_cfg = utils::convert_cncr_cfg_backend_to_storage(
         cncr_cfg,
-        config_slug.to_string(),
-        config_schema_digest.to_string(),
+        args.config_slug().to_string(),
+        args.config_schema_digest().to_string(),
     );
     cache.write(
         cncr_cfg.clone(),

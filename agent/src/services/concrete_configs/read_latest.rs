@@ -7,18 +7,31 @@ use crate::storage::concrete_configs::ConcreteConfigCache;
 use crate::trace;
 use openapi_server::models::BaseConcreteConfig;
 
+pub trait ReadLatestArgsI {
+    fn config_slug(&self) -> &str;
+    fn config_schema_digest(&self) -> &str;
+}
 
-pub async fn read_latest<T: ConcreteConfigsExt>(
-    config_slug: &str,
-    config_schema_digest: &str,
-    http_client: &T,
+pub struct ReadLatestArgs {
+    pub config_slug: String,
+    pub config_schema_digest: String,
+}
+
+impl ReadLatestArgsI for ReadLatestArgs {
+    fn config_slug(&self) -> &str { &self.config_slug }
+    fn config_schema_digest(&self) -> &str { &self.config_schema_digest }
+}
+
+pub async fn read_latest<ArgsT: ReadLatestArgsI, HTTPClientT: ConcreteConfigsExt>(
+    args: &ArgsT,
+    http_client: &HTTPClientT,
     cache: &ConcreteConfigCache,
 ) -> Result<BaseConcreteConfig, ServiceErr> {
 
     // read the latest concrete config from the server
     let result = http_client.read_latest_concrete_config(
-        config_slug,
-        config_schema_digest,
+        args.config_slug(),
+        args.config_schema_digest(),
     ).await;
 
     // if not a network connection error, return the error (ignore network connection
@@ -41,8 +54,8 @@ pub async fn read_latest<T: ConcreteConfigsExt>(
     if let Some(concrete_config) = result {
         let concrete_config = utils::convert_cncr_cfg_backend_to_storage(
             concrete_config,
-            config_slug.to_string(),
-            config_schema_digest.to_string(),
+            args.config_slug().to_string(),
+            args.config_schema_digest().to_string(),
         );
         cache.write(
             concrete_config.clone(),
@@ -56,8 +69,8 @@ pub async fn read_latest<T: ConcreteConfigsExt>(
 
     // if unsuccessful, attempt to read the latest concrete config from storage
     let latest_concrete_config = cache.read_optional(
-        config_slug,
-        config_schema_digest,
+        args.config_slug(),
+        args.config_schema_digest(),
     ).await.map_err(|e| ServiceErr::StorageErr {
         source: e,
         trace: trace!(),
@@ -71,8 +84,8 @@ pub async fn read_latest<T: ConcreteConfigsExt>(
         }
         None => {
             Err(ServiceErr::LatestConcreteConfigNotFound {
-                config_slug: config_slug.to_string(),
-                config_schema_digest: config_schema_digest.to_string(),
+                config_slug: args.config_slug().to_string(),
+                config_schema_digest: args.config_schema_digest().to_string(),
                 trace: trace!(),
             })
         }

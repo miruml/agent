@@ -6,7 +6,11 @@ mod tests {
     use config_agent::filesys::dir::Dir;
     use config_agent::http_client::errors::HTTPErr;
     use config_agent::services::{
-        concrete_configs::{read_latest, utils},
+        concrete_configs::{
+            read_latest,
+            read_latest::{ReadLatestArgs, ReadLatestArgsI},
+            utils,
+        },
         errors::ServiceErr,
     };
     use config_agent::storage::concrete_configs::{ConcreteConfig, ConcreteConfigCache};
@@ -35,9 +39,12 @@ mod tests {
             });
 
             // run the test
+            let args = ReadLatestArgs {
+                config_slug: "config-slug".to_string(),
+                config_schema_digest: "config-schema-digest".to_string(),
+            };
             let result = read_latest::read_latest(
-                "config-slug",
-                "config-schema-digest",
+                &args,
                 &http_client,
                 &cache,
             ).await;
@@ -68,9 +75,12 @@ mod tests {
             });
 
             // run the test
+            let args = ReadLatestArgs {
+                config_slug: "config-slug".to_string(),
+                config_schema_digest: "config-schema-digest".to_string(),
+            };
             let result = read_latest::read_latest(
-                "config-slug",
-                "config-schema-digest",
+                &args,
                 &http_client,
                 &cache,
             ).await.unwrap_err();
@@ -108,9 +118,12 @@ mod tests {
             });
 
             // run the test
+            let args = ReadLatestArgs {
+                config_slug: config_slug.to_string(),
+                config_schema_digest: config_schema_digest.to_string(),
+            };
             let result = read_latest::read_latest(
-                config_slug,
-                config_schema_digest,
+                &args,
                 &http_client,
                 &cache,
             ).await.unwrap();
@@ -141,9 +154,12 @@ mod tests {
             http_client.set_read_latest(move || { Ok(None) });
 
             // run the test
+            let args = ReadLatestArgs {
+                config_slug: config_slug.to_string(),
+                config_schema_digest: config_schema_digest.to_string(),
+            };
             let result = read_latest::read_latest(
-                config_slug,
-                config_schema_digest,
+                &args,
                 &http_client,
                 &cache,
             ).await.unwrap();
@@ -166,22 +182,32 @@ mod tests {
             );
 
             // run the test
-            let config_slug = "config-slug";
-            let config_schema_digest = "config-schema-digest";
+            let args = ReadLatestArgs {
+                config_slug: "config-slug".to_string(),
+                config_schema_digest: "config-schema-digest".to_string(),
+            };
             let result = read_latest::read_latest(
-                config_slug,
-                config_schema_digest,
+                &args,
                 &http_client,
                 &cache,
             ).await.unwrap();
 
             let storage_concrete_config = utils::convert_cncr_cfg_backend_to_storage(
                 backend_concrete_config,
-                config_slug.to_string(),
-                config_schema_digest.to_string(),
+                args.config_slug().to_string(),
+                args.config_schema_digest().to_string(),
             );
-            let expected = utils::convert_cncr_cfg_storage_to_sdk(storage_concrete_config);
+            let expected = utils::convert_cncr_cfg_storage_to_sdk(
+                storage_concrete_config.clone(),
+            );
             assert_eq!(result, expected);
+
+            // cache should have been updated
+            let cached_concrete_config = cache.read(
+                args.config_slug(),
+                args.config_schema_digest(),
+            ).await.unwrap();
+            assert_eq!(cached_concrete_config, storage_concrete_config);
         }
     }
 }

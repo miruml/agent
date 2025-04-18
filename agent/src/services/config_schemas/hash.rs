@@ -12,14 +12,26 @@ use openapi_client::models::HashSchemaRequest;
 // external crates
 use serde_json::Value;
 
-pub async fn hash_schema<T: ConfigSchemasExt>(
-    schema: &Value,
-    http_client: &T,
+pub trait HashSchemaArgsI {
+    fn schema(&self) -> &Value;
+}
+
+pub struct HashSchemaArgs {
+    pub schema: Value,
+}
+
+impl HashSchemaArgsI for HashSchemaArgs {
+    fn schema(&self) -> &Value { &self.schema }
+}
+
+pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
+    args: &ArgsT,
+    http_client: &HTTPClientT,
     cache: &ConfigSchemaDigestCache,
 ) -> Result<String, ServiceErr> {
 
     // raw digest of the schema (but we need the digest of the resolved schema)
-    let raw_digest = utils::hash_json(schema);
+    let raw_digest = utils::hash_json(args.schema());
 
     // check for the raw digest in the storage for the known schema digest
     let digests= cache.read_optional(&raw_digest).await
@@ -33,7 +45,7 @@ pub async fn hash_schema<T: ConfigSchemasExt>(
     }
 
     // if not found, send the hash request to the server
-    let hash_request = HashSchemaRequest { schema: schema.clone() };
+    let hash_request = HashSchemaRequest { schema: args.schema().clone() };
     let digest_response = http_client.hash_schema(&hash_request).await
         .map_err(|e| ServiceErr::HTTPErr {
             source: e,
