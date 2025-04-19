@@ -15,28 +15,38 @@ use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
 
-/// struct for typed errors of method [`render_latest_concrete_config`]
+/// struct for typed errors of method [`get_latest_concrete_config`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum RenderLatestConcreteConfigError {
+pub enum GetLatestConcreteConfigError {
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`refresh_latest_concrete_config`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum RefreshLatestConcreteConfigError {
     UnknownValue(serde_json::Value),
 }
 
 
-pub async fn render_latest_concrete_config(configuration: &configuration::Configuration, render_latest_concrete_config_request: Option<models::RenderLatestConcreteConfigRequest>) -> Result<models::BaseConcreteConfig, Error<RenderLatestConcreteConfigError>> {
+pub async fn get_latest_concrete_config(configuration: &configuration::Configuration, client_id: &str, config_schema_digest: &str, config_slug: &str) -> Result<models::BaseConcreteConfig, Error<GetLatestConcreteConfigError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_render_latest_concrete_config_request = render_latest_concrete_config_request;
+    let p_client_id = client_id;
+    let p_config_schema_digest = config_schema_digest;
+    let p_config_slug = config_slug;
 
-    let uri_str = format!("{}/concrete_configs/render_latest", configuration.base_path);
-    let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
+    let uri_str = format!("{}/concrete_configs/latest", configuration.base_path, client_id=crate::apis::urlencode(p_client_id));
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
+    req_builder = req_builder.query(&[("config_schema_digest", &p_config_schema_digest.to_string())]);
+    req_builder = req_builder.query(&[("config_slug", &p_config_slug.to_string())]);
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
     }
     if let Some(ref token) = configuration.bearer_access_token {
         req_builder = req_builder.bearer_auth(token.to_owned());
     };
-    req_builder = req_builder.json(&p_render_latest_concrete_config_request);
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -58,7 +68,47 @@ pub async fn render_latest_concrete_config(configuration: &configuration::Config
         }
     } else {
         let content = resp.text().await?;
-        let entity: Option<RenderLatestConcreteConfigError> = serde_json::from_str(&content).ok();
+        let entity: Option<GetLatestConcreteConfigError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn refresh_latest_concrete_config(configuration: &configuration::Configuration, refresh_latest_concrete_config_request: Option<models::RefreshLatestConcreteConfigRequest>) -> Result<models::BaseConcreteConfig, Error<RefreshLatestConcreteConfigError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_refresh_latest_concrete_config_request = refresh_latest_concrete_config_request;
+
+    let uri_str = format!("{}/concrete_configs/refresh_latest", configuration.base_path);
+    let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
+
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref token) = configuration.bearer_access_token {
+        req_builder = req_builder.bearer_auth(token.to_owned());
+    };
+    req_builder = req_builder.json(&p_refresh_latest_concrete_config_request);
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::BaseConcreteConfig`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::BaseConcreteConfig`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<RefreshLatestConcreteConfigError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

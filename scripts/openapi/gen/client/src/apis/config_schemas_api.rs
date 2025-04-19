@@ -57,6 +57,13 @@ pub enum RenderConfigSchemaError {
     UnknownValue(serde_json::Value),
 }
 
+/// struct for typed errors of method [`update_override_hierarchy`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum UpdateOverrideHierarchyError {
+    UnknownValue(serde_json::Value),
+}
+
 
 pub async fn create_config_schema(configuration: &configuration::Configuration, create_config_schema_request: models::CreateConfigSchemaRequest, expand_left_square_bracket_right_square_bracket: Option<Vec<models::ConfigSchemaExpand>>) -> Result<models::ConfigSchema, Error<CreateConfigSchemaError>> {
     // add a prefix to parameters to efficiently prevent name collisions
@@ -348,6 +355,47 @@ pub async fn render_config_schema(configuration: &configuration::Configuration, 
     } else {
         let content = resp.text().await?;
         let entity: Option<RenderConfigSchemaError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn update_override_hierarchy(configuration: &configuration::Configuration, config_schema_id: &str, update_override_hierarchy_request: models::UpdateOverrideHierarchyRequest) -> Result<models::ConfigSchema, Error<UpdateOverrideHierarchyError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_config_schema_id = config_schema_id;
+    let p_update_override_hierarchy_request = update_override_hierarchy_request;
+
+    let uri_str = format!("{}/config_schemas/{config_schema_id}/overrides/hierarchy", configuration.base_path, config_schema_id=crate::apis::urlencode(p_config_schema_id));
+    let mut req_builder = configuration.client.request(reqwest::Method::PUT, &uri_str);
+
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref token) = configuration.bearer_access_token {
+        req_builder = req_builder.bearer_auth(token.to_owned());
+    };
+    req_builder = req_builder.json(&p_update_override_hierarchy_request);
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::ConfigSchema`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::ConfigSchema`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<UpdateOverrideHierarchyError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

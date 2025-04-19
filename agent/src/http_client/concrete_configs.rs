@@ -1,9 +1,11 @@
+// std
+use std::sync::Arc;
+
 // internal crates
 use crate::http_client::errors::HTTPErr;
 use crate::http_client::client::HTTPClient;
-use openapi_client::models::RenderLatestConcreteConfigRequest;
+use openapi_client::models::RefreshLatestConcreteConfigRequest;
 use openapi_client::models::BackendConcreteConfig;
-use openapi_client::models::ConcreteConfigList;
 
 #[allow(async_fn_in_trait)]
 pub trait ConcreteConfigsExt: Send + Sync {
@@ -15,7 +17,7 @@ pub trait ConcreteConfigsExt: Send + Sync {
 
     async fn refresh_latest_concrete_config(
         &self,
-        request: &RenderLatestConcreteConfigRequest,
+        request: &RefreshLatestConcreteConfigRequest,
     ) -> Result<BackendConcreteConfig, HTTPErr>;
 }
 
@@ -26,7 +28,7 @@ impl ConcreteConfigsExt for HTTPClient {
         config_schema_digest: &str,
     ) -> Result<Option<BackendConcreteConfig>, HTTPErr> {
         // build the request
-        let url = format!("{}/concrete_configs?config_slug={}&config_schema_digest={}", self.base_url, config_slug, config_schema_digest);
+        let url = format!("{}/latest?config_slug={}&config_schema_digest={}", self.base_url, config_slug, config_schema_digest);
         let request = self.build_get_request(&url, None)?;
 
         // send the request
@@ -37,20 +39,16 @@ impl ConcreteConfigsExt for HTTPClient {
         ).await?.0;
 
         // parse the response
-        let cncr_cfg_list = self.parse_json_response_text::<ConcreteConfigList>(response).await?;
-        if cncr_cfg_list.data.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(cncr_cfg_list.data[0].clone()))
-        }
+        let cncr_cfg = self.parse_json_response_text::<Option<BackendConcreteConfig>>(response).await?;
+        Ok(cncr_cfg)
     }
 
     async fn refresh_latest_concrete_config(
         &self,
-        request: &RenderLatestConcreteConfigRequest,
+        request: &RefreshLatestConcreteConfigRequest,
     ) -> Result<BackendConcreteConfig, HTTPErr> {
         // build the request
-        let url = format!("{}/render_latest", self.base_url);
+        let url = format!("{}/refresh_latest", self.base_url);
         let key = format!(
             "{}:{}:{}",
             url,
@@ -73,5 +71,22 @@ impl ConcreteConfigsExt for HTTPClient {
         // parse the response
         let response = self.parse_json_response_text::<BackendConcreteConfig>(response).await?;
         Ok(response)
+    }
+}
+
+impl ConcreteConfigsExt for Arc<HTTPClient> {
+    async fn read_latest_concrete_config(
+        &self,
+        config_slug: &str,
+        config_schema_digest: &str,
+    ) -> Result<Option<BackendConcreteConfig>, HTTPErr> {
+        self.as_ref().read_latest_concrete_config(config_slug, config_schema_digest).await
+    }
+
+    async fn refresh_latest_concrete_config(
+        &self,
+        request: &RefreshLatestConcreteConfigRequest,
+    ) -> Result<BackendConcreteConfig, HTTPErr> {
+        self.as_ref().refresh_latest_concrete_config(request).await
     }
 }

@@ -10,11 +10,15 @@ use crate::storage::concrete_configs::{
 };
 use openapi_server::models::BaseConcreteConfig;
 
+// external crates
+use serde::Deserialize;
+
 pub trait ReadLatestArgsI {
     fn config_slug(&self) -> &str;
     fn config_schema_digest(&self) -> &str;
 }
 
+#[derive(Debug, Deserialize)]
 pub struct ReadLatestArgs {
     pub config_slug: String,
     pub config_schema_digest: String,

@@ -1,21 +1,28 @@
 use std::sync::Arc;
 
 // internal crates
-use crate::http_client::client::HTTPClient;
+use crate::server::api::AppState;
 use crate::services::config_schemas::{
-    hash::{HashSchemaArgsI, HashSchemaArgs},
+    hash::HashSchemaArgsI,
     hash,
 };
-use crate::storage::digests::ConfigSchemaDigestCache;
+use crate::services::concrete_configs::{
+    read_latest,
+    read_latest::ReadLatestArgs,
+    refresh_latest,
+    refresh_latest::RefreshLatestArgsI,
+};
 use openapi_server::models::SchemaDigestResponse;
 use openapi_server::models::HashSchemaRequest;
-use openapi_server::models::RenderLatestConcreteConfigRequest;
+use openapi_server::models::RefreshLatestConcreteConfigRequest;
 
 // external
 use axum::{
     http::StatusCode,
     Json,
     extract::Query,
+    extract::State,
+    response::IntoResponse,
 };
 use serde_json::json;
 use serde_json::Value;
@@ -26,17 +33,16 @@ impl HashSchemaArgsI for HashSchemaRequest {
 }
 
 pub async fn hash_schema(
+    State(state): State<Arc<AppState>>,
     Json(payload): Json<HashSchemaRequest>,
-    http_client: Arc<HTTPClient>,
-    cache: Arc<ConfigSchemaDigestCache>,
-) -> (StatusCode, Json<serde_json::Value>) {
-    let digest = hash::hash_schema(
+) -> impl IntoResponse {
+    let result = hash::hash_schema(
         &payload,
-        &http_client,
-        &cache,
+        &state.http_client,
+        &state.config_schema_digest_cache,
     ).await;
 
-    match digest {
+    match result {
         Ok(digest) => (StatusCode::OK, Json(json!(SchemaDigestResponse { digest }))),
         Err(e) => {
             error!("Error hashing schema: {:?}", e);
@@ -45,37 +51,45 @@ pub async fn hash_schema(
     }
 }
 
-// async fn read_latest_concrete_config(
-//     Query(payload): Query<RenderLatestConcreteConfigRequest>,
-// ) -> (StatusCode, Json<serde_json::Value>) {
-//     (StatusCode::OK, Json(json!({
-//         "object": "concrete_config",
-//         "id": "cncr_cfg_123",
-//         "created_at": "2021-01-01T00:00:00Z",
-//         "created_by_id": "usr_123",
-//         "client_id": "cli_123",
-//         "config_schema_id": "cfg_sch_123",
-//         "concrete_config": {
-//             "device_id": "device_23jt0321p9123434gsdf",
-//             "speed": 100
-//         }
-//     })))
-// }
+pub async fn read_latest_concrete_config(
+    Query(query): Query<ReadLatestArgs>,
+    State(state): State<Arc<AppState>>,
+) -> impl IntoResponse {
+    let result = read_latest::read_latest(
+        &query,
+        &state.http_client,
+        &state.concrete_config_cache,
+    ).await;
 
-// async fn refresh_latest_concrete_config(
-//     payload: Query<RenderLatestConcreteConfigRequest>,
-// ) -> (StatusCode, Json<serde_json::Value>) {
-//     (StatusCode::OK, Json(json!({
-//         "object": "concrete_config",
-//         "id": "cncr_cfg_123",
-//         "created_at": "2021-01-01T00:00:00Z",
-//         "created_by_id": "usr_123",
-//         "client_id": "cli_123",
-//         "config_schema_id": "cfg_sch_123",
-//         "concrete_config": {
-//             "device_id": "device_23jt0321p9123434gsdf",
-//             "speed": 100
-//         }
-//     })))
-// }
+    match result {
+        Ok(concrete_config) => (StatusCode::OK, Json(json!(concrete_config))),
+        Err(e) => {
+            error!("Error reading latest concrete config: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Internal server error" })))
+        }
+    }
+}
 
+impl RefreshLatestArgsI for RefreshLatestConcreteConfigRequest {
+    fn config_slug(&self) -> &str { &self.config_slug }
+    fn config_schema_digest(&self) -> &str { &self.config_schema_digest }
+}
+
+pub async fn refresh_latest_concrete_config(
+    State(state): State<Arc<AppState>>,
+    Json(payload): Json<RefreshLatestConcreteConfigRequest>,
+) -> impl IntoResponse {
+    let result = refresh_latest::refresh_latest(
+        &payload,
+        &state.http_client,
+        &state.concrete_config_cache,
+    ).await;
+
+    match result {
+        Ok(concrete_config) => (StatusCode::OK, Json(json!(concrete_config))),
+        Err(e) => {
+            error!("Error refreshing latest concrete config: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Internal server error" })))
+        }
+    }
+}

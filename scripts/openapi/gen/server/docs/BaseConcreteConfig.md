@@ -6,7 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **object** | **String** |  | 
 **id** | **String** |  | 
-**created_at** | Option<**String**> |  | 
+**created_at** | **String** |  | 
 **client_id** | **String** |  | 
 **config_schema_id** | **String** |  | 
 **concrete_config** | Option<[**serde_json::Value**](.md)> |  | 

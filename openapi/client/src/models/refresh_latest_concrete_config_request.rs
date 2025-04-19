@@ -12,7 +12,7 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct RenderLatestConcreteConfigRequest {
+pub struct RefreshLatestConcreteConfigRequest {
     /// The client id
     #[serde(rename = "client_id")]
     pub client_id: String,
@@ -24,9 +24,9 @@ pub struct RenderLatestConcreteConfigRequest {
     pub config_slug: String,
 }
 
-impl RenderLatestConcreteConfigRequest {
-    pub fn new(client_id: String, config_schema_digest: String, config_slug: String) -> RenderLatestConcreteConfigRequest {
-        RenderLatestConcreteConfigRequest {
+impl RefreshLatestConcreteConfigRequest {
+    pub fn new(client_id: String, config_schema_digest: String, config_slug: String) -> RefreshLatestConcreteConfigRequest {
+        RefreshLatestConcreteConfigRequest {
             client_id,
             config_schema_digest,
             config_slug,

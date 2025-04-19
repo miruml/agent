@@ -7,7 +7,7 @@ use crate::storage::concrete_configs::{
     ConcreteConfigCacheKey,
 };
 use crate::trace;
-use openapi_client::models::RenderLatestConcreteConfigRequest;
+use openapi_client::models::RefreshLatestConcreteConfigRequest;
 
 pub trait RefreshLatestArgsI {
     fn config_slug(&self) -> &str;
@@ -33,7 +33,7 @@ pub async fn refresh_latest<ArgsT: RefreshLatestArgsI, HTTPClientT: ConcreteConf
     let client_id = "FIXME";
 
     // read the latest concrete config from the server
-    let payload = RenderLatestConcreteConfigRequest {
+    let payload = RefreshLatestConcreteConfigRequest {
         client_id: client_id.to_string(),
         config_slug: args.config_slug().to_string(),
         config_schema_digest: args.config_schema_digest().to_string(),

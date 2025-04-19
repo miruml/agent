@@ -26,8 +26,9 @@ All URIs are relative to *https://configs.dev.api.miruml.com/internal/v1*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
-*ConcreteConfigsApi* | [**render_latest_concrete_config**](docs/ConcreteConfigsApi.md#render_latest_concrete_config) | **POST** /concrete_configs/render_latest | Render the latest concrete config for a client
-*ConfigSchemasApi* | [**hash_config_schema**](docs/ConfigSchemasApi.md#hash_config_schema) | **POST** /config_schemas/hash | Hash a config schema to determine its digest
+*ConcreteConfigsApi* | [**get_latest_concrete_config**](docs/ConcreteConfigsApi.md#get_latest_concrete_config) | **GET** /concrete_configs/latest | Get the latest concrete config
+*ConcreteConfigsApi* | [**refresh_latest_concrete_config**](docs/ConcreteConfigsApi.md#refresh_latest_concrete_config) | **POST** /concrete_configs/refresh_latest | Render the latest concrete config for a client
+*ConfigSchemasApi* | [**hash_config_schema**](docs/ConfigSchemasApi.md#hash_config_schema) | **POST** /config_schemas/hash | Hash a config schema
 *ErrorsApi* | [**get_error**](docs/ErrorsApi.md#get_error) | **GET** /example-error | Get an error
 
 
@@ -37,7 +38,7 @@ Class | Method | HTTP request | Description
  - [Error](docs/Error.md)
  - [ErrorResponse](docs/ErrorResponse.md)
  - [HashSchemaRequest](docs/HashSchemaRequest.md)
- - [RenderLatestConcreteConfigRequest](docs/RenderLatestConcreteConfigRequest.md)
+ - [RefreshLatestConcreteConfigRequest](docs/RefreshLatestConcreteConfigRequest.md)
  - [SchemaDigestResponse](docs/SchemaDigestResponse.md)
 
 

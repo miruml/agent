@@ -12,18 +12,18 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct RenderLatestConcreteConfigRequest {
+pub struct RefreshLatestConcreteConfigRequest {
     /// The config schema digest
-    #[serde(rename = "config_schema_digest", deserialize_with = "Option::deserialize")]
-    pub config_schema_digest: Option<String>,
+    #[serde(rename = "config_schema_digest")]
+    pub config_schema_digest: String,
     /// The config slug
     #[serde(rename = "config_slug")]
     pub config_slug: String,
 }
 
-impl RenderLatestConcreteConfigRequest {
-    pub fn new(config_schema_digest: Option<String>, config_slug: String) -> RenderLatestConcreteConfigRequest {
-        RenderLatestConcreteConfigRequest {
+impl RefreshLatestConcreteConfigRequest {
+    pub fn new(config_schema_digest: String, config_slug: String) -> RefreshLatestConcreteConfigRequest {
+        RefreshLatestConcreteConfigRequest {
             config_schema_digest,
             config_slug,
         }

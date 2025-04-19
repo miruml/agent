@@ -10,6 +10,7 @@ Method | HTTP request | Description
 [**hash_config_schema**](ConfigSchemasApi.md#hash_config_schema) | **POST** /config_schemas/hash | Hash a config schema
 [**list_config_schemas**](ConfigSchemasApi.md#list_config_schemas) | **GET** /config_schemas | List the config schemas for a workspace
 [**render_config_schema**](ConfigSchemasApi.md#render_config_schema) | **POST** /config_schemas/{config_schema_id}/render | Render a config schema
+[**update_override_hierarchy**](ConfigSchemasApi.md#update_override_hierarchy) | **PUT** /config_schemas/{config_schema_id}/overrides/hierarchy | Update the hierarchy positions of the overrides for a config schema
 
 
 
@@ -177,6 +178,35 @@ Name | Type | Description  | Required | Notes
 ### Return type
 
 [**models::RenderedConfigSchema**](RenderedConfigSchema.md)
+
+### Authorization
+
+[ClerkAuth](../README.md#ClerkAuth)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## update_override_hierarchy
+
+> models::ConfigSchema update_override_hierarchy(config_schema_id, update_override_hierarchy_request)
+Update the hierarchy positions of the overrides for a config schema
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**config_schema_id** | **String** | The unique identifier of the config schema | [required] |
+**update_override_hierarchy_request** | [**UpdateOverrideHierarchyRequest**](UpdateOverrideHierarchyRequest.md) |  | [required] |
+
+### Return type
+
+[**models::ConfigSchema**](ConfigSchema.md)
 
 ### Authorization
 

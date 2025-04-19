@@ -4,7 +4,7 @@ use config_agent::http_client::config_schemas::ConfigSchemasExt;
 use config_agent::http_client::prelude::*;
 use openapi_client::models::HashSchemaRequest;
 use openapi_client::models::SchemaDigestResponse;
-use openapi_client::models::RenderLatestConcreteConfigRequest;
+use openapi_client::models::RefreshLatestConcreteConfigRequest;
 use openapi_client::models::BackendConcreteConfig;
 
 
@@ -77,7 +77,7 @@ impl ConcreteConfigsExt for MockConcreteConfigsClient {
 
     async fn refresh_latest_concrete_config(
         &self,
-        _: &RenderLatestConcreteConfigRequest,
+        _: &RefreshLatestConcreteConfigRequest,
     ) -> Result<BackendConcreteConfig, HTTPErr> {
         (self.refresh_latest_result)()
     }

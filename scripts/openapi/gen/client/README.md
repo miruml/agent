@@ -39,15 +39,15 @@ Class | Method | HTTP request | Description
 *ClientsApi* | [**list_clients**](docs/ClientsApi.md#list_clients) | **GET** /clients | List clients in a workspace
 *ClientsApi* | [**update_client**](docs/ClientsApi.md#update_client) | **PUT** /clients/{client_id} | Update a client
 *ComposeFileApi* | [**verify_compose_file**](docs/ComposeFileApi.md#verify_compose_file) | **POST** /workspaces/{workspace_id}/compose/verify | Verify a compose file
-*ConcreteConfigsApi* | [**get_concrete_config**](docs/ConcreteConfigsApi.md#get_concrete_config) | **GET** /concrete_configs/{concrete_config_id} | Get a concrete config
-*ConcreteConfigsApi* | [**list_concrete_configs**](docs/ConcreteConfigsApi.md#list_concrete_configs) | **GET** /concrete_configs | List concrete configs in a workspace
-*ConcreteConfigsApi* | [**render_latest_concrete_config**](docs/ConcreteConfigsApi.md#render_latest_concrete_config) | **POST** /concrete_configs/render_latest | Render the latest concrete config for a client
+*ConcreteConfigsApi* | [**get_latest_concrete_config**](docs/ConcreteConfigsApi.md#get_latest_concrete_config) | **GET** /concrete_configs/latest | Get the latest concrete config
+*ConcreteConfigsApi* | [**refresh_latest_concrete_config**](docs/ConcreteConfigsApi.md#refresh_latest_concrete_config) | **POST** /concrete_configs/refresh_latest | Render the latest concrete config for a client
 *ConfigSchemasApi* | [**create_config_schema**](docs/ConfigSchemasApi.md#create_config_schema) | **POST** /config_schemas | Create a config schema
 *ConfigSchemasApi* | [**delete_config_schema**](docs/ConfigSchemasApi.md#delete_config_schema) | **DELETE** /config_schemas/{config_schema_id} | Delete a config schema
 *ConfigSchemasApi* | [**get_config_schema**](docs/ConfigSchemasApi.md#get_config_schema) | **GET** /config_schemas/{config_schema_id} | Get a config schema
 *ConfigSchemasApi* | [**hash_config_schema**](docs/ConfigSchemasApi.md#hash_config_schema) | **POST** /config_schemas/hash | Hash a config schema
 *ConfigSchemasApi* | [**list_config_schemas**](docs/ConfigSchemasApi.md#list_config_schemas) | **GET** /config_schemas | List the config schemas for a workspace
 *ConfigSchemasApi* | [**render_config_schema**](docs/ConfigSchemasApi.md#render_config_schema) | **POST** /config_schemas/{config_schema_id}/render | Render a config schema
+*ConfigSchemasApi* | [**update_override_hierarchy**](docs/ConfigSchemasApi.md#update_override_hierarchy) | **PUT** /config_schemas/{config_schema_id}/overrides/hierarchy | Update the hierarchy positions of the overrides for a config schema
 *ConfigsApi* | [**create_config**](docs/ConfigsApi.md#create_config) | **POST** /configs | Create a config
 *ConfigsApi* | [**delete_config**](docs/ConfigsApi.md#delete_config) | **DELETE** /configs/{config_id} | Delete a config
 *ConfigsApi* | [**get_config**](docs/ConfigsApi.md#get_config) | **GET** /configs/{config_id} | Get a config
@@ -160,9 +160,6 @@ Class | Method | HTTP request | Description
  - [ComposeFileVerification](docs/ComposeFileVerification.md)
  - [ComposeFileVerificationRequest](docs/ComposeFileVerificationRequest.md)
  - [ConcreteConfigExpand](docs/ConcreteConfigExpand.md)
- - [ConcreteConfigList](docs/ConcreteConfigList.md)
- - [ConcreteConfigOrderBy](docs/ConcreteConfigOrderBy.md)
- - [ConcreteConfigSearch](docs/ConcreteConfigSearch.md)
  - [Config](docs/Config.md)
  - [ConfigExpand](docs/ConfigExpand.md)
  - [ConfigList](docs/ConfigList.md)
@@ -269,13 +266,13 @@ Class | Method | HTTP request | Description
  - [OverrideOrderBy](docs/OverrideOrderBy.md)
  - [OverrideSearch](docs/OverrideSearch.md)
  - [PaginatedList](docs/PaginatedList.md)
+ - [RefreshLatestConcreteConfigRequest](docs/RefreshLatestConcreteConfigRequest.md)
  - [RegistrySource](docs/RegistrySource.md)
  - [RegistrySourceContainerRepository](docs/RegistrySourceContainerRepository.md)
  - [RegistrySourceContainerRepositoryList](docs/RegistrySourceContainerRepositoryList.md)
  - [RegistrySourceList](docs/RegistrySourceList.md)
  - [RemoveDeploymentsRequest](docs/RemoveDeploymentsRequest.md)
  - [RenderConfigSchemaRequest](docs/RenderConfigSchemaRequest.md)
- - [RenderLatestConcreteConfigRequest](docs/RenderLatestConcreteConfigRequest.md)
  - [RenderOverrideRequest](docs/RenderOverrideRequest.md)
  - [RenderWalkStep](docs/RenderWalkStep.md)
  - [RenderedConfigKeyValuePair](docs/RenderedConfigKeyValuePair.md)
@@ -315,6 +312,7 @@ Class | Method | HTTP request | Description
  - [UpdateConfigRequest](docs/UpdateConfigRequest.md)
  - [UpdateDeviceRequest](docs/UpdateDeviceRequest.md)
  - [UpdateJobTemplateRequest](docs/UpdateJobTemplateRequest.md)
+ - [UpdateOverrideHierarchyRequest](docs/UpdateOverrideHierarchyRequest.md)
  - [UpdateOverrideRequest](docs/UpdateOverrideRequest.md)
  - [UpdateRegistrySourceRequest](docs/UpdateRegistrySourceRequest.md)
  - [UpdateTagRequest](docs/UpdateTagRequest.md)

@@ -17,8 +17,8 @@ pub struct BaseConcreteConfig {
     pub object: Object,
     #[serde(rename = "id")]
     pub id: String,
-    #[serde(rename = "created_at", deserialize_with = "Option::deserialize")]
-    pub created_at: Option<String>,
+    #[serde(rename = "created_at")]
+    pub created_at: String,
     #[serde(rename = "client_id")]
     pub client_id: String,
     #[serde(rename = "config_schema_id")]
@@ -28,7 +28,7 @@ pub struct BaseConcreteConfig {
 }
 
 impl BaseConcreteConfig {
-    pub fn new(object: Object, id: String, created_at: Option<String>, client_id: String, config_schema_id: String, concrete_config: Option<serde_json::Value>) -> BaseConcreteConfig {
+    pub fn new(object: Object, id: String, created_at: String, client_id: String, config_schema_id: String, concrete_config: Option<serde_json::Value>) -> BaseConcreteConfig {
         BaseConcreteConfig {
             object,
             id,

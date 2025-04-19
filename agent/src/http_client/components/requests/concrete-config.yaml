@@ -1,0 +1,20 @@
+RefreshLatestConcreteConfigRequest:
+  title: Render Latest Concrete Config Request
+  type: object
+  required:
+    - client_id
+    - config_schema_digest
+    - config_slug
+  properties:
+    client_id:
+      type: string
+      description: The client id
+      example: cli_123
+    config_schema_digest:
+      type: string
+      description: The config schema digest
+      example: sha256:a1b2c3d4e5f6 
+    config_slug:
+      type: string
+      description: The config slug
+      example: my-config

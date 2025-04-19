@@ -44,9 +44,6 @@ docs/ComposeFileImageList.md
 docs/ComposeFileVerification.md
 docs/ComposeFileVerificationRequest.md
 docs/ConcreteConfigExpand.md
-docs/ConcreteConfigList.md
-docs/ConcreteConfigOrderBy.md
-docs/ConcreteConfigSearch.md
 docs/ConcreteConfigsApi.md
 docs/Config.md
 docs/ConfigExpand.md
@@ -169,6 +166,7 @@ docs/OverrideOrderBy.md
 docs/OverrideSearch.md
 docs/OverridesApi.md
 docs/PaginatedList.md
+docs/RefreshLatestConcreteConfigRequest.md
 docs/RegistrySource.md
 docs/RegistrySourceContainerRepository.md
 docs/RegistrySourceContainerRepositoryList.md
@@ -176,7 +174,6 @@ docs/RegistrySourceList.md
 docs/RegistrySourcesApi.md
 docs/RemoveDeploymentsRequest.md
 docs/RenderConfigSchemaRequest.md
-docs/RenderLatestConcreteConfigRequest.md
 docs/RenderOverrideRequest.md
 docs/RenderWalkStep.md
 docs/RenderedConfigKeyValuePair.md
@@ -218,6 +215,7 @@ docs/UpdateClientRequest.md
 docs/UpdateConfigRequest.md
 docs/UpdateDeviceRequest.md
 docs/UpdateJobTemplateRequest.md
+docs/UpdateOverrideHierarchyRequest.md
 docs/UpdateOverrideRequest.md
 docs/UpdateRegistrySourceRequest.md
 docs/UpdateTagRequest.md
@@ -295,9 +293,6 @@ src/models/compose_file_image_list.rs
 src/models/compose_file_verification.rs
 src/models/compose_file_verification_request.rs
 src/models/concrete_config_expand.rs
-src/models/concrete_config_list.rs
-src/models/concrete_config_order_by.rs
-src/models/concrete_config_search.rs
 src/models/config.rs
 src/models/config_expand.rs
 src/models/config_list.rs
@@ -405,13 +400,13 @@ src/models/override_list.rs
 src/models/override_order_by.rs
 src/models/override_search.rs
 src/models/paginated_list.rs
+src/models/refresh_latest_concrete_config_request.rs
 src/models/registry_source.rs
 src/models/registry_source_container_repository.rs
 src/models/registry_source_container_repository_list.rs
 src/models/registry_source_list.rs
 src/models/remove_deployments_request.rs
 src/models/render_config_schema_request.rs
-src/models/render_latest_concrete_config_request.rs
 src/models/render_override_request.rs
 src/models/render_walk_step.rs
 src/models/rendered_config_key_value_pair.rs
@@ -451,6 +446,7 @@ src/models/update_client_request.rs
 src/models/update_config_request.rs
 src/models/update_device_request.rs
 src/models/update_job_template_request.rs
+src/models/update_override_hierarchy_request.rs
 src/models/update_override_request.rs
 src/models/update_registry_source_request.rs
 src/models/update_tag_request.rs
