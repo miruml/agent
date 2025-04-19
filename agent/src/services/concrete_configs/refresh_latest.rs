@@ -1,7 +1,11 @@
 // internal crates
 use crate::http_client::prelude::*;
 use crate::services::concrete_configs::utils;
-use crate::services::errors::ServiceErr;
+use crate::services::errors::{
+    ServiceErr,
+    ServiceHTTPErr,
+    ServiceStorageErr,
+};
 use crate::storage::concrete_configs::{ConcreteConfigCache, ConcreteConfigCacheKey};
 use crate::trace;
 use openapi_client::models::RefreshLatestConcreteConfigRequest;
@@ -42,10 +46,10 @@ pub async fn refresh_latest<ArgsT: RefreshLatestArgsI, HTTPClientT: ConcreteConf
     let cncr_cfg = http_client
         .refresh_latest_concrete_config(&payload)
         .await
-        .map_err(|e| ServiceErr::HTTPErr {
+        .map_err(|e| ServiceErr::HTTPErr(ServiceHTTPErr {
             source: e,
             trace: trace!(),
-        })?;
+        }))?;
 
     // update the concrete config in storage
     let cncr_cfg = utils::convert_cncr_cfg_backend_to_storage(
@@ -60,10 +64,10 @@ pub async fn refresh_latest<ArgsT: RefreshLatestArgsI, HTTPClientT: ConcreteConf
     cache
         .write(key, cncr_cfg.clone(), true)
         .await
-        .map_err(|e| ServiceErr::StorageErr {
+        .map_err(|e| ServiceErr::StorageErr(ServiceStorageErr {
             source: e,
             trace: trace!(),
-        })?;
+        }))?;
 
     Ok(utils::convert_cncr_cfg_storage_to_sdk(cncr_cfg))
 }

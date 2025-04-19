@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    // std
+    // standard library
     use std::path::PathBuf;
 
     // internal crates

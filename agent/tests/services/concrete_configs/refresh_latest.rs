@@ -4,7 +4,7 @@ mod tests {
 
     // internal crates
     use config_agent::filesys::dir::Dir;
-    use config_agent::http_client::errors::HTTPErr;
+    use config_agent::http_client::errors::{HTTPErr, MockErr};
     use config_agent::services::{
         concrete_configs::{
             refresh_latest,
@@ -31,10 +31,10 @@ mod tests {
             // create the mock http client
             let mut http_client = MockConcreteConfigsClient::default();
             http_client.set_refresh_latest(|| {
-                Err(HTTPErr::MockErr {
+                Err(HTTPErr::MockErr(MockErr {
                     is_network_connection_error: true,
                     trace: trace!(),
-                })
+                }))
             });
 
             // run the test

@@ -6,7 +6,7 @@ mod tests {
 
     // internal crates
     use config_agent::errors::MiruError;
-    use config_agent::http_client::client::HTTPClient;
+    use config_agent::http_client::client::{HTTPClient, RequestContext};
     use config_agent::http_client::errors::HTTPErr;
 
     // external crates
@@ -25,8 +25,12 @@ mod tests {
             let request = http_client
                 .build_get_request("https://example.com/", None)
                 .unwrap();
+            let context = RequestContext {
+                url: request.url().to_string(),
+                method: request.method().clone(),
+            };
             let result = http_client
-                .send(request, Duration::from_secs(1))
+                .send(request, Duration::from_secs(1), &context)
                 .await
                 .unwrap();
             assert!(result.status().is_success());
@@ -50,9 +54,12 @@ mod tests {
                     None,
                 )
                 .unwrap();
-
+            let context = RequestContext {
+                url: request.url().to_string(),
+                method: request.method().clone(),
+            };
             let response = http_client
-                .send(request, Duration::from_secs(5))
+                .send(request, Duration::from_secs(5), &context)
                 .await
                 .unwrap();
             assert!(response.status().is_success());
@@ -80,8 +87,12 @@ mod tests {
                 let request = http_client
                     .build_get_request("https://example.com/", None)
                     .unwrap();
+                let context = RequestContext {
+                    url: request.url().to_string(),
+                    method: request.method().clone(),
+                };
                 let result = http_client
-                    .send(request, Duration::from_secs(1))
+                    .send(request, Duration::from_secs(1), &context)
                     .await
                     .unwrap();
                 assert!(result.status().is_success());
@@ -97,8 +108,12 @@ mod tests {
                 let request = http_client
                     .build_get_request("http://localhost:8080", None)
                     .unwrap();
+                let context = RequestContext {
+                    url: request.url().to_string(),
+                    method: request.method().clone(),
+                };
                 let result = http_client
-                    .send(request, Duration::from_secs(1))
+                    .send(request, Duration::from_secs(1), &context)
                     .await
                     .unwrap_err();
                 assert!(result.is_network_connection_error());
@@ -111,8 +126,12 @@ mod tests {
                 let request = http_client
                     .build_get_request("https://example.com/", None)
                     .unwrap();
+                let context = RequestContext {
+                    url: request.url().to_string(),
+                    method: request.method().clone(),
+                };
                 let result = http_client
-                    .send(request, Duration::from_millis(1))
+                    .send(request, Duration::from_millis(1), &context)
                     .await
                     .unwrap_err();
                 assert!(matches!(result, HTTPErr::TimeoutErr { .. }));
@@ -142,7 +161,6 @@ mod tests {
                     .1;
                 assert!(!is_cache_hit);
                 let duration = start.elapsed();
-                println!("duration {}", duration.as_millis());
                 assert!(duration > Duration::from_millis(10));
 
                 // send subsequent requests and check they are cached
@@ -156,7 +174,6 @@ mod tests {
                         .1;
                     assert!(is_cache_hit);
                     let duration = start.elapsed();
-                    println!("duration {}", duration.as_millis());
                     assert!(duration < Duration::from_millis(300));
                 }
             }
@@ -196,7 +213,6 @@ mod tests {
                     .count();
                 assert_eq!(cache_hits, num_requests - 1);
                 let duration = start.elapsed();
-                println!("duration for 20 requests: {}", duration.as_millis());
                 assert!(duration < Duration::from_millis(500));
 
                 // Verify all requests succeeded
@@ -218,7 +234,6 @@ mod tests {
                     .await
                     .unwrap_err();
                 let duration = start.elapsed();
-                println!("duration {}", duration.as_millis());
                 assert!(duration > Duration::from_millis(10));
 
                 // send subsequent requests and check they are not cached
@@ -230,7 +245,6 @@ mod tests {
                         .await
                         .unwrap_err();
                     let duration = start.elapsed();
-                    println!("duration {}", duration.as_millis());
                     assert!(duration > Duration::from_millis(10));
                 }
             }
@@ -255,7 +269,6 @@ mod tests {
                     .await
                     .unwrap();
                 let duration = start.elapsed();
-                println!("duration {}", duration.as_millis());
                 assert!(duration > Duration::from_millis(10));
 
                 // wait for the cache to expire
@@ -269,7 +282,6 @@ mod tests {
                     .await
                     .unwrap();
                 let duration = start.elapsed();
-                println!("duration {}", duration.as_millis());
                 assert!(duration > Duration::from_millis(10));
             }
         }
@@ -316,14 +328,21 @@ mod tests {
             let request = http_client
                 .build_get_request("https://httpstat.us/404", None)
                 .unwrap();
+            let context = RequestContext {
+                url: request.url().to_string(),
+                method: request.method().clone(),
+            };
             let resp = http_client
-                .send(request, Duration::from_secs(1))
+                .send(request, Duration::from_secs(1), &context)
                 .await
                 .unwrap();
 
             // call the handle_response method
-            let response = http_client.handle_response(resp).await.unwrap_err();
-            assert!(matches!(response, HTTPErr::ResponseFailed { .. }));
+            let response = http_client
+                .handle_response(resp, &context)
+                .await
+                .unwrap_err();
+            assert!(matches!(response, HTTPErr::RequestFailed { .. }));
         }
     }
 }

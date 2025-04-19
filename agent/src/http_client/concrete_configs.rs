@@ -1,4 +1,4 @@
-// std
+// standard library
 use std::sync::Arc;
 
 // internal crates
@@ -35,8 +35,11 @@ impl ConcreteConfigsExt for HTTPClient {
         let request = self.build_get_request(&url, None)?;
 
         // send the request
-        let response = self.send_cached(url, request, self.timeout).await?.0;
-
+        let response = self.send_cached(
+            url,
+            request,
+            self.timeout,
+        ).await?.0;
         // parse the response
         let cncr_cfg = self
             .parse_json_response_text::<Option<BackendConcreteConfig>>(response)

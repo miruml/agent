@@ -1,17 +1,28 @@
-// std
+// standard library
 use std::sync::Arc;
+use std::fmt;
 
 // internal crates
 use crate::env;
 use crate::errors::MiruError;
-use crate::http_client::errors::{reqwest_err_to_http_client_err, HTTPErr};
+use crate::http_client::{
+    errors::{reqwest_err_to_http_client_err, HTTPErr},
+    errors::{
+        CacheErr, 
+        InvalidHeaderValueErr,
+        ParseJSONErr,
+        RequestFailed,
+        ReqwestErr,
+        TimeoutErr,
+    },
+};
 use crate::trace;
 use openapi_client::models::ErrorResponse;
 
 // external crates
 use moka::future::Cache;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Serialize};
 use tokio::sync::OnceCell;
 use tokio::time::{sleep, timeout, Duration};
 use uuid::Uuid;
@@ -22,14 +33,18 @@ type Response = String;
 type RequestID = Uuid;
 type IsCacheHit = bool;
 
-// status codes
-#[derive(Debug, PartialEq, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")] // Change case for all variants to snake_case
-pub enum Code {
-    Success,
-    InternalServerError,
-    #[serde(other)]
-    Unknown,
+
+#[derive(Clone, Debug)]
+pub struct RequestContext {
+    pub url: String,
+    pub method: reqwest::Method,
+}
+
+
+impl fmt::Display for RequestContext {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} {}", self.method, self.url)
+    }
 }
 
 #[derive(Debug)]
@@ -92,11 +107,11 @@ impl HTTPClient {
         headers.insert(
             AUTHORIZATION,
             HeaderValue::from_str(&format!("Bearer {}", token)).map_err(|e| {
-                HTTPErr::InvalidHeaderValueErr {
+                HTTPErr::InvalidHeaderValueErr(InvalidHeaderValueErr {
                     msg: e.to_string(),
                     source: e,
                     trace: trace!(),
-                }
+                })
             })?,
         );
         Ok(())
@@ -108,7 +123,7 @@ impl HTTPClient {
         url: &str,
         body: Option<String>,
         token: Option<&str>,
-    ) -> Result<reqwest::RequestBuilder, HTTPErr> {
+    ) -> Result<reqwest::Request, HTTPErr> {
         // request type (GET, POST, etc.)
         let mut request = self.client.request(method, url);
 
@@ -123,14 +138,17 @@ impl HTTPClient {
         if let Some(body) = body {
             request = request.body(body);
         }
-        Ok(request)
+        request.build().map_err(|e| HTTPErr::ReqwestErr(ReqwestErr {
+            source: e,
+            trace: trace!(),
+        }))
     }
 
     pub fn build_get_request(
         &self,
         url: &str,
         token: Option<&str>,
-    ) -> Result<reqwest::RequestBuilder, HTTPErr> {
+    ) -> Result<reqwest::Request, HTTPErr> {
         self.build_request(reqwest::Method::GET, url, None, token)
     }
 
@@ -139,23 +157,25 @@ impl HTTPClient {
         url: &str,
         body: String,
         token: Option<&str>,
-    ) -> Result<reqwest::RequestBuilder, HTTPErr> {
+    ) -> Result<reqwest::Request, HTTPErr> {
         self.build_request(reqwest::Method::POST, url, Some(body), token)
     }
 
     pub async fn send(
         &self,
-        request: reqwest::RequestBuilder,
+        request: reqwest::Request,
         time_limit: Duration,
+        context: &RequestContext,
     ) -> Result<reqwest::Response, HTTPErr> {
         // request server
-        let response = timeout(time_limit, request.send())
+        let response = timeout(time_limit, self.client.execute(request))
             .await
-            .map_err(|e| HTTPErr::TimeoutErr {
+            .map_err(|e| HTTPErr::TimeoutErr(TimeoutErr {
                 msg: e.to_string(),
+                request: context.clone(),
                 timeout: time_limit,
                 trace: trace!(),
-            })?
+            }))?
             .map_err(|e| reqwest_err_to_http_client_err(e, trace!()))?;
         Ok(response)
     }
@@ -163,22 +183,27 @@ impl HTTPClient {
     pub async fn send_cached(
         &self,
         key: RequestKey,
-        request: reqwest::RequestBuilder,
+        request: reqwest::Request,
         time_limit: Duration,
     ) -> Result<(String, IsCacheHit), HTTPErr> {
         let id = Uuid::new_v4();
+        let context = RequestContext {
+            url: request.url().to_string(),
+            method: request.method().clone(),
+        };
+
         let result = self
             .cache
             .try_get_with(key, async move {
-                let response = self.send(request, time_limit).await?;
-                Ok((self.handle_response(response).await?, id))
+                let response = self.send(request, time_limit, &context).await?;
+                Ok((self.handle_response(response, &context).await?, id))
             })
             .await
-            .map_err(|e: Arc<HTTPErr>| HTTPErr::CacheErr {
+            .map_err(|e: Arc<HTTPErr>| HTTPErr::CacheErr(CacheErr {
                 is_network_connection_error: e.is_network_connection_error(),
                 msg: e.to_string(),
                 trace: trace!(),
-            })?;
+            }))?;
         let is_cache_hit = result.1 != id;
         Ok((result.0, is_cache_hit))
     }
@@ -187,18 +212,21 @@ impl HTTPClient {
     where
         T: Serialize,
     {
-        serde_json::to_string(request).map_err(|e| HTTPErr::ParseJSONErr {
+        serde_json::to_string(request).map_err(|e| HTTPErr::ParseJSONErr(ParseJSONErr {
             source: e,
             trace: trace!(),
-        })
+        }))
     }
 
-    pub async fn handle_response(&self, response: reqwest::Response) -> Result<String, HTTPErr> {
+    pub async fn handle_response(
+        &self,
+        response: reqwest::Response,
+        context: &RequestContext,
+    ) -> Result<String, HTTPErr> {
         let status = response.status();
 
         // check for an error response
         if !status.is_success() {
-            let url = response.url().to_string();
             let error_response = match response.text().await {
                 Ok(text) => self
                     .parse_json_response_text::<ErrorResponse>(text)
@@ -206,12 +234,12 @@ impl HTTPClient {
                     .ok(),
                 Err(_) => None,
             };
-            return Err(HTTPErr::ResponseFailed {
+            return Err(HTTPErr::RequestFailed(RequestFailed {
+                request: context.clone(),
                 status,
-                url,
                 error: error_response,
                 trace: trace!(),
-            });
+            }));
         }
 
         let text = response
@@ -225,10 +253,10 @@ impl HTTPClient {
     where
         T: DeserializeOwned,
     {
-        serde_json::from_str::<T>(&text).map_err(|e| HTTPErr::ParseJSONErr {
+        serde_json::from_str::<T>(&text).map_err(|e| HTTPErr::ParseJSONErr(ParseJSONErr {
             source: e,
             trace: trace!(),
-        })
+        }))
     }
 
     #[doc(hidden)]

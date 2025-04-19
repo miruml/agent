@@ -4,11 +4,14 @@ mod tests {
     use std::time::{Duration, Instant};
 
     // internal crates
+    use config_agent::filesys::dir::Dir;
     use config_agent::http_client::client::HTTPClient;
-    use config_agent::http_client::errors::HTTPErr;
+    use config_agent::http_client::errors::{HTTPErr, MockErr};
     use config_agent::services::config_schemas::hash;
+    use config_agent::services::errors::{ServiceErr, ServiceHTTPErr};
     use config_agent::storage::digests::{ConfigSchemaDigestCache, ConfigSchemaDigests};
     use config_agent::utils;
+    use config_agent::trace;
     use openapi_client::models::SchemaDigestResponse;
 
     // test crates
@@ -16,109 +19,143 @@ mod tests {
 
     // external crates
     use serde_json::json;
-    #[allow(unused_imports)]
-    use tracing::{debug, error, info, trace, warn};
 
-    #[cfg(test)]
-    pub mod errors {
+pub mod errors {
+    use super::*;
 
-        #[test]
-        fn error_propagation() {
-            assert!(false);
-        }
+    #[tokio::test]
+    async fn from_server_network_error() {
+        let dir = Dir::create_temp_dir("pulled_from_server_resp")
+            .await
+            .unwrap();
+        let cache = ConfigSchemaDigestCache::spawn(dir);
+
+        // create the mock
+        let mut mock_client = MockConfigSchemasClient::default();
+        let server_resp = || -> Result<SchemaDigestResponse, HTTPErr> {
+            Err(HTTPErr::MockErr(MockErr {
+                is_network_connection_error: true,
+                trace: trace!(),
+            }))
+        };
+        mock_client.set_hash_schema(server_resp);
+
+        // create the schema
+        let schema = json!({
+            "type": "object",
+            "properties": {
+                "name": { "type": "string" }
+            }
+        });
+        let args = hash::HashSchemaArgs { schema };
+
+        // run the test
+        let result = hash::hash_schema(
+            &args, &mock_client, &cache
+        ).await;
+        assert!(matches!(result, Err(ServiceErr::HTTPErr(ServiceHTTPErr {
+            source: HTTPErr::MockErr(MockErr {
+                is_network_connection_error: true,
+                trace: _,
+            }),
+            trace: _,
+        }))));
+    }
+}
+
+pub mod success {
+    use config_agent::filesys::dir::Dir;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn from_storage() {
+        let dir = Dir::create_temp_dir("pulled_from_server_resp")
+            .await
+            .unwrap();
+        let cache = ConfigSchemaDigestCache::spawn(dir);
+
+        // define the schema
+        let schema = json!({
+            "type": "object",
+            "properties": {
+                "name": { "type": "string" }
+            }
+        });
+        let raw_digest = utils::hash_json(&schema);
+        let resolved_digest = "resolved_digest";
+        let args = hash::HashSchemaArgs { schema };
+
+        // save the digest to the storage
+        let digests = ConfigSchemaDigests {
+            raw: raw_digest.clone(),
+            resolved: resolved_digest.to_string(),
+        };
+        cache
+            .write(raw_digest.clone(), digests, false)
+            .await
+            .unwrap();
+
+        let http_client = HTTPClient::new().await;
+
+        // first access should be less than 100ms
+        let start = Instant::now();
+        let result = hash::hash_schema(&args, &http_client, &cache).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), resolved_digest);
+        let duration = start.elapsed();
+        assert!(duration < Duration::from_millis(100));
+
+        // second access should be less than 1ms
+        let start = Instant::now();
+        let result = hash::hash_schema(&args, &http_client, &cache).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), resolved_digest);
+        let duration = start.elapsed();
+        assert!(duration < Duration::from_millis(100));
     }
 
-    pub mod success {
-        use config_agent::filesys::dir::Dir;
+    #[tokio::test]
+    async fn from_server() {
+        let dir = Dir::create_temp_dir("pulled_from_server_resp")
+            .await
+            .unwrap();
+        let cache = ConfigSchemaDigestCache::spawn(dir);
 
-        use super::*;
+        // create the mock
+        let mut mock_client = MockConfigSchemasClient::default();
+        let resolved_digest = "sha256:a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r";
+        let server_resp = || -> Result<SchemaDigestResponse, HTTPErr> {
+            Ok(SchemaDigestResponse {
+                digest: resolved_digest.to_string(),
+            })
+        };
+        mock_client.set_hash_schema(server_resp);
 
-        #[tokio::test]
-        async fn from_storage() {
-            let dir = Dir::create_temp_dir("pulled_from_server_resp")
-                .await
-                .unwrap();
-            let cache = ConfigSchemaDigestCache::spawn(dir);
+        // create the schema
+        let schema = json!({
+            "type": "object",
+            "properties": {
+                "name": { "type": "string" }
+            }
+        });
+        let raw_digest = utils::hash_json(&schema);
+        let args = hash::HashSchemaArgs { schema };
 
-            // define the schema
-            let schema = json!({
-                "type": "object",
-                "properties": {
-                    "name": { "type": "string" }
-                }
-            });
-            let raw_digest = utils::hash_json(&schema);
-            let resolved_digest = "resolved_digest";
-            let args = hash::HashSchemaArgs { schema };
+        // run the test
+        let start = Instant::now();
+        let result = hash::hash_schema(
+            &args, &mock_client, &cache
+        ).await;
+        println!("result: {:?}", result);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), resolved_digest);
+        let duration = start.elapsed();
+        assert!(duration < Duration::from_millis(20));
 
-            // save the digest to the storage
-            let digests = ConfigSchemaDigests {
-                raw: raw_digest.clone(),
-                resolved: resolved_digest.to_string(),
-            };
-            cache
-                .write(raw_digest.clone(), digests, false)
-                .await
-                .unwrap();
-
-            let http_client = HTTPClient::new().await;
-
-            // first access should be less than 100ms
-            let start = Instant::now();
-            let result = hash::hash_schema(&args, &http_client, &cache).await;
-            assert!(result.is_ok());
-            assert_eq!(result.unwrap(), resolved_digest);
-            let duration = start.elapsed();
-            assert!(duration < Duration::from_millis(100));
-
-            // second access should be less than 1ms
-            let start = Instant::now();
-            let result = hash::hash_schema(&args, &http_client, &cache).await;
-            assert!(result.is_ok());
-            assert_eq!(result.unwrap(), resolved_digest);
-            let duration = start.elapsed();
-            assert!(duration < Duration::from_millis(100));
-        }
-
-        #[tokio::test]
-        async fn from_server() {
-            let dir = Dir::create_temp_dir("pulled_from_server_resp")
-                .await
-                .unwrap();
-            let cache = ConfigSchemaDigestCache::spawn(dir);
-
-            // create the mock
-            let mut mock_client = MockConfigSchemasClient::default();
-            let resolved_digest = "sha256:a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r";
-            let server_resp = || -> Result<SchemaDigestResponse, HTTPErr> {
-                Ok(SchemaDigestResponse {
-                    digest: resolved_digest.to_string(),
-                })
-            };
-            mock_client.set_hash_schema(server_resp);
-
-            // create the schema
-            let schema = json!({
-                "type": "object",
-                "properties": {
-                    "name": { "type": "string" }
-                }
-            });
-            let raw_digest = utils::hash_json(&schema);
-            let args = hash::HashSchemaArgs { schema };
-
-            // run the test
-            let start = Instant::now();
-            let result = hash::hash_schema(&args, &mock_client, &cache).await;
-            assert!(result.is_ok());
-            assert_eq!(result.unwrap(), resolved_digest);
-            let duration = start.elapsed();
-            println!("duration: {:?}", duration);
-            assert!(duration < Duration::from_millis(20));
-
-            // expect the digest to be cached
-            let cached_digest = cache.read(raw_digest).await.unwrap();
-            assert_eq!(cached_digest.resolved, resolved_digest);
-        }
+        // expect the digest to be cached
+        let cached_digest = cache.read(raw_digest).await.unwrap();
+        assert_eq!(cached_digest.resolved, resolved_digest);
     }
+}
 }

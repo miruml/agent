@@ -4,14 +4,17 @@ mod tests {
 
     // internal crates
     use config_agent::filesys::dir::Dir;
-    use config_agent::http_client::errors::HTTPErr;
+    use config_agent::http_client::errors::{HTTPErr, MockErr};
     use config_agent::services::{
         concrete_configs::{
             read_latest,
             read_latest::{ReadLatestArgs, ReadLatestArgsI},
             utils,
         },
-        errors::ServiceErr,
+        errors::{
+            ServiceErr,
+            LatestConcreteConfigNotFound,
+        },
     };
     use config_agent::storage::concrete_configs::{
         ConcreteConfig, ConcreteConfigCache, ConcreteConfigCacheKey,
@@ -33,10 +36,10 @@ mod tests {
             // create the mock http client
             let mut http_client = MockConcreteConfigsClient::default();
             http_client.set_read_latest(|| {
-                Err(HTTPErr::MockErr {
+                Err(HTTPErr::MockErr(MockErr {
                     is_network_connection_error: true,
                     trace: trace!(),
-                })
+                }))
             });
 
             // run the test
@@ -49,11 +52,11 @@ mod tests {
             // assert the result
             assert!(matches!(
                 result,
-                Err(ServiceErr::LatestConcreteConfigNotFound {
+                Err(ServiceErr::LatestConcreteConfigNotFound(LatestConcreteConfigNotFound {
                     config_slug: _,
                     config_schema_digest: _,
                     trace: _,
-                }),
+                })),
             ));
         }
 
@@ -65,10 +68,10 @@ mod tests {
             // create the mock http client
             let mut http_client = MockConcreteConfigsClient::default();
             http_client.set_read_latest(|| {
-                Err(HTTPErr::MockErr {
+                Err(HTTPErr::MockErr(MockErr {
                     is_network_connection_error: false,
                     trace: trace!(),
-                })
+                }))
             });
 
             // run the test
@@ -113,10 +116,10 @@ mod tests {
             // create the mock http client
             let mut http_client = MockConcreteConfigsClient::default();
             http_client.set_read_latest(|| {
-                Err(HTTPErr::MockErr {
+                Err(HTTPErr::MockErr(MockErr {
                     is_network_connection_error: true,
                     trace: trace!(),
-                })
+                }))
             });
 
             // run the test

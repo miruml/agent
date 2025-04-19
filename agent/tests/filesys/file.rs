@@ -83,13 +83,13 @@ mod tests {
             // overwrite false
             assert!(matches!(
                 file.move_to(&file, false).await.unwrap_err(),
-                FileSysErr::PathDoesNotExist { .. }
+                FileSysErr::PathDoesNotExistErr { .. }
             ));
 
             // overwrite true
             assert!(matches!(
                 file.move_to(&file, false).await.unwrap_err(),
-                FileSysErr::PathDoesNotExist { .. }
+                FileSysErr::PathDoesNotExistErr { .. }
             ));
         }
 
@@ -131,7 +131,7 @@ mod tests {
             assert!(dest.exists());
             assert!(matches!(
                 src.move_to(&dest, false).await.unwrap_err(),
-                FileSysErr::PathExists { .. }
+                FileSysErr::InvalidFileOverwriteErr { .. }
             ));
         }
 
@@ -190,7 +190,7 @@ mod tests {
             let file = File::new(PathBuf::from("doesnt_exist").join("test-file.json"));
             assert!(matches!(
                 file.read_bytes().await.unwrap_err(),
-                FileSysErr::PathDoesNotExist { .. }
+                FileSysErr::PathDoesNotExistErr { .. }
             ));
         }
 
@@ -213,7 +213,7 @@ mod tests {
             let file = File::new(PathBuf::from("doesnt_exist").join("test-file.json"));
             assert!(matches!(
                 file.read_string().await.unwrap_err(),
-                FileSysErr::PathDoesNotExist { .. }
+                FileSysErr::PathDoesNotExistErr { .. }
             ));
         }
 
@@ -236,7 +236,7 @@ mod tests {
             let file = File::new(PathBuf::from("doesnt_exist").join("test-file.json"));
             assert!(matches!(
                 file.read_json::<String>().await.unwrap_err(),
-                FileSysErr::PathDoesNotExist { .. }
+                FileSysErr::PathDoesNotExistErr { .. }
             ));
         }
 
@@ -310,7 +310,7 @@ mod tests {
                 // should fail when writing again
                 assert!(matches!(
                     write_bytes(&file, b"arglebargle", false).await.unwrap_err(),
-                    FileSysErr::PathExists { .. }
+                    FileSysErr::InvalidFileOverwriteErr { .. }
                 ));
             }
         }
@@ -384,7 +384,7 @@ mod tests {
                 // should fail when writing again
                 assert!(matches!(
                     write_string(&file, "new content", false).await.unwrap_err(),
-                    FileSysErr::PathExists { .. }
+                    FileSysErr::InvalidFileOverwriteErr { .. }
                 ));
             }
         }
@@ -477,7 +477,7 @@ mod tests {
                 });
                 assert!(matches!(
                     write_json(&file, &new_data, false).await.unwrap_err(),
-                    FileSysErr::PathExists { .. }
+                    FileSysErr::InvalidFileOverwriteErr { .. }
                 ));
             }
         }
@@ -518,7 +518,7 @@ mod tests {
             // Should fail because file doesn't exist
             assert!(matches!(
                 file.set_permissions(0o644).await.unwrap_err(),
-                FileSysErr::PathDoesNotExist { .. }
+                FileSysErr::PathDoesNotExistErr { .. }
             ));
         }
 
@@ -587,7 +587,7 @@ mod tests {
             let link = dir.file("link");
             assert!(matches!(
                 file.create_symlink(&link, false).await.unwrap_err(),
-                FileSysErr::PathDoesNotExist { .. }
+                FileSysErr::PathDoesNotExistErr { .. }
             ));
         }
 
@@ -629,7 +629,7 @@ mod tests {
             link.assert_exists().unwrap();
             assert!(matches!(
                 file.create_symlink(&link, false).await.unwrap_err(),
-                FileSysErr::PathExists { .. }
+                FileSysErr::InvalidFileOverwriteErr { .. }
             ));
         }
 
@@ -661,7 +661,7 @@ mod tests {
             // Should fail because file doesn't exist
             assert!(matches!(
                 file.permissions().await.unwrap_err(),
-                FileSysErr::PathDoesNotExist { .. }
+                FileSysErr::PathDoesNotExistErr { .. }
             ));
         }
 
@@ -704,7 +704,7 @@ mod tests {
             // Should fail because file doesn't exist
             assert!(matches!(
                 file.last_modified().await.unwrap_err(),
-                FileSysErr::PathDoesNotExist { .. }
+                FileSysErr::PathDoesNotExistErr { .. }
             ));
         }
 
@@ -729,7 +729,7 @@ mod tests {
             // Should fail because file doesn't exist
             assert!(matches!(
                 file.size().await.unwrap_err(),
-                FileSysErr::PathDoesNotExist { .. }
+                FileSysErr::PathDoesNotExistErr { .. }
             ));
         }
 

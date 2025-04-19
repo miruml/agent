@@ -4,9 +4,21 @@ use std::fmt::Display;
 use std::path::PathBuf;
 
 // internal crates
-use crate::filesys::errors::FileSysErr;
-use crate::filesys::file::File;
-use crate::filesys::path::PathExt;
+use crate::filesys::{
+    errors::{
+        FileSysErr,
+        InvalidDirNameErr,
+        UnknownHomeDirErr,
+        UnknownDirNameErr,
+        UnknownParentDirForDirErr,
+        ReadDirErr,
+        CreateDirErr,
+        DeleteDirErr,
+        UnknownCurrentDirErr,
+    },
+    file::File,
+    path::PathExt,
+};
 use crate::trace;
 
 // external crates
@@ -41,17 +53,20 @@ impl Dir {
     /// Create a new Dir instance for the home directory
     pub fn new_home_dir() -> Result<Dir, FileSysErr> {
         let home_dir = std::env::var("HOME")
-            .map_err(|_| FileSysErr::CreateHomeDirErr)
+            .map_err(|e| FileSysErr::UnknownHomeDirErr(UnknownHomeDirErr {
+                source: e,
+                trace: trace!(),
+            }))
             .map(PathBuf::from)?;
         Ok(Dir { path: home_dir })
     }
 
     pub fn new_current_dir() -> Result<Dir, FileSysErr> {
         let current_dir =
-            std::env::current_dir().map_err(|e| FileSysErr::UnknownCurrentDirErr {
+            std::env::current_dir().map_err(|e| FileSysErr::UnknownCurrentDirErr(UnknownCurrentDirErr {
                 source: e,
                 trace: trace!(),
-            })?;
+            }))?;
         Ok(Dir { path: current_dir })
     }
 
@@ -73,18 +88,18 @@ impl Dir {
         match self.path.file_name() {
             Some(name) => file_name_os_str = name,
             None => {
-                return Err(FileSysErr::NoDirNameErr {
+                return Err(FileSysErr::UnknownDirNameErr(UnknownDirNameErr {
                     dir: self.clone(),
                     trace: trace!(),
-                })
+                }))
             }
         }
         match file_name_os_str.to_str() {
             Some(name) => Ok(name),
-            None => Err(FileSysErr::NoDirNameErr {
+            None => Err(FileSysErr::UnknownDirNameErr(UnknownDirNameErr {
                 dir: self.clone(),
                 trace: trace!(),
-            }),
+            })),
         }
     }
 
@@ -92,10 +107,10 @@ impl Dir {
         let abs_path = self.abs_path()?;
         let parent = abs_path
             .parent()
-            .ok_or(FileSysErr::UnknownDirParentDirErr {
+            .ok_or(FileSysErr::UnknownParentDirForDirErr(UnknownParentDirForDirErr {
                 dir: self.clone(),
                 trace: trace!(),
-            })?;
+            }))?;
         Ok(Dir::new(parent))
     }
 
@@ -120,10 +135,10 @@ impl Dir {
 
     pub fn assert_valid_dir_name(dir_name: &str) -> Result<(), FileSysErr> {
         if !Dir::is_valid_dir_name(dir_name) {
-            return Err(FileSysErr::InvalidDirNameErr {
+            return Err(FileSysErr::InvalidDirNameErr(InvalidDirNameErr {
                 name: dir_name.to_string(),
                 trace: trace!(),
-            });
+            }));
         }
         Ok(())
     }
@@ -146,11 +161,11 @@ impl Dir {
         }
         tokio::fs::create_dir_all(self.to_string())
             .await
-            .map_err(|e| FileSysErr::CreateDirErr {
+            .map_err(|e| FileSysErr::CreateDirErr(CreateDirErr {
                 source: e,
                 dir: self.clone(),
                 trace: trace!(),
-            })?;
+            }))?;
         Ok(())
     }
 
@@ -161,11 +176,11 @@ impl Dir {
         }
         tokio::fs::remove_dir_all(self.path())
             .await
-            .map_err(|e| FileSysErr::DeleteDirErr {
+            .map_err(|e| FileSysErr::DeleteDirErr(DeleteDirErr {
                 source: e,
                 dir: self.clone(),
                 trace: trace!(),
-            })?;
+            }))?;
         Ok(())
     }
 
@@ -191,20 +206,20 @@ impl Dir {
         let mut entries =
             tokio::fs::read_dir(self.to_string())
                 .await
-                .map_err(|e| FileSysErr::ReadDirErr {
+                .map_err(|e| FileSysErr::ReadDirErr(ReadDirErr {
                     source: e,
                     dir: self.clone(),
                     trace: trace!(),
-                })?;
+                }))?;
 
         while let Some(entry) = entries
             .next_entry()
             .await
-            .map_err(|e| FileSysErr::ReadDirErr {
+            .map_err(|e| FileSysErr::ReadDirErr(ReadDirErr {
                 source: e,
                 dir: self.clone(),
                 trace: trace!(),
-            })?
+            }))?
         {
             if entry.path().is_dir() {
                 let dir = Dir::new(entry.path());
@@ -222,20 +237,20 @@ impl Dir {
         let mut entries =
             tokio::fs::read_dir(self.to_string())
                 .await
-                .map_err(|e| FileSysErr::ReadDirErr {
+                .map_err(|e| FileSysErr::ReadDirErr(ReadDirErr {
                     source: e,
                     dir: self.clone(),
                     trace: trace!(),
-                })?;
+                }))?;
 
         while let Some(entry) = entries
             .next_entry()
             .await
-            .map_err(|e| FileSysErr::ReadDirErr {
+            .map_err(|e| FileSysErr::ReadDirErr(ReadDirErr {
                 source: e,
                 dir: self.clone(),
                 trace: trace!(),
-            })?
+            }))?
         {
             if entry.path().is_file() {
                 let file = File::new(entry.path());

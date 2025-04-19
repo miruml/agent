@@ -1,6 +1,10 @@
 // internal crates
 use crate::http_client::prelude::*;
-use crate::services::errors::ServiceErr;
+use crate::services::errors::{
+    ServiceErr,
+    ServiceHTTPErr,
+    ServiceStorageErr,
+};
 use crate::storage::digests::{ConfigSchemaDigestCache, ConfigSchemaDigests};
 use crate::trace;
 use crate::utils;
@@ -36,10 +40,10 @@ pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
         cache
             .read_optional(raw_digest.clone())
             .await
-            .map_err(|e| ServiceErr::StorageErr {
+            .map_err(|e| ServiceErr::StorageErr(ServiceStorageErr {
                 source: e,
                 trace: trace!(),
-            })?;
+            }))?;
 
     if let Some(digests) = digests {
         return Ok(digests.resolved);
@@ -53,10 +57,10 @@ pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
         http_client
             .hash_schema(&hash_request)
             .await
-            .map_err(|e| ServiceErr::HTTPErr {
+            .map_err(|e| ServiceErr::HTTPErr(ServiceHTTPErr {
                 source: e,
                 trace: trace!(),
-            })?;
+            }))?;
 
     // save the hash to the storage module
     let resolved_digest = digest_response.digest;
@@ -72,10 +76,10 @@ pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
             true,
         )
         .await
-        .map_err(|e| ServiceErr::StorageErr {
+        .map_err(|e| ServiceErr::StorageErr(ServiceStorageErr {
             source: e,
             trace: trace!(),
-        })?;
+        }))?;
 
     // return the hash
     Ok(resolved_digest)

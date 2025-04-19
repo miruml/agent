@@ -1,9 +1,15 @@
-// std
+// standard library
 use std::fmt::Debug;
 
 // internal crates
 use crate::filesys::{dir::Dir, file, file::File, path::PathExt};
-use crate::storage::errors::StorageErr;
+use crate::storage::errors::{
+    StorageErr,
+    CacheElementNotFound,
+    StorageFileSysErr,
+    SendActorMessageErr,
+    ReceiveActorMessageErr,
+};
 use crate::trace;
 
 // external crates
@@ -79,10 +85,10 @@ where
         let entry = config_file
             .read_json::<CacheEntry<K, V>>()
             .await
-            .map_err(|e| StorageErr::FileSysErr {
+            .map_err(|e| StorageErr::FileSysErr(StorageFileSysErr{
                 source: e,
                 trace: trace!(),
-            })?;
+            }))?;
         Ok(Some(entry))
     }
 
@@ -90,10 +96,10 @@ where
         let result = self.read_entry_optional(key).await?;
         match result {
             Some(entry) => Ok(entry),
-            None => Err(StorageErr::CacheElementNotFound {
+            None => Err(StorageErr::CacheElementNotFound(CacheElementNotFound {
                 msg: format!("Unable to find cache entry with key: '{}'", key.to_string()),
                 trace: trace!(),
-            }),
+            })),
         }
     }
 
@@ -101,10 +107,7 @@ where
         let entry = self.read_entry_optional(key).await?;
         match entry {
             Some(entry) => Ok(Some(entry.value)),
-            None => Err(StorageErr::CacheElementNotFound {
-                msg: format!("Unable to find cache entry with key: '{}'", key.to_string()),
-                trace: trace!(),
-            }),
+            None => Ok(None),
         }
     }
 
@@ -122,10 +125,10 @@ where
                 true,
             )
             .await
-            .map_err(|e| StorageErr::FileSysErr {
+            .map_err(|e| StorageErr::FileSysErr(StorageFileSysErr{
                 source: e,
                 trace: trace!(),
-            })?;
+            }))?;
         Ok(())
     }
 
@@ -134,10 +137,11 @@ where
         config_file
             .delete()
             .await
-            .map_err(|e| StorageErr::FileSysErr {
+            .map_err(|e| StorageErr::FileSysErr(StorageFileSysErr{
                 source: e,
                 trace: trace!(),
-            })
+            }))?;
+        Ok(())
     }
 
     async fn prune(&self, max_size: usize) -> Result<(), StorageErr> {
@@ -164,18 +168,18 @@ where
     }
 
     async fn size(&self) -> Result<usize, StorageErr> {
-        let files = self.dir.files().await.map_err(|e| StorageErr::FileSysErr {
+        let files = self.dir.files().await.map_err(|e| StorageErr::FileSysErr(StorageFileSysErr{
             source: e,
             trace: trace!(),
-        })?;
+        }))?;
         Ok(files.len())
     }
 
     async fn entries(&self) -> Result<Vec<CacheEntry<K, V>>, StorageErr> {
-        let files = self.dir.files().await.map_err(|e| StorageErr::FileSysErr {
+        let files = self.dir.files().await.map_err(|e| StorageErr::FileSysErr(StorageFileSysErr{
             source: e,
             trace: trace!(),
-        })?;
+        }))?;
         let futures = files.into_iter().map(|file| async move {
             match file.read_json::<CacheEntry<K, V>>().await {
                 Ok(entry) => Ok(Some(entry)),
@@ -187,17 +191,17 @@ where
     }
 
     async fn prune_invalid_entries(&self) -> Result<(), StorageErr> {
-        let files = self.dir.files().await.map_err(|e| StorageErr::FileSysErr {
+        let files = self.dir.files().await.map_err(|e| StorageErr::FileSysErr(StorageFileSysErr{
             source: e,
             trace: trace!(),
-        })?;
+        }))?;
         let futures = files.into_iter().map(|file| async move {
             match file.read_json::<CacheEntry<K, V>>().await {
                 Ok(_) => Ok(()),
-                Err(_) => file.delete().await.map_err(|e| StorageErr::FileSysErr {
+                Err(_) => file.delete().await.map_err(|e| StorageErr::FileSysErr(StorageFileSysErr{
                     source: e,
                     trace: trace!(),
-                }),
+                })),
             }
         });
         try_join_all(futures).await?;
@@ -326,14 +330,14 @@ where
                 respond_to: send,
             })
             .await
-            .map_err(|e| StorageErr::SendActorMessageErr {
+            .map_err(|e| StorageErr::SendActorMessageErr(SendActorMessageErr{
                 source: Box::new(e),
                 trace: trace!(),
-            })?;
-        recv.await.map_err(|e| StorageErr::ReceiveActorMessageErr {
+            }))?;
+        recv.await.map_err(|e| StorageErr::ReceiveActorMessageErr(ReceiveActorMessageErr{
             source: Box::new(e),
             trace: trace!(),
-        })?
+        }))?
     }
 
     pub async fn read(&self, key: K) -> Result<V, StorageErr> {
@@ -344,14 +348,14 @@ where
                 respond_to: send,
             })
             .await
-            .map_err(|e| StorageErr::SendActorMessageErr {
+            .map_err(|e| StorageErr::SendActorMessageErr(SendActorMessageErr{
                 source: Box::new(e),
                 trace: trace!(),
-            })?;
-        recv.await.map_err(|e| StorageErr::ReceiveActorMessageErr {
+            }))?;
+        recv.await.map_err(|e| StorageErr::ReceiveActorMessageErr(ReceiveActorMessageErr{
             source: Box::new(e),
             trace: trace!(),
-        })?
+        }))?
     }
 
     pub async fn write(&self, key: K, value: V, overwrite: bool) -> Result<(), StorageErr> {
@@ -364,14 +368,14 @@ where
                 respond_to: send,
             })
             .await
-            .map_err(|e| StorageErr::SendActorMessageErr {
+            .map_err(|e| StorageErr::SendActorMessageErr(SendActorMessageErr{
                 source: Box::new(e),
                 trace: trace!(),
-            })?;
-        recv.await.map_err(|e| StorageErr::ReceiveActorMessageErr {
+            }))?;
+        recv.await.map_err(|e| StorageErr::ReceiveActorMessageErr(ReceiveActorMessageErr{
             source: Box::new(e),
             trace: trace!(),
-        })?
+        }))?
     }
 
     pub async fn delete(&self, key: K) -> Result<(), StorageErr> {
@@ -382,14 +386,14 @@ where
                 respond_to: send,
             })
             .await
-            .map_err(|e| StorageErr::SendActorMessageErr {
+            .map_err(|e| StorageErr::SendActorMessageErr(SendActorMessageErr{
                 source: Box::new(e),
                 trace: trace!(),
-            })?;
-        recv.await.map_err(|e| StorageErr::ReceiveActorMessageErr {
+            }))?;
+        recv.await.map_err(|e| StorageErr::ReceiveActorMessageErr(ReceiveActorMessageErr{
             source: Box::new(e),
             trace: trace!(),
-        })?
+        }))?
     }
 
     pub async fn prune(&self, max_size: usize) -> Result<(), StorageErr> {
@@ -400,13 +404,13 @@ where
                 respond_to: send,
             })
             .await
-            .map_err(|e| StorageErr::SendActorMessageErr {
+            .map_err(|e| StorageErr::SendActorMessageErr(SendActorMessageErr{
                 source: Box::new(e),
                 trace: trace!(),
-            })?;
-        recv.await.map_err(|e| StorageErr::ReceiveActorMessageErr {
+            }))?;
+        recv.await.map_err(|e| StorageErr::ReceiveActorMessageErr(ReceiveActorMessageErr{
             source: Box::new(e),
             trace: trace!(),
-        })?
+        }))?
     }
 }

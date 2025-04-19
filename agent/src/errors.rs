@@ -1,14 +1,24 @@
 // standard library
 use std::fmt::Debug;
-// use backtrace::Backtrace;
+
 // external crates
+use axum::http::StatusCode;
 #[allow(unused_imports)]
 use tracing::{error, info, trace, warn};
+
+pub type HTTPCode = StatusCode;
+
+pub enum Code {
+    InternalServerError,
+    ResourceNotFound,
+}
 
 pub trait MiruError
 where
     Self: Debug,
 {
+    fn code(&self) -> Code;
+    fn http_status(&self) -> HTTPCode;
     fn is_network_connection_error(&self) -> bool;
 }
 

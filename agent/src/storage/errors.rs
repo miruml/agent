@@ -1,75 +1,154 @@
-// internal crates
-use crate::errors::{MiruError, Trace};
-use crate::filesys::{errors::FileSysErr, file::File};
+// standard library
+use std::fmt;
 
-#[non_exhaustive]
-#[derive(Debug, thiserror::Error)]
+// internal crates
+use crate::errors::{Code, HTTPCode, MiruError, Trace};
+use crate::filesys::errors::FileSysErr;
+#[derive(Debug)]
+pub struct CacheElementNotFound {
+    pub msg: String,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for CacheElementNotFound {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+}
+
+impl fmt::Display for CacheElementNotFound {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "unable to find cache element: {}", self.msg)
+    }
+}
+
+#[derive(Debug)]
+pub struct StorageFileSysErr {
+    pub source: FileSysErr,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for StorageFileSysErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+}
+
+impl fmt::Display for StorageFileSysErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "file system error: {}", self.source)
+    }
+}
+
+
+#[derive(Debug)]
+pub struct SendActorMessageErr {
+    pub source: Box<dyn std::error::Error + Send + Sync>,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for SendActorMessageErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+}
+
+impl fmt::Display for SendActorMessageErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "failed to send actor message: {}", self.source)
+    }
+}
+
+#[derive(Debug)]
+pub struct ReceiveActorMessageErr {
+    pub source: Box<dyn std::error::Error + Send + Sync>,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for ReceiveActorMessageErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+}
+
+impl fmt::Display for ReceiveActorMessageErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "failed to receive actor message: {}", self.source)
+    }
+}
+
+#[derive(Debug)]
 pub enum StorageErr {
     // storage errors
-    #[error("BackupFileReadErr: {source} {file} {backup_file}")]
-    BackupFileReadErr {
-        source: Box<FileSysErr>,
-        file: File,
-        backup_file: File,
-        trace: Box<Trace>,
-    },
-    #[error("CacheElementNotFound: {msg}")]
-    CacheElementNotFound { msg: String, trace: Box<Trace> },
-    #[error("Invalid Dir Name: {name}")]
-    InvalidDirName {
-        name: String,
-        expected_name: Option<String>,
-        trace: Box<Trace>,
-    },
-    #[error("Invalid File Name: {name}")]
-    InvalidFileName {
-        name: String,
-        expected_name: Option<String>,
-        trace: Box<Trace>,
-    },
-    #[error("Library Dir Not Found: {id}")]
-    LibraryDirNotFound { id: String, trace: Box<Trace> },
-    #[error("MissingScriptRunErr: {job_run_id:?}, {script_run_id:?}")]
-    MissingScriptRunErr {
-        job_run_id: String,
-        script_run_id: String,
-        trace: Box<Trace>,
-    },
-    #[error("MissingScriptRunsErr: {job_run_id:?}")]
-    MissingScriptRunsErr {
-        job_run_id: String,
-        trace: Box<Trace>,
-    },
-    #[error("Regex Capture Error: {msg}")]
-    RegexCaptureErr { msg: String, trace: Box<Trace> },
+    CacheElementNotFound(CacheElementNotFound),
 
     // internal crate errors
-    #[error("File System Error: {source}")]
-    FileSysErr {
-        source: FileSysErr,
-        trace: Box<Trace>,
-    },
+    FileSysErr(StorageFileSysErr),
 
     // external crate errors
-    #[error("Parse Int Error: {source}")]
-    ParseIntErr {
-        source: std::num::ParseIntError,
-        trace: Box<Trace>,
-    },
-    #[error("Send Actor Message Error: {source}")]
-    SendActorMessageErr {
-        source: Box<dyn std::error::Error + Send + Sync>,
-        trace: Box<Trace>,
-    },
-    #[error("Receive Actor Message Error: {source}")]
-    ReceiveActorMessageErr {
-        source: Box<dyn std::error::Error + Send + Sync>,
-        trace: Box<Trace>,
-    },
+    SendActorMessageErr(SendActorMessageErr),
+    ReceiveActorMessageErr(ReceiveActorMessageErr),
+}
+
+macro_rules! forward_error_method {
+    ($self:ident, $method:ident $(, $arg:expr)?) => {
+        match $self {
+            Self::FileSysErr(e) => e.$method($($arg)?),
+            Self::CacheElementNotFound(e) => e.$method($($arg)?),
+            Self::SendActorMessageErr(e) => e.$method($($arg)?),
+            Self::ReceiveActorMessageErr(e) => e.$method($($arg)?),
+        }
+    };
+}
+
+impl fmt::Display for StorageErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        forward_error_method!(self, fmt, f)
+    }
 }
 
 impl MiruError for StorageErr {
+    fn code(&self) -> Code {
+        forward_error_method!(self, code)
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        forward_error_method!(self, http_status)
+    }
+
     fn is_network_connection_error(&self) -> bool {
-        false
+        forward_error_method!(self, is_network_connection_error)
     }
 }

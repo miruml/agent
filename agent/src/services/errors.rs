@@ -1,41 +1,129 @@
+// standard library
+use std::fmt;
+
 // internal crates
-use crate::errors::MiruError;
-use crate::errors::Trace;
+use crate::errors::{Code, HTTPCode, MiruError, Trace};
 use crate::http_client::errors::HTTPErr;
 use crate::storage::errors::StorageErr;
 
-#[non_exhaustive]
-#[derive(Debug, thiserror::Error)]
-pub enum ServiceErr {
-    #[error("Storage Error: {source}")]
-    StorageErr {
-        source: StorageErr,
-        trace: Box<Trace>,
-    },
-    #[error("HTTP Error: {source}")]
-    HTTPErr { source: HTTPErr, trace: Box<Trace> },
-    #[error("Latest Concrete Config Not Found: {config_slug} {config_schema_digest}")]
-    LatestConcreteConfigNotFound {
-        config_slug: String,
-        config_schema_digest: String,
-        trace: Box<Trace>,
-    },
+
+
+#[derive(Debug)]
+pub struct LatestConcreteConfigNotFound {
+    pub config_slug: String,
+    pub config_schema_digest: String,
+    pub trace: Box<Trace>,
 }
 
-impl AsRef<dyn MiruError> for ServiceErr {
-    fn as_ref(&self) -> &(dyn MiruError + 'static) {
-        self
+impl MiruError for LatestConcreteConfigNotFound {
+    fn code(&self) -> Code {
+        Code::ResourceNotFound
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::NOT_FOUND
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+}
+
+impl fmt::Display for LatestConcreteConfigNotFound {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Unable to locate find the latest concrete config for config slug: '{}' and config schema digest: '{}'", self.config_slug, self.config_schema_digest)
+    }
+}
+
+#[derive(Debug)]
+pub struct ServiceStorageErr {
+    pub source: StorageErr,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for ServiceStorageErr {
+    fn code(&self) -> Code {
+        self.source.code()
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        self.source.http_status()
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        self.source.is_network_connection_error()
+    }
+}
+
+impl fmt::Display for ServiceStorageErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Storage Error: {}", self.source)
+    }
+}
+
+#[derive(Debug)]
+pub struct ServiceHTTPErr {
+    pub source: HTTPErr,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for ServiceHTTPErr {
+    fn code(&self) -> Code {
+        self.source.code()
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        self.source.http_status()
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        self.source.is_network_connection_error()
+    }
+}
+
+impl fmt::Display for ServiceHTTPErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "HTTP Error: {}", self.source)
+    }
+}
+
+
+#[derive(Debug)]
+pub enum ServiceErr {
+    // service errors 
+    LatestConcreteConfigNotFound(LatestConcreteConfigNotFound),
+
+    // internal crate errors
+    StorageErr(ServiceStorageErr),
+    HTTPErr(ServiceHTTPErr),
+}
+
+macro_rules! forward_error_method {
+    ($self:ident, $method:ident $(, $arg:expr)?) => {
+        match $self {
+            Self::LatestConcreteConfigNotFound(e) => e.$method($($arg)?),
+            Self::StorageErr(e) => e.$method($($arg)?),
+            Self::HTTPErr(e) => e.$method($($arg)?),
+        }
+    };
+}
+
+impl fmt::Display for ServiceErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        forward_error_method!(self, fmt, f)
     }
 }
 
 impl MiruError for ServiceErr {
+    fn code(&self) -> Code {
+        forward_error_method!(self, code)
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        forward_error_method!(self, http_status)
+    }
+
     fn is_network_connection_error(&self) -> bool {
-        matches!(
-            self,
-            ServiceErr::HTTPErr {
-                source: HTTPErr::ConnectionErr { .. },
-                ..
-            }
-        )
+        forward_error_method!(self, is_network_connection_error)
     }
 }

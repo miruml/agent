@@ -3,8 +3,14 @@ use std::{
     env,
     path::{Component, Path, PathBuf},
 };
+
 // internal crates
-use crate::filesys::errors::FileSysErr;
+use crate::filesys::errors::{
+    FileSysErr,
+    PathDoesNotExistErr,
+    PathExistsErr,
+    UnknownCurrentDirErr,
+};
 use crate::trace;
 
 pub trait PathExt {
@@ -15,10 +21,10 @@ pub trait PathExt {
             true => self.path().clone(),
             false => {
                 let current_dir =
-                    env::current_dir().map_err(|e| FileSysErr::UnknownCurrentDirErr {
+                    env::current_dir().map_err(|e| FileSysErr::UnknownCurrentDirErr(UnknownCurrentDirErr {
                         source: e,
                         trace: trace!(),
-                    })?;
+                    }))?;
                 current_dir.join(self.path())
             }
         };
@@ -31,20 +37,20 @@ pub trait PathExt {
 
     fn assert_exists(&self) -> Result<(), FileSysErr> {
         if !self.exists() {
-            return Err(FileSysErr::PathDoesNotExist {
+            return Err(FileSysErr::PathDoesNotExistErr(PathDoesNotExistErr {
                 path: self.path().clone(),
                 trace: trace!(),
-            });
+            }));
         }
         Ok(())
     }
 
     fn assert_doesnt_exist(&self) -> Result<(), FileSysErr> {
         if self.exists() {
-            return Err(FileSysErr::PathExists {
+            return Err(FileSysErr::PathExistsErr(PathExistsErr {
                 path: self.path().clone(),
                 trace: trace!(),
-            });
+            }));
         }
         Ok(())
     }

@@ -34,8 +34,6 @@ mod tests {
         fn success() {
             let dir = Dir::new_home_dir().unwrap();
             assert!(dir.exists());
-
-            println!("dir: {}", dir.path().to_str().unwrap());
             assert!(dir.path().to_str().unwrap().contains("home"));
         }
     }
@@ -99,7 +97,7 @@ mod tests {
                 let dir = Dir::new(PathBuf::from("/"));
                 assert!(matches!(
                     dir.name().unwrap_err(),
-                    FileSysErr::NoDirNameErr { .. }
+                    FileSysErr::UnknownDirNameErr { .. }
                 ));
             }
 
@@ -108,7 +106,7 @@ mod tests {
                 let dir = Dir::new("");
                 assert!(matches!(
                     dir.name().unwrap_err(),
-                    FileSysErr::NoDirNameErr { .. }
+                    FileSysErr::UnknownDirNameErr { .. }
                 ));
             }
         }
@@ -162,7 +160,7 @@ mod tests {
                 let dir = Dir::new(PathBuf::from("/"));
                 assert!(matches!(
                     dir.parent().unwrap_err(),
-                    FileSysErr::UnknownDirParentDirErr { .. }
+                    FileSysErr::UnknownParentDirForDirErr { .. }
                 ));
             }
         }
@@ -353,10 +351,9 @@ mod tests {
             async fn exists_no_overwrite() {
                 let dir = Dir::create_temp_dir("testing").await.unwrap();
 
-                println!("ERROR: {:?}", dir.create(false).await.unwrap_err());
                 assert!(matches!(
                     dir.create(false).await.unwrap_err(),
-                    FileSysErr::PathExists { .. }
+                    FileSysErr::PathExistsErr { .. }
                 ));
             }
         }

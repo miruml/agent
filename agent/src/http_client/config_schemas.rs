@@ -1,4 +1,4 @@
-// std
+// standard library
 use std::sync::Arc;
 
 // internal crates
