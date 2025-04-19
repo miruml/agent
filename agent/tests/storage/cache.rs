@@ -200,49 +200,130 @@ pub mod delete {
     }
 }
 
-pub mod entries {
+pub mod prune {
     use super::*;
 
     #[tokio::test]
-    async fn empty() {
+    async fn empty_cache() {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
         let cache = ConfigSchemaDigestCache::spawn(dir.clone());
-
-        let entries = cache.entries().await.unwrap();
-        assert_eq!(entries.len(), 0);
+        cache.prune(10).await.unwrap();
     }
 
     #[tokio::test]
-    async fn one_entry() {
+    async fn cache_equal_to_max_size() {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
         let cache = ConfigSchemaDigestCache::spawn(dir.clone());
 
-        // create a new entry
-        let key = "1234567890".to_string();
-        let digests = ConfigSchemaDigests {
-            raw: "1234567890".to_string(),
-            resolved: "1234567890".to_string(),
-        };
-        cache.write(key.clone(), digests.clone(), false).await.unwrap();
+        // create 10 entries
+        for i in 0..10 {
+            let key = format!("key{}", i);
+            let digests = ConfigSchemaDigests {
+                raw: format!("raw{}", i),
+                resolved: format!("resolved{}", i),
+            };
+            cache.write(key, digests, false).await.unwrap();
+        }
 
-        // read the entry
-        let read_digests = cache.read(key.clone()).await.unwrap();
-        assert_eq!(read_digests, digests);
+        // prune the cache
+        cache.prune(10).await.unwrap();
 
-        // get the entries
-        let entries = cache.entries().await.unwrap();
-        assert_eq!(entries.len(), 1);
-        assert_eq!(entries[0].key, key);
-        assert_eq!(entries[0].value, digests);
+        // the cache should still have all ten entries
+        for i in 0..10 {
+            let key = format!("key{}", i);
+            let digests = cache.read(key).await.unwrap();
+            let expected_digests = ConfigSchemaDigests {
+                raw: format!("raw{}", i),
+                resolved: format!("resolved{}", i),
+            };
+            assert_eq!(digests, expected_digests);
+        }
     }
 
     #[tokio::test]
-    async fn multiple_entries() {
+    async fn remove_invalid_entries() {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
         let cache = ConfigSchemaDigestCache::spawn(dir.clone());
-        
-        
+
+        // write invalid json files to files in the cache directory
+        let invalid_json_file = dir.file("invalid.json");
+        invalid_json_file.write_string(
+            "invalid json",
+            true,
+            false,
+        ).await.unwrap();
+
+        // create 10 entries
+        for i in 0..10 {
+            let key = format!("key{}", i);
+            let digests = ConfigSchemaDigests {
+                raw: format!("raw{}", i),
+                resolved: format!("resolved{}", i),
+            };
+            cache.write(key, digests, false).await.unwrap();
+        }
+
+        // prune the cache
+        cache.prune(10).await.unwrap();
+
+        // invalid json file should be deleted
+        assert!(!invalid_json_file.exists());
+
+        // the cache should still have all ten entries
+        for i in 0..10 {
+            let key = format!("key{}", i);
+            let digests = cache.read(key).await.unwrap();
+            let expected_digests = ConfigSchemaDigests {
+                raw: format!("raw{}", i),
+                resolved: format!("resolved{}", i),
+            };
+            assert_eq!(digests, expected_digests);
+        }
     }
 
+    #[tokio::test]
+    async fn remove_oldest_entries() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+
+        // write invalid json files to files in the cache directory
+        let invalid_json_file = dir.file("invalid.json");
+        invalid_json_file.write_string(
+            "invalid json",
+            true,
+            false,
+        ).await.unwrap();
+
+        // create 20 entries
+        for i in 0..20 {
+            let key = format!("key{}", i);
+            let digests = ConfigSchemaDigests {
+                raw: format!("raw{}", i),
+                resolved: format!("resolved{}", i),
+            };
+            cache.write(key, digests, false).await.unwrap();
+        }
+
+        // prune the cache
+        cache.prune(10).await.unwrap();
+
+        // first 10 entries should be deleted since they are the oldest
+        for i in 0..10 {
+            let key = format!("key{}", i);
+            cache.read(key).await.unwrap_err();
+        }
+
+        // last 10 entries should still exist
+        for i in 10..20 {
+            let key = format!("key{}", i);
+            let digests = cache.read(key).await.unwrap();
+            let expected_digests = ConfigSchemaDigests {
+                raw: format!("raw{}", i),
+                resolved: format!("resolved{}", i),
+            };
+            assert_eq!(digests, expected_digests);
+        }
+    }
 }
+
 }

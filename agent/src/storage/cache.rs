@@ -48,8 +48,8 @@ where
 // ========================== SINGLE-THREADED IMPLEMENTATION ======================== //
 pub struct SingleThreadCache<K, V> 
 where
-    K: ToString,
-    V: Serialize + DeserializeOwned,
+    K: Debug + ToString,
+    V: Debug + Serialize + DeserializeOwned,
 {
     dir: Dir,
     _phantom: std::marker::PhantomData<K>,
@@ -58,8 +58,8 @@ where
 
 impl<K, V> SingleThreadCache<K, V> 
 where
-    K: ToString + Serialize + DeserializeOwned,
-    V: Serialize + DeserializeOwned,
+    K: Debug + ToString + Serialize + DeserializeOwned,
+    V: Debug + Serialize + DeserializeOwned,
 {
     pub fn new(dir: Dir) -> Self {
         Self {
@@ -172,9 +172,13 @@ where
         let entries = self.entries().await?;
         let mut entries = entries.into_iter().collect::<Vec<_>>();
         entries.sort_by_key(|entry| entry.last_accessed);
-        for entry in entries.into_iter().skip(max_size) {
-            self.delete(&entry.key).await?;
-        }
+        let num_delete = entries.len() - max_size;
+        let futures = entries.into_iter()
+            .take(num_delete)
+            .map(|entry| async move {
+                self.delete(&entry.key).await
+            });
+        try_join_all(futures).await?;
         Ok(())
     }
 
@@ -253,8 +257,8 @@ where
 
 struct Worker<K, V> 
 where
-    K: ToString + Send + Sync + Serialize + DeserializeOwned,
-    V: Send + Sync + Serialize + DeserializeOwned,
+    K: Debug + ToString + Send + Sync + Serialize + DeserializeOwned,
+    V: Debug + Send + Sync + Serialize + DeserializeOwned,
 {
     cache: SingleThreadCache<K, V>,
     receiver: Receiver<WorkerCommand<K, V>>,
