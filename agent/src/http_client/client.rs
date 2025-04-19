@@ -12,8 +12,8 @@ use openapi_client::models::ErrorResponse;
 use moka::future::Cache;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use tokio::time::{sleep, timeout, Duration};
 use tokio::sync::OnceCell;
+use tokio::time::{sleep, timeout, Duration};
 use uuid::Uuid;
 
 // type aliases
@@ -88,11 +88,7 @@ impl HTTPClient {
         }
     }
 
-    fn add_token_to_headers(
-        &self,
-        headers: &mut HeaderMap,
-        token: &str,
-    ) -> Result<(), HTTPErr> {
+    fn add_token_to_headers(&self, headers: &mut HeaderMap, token: &str) -> Result<(), HTTPErr> {
         headers.insert(
             AUTHORIZATION,
             HeaderValue::from_str(&format!("Bearer {}", token)).map_err(|e| {
@@ -115,7 +111,7 @@ impl HTTPClient {
     ) -> Result<reqwest::RequestBuilder, HTTPErr> {
         // request type (GET, POST, etc.)
         let mut request = self.client.request(method, url);
-        
+
         // headers
         let mut headers = HeaderMap::new();
         if let Some(token) = token {
@@ -171,14 +167,12 @@ impl HTTPClient {
         time_limit: Duration,
     ) -> Result<(String, IsCacheHit), HTTPErr> {
         let id = Uuid::new_v4();
-        let result = self.cache
-            .try_get_with(
-                key,
-                async move {
-                    let response = self.send(request, time_limit).await?;
-                    Ok((self.handle_response(response).await?, id))
-                }
-            )
+        let result = self
+            .cache
+            .try_get_with(key, async move {
+                let response = self.send(request, time_limit).await?;
+                Ok((self.handle_response(response).await?, id))
+            })
             .await
             .map_err(|e: Arc<HTTPErr>| HTTPErr::CacheErr {
                 is_network_connection_error: e.is_network_connection_error(),
@@ -189,27 +183,27 @@ impl HTTPClient {
         Ok((result.0, is_cache_hit))
     }
 
-    pub fn marshal_json_request<T>(
-        &self,
-        request: &T,
-    ) -> Result<String, HTTPErr> where T: Serialize {
+    pub fn marshal_json_request<T>(&self, request: &T) -> Result<String, HTTPErr>
+    where
+        T: Serialize,
+    {
         serde_json::to_string(request).map_err(|e| HTTPErr::ParseJSONErr {
             source: e,
             trace: trace!(),
         })
     }
 
-    pub async fn handle_response(
-        &self,
-        response: reqwest::Response,
-    ) -> Result<String, HTTPErr> {
+    pub async fn handle_response(&self, response: reqwest::Response) -> Result<String, HTTPErr> {
         let status = response.status();
 
         // check for an error response
         if !status.is_success() {
             let url = response.url().to_string();
             let error_response = match response.text().await {
-                Ok(text) => self.parse_json_response_text::<ErrorResponse>(text).await.ok(),
+                Ok(text) => self
+                    .parse_json_response_text::<ErrorResponse>(text)
+                    .await
+                    .ok(),
                 Err(_) => None,
             };
             return Err(HTTPErr::ResponseFailed {
@@ -227,10 +221,10 @@ impl HTTPClient {
         Ok(text)
     }
 
-    pub(crate) async fn parse_json_response_text<T>(
-        &self,
-        text: String,
-    ) -> Result<T, HTTPErr> where T: DeserializeOwned {
+    pub(crate) async fn parse_json_response_text<T>(&self, text: String) -> Result<T, HTTPErr>
+    where
+        T: DeserializeOwned,
+    {
         serde_json::from_str::<T>(&text).map_err(|e| HTTPErr::ParseJSONErr {
             source: e,
             trace: trace!(),

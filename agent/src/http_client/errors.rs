@@ -78,9 +78,17 @@ impl AsRef<dyn MiruError> for HTTPErr {
 
 impl MiruError for HTTPErr {
     fn is_network_connection_error(&self) -> bool {
-        if let HTTPErr::CacheErr { is_network_connection_error, .. } = self {
+        if let HTTPErr::CacheErr {
+            is_network_connection_error,
+            ..
+        } = self
+        {
             *is_network_connection_error
-        } else if let HTTPErr::MockErr { is_network_connection_error, .. } = self {
+        } else if let HTTPErr::MockErr {
+            is_network_connection_error,
+            ..
+        } = self
+        {
             *is_network_connection_error
         } else {
             matches!(

@@ -1,6 +1,6 @@
 // standard library
-use std::fmt::Display;
 use std::env;
+use std::fmt::Display;
 use std::path::PathBuf;
 
 // internal crates
@@ -47,8 +47,8 @@ impl Dir {
     }
 
     pub fn new_current_dir() -> Result<Dir, FileSysErr> {
-        let current_dir = std::env::current_dir()
-            .map_err(|e| FileSysErr::UnknownCurrentDirErr {
+        let current_dir =
+            std::env::current_dir().map_err(|e| FileSysErr::UnknownCurrentDirErr {
                 source: e,
                 trace: trace!(),
             })?;
@@ -144,11 +144,13 @@ impl Dir {
         } else {
             self.delete().await?;
         }
-        tokio::fs::create_dir_all(self.to_string()).await.map_err(|e| FileSysErr::CreateDirErr {
-            source: e,
-            dir: self.clone(),
-            trace: trace!(),
-        })?;
+        tokio::fs::create_dir_all(self.to_string())
+            .await
+            .map_err(|e| FileSysErr::CreateDirErr {
+                source: e,
+                dir: self.clone(),
+                trace: trace!(),
+            })?;
         Ok(())
     }
 
@@ -157,11 +159,13 @@ impl Dir {
         if !self.exists() {
             return Ok(());
         }
-        tokio::fs::remove_dir_all(self.path()).await.map_err(|e| FileSysErr::DeleteDirErr {
-            source: e,
-            dir: self.clone(),
-            trace: trace!(),
-        })?;
+        tokio::fs::remove_dir_all(self.path())
+            .await
+            .map_err(|e| FileSysErr::DeleteDirErr {
+                source: e,
+                dir: self.clone(),
+                trace: trace!(),
+            })?;
         Ok(())
     }
 
@@ -184,17 +188,24 @@ impl Dir {
     /// Return the subdirectories of this directory
     pub async fn subdirs(&self) -> Result<Vec<Dir>, FileSysErr> {
         let mut dirs = Vec::new();
-        let mut entries = tokio::fs::read_dir(self.to_string()).await.map_err(|e| FileSysErr::ReadDirErr {
-            source: e,
-            dir: self.clone(),
-            trace: trace!(),
-        })?;
-        
-        while let Some(entry) = entries.next_entry().await.map_err(|e| FileSysErr::ReadDirErr {
-            source: e,
-            dir: self.clone(),
-            trace: trace!(),
-        })? {
+        let mut entries =
+            tokio::fs::read_dir(self.to_string())
+                .await
+                .map_err(|e| FileSysErr::ReadDirErr {
+                    source: e,
+                    dir: self.clone(),
+                    trace: trace!(),
+                })?;
+
+        while let Some(entry) = entries
+            .next_entry()
+            .await
+            .map_err(|e| FileSysErr::ReadDirErr {
+                source: e,
+                dir: self.clone(),
+                trace: trace!(),
+            })?
+        {
             if entry.path().is_dir() {
                 let dir = Dir::new(entry.path());
                 dir.assert_exists()?;
@@ -208,17 +219,24 @@ impl Dir {
     pub async fn files(&self) -> Result<Vec<File>, FileSysErr> {
         let mut files = Vec::new();
 
-        let mut entries = tokio::fs::read_dir(self.to_string()).await.map_err(|e| FileSysErr::ReadDirErr {
-            source: e,
-            dir: self.clone(),
-            trace: trace!(),
-        })?;
-        
-        while let Some(entry) = entries.next_entry().await.map_err(|e| FileSysErr::ReadDirErr {
-            source: e,
-            dir: self.clone(),
-            trace: trace!(),
-        })? {
+        let mut entries =
+            tokio::fs::read_dir(self.to_string())
+                .await
+                .map_err(|e| FileSysErr::ReadDirErr {
+                    source: e,
+                    dir: self.clone(),
+                    trace: trace!(),
+                })?;
+
+        while let Some(entry) = entries
+            .next_entry()
+            .await
+            .map_err(|e| FileSysErr::ReadDirErr {
+                source: e,
+                dir: self.clone(),
+                trace: trace!(),
+            })?
+        {
             if entry.path().is_file() {
                 let file = File::new(entry.path());
                 file.assert_exists()?;

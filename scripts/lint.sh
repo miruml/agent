@@ -7,6 +7,9 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# move to the root of the project
+cd ../
+
 # Check if rustup is installed
 if ! command_exists rustup; then
     echo "Installing Rustup"
@@ -69,6 +72,8 @@ if ! command_exists cargo-audit; then
     echo "----------------------"
     cargo install cargo-audit
 fi
+
+# ============================= PROJECT ROOT LINTING ================================ #
 
 # update the cargo dependencies
 echo "Updating the Cargo dependencies"

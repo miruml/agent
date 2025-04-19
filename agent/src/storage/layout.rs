@@ -13,7 +13,6 @@ pub struct StorageLayout {
 }
 
 impl StorageLayout {
-
     pub fn new(root: Dir) -> Self {
         Self { root }
     }

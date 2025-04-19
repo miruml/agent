@@ -68,7 +68,8 @@ impl File {
     // Create a new Dir instance from the parent directory of the path for this File
     // instance
     pub fn parent(&self) -> Result<Dir, FileSysErr> {
-        let parent = self.path
+        let parent = self
+            .path
             .parent()
             .ok_or(FileSysErr::UnknownFileParentDirErr {
                 file: self.clone(),
@@ -88,13 +89,17 @@ impl File {
         self.assert_exists()?;
 
         // read file
-        let mut file = TokioFile::open(self.to_string()).await.map_err(|e| FileSysErr::OpenFileErr {
-            source: e,
-            file: self.clone(),
-            trace: trace!(),
-        })?;
+        let mut file =
+            TokioFile::open(self.to_string())
+                .await
+                .map_err(|e| FileSysErr::OpenFileErr {
+                    source: e,
+                    file: self.clone(),
+                    trace: trace!(),
+                })?;
         let mut buf = Vec::new();
-        file.read_to_end(&mut buf).await
+        file.read_to_end(&mut buf)
+            .await
             .map_err(|e| FileSysErr::ReadFileErr {
                 source: e,
                 file: self.clone(),
@@ -159,12 +164,16 @@ impl File {
                     trace: trace!(),
                 })?;
         } else {
-            let mut file = TokioFile::create(self.to_string()).await.map_err(|e| FileSysErr::OpenFileErr {
-                source: e,
-                file: self.clone(),
-                trace: trace!(),
-            })?;
-            file.write_all(buf).await
+            let mut file =
+                TokioFile::create(self.to_string())
+                    .await
+                    .map_err(|e| FileSysErr::OpenFileErr {
+                        source: e,
+                        file: self.clone(),
+                        trace: trace!(),
+                    })?;
+            file.write_all(buf)
+                .await
                 .map_err(|e| FileSysErr::WriteFileErr {
                     source: e,
                     file: self.clone(),
@@ -206,11 +215,13 @@ impl File {
         if !self.exists() {
             return Ok(());
         }
-        tokio::fs::remove_file(self.to_string()).await.map_err(|e| FileSysErr::DeleteFileErr {
-            source: e,
-            file: self.clone(),
-            trace: trace!(),
-        })?;
+        tokio::fs::remove_file(self.to_string())
+            .await
+            .map_err(|e| FileSysErr::DeleteFileErr {
+                source: e,
+                file: self.clone(),
+                trace: trace!(),
+            })?;
         Ok(())
     }
 
@@ -233,14 +244,14 @@ impl File {
         }
 
         // move this file to the new file
-        tokio::fs::rename(self.to_string(), new_file.to_string()).await.map_err(|e| {
-            FileSysErr::MoveFileErr {
+        tokio::fs::rename(self.to_string(), new_file.to_string())
+            .await
+            .map_err(|e| FileSysErr::MoveFileErr {
                 source: e,
                 src_file: self.clone(),
                 dest_file: new_file.clone(),
                 trace: trace!(),
-            }
-        })?;
+            })?;
         Ok(())
     }
 
@@ -250,13 +261,13 @@ impl File {
         self.assert_exists()?;
 
         // set file permissions
-        tokio::fs::set_permissions(self.to_string(), std::fs::Permissions::from_mode(mode)).await.map_err(|e| {
-            FileSysErr::WriteFileErr {
+        tokio::fs::set_permissions(self.to_string(), std::fs::Permissions::from_mode(mode))
+            .await
+            .map_err(|e| FileSysErr::WriteFileErr {
                 source: e,
                 file: self.clone(),
                 trace: trace!(),
-            }
-        })?;
+            })?;
         Ok(())
     }
 
@@ -267,23 +278,25 @@ impl File {
         link.delete().await?;
 
         // create symlink
-        tokio::fs::symlink(self.to_string(), link.to_string()).await.map_err(|e| {
-            FileSysErr::CreateSymlinkErr {
+        tokio::fs::symlink(self.to_string(), link.to_string())
+            .await
+            .map_err(|e| FileSysErr::CreateSymlinkErr {
                 source: e,
                 file: self.clone(),
                 link: link.clone(),
                 trace: trace!(),
-            }
-        })?;
+            })?;
         Ok(())
     }
 
     async fn metadata(&self) -> Result<std::fs::Metadata, FileSysErr> {
         self.assert_exists()?;
-        tokio::fs::metadata(self.to_string()).await.map_err(|e| FileSysErr::FileMetaDataErr {
-            source: e,
-            trace: trace!(),
-        })
+        tokio::fs::metadata(self.to_string())
+            .await
+            .map_err(|e| FileSysErr::FileMetaDataErr {
+                source: e,
+                trace: trace!(),
+            })
     }
 
     pub async fn permissions(&self) -> Result<std::fs::Permissions, FileSysErr> {
@@ -291,7 +304,11 @@ impl File {
     }
 
     pub async fn last_modified(&self) -> Result<SystemTime, FileSysErr> {
-        Ok(self.metadata().await?.modified().unwrap_or(SystemTime::now()))
+        Ok(self
+            .metadata()
+            .await?
+            .modified()
+            .unwrap_or(SystemTime::now()))
     }
 
     pub async fn size(&self) -> Result<u64, FileSysErr> {
@@ -305,7 +322,7 @@ pub fn sanitize_filename(name: &str) -> String {
             // Allow alphanumeric and some safe characters
             'a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '_' | '.' => c,
             // Replace everything else with underscore
-            _ => '_'
+            _ => '_',
         })
         .collect()
 }

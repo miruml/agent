@@ -14,16 +14,13 @@ mod tests {
         errors::ServiceErr,
     };
     use config_agent::storage::concrete_configs::{
-        ConcreteConfig,
-        ConcreteConfigCache,
-        ConcreteConfigCacheKey,
+        ConcreteConfig, ConcreteConfigCache, ConcreteConfigCacheKey,
     };
     use config_agent::trace;
     use openapi_client::models::BackendConcreteConfig;
 
     // test crates
     use crate::http_client::mock::MockConcreteConfigsClient;
-
 
     pub mod errors {
         use super::*;
@@ -47,15 +44,11 @@ mod tests {
                 config_slug: "config-slug".to_string(),
                 config_schema_digest: "config-schema-digest".to_string(),
             };
-            let result = read_latest::read_latest(
-                &args,
-                &http_client,
-                &cache,
-            ).await;
+            let result = read_latest::read_latest(&args, &http_client, &cache).await;
 
             // assert the result
             assert!(matches!(
-                result, 
+                result,
                 Err(ServiceErr::LatestConcreteConfigNotFound {
                     config_slug: _,
                     config_schema_digest: _,
@@ -83,11 +76,9 @@ mod tests {
                 config_slug: "config-slug".to_string(),
                 config_schema_digest: "config-schema-digest".to_string(),
             };
-            let result = read_latest::read_latest(
-                &args,
-                &http_client,
-                &cache,
-            ).await.unwrap_err();
+            let result = read_latest::read_latest(&args, &http_client, &cache)
+                .await
+                .unwrap_err();
 
             // assert the result
             assert!(matches!(result, ServiceErr::HTTPErr { .. }));
@@ -114,11 +105,10 @@ mod tests {
                 config_slug: config_slug.to_string(),
                 config_schema_digest: config_schema_digest.to_string(),
             };
-            cache.write(
-                key,
-                concrete_config.clone(),
-                false,
-            ).await.unwrap();
+            cache
+                .write(key, concrete_config.clone(), false)
+                .await
+                .unwrap();
 
             // create the mock http client
             let mut http_client = MockConcreteConfigsClient::default();
@@ -134,11 +124,9 @@ mod tests {
                 config_slug: config_slug.to_string(),
                 config_schema_digest: config_schema_digest.to_string(),
             };
-            let result = read_latest::read_latest(
-                &args,
-                &http_client,
-                &cache,
-            ).await.unwrap();
+            let result = read_latest::read_latest(&args, &http_client, &cache)
+                .await
+                .unwrap();
 
             let expected = utils::convert_cncr_cfg_storage_to_sdk(concrete_config);
             assert_eq!(result, expected);
@@ -163,24 +151,23 @@ mod tests {
                 config_slug: config_slug.to_string(),
                 config_schema_digest: config_schema_digest.to_string(),
             };
-            cache.write(
-                key,
-                concrete_config.clone(), false).await.unwrap();
+            cache
+                .write(key, concrete_config.clone(), false)
+                .await
+                .unwrap();
 
             // create the mock http client
             let mut http_client = MockConcreteConfigsClient::default();
-            http_client.set_read_latest(move || { Ok(None) });
+            http_client.set_read_latest(move || Ok(None));
 
             // run the test
             let args = ReadLatestArgs {
                 config_slug: config_slug.to_string(),
                 config_schema_digest: config_schema_digest.to_string(),
             };
-            let result = read_latest::read_latest(
-                &args,
-                &http_client,
-                &cache,
-            ).await.unwrap();
+            let result = read_latest::read_latest(&args, &http_client, &cache)
+                .await
+                .unwrap();
 
             let expected = utils::convert_cncr_cfg_storage_to_sdk(concrete_config);
             assert_eq!(result, expected);
@@ -195,29 +182,23 @@ mod tests {
             let backend_concrete_config = BackendConcreteConfig::default();
             let backend_concrete_config_clone = backend_concrete_config.clone();
             let mut http_client = MockConcreteConfigsClient::default();
-            http_client.set_read_latest(
-                move || { Ok(Some(backend_concrete_config_clone.clone())) }
-            );
+            http_client.set_read_latest(move || Ok(Some(backend_concrete_config_clone.clone())));
 
             // run the test
             let args = ReadLatestArgs {
                 config_slug: "config-slug".to_string(),
                 config_schema_digest: "config-schema-digest".to_string(),
             };
-            let result = read_latest::read_latest(
-                &args,
-                &http_client,
-                &cache,
-            ).await.unwrap();
+            let result = read_latest::read_latest(&args, &http_client, &cache)
+                .await
+                .unwrap();
 
             let storage_concrete_config = utils::convert_cncr_cfg_backend_to_storage(
                 backend_concrete_config,
                 args.config_slug().to_string(),
                 args.config_schema_digest().to_string(),
             );
-            let expected = utils::convert_cncr_cfg_storage_to_sdk(
-                storage_concrete_config.clone(),
-            );
+            let expected = utils::convert_cncr_cfg_storage_to_sdk(storage_concrete_config.clone());
             assert_eq!(result, expected);
 
             // cache should have been updated

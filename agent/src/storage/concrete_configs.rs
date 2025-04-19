@@ -19,7 +19,11 @@ pub struct ConcreteConfigCacheKey {
 
 impl Display for ConcreteConfigCacheKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}{}{}", self.config_slug, PATH_DELIMITER, self.config_schema_digest)
+        write!(
+            f,
+            "{}{}{}",
+            self.config_slug, PATH_DELIMITER, self.config_schema_digest
+        )
     }
 }
 

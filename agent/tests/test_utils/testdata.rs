@@ -19,4 +19,3 @@ pub fn sandbox_testdata_dir() -> Dir {
     let miru_dir = Dir::new(project_root_path);
     miru_dir.parent().unwrap().subdir(PathBuf::from("sandbox"))
 }
-
