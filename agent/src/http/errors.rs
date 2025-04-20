@@ -121,6 +121,7 @@ impl fmt::Display for CacheErr {
 
 #[derive(Debug)]
 pub struct ConnectionErr {
+    pub request: RequestContext,
     pub source: reqwest::Error,
     pub trace: Box<Trace>,
 }
@@ -145,12 +146,13 @@ impl MiruError for ConnectionErr {
 
 impl fmt::Display for ConnectionErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Network connection error: {}", self.source)
+        write!(f, "Request {} failed with network connection error: {}", self.request, self.source)
     }
 }
 
 #[derive(Debug)]
 pub struct DecodeRespBodyErr {
+    pub request: RequestContext,
     pub source: reqwest::Error,
     pub trace: Box<Trace>,
 }
@@ -175,7 +177,7 @@ impl MiruError for DecodeRespBodyErr {
 
 impl fmt::Display for DecodeRespBodyErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Unable to decode response body: {}", self.source)
+        write!(f, "Request {} failed to decode response body: {}", self.request, self.source)
     }
 }
 
@@ -211,12 +213,12 @@ impl fmt::Display for InvalidHeaderValueErr {
 }
 
 #[derive(Debug)]
-pub struct ParseJSONErr {
+pub struct MarshalJSONErr {
     pub source: serde_json::Error,
     pub trace: Box<Trace>,
 }
 
-impl MiruError for ParseJSONErr {
+impl MiruError for MarshalJSONErr {
     fn code(&self) -> Code {
         Code::InternalServerError
     }
@@ -234,14 +236,78 @@ impl MiruError for ParseJSONErr {
     }
 }
 
-impl fmt::Display for ParseJSONErr {
+impl fmt::Display for MarshalJSONErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Unable to parse JSON: {}", self.source)
+        write!(f, "Failed to marshal JSON body: {}", self.source)
+    }
+}
+
+
+
+#[derive(Debug)]
+pub struct UnmarshalJSONErr {
+    pub request: RequestContext,
+    pub source: serde_json::Error,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for UnmarshalJSONErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for UnmarshalJSONErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Request {} failed to unmarshal JSON: {}", self.request, self.source)
+    }
+}
+
+#[derive(Debug)]
+pub struct BuildReqwestErr {
+    pub source: reqwest::Error,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for BuildReqwestErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for BuildReqwestErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Failed to build request: {}", self.source)
     }
 }
 
 #[derive(Debug)]
 pub struct ReqwestErr {
+    pub request: RequestContext,
     pub source: reqwest::Error,
     pub trace: Box<Trace>,
 }
@@ -266,7 +332,7 @@ impl MiruError for ReqwestErr {
 
 impl fmt::Display for ReqwestErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Reqwest crate error: {}", self.source)
+        write!(f, "Request {} failed with reqwest crate error: {}", self.request, self.source)
     }
 }
 
@@ -312,8 +378,10 @@ pub enum HTTPErr {
     ConnectionErr(ConnectionErr),
     DecodeRespBodyErr(DecodeRespBodyErr),
     InvalidHeaderValueErr(InvalidHeaderValueErr),
-    ParseJSONErr(ParseJSONErr),
+    MarshalJSONErr(MarshalJSONErr),
+    UnmarshalJSONErr(UnmarshalJSONErr),
     ReqwestErr(ReqwestErr),
+    BuildReqwestErr(BuildReqwestErr),
 
     // mock errors (not for production use)
     MockErr(MockErr),
@@ -328,8 +396,10 @@ macro_rules! forward_error_method {
             Self::ConnectionErr(e) => e.$method($($arg)?),
             Self::DecodeRespBodyErr(e) => e.$method($($arg)?),
             Self::InvalidHeaderValueErr(e) => e.$method($($arg)?),
-            Self::ParseJSONErr(e) => e.$method($($arg)?),
+            Self::MarshalJSONErr(e) => e.$method($($arg)?),
+            Self::UnmarshalJSONErr(e) => e.$method($($arg)?),
             Self::ReqwestErr(e) => e.$method($($arg)?),
+            Self::BuildReqwestErr(e) => e.$method($($arg)?),
             Self::MockErr(e) => e.$method($($arg)?),
         }
     };
@@ -365,9 +435,15 @@ pub fn reqwest_err_to_http_client_err(
     trace: Box<Trace>,
 ) -> HTTPErr {
     if e.is_connect() {
-        HTTPErr::ConnectionErr(ConnectionErr { source: e, trace })
+        HTTPErr::ConnectionErr(ConnectionErr { 
+            request: context.clone(), 
+            source: e, 
+            trace 
+        })
     } else if e.is_decode() {
-        HTTPErr::DecodeRespBodyErr(DecodeRespBodyErr { source: e, trace })
+        HTTPErr::DecodeRespBodyErr(DecodeRespBodyErr { 
+            request: context.clone(), 
+            source: e, trace })
     } else if e.is_timeout() {
         HTTPErr::TimeoutErr(TimeoutErr { 
             msg: e.to_string(), 
@@ -375,6 +451,10 @@ pub fn reqwest_err_to_http_client_err(
             trace 
         })
     } else {
-        HTTPErr::ReqwestErr(ReqwestErr { source: e, trace })
+        HTTPErr::ReqwestErr(ReqwestErr { 
+            request: context.clone(), 
+            source: e, 
+            trace 
+        })
     }
 }

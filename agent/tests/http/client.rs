@@ -6,7 +6,7 @@ mod tests {
 
     // internal crates
     use config_agent::errors::MiruError;
-    use config_agent::http::client::{HTTPClient, RequestContext};
+    use config_agent::http::client::HTTPClient;
     use config_agent::http::errors::HTTPErr;
 
     // external crates
@@ -29,13 +29,8 @@ mod tests {
                     None,
                 )
                 .unwrap();
-            let context = RequestContext {
-                url: request.url().to_string(),
-                method: request.method().clone(),
-                timeout: Duration::from_secs(1),
-            };
             let result = http_client
-                .send(request, &context)
+                .send(request.0, &request.1)
                 .await
                 .unwrap();
             assert!(result.status().is_success());
@@ -65,13 +60,8 @@ mod tests {
                     None,
                 )
                 .unwrap();
-            let context = RequestContext {
-                url: request.url().to_string(),
-                method: request.method().clone(),
-                timeout: Duration::from_secs(1),
-            };
             let response = http_client
-                .send(request, &context)
+                .send(request.0, &request.1)
                 .await
                 .unwrap();
             assert!(response.status().is_success());
@@ -103,13 +93,8 @@ mod tests {
                         None,
                     )
                     .unwrap();
-                let context = RequestContext {
-                    url: request.url().to_string(),
-                    method: request.method().clone(),
-                    timeout: Duration::from_secs(1),
-                };
                 let result = http_client
-                    .send(request, &context)
+                    .send(request.0, &request.1)
                     .await
                     .unwrap();
                 assert!(result.status().is_success());
@@ -129,13 +114,8 @@ mod tests {
                         None,
                     )
                     .unwrap();
-                let context = RequestContext {
-                    url: request.url().to_string(),
-                    method: request.method().clone(),
-                    timeout: Duration::from_secs(1),
-                };
                 let result = http_client
-                    .send(request, &context)
+                    .send(request.0, &request.1)
                     .await
                     .unwrap_err();
                 assert!(result.is_network_connection_error());
@@ -152,13 +132,8 @@ mod tests {
                         None,
                     )
                     .unwrap();
-                let context = RequestContext {
-                    url: request.url().to_string(),
-                    method: request.method().clone(),
-                    timeout: Duration::from_secs(1),
-                };
                 let result = http_client
-                    .send(request, &context)
+                    .send(request.0, &request.1)
                     .await
                     .unwrap_err();
                 assert!(matches!(result, HTTPErr::TimeoutErr { .. }));
@@ -186,7 +161,7 @@ mod tests {
                     None,
                 ).unwrap();
                 let is_cache_hit = http_client
-                    .send_cached(url.to_string(), request)
+                    .send_cached(url.to_string(), request.0, &request.1)
                     .await
                     .unwrap()
                     .1;
@@ -203,7 +178,7 @@ mod tests {
                         None,
                     ).unwrap();
                     let is_cache_hit = http_client
-                        .send_cached(url.to_string(), request)
+                        .send_cached(url.to_string(), request.0, &request.1)
                         .await
                         .unwrap()
                         .1;
@@ -234,7 +209,7 @@ mod tests {
                             None,
                         ).unwrap();
                         http_client
-                            .send_cached(url.to_string(), request)
+                            .send_cached(url.to_string(), request.0, &request.1)
                             .await
                             .unwrap()
                             .1
@@ -273,7 +248,7 @@ mod tests {
                     None,
                 ).unwrap();
                 http_client
-                    .send_cached(url.to_string(), request)
+                    .send_cached(url.to_string(), request.0, &request.1)
                     .await
                     .unwrap_err();
                 let duration = start.elapsed();
@@ -288,7 +263,7 @@ mod tests {
                         None,
                     ).unwrap();
                     http_client
-                        .send_cached(url.to_string(), request)
+                        .send_cached(url.to_string(), request.0, &request.1)
                         .await
                         .unwrap_err();
                     let duration = start.elapsed();
@@ -316,7 +291,7 @@ mod tests {
                     None,
                 ).unwrap();
                 http_client
-                    .send_cached(url.to_string(), request)
+                    .send_cached(url.to_string(), request.0, &request.1)
                     .await
                     .unwrap();
                 let duration = start.elapsed();
@@ -333,7 +308,7 @@ mod tests {
                     None,
                 ).unwrap();
                 http_client
-                    .send_cached(url.to_string(), request)
+                    .send_cached(url.to_string(), request.0, &request.1)
                     .await
                     .unwrap();
                 let duration = start.elapsed();
@@ -355,7 +330,7 @@ mod tests {
                     )
                     .unwrap();
                 let result = http_client
-                    .send_cached("test".to_string(), request)
+                    .send_cached("test".to_string(), request.0, &request.1)
                     .await
                     .unwrap_err();
                 assert!(result.is_network_connection_error());
@@ -373,7 +348,7 @@ mod tests {
                     )
                     .unwrap();
                 let result = http_client
-                    .send_cached("test".to_string(), request)
+                    .send_cached("test".to_string(), request.0, &request.1)
                     .await
                     .unwrap_err();
                 assert!(matches!(result, HTTPErr::CacheErr { .. }));
@@ -395,19 +370,14 @@ mod tests {
                     None,
                 )
                 .unwrap();
-            let context = RequestContext {
-                url: request.url().to_string(),
-                method: request.method().clone(),
-                timeout: Duration::from_secs(1),
-            };
             let resp = http_client
-                .send(request, &context)
+                .send(request.0, &request.1)
                 .await
                 .unwrap();
 
             // call the handle_response method
             let response = http_client
-                .handle_response(resp, &context)
+                .handle_response(resp, &request.1)
                 .await
                 .unwrap_err();
             assert!(matches!(response, HTTPErr::RequestFailed { .. }));

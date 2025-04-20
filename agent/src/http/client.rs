@@ -10,9 +10,10 @@ use crate::http::{
     errors::{
         CacheErr, 
         InvalidHeaderValueErr,
-        ParseJSONErr,
+        MarshalJSONErr,
+        UnmarshalJSONErr,
         RequestFailed,
-        ReqwestErr,
+        BuildReqwestErr,
         TimeoutErr,
     },
 };
@@ -44,7 +45,7 @@ pub struct RequestContext {
 
 impl fmt::Display for RequestContext {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {}", self.method, self.url)
+        write!(f, "{} {} (timeout: {}ms)", self.method, self.url, self.timeout.as_millis())
     }
 }
 
@@ -104,7 +105,11 @@ impl HTTPClient {
         }
     }
 
-    fn add_token_to_headers(&self, headers: &mut HeaderMap, token: &str) -> Result<(), HTTPErr> {
+    fn add_token_to_headers(
+        &self,
+        headers: &mut HeaderMap,
+        token: &str,
+    ) -> Result<(), HTTPErr> {
         headers.insert(
             AUTHORIZATION,
             HeaderValue::from_str(&format!("Bearer {}", token)).map_err(|e| {
@@ -125,9 +130,9 @@ impl HTTPClient {
         body: Option<String>,
         timeout: Duration,
         token: Option<&str>,
-    ) -> Result<reqwest::Request, HTTPErr> {
+    ) -> Result<(reqwest::Request, RequestContext), HTTPErr> {
         // request type (GET, POST, etc.)
-        let mut request = self.client.request(method, url);
+        let mut request = self.client.request(method.clone(), url);
 
         // headers
         let mut headers = HeaderMap::new();
@@ -145,9 +150,14 @@ impl HTTPClient {
         request = request.timeout(timeout);
 
         // build
-        request.build().map_err(|e| HTTPErr::ReqwestErr(ReqwestErr {
+        let reqwest = request.build().map_err(|e| HTTPErr::BuildReqwestErr(BuildReqwestErr {
             source: e,
             trace: trace!(),
+        }))?;
+        Ok((reqwest, RequestContext {
+            url: url.to_string(),
+            method,
+            timeout,
         }))
     }
 
@@ -156,7 +166,7 @@ impl HTTPClient {
         url: &str,
         timeout: Duration,
         token: Option<&str>,
-    ) -> Result<reqwest::Request, HTTPErr> {
+    ) -> Result<(reqwest::Request, RequestContext), HTTPErr> {
         self.build_request(reqwest::Method::GET, url, None, timeout, token)
     }
 
@@ -166,7 +176,7 @@ impl HTTPClient {
         body: String,
         timeout: Duration,
         token: Option<&str>,
-    ) -> Result<reqwest::Request, HTTPErr> {
+    ) -> Result<(reqwest::Request, RequestContext), HTTPErr> {
         self.build_request(reqwest::Method::POST, url, Some(body), timeout, token)
     }
 
@@ -202,19 +212,15 @@ impl HTTPClient {
         &self,
         key: RequestKey,
         request: reqwest::Request,
+        context: &RequestContext,
     ) -> Result<(String, IsCacheHit), HTTPErr> {
         let id = Uuid::new_v4();
-        let context = RequestContext {
-            url: request.url().to_string(),
-            method: request.method().clone(),
-            timeout: *request.timeout().unwrap_or(&self.default_timeout),
-        };
 
         let result = self
             .cache
             .try_get_with(key, async move {
-                let response = self.send(request, &context).await?;
-                Ok((self.handle_response(response, &context).await?, id))
+                let response = self.send(request, context).await?;
+                Ok((self.handle_response(response, context).await?, id))
             })
             .await
             .map_err(|e: Arc<HTTPErr>| HTTPErr::CacheErr(CacheErr {
@@ -230,7 +236,7 @@ impl HTTPClient {
     where
         T: Serialize,
     {
-        serde_json::to_string(request).map_err(|e| HTTPErr::ParseJSONErr(ParseJSONErr {
+        serde_json::to_string(request).map_err(|e| HTTPErr::MarshalJSONErr(MarshalJSONErr {
             source: e,
             trace: trace!(),
         }))
@@ -247,7 +253,7 @@ impl HTTPClient {
         if !status.is_success() {
             let error_response = match response.text().await {
                 Ok(text) => self
-                    .parse_json_response_text::<ErrorResponse>(text)
+                    .parse_json_response_text::<ErrorResponse>(text, context)
                     .await
                     .ok(),
                 Err(_) => None,
@@ -267,11 +273,16 @@ impl HTTPClient {
         Ok(text)
     }
 
-    pub(crate) async fn parse_json_response_text<T>(&self, text: String) -> Result<T, HTTPErr>
+    pub(crate) async fn parse_json_response_text<T>(
+        &self,
+        text: String,
+        context: &RequestContext,
+    ) -> Result<T, HTTPErr>
     where
         T: DeserializeOwned,
     {
-        serde_json::from_str::<T>(&text).map_err(|e| HTTPErr::ParseJSONErr(ParseJSONErr {
+        serde_json::from_str::<T>(&text).map_err(|e| HTTPErr::UnmarshalJSONErr(UnmarshalJSONErr {
+            request: context.clone(),
             source: e,
             trace: trace!(),
         }))

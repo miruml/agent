@@ -24,7 +24,7 @@ impl ConfigSchemasExt for HTTPClient {
         // build the request
         let url = format!("{}/config_schemas/hash", self.base_url);
         let key = format!("{}:{}", url, utils::hash_json(&request.schema),);
-        let request = self.build_post_request(
+        let (request, context) = self.build_post_request(
             &url,
             self.marshal_json_request(request)?,
             self.default_timeout,
@@ -32,11 +32,11 @@ impl ConfigSchemasExt for HTTPClient {
         )?;
 
         // send the request
-        let response = self.send_cached(key, request).await?.0;
+        let response = self.send_cached(key, request, &context).await?.0;
 
         // parse the response
         let response = self
-            .parse_json_response_text::<SchemaDigestResponse>(response)
+            .parse_json_response_text::<SchemaDigestResponse>(response, &context)
             .await?;
         Ok(response)
     }

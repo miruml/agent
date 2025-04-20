@@ -32,7 +32,7 @@ impl ConcreteConfigsExt for HTTPClient {
             "{}/latest?config_slug={}&config_schema_digest={}",
             self.base_url, config_slug, config_schema_digest
         );
-        let request = self.build_get_request(
+        let (request, context) = self.build_get_request(
             &url,
             self.default_timeout,
             None,
@@ -42,10 +42,14 @@ impl ConcreteConfigsExt for HTTPClient {
         let response = self.send_cached(
             url,
             request,
+            &context,
         ).await?.0;
         // parse the response
         let cncr_cfg = self
-            .parse_json_response_text::<Option<BackendConcreteConfig>>(response)
+            .parse_json_response_text::<Option<BackendConcreteConfig>>(
+                response,
+                &context,
+            )
             .await?;
         Ok(cncr_cfg)
     }
@@ -60,7 +64,7 @@ impl ConcreteConfigsExt for HTTPClient {
             "{}:{}:{}",
             url, request.config_slug, request.config_schema_digest,
         );
-        let request = self.build_post_request(
+        let (request, context) = self.build_post_request(
             &url,
             self.marshal_json_request(request)?,
             self.default_timeout,
@@ -68,11 +72,15 @@ impl ConcreteConfigsExt for HTTPClient {
         )?;
 
         // send the request
-        let response = self.send_cached(key, request).await?.0;
+        let response = self.send_cached(
+            key,
+            request,
+            &context,
+        ).await?.0;
 
         // parse the response
         let response = self
-            .parse_json_response_text::<BackendConcreteConfig>(response)
+            .parse_json_response_text::<BackendConcreteConfig>(response, &context)
             .await?;
         Ok(response)
     }
