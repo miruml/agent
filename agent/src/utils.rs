@@ -10,5 +10,5 @@ pub fn hash_json(json: &Value) -> String {
 
 pub fn hash_bytes(bytes: &[u8]) -> String {
     let hash = Sha256::digest(bytes);
-    hex::encode(hash)
+    format!("{:x}", hash)
 }

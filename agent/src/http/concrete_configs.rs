@@ -2,8 +2,8 @@
 use std::sync::Arc;
 
 // internal crates
-use crate::http_client::client::HTTPClient;
-use crate::http_client::errors::HTTPErr;
+use crate::http::client::HTTPClient;
+use crate::http::errors::HTTPErr;
 use openapi_client::models::BackendConcreteConfig;
 use openapi_client::models::RefreshLatestConcreteConfigRequest;
 

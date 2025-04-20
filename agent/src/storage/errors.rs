@@ -22,6 +22,10 @@ impl MiruError for CacheElementNotFound {
     fn is_network_connection_error(&self) -> bool {
         false
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 impl fmt::Display for CacheElementNotFound {
@@ -38,15 +42,19 @@ pub struct StorageFileSysErr {
 
 impl MiruError for StorageFileSysErr {
     fn code(&self) -> Code {
-        Code::InternalServerError
+        self.source.code()
     }
 
     fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
+        self.source.http_status()
     }
 
     fn is_network_connection_error(&self) -> bool {
-        false
+        self.source.is_network_connection_error()
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        self.source.params()
     }
 }
 
@@ -75,6 +83,10 @@ impl MiruError for SendActorMessageErr {
     fn is_network_connection_error(&self) -> bool {
         false
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 impl fmt::Display for SendActorMessageErr {
@@ -100,6 +112,10 @@ impl MiruError for ReceiveActorMessageErr {
 
     fn is_network_connection_error(&self) -> bool {
         false
+            }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
     }
 }
 
@@ -150,5 +166,9 @@ impl MiruError for StorageErr {
 
     fn is_network_connection_error(&self) -> bool {
         forward_error_method!(self, is_network_connection_error)
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        forward_error_method!(self, params)
     }
 }

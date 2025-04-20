@@ -2,7 +2,7 @@
 use std::sync::Arc;
 
 // internal crates
-use crate::http_client::client::HTTPClient;
+use crate::http::client::HTTPClient;
 use crate::logs::{init, LogLevel};
 use crate::server::handlers;
 use crate::storage::concrete_configs::ConcreteConfigCache;

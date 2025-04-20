@@ -1,7 +1,7 @@
 // internal crates
-use config_agent::http_client::config_schemas::ConfigSchemasExt;
-use config_agent::http_client::errors::HTTPErr;
-use config_agent::http_client::prelude::*;
+use config_agent::http::config_schemas::ConfigSchemasExt;
+use config_agent::http::errors::HTTPErr;
+use config_agent::http::prelude::*;
 use openapi_client::models::BackendConcreteConfig;
 use openapi_client::models::HashSchemaRequest;
 use openapi_client::models::RefreshLatestConcreteConfigRequest;

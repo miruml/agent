@@ -3,10 +3,11 @@ use std::fmt;
 
 // internal crates
 use crate::errors::{Code, HTTPCode, MiruError, Trace};
-use crate::http_client::errors::HTTPErr;
+use crate::http::errors::HTTPErr;
 use crate::storage::errors::StorageErr;
 
-
+// external crates
+use serde_json::json;
 
 #[derive(Debug)]
 pub struct LatestConcreteConfigNotFound {
@@ -26,6 +27,13 @@ impl MiruError for LatestConcreteConfigNotFound {
 
     fn is_network_connection_error(&self) -> bool {
         false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        Some(json!({
+            "config_slug": self.config_slug,
+            "config_schema_digest": self.config_schema_digest,
+        }))
     }
 }
 
@@ -53,6 +61,10 @@ impl MiruError for ServiceStorageErr {
     fn is_network_connection_error(&self) -> bool {
         self.source.is_network_connection_error()
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        self.source.params()
+    }
 }
 
 impl fmt::Display for ServiceStorageErr {
@@ -78,6 +90,10 @@ impl MiruError for ServiceHTTPErr {
 
     fn is_network_connection_error(&self) -> bool {
         self.source.is_network_connection_error()
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        self.source.params()
     }
 }
 
@@ -125,5 +141,9 @@ impl MiruError for ServiceErr {
 
     fn is_network_connection_error(&self) -> bool {
         forward_error_method!(self, is_network_connection_error)
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        forward_error_method!(self, params)
     }
 }

@@ -1,5 +1,5 @@
 // standard library
-use std::fmt::Debug;
+use std::fmt;
 
 // external crates
 use axum::http::StatusCode;
@@ -13,12 +13,22 @@ pub enum Code {
     ResourceNotFound,
 }
 
+impl Code {
+    pub fn to_string(&self) -> &str {
+        match self {
+            Self::InternalServerError => "internal_server_error",
+            Self::ResourceNotFound => "resource_not_found",
+        }
+    }
+}
+
 pub trait MiruError
 where
-    Self: Debug,
+    Self: fmt::Debug + fmt::Display,
 {
     fn code(&self) -> Code;
     fn http_status(&self) -> HTTPCode;
+    fn params(&self) -> Option<serde_json::Value>;
     fn is_network_connection_error(&self) -> bool;
 }
 

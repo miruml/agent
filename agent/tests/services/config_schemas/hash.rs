@@ -5,8 +5,8 @@ mod tests {
 
     // internal crates
     use config_agent::filesys::dir::Dir;
-    use config_agent::http_client::client::HTTPClient;
-    use config_agent::http_client::errors::{HTTPErr, MockErr};
+    use config_agent::http::client::HTTPClient;
+    use config_agent::http::errors::{HTTPErr, MockErr};
     use config_agent::services::config_schemas::hash;
     use config_agent::services::errors::{ServiceErr, ServiceHTTPErr};
     use config_agent::storage::digests::{ConfigSchemaDigestCache, ConfigSchemaDigests};
@@ -15,7 +15,7 @@ mod tests {
     use openapi_client::models::SchemaDigestResponse;
 
     // test crates
-    use crate::http_client::mock::MockConfigSchemasClient;
+    use crate::http::mock::MockConfigSchemasClient;
 
     // external crates
     use serde_json::json;

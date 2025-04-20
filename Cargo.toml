@@ -16,7 +16,6 @@ atomicwrites = "0.4.4"
 axum = { version = "0.8.3" }
 chrono = { version = "0.4.40", features = ["serde"] }
 futures = "0.3.31"
-hex = "0.4.3"
 moka = { version = "0.12.10", features = ["future"] }
 reqwest = "0.12.9"
 openapi-client = { path = "openapi/client"}

@@ -1,6 +1,6 @@
 // internal crates
 use crate::errors::MiruError;
-use crate::http_client::prelude::*;
+use crate::http::prelude::*;
 use crate::services::concrete_configs::utils;
 use crate::services::errors::{
     ServiceErr,

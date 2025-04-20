@@ -24,6 +24,10 @@ impl MiruError for UnknownHomeDirErr {
     fn is_network_connection_error(&self) -> bool {
         false
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 impl fmt::Display for UnknownHomeDirErr {
@@ -49,6 +53,10 @@ impl MiruError for InvalidDirNameErr {
 
     fn is_network_connection_error(&self) -> bool {
         false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
     }
 }
 
@@ -77,6 +85,10 @@ impl MiruError for UnknownDirNameErr {
     fn is_network_connection_error(&self) -> bool {
         false
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 impl fmt::Display for UnknownDirNameErr {
@@ -103,6 +115,10 @@ impl MiruError for UnknownFileNameErr {
 
     fn is_network_connection_error(&self) -> bool {
         false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
     }
 }
 
@@ -131,6 +147,10 @@ impl MiruError for PathDoesNotExistErr {
     fn is_network_connection_error(&self) -> bool {
         false
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 impl fmt::Display for PathDoesNotExistErr {
@@ -157,6 +177,10 @@ impl MiruError for PathExistsErr {
 
     fn is_network_connection_error(&self) -> bool {
         false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
     }
 }
 
@@ -186,6 +210,10 @@ impl MiruError for InvalidFileOverwriteErr {
     fn is_network_connection_error(&self) -> bool {
         false
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 impl fmt::Display for InvalidFileOverwriteErr {
@@ -213,6 +241,10 @@ impl MiruError for UnknownParentDirForDirErr {
     fn is_network_connection_error(&self) -> bool {
         false
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 impl fmt::Display for UnknownParentDirForDirErr {
@@ -239,6 +271,10 @@ impl MiruError for UnknownParentDirForFileErr {
 
     fn is_network_connection_error(&self) -> bool {
         false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
     }
 }
 
@@ -268,6 +304,10 @@ impl MiruError for ReadDirErr {
     fn is_network_connection_error(&self) -> bool {
         false
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 impl fmt::Display for ReadDirErr {
@@ -296,6 +336,10 @@ impl MiruError for AtomicWriteFileErr {
     fn is_network_connection_error(&self) -> bool {
         false
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 impl fmt::Display for AtomicWriteFileErr {
@@ -322,6 +366,10 @@ impl MiruError for ConvertUTF8Err {
 
     fn is_network_connection_error(&self) -> bool {
         false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
     }
 }
 
@@ -351,6 +399,10 @@ impl MiruError for CopyFileErr {
     fn is_network_connection_error(&self) -> bool {
         false
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 impl fmt::Display for CopyFileErr {
@@ -377,6 +429,10 @@ impl MiruError for CreateDirErr {
 
     fn is_network_connection_error(&self) -> bool {
         false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
     }
 }
 
@@ -406,6 +462,10 @@ impl MiruError for CreateSymlinkErr {
     fn is_network_connection_error(&self) -> bool {
         false
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 impl fmt::Display for CreateSymlinkErr {
@@ -431,6 +491,10 @@ impl MiruError for CreateTmpDirErr {
 
     fn is_network_connection_error(&self) -> bool {
         false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
     }
 }
 
@@ -460,6 +524,10 @@ impl MiruError for DeleteDirErr {
     fn is_network_connection_error(&self) -> bool {
         false
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 impl fmt::Display for DeleteDirErr {
@@ -488,6 +556,10 @@ impl MiruError for DeleteFileErr {
     fn is_network_connection_error(&self) -> bool {
         false
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 impl fmt::Display for DeleteFileErr {
@@ -514,6 +586,10 @@ impl MiruError for FileMetadataErr {
 
     fn is_network_connection_error(&self) -> bool {
         false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
     }
 }
 
@@ -544,6 +620,10 @@ impl MiruError for MoveFileErr {
     fn is_network_connection_error(&self) -> bool {
         false
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 impl fmt::Display for MoveFileErr {
@@ -572,6 +652,10 @@ impl MiruError for OpenFileErr {
     fn is_network_connection_error(&self) -> bool {
         false
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 impl fmt::Display for OpenFileErr {
@@ -598,6 +682,10 @@ impl MiruError for ParseJSONErr {
 
     fn is_network_connection_error(&self) -> bool {
         false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
     }
 }
 
@@ -626,6 +714,10 @@ impl MiruError for ReadFileErr {
     fn is_network_connection_error(&self) -> bool {
         false
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 impl fmt::Display for ReadFileErr {
@@ -653,6 +745,10 @@ impl MiruError for UnknownCurrentDirErr {
     fn is_network_connection_error(&self) -> bool {
         false
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 impl fmt::Display for UnknownCurrentDirErr {
@@ -679,6 +775,10 @@ impl MiruError for WriteFileErr {
 
     fn is_network_connection_error(&self) -> bool {
         false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
     }
 }
 
@@ -771,5 +871,9 @@ impl MiruError for FileSysErr {
 
     fn is_network_connection_error(&self) -> bool {
         forward_error_method!(self, is_network_connection_error)
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        forward_error_method!(self, params)
     }
 }

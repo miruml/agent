@@ -5,7 +5,7 @@ use std::fmt;
 // internal crates
 use crate::env;
 use crate::errors::MiruError;
-use crate::http_client::{
+use crate::http::{
     errors::{reqwest_err_to_http_client_err, HTTPErr},
     errors::{
         CacheErr, 
@@ -271,17 +271,5 @@ impl HTTPClient {
             timeout,
             cache,
         }
-    }
-}
-
-// Testing helper methods
-#[cfg(test)]
-impl HTTPClient {
-    pub fn test_utils_set_base_url(&mut self, url: &str) {
-        self.base_url = url.to_string();
-    }
-
-    pub fn test_utils_get_cache(&mut self) -> &mut Cache<String, (String, Uuid)> {
-        &mut self.cache
     }
 }

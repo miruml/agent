@@ -10,7 +10,6 @@ atomicwrites = { workspace = true }
 axum = { workspace = true }
 chrono = { workspace = true }
 futures = { workspace = true }
-hex = { workspace = true }
 moka = { workspace = true }
 openapi-client = { workspace = true }
 openapi-server = { workspace = true }

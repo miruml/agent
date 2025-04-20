@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 // internal crates
+use crate::errors::MiruError;
 use crate::server::api::AppState;
 use crate::services::concrete_configs::{
     read_latest, read_latest::ReadLatestArgs, refresh_latest, refresh_latest::RefreshLatestArgsI,
@@ -9,6 +10,7 @@ use crate::services::config_schemas::{hash, hash::HashSchemaArgsI};
 use openapi_server::models::HashSchemaRequest;
 use openapi_server::models::RefreshLatestConcreteConfigRequest;
 use openapi_server::models::SchemaDigestResponse;
+use openapi_server::models::{Error, ErrorResponse};
 
 // external
 use axum::{extract::Query, extract::State, http::StatusCode, response::IntoResponse, Json};
@@ -38,8 +40,8 @@ pub async fn hash_schema(
         Err(e) => {
             error!("Error hashing schema: {:?}", e);
             (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Internal server error" })),
+                e.http_status(),
+                Json(json!(to_error_response(e))),
             )
         }
     }
@@ -57,8 +59,8 @@ pub async fn read_latest_concrete_config(
         Err(e) => {
             error!("Error reading latest concrete config: {:?}", e);
             (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Internal server error" })),
+                e.http_status(),
+                Json(json!(to_error_response(e))),
             )
         }
     }
@@ -86,9 +88,20 @@ pub async fn refresh_latest_concrete_config(
         Err(e) => {
             error!("Error refreshing latest concrete config: {:?}", e);
             (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Internal server error" })),
+                e.http_status(),
+                Json(json!(to_error_response(e))),
             )
         }
+    }
+}
+
+fn to_error_response(e: impl MiruError) -> ErrorResponse {
+    ErrorResponse {
+        error: Box::new(Error {
+            code: e.code().to_string().to_string(),
+            params: e.params(),
+            message: e.to_string(),
+            debug_message: format!("{:?}", e),
+        }),
     }
 }

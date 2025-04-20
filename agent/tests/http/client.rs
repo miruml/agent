@@ -6,8 +6,8 @@ mod tests {
 
     // internal crates
     use config_agent::errors::MiruError;
-    use config_agent::http_client::client::{HTTPClient, RequestContext};
-    use config_agent::http_client::errors::HTTPErr;
+    use config_agent::http::client::{HTTPClient, RequestContext};
+    use config_agent::http::errors::HTTPErr;
 
     // external crates
     use futures::future::join_all;

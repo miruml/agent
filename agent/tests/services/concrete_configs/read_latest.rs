@@ -4,7 +4,7 @@ mod tests {
 
     // internal crates
     use config_agent::filesys::dir::Dir;
-    use config_agent::http_client::errors::{HTTPErr, MockErr};
+    use config_agent::http::errors::{HTTPErr, MockErr};
     use config_agent::services::{
         concrete_configs::{
             read_latest,
@@ -23,7 +23,7 @@ mod tests {
     use openapi_client::models::BackendConcreteConfig;
 
     // test crates
-    use crate::http_client::mock::MockConcreteConfigsClient;
+    use crate::http::mock::MockConcreteConfigsClient;
 
     pub mod errors {
         use super::*;

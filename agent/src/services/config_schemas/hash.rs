@@ -1,5 +1,5 @@
 // internal crates
-use crate::http_client::prelude::*;
+use crate::http::prelude::*;
 use crate::services::errors::{
     ServiceErr,
     ServiceHTTPErr,

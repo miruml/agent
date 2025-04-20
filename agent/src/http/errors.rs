@@ -5,7 +5,7 @@ use std::fmt;
 use crate::errors::{MiruError, Code, HTTPCode};
 use crate::errors::Trace;
 use openapi_client::models::ErrorResponse;
-use crate::http_client::client::RequestContext;
+use crate::http::client::RequestContext;
 
 // external crates
 use std::time::Duration;
@@ -33,6 +33,10 @@ impl MiruError for RequestFailed {
 
     fn is_network_connection_error(&self) -> bool {
         false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
     }
 }
 
@@ -74,6 +78,10 @@ impl MiruError for TimeoutErr {
     fn is_network_connection_error(&self) -> bool {
         false
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 impl fmt::Display for TimeoutErr {
@@ -101,6 +109,10 @@ impl MiruError for CacheErr {
     fn is_network_connection_error(&self) -> bool {
         self.is_network_connection_error
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 impl fmt::Display for CacheErr {
@@ -127,6 +139,10 @@ impl MiruError for ConnectionErr {
     fn is_network_connection_error(&self) -> bool {
         true
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 impl fmt::Display for ConnectionErr {
@@ -152,6 +168,10 @@ impl MiruError for DecodeRespBodyErr {
 
     fn is_network_connection_error(&self) -> bool {
         false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
     }
 }
 
@@ -180,6 +200,10 @@ impl MiruError for InvalidHeaderValueErr {
     fn is_network_connection_error(&self) -> bool {
         false
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 impl fmt::Display for InvalidHeaderValueErr {
@@ -205,6 +229,10 @@ impl MiruError for ParseJSONErr {
 
     fn is_network_connection_error(&self) -> bool {
         false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
     }
 }
 
@@ -232,6 +260,10 @@ impl MiruError for ReqwestErr {
     fn is_network_connection_error(&self) -> bool {
         false
     }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 impl fmt::Display for ReqwestErr {
@@ -257,6 +289,10 @@ impl MiruError for MockErr {
 
     fn is_network_connection_error(&self) -> bool {
         self.is_network_connection_error
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
     }
 }
 
@@ -318,6 +354,10 @@ impl MiruError for HTTPErr {
 
     fn is_network_connection_error(&self) -> bool {
         forward_error_method!(self, is_network_connection_error)
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        forward_error_method!(self, params)
     }
 }
 
