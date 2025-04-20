@@ -8,7 +8,6 @@ use openapi_client::models::ErrorResponse;
 use crate::http::client::RequestContext;
 
 // external crates
-use std::time::Duration;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, trace, warn};
 
@@ -62,7 +61,6 @@ impl fmt::Display for RequestFailed {
 pub struct TimeoutErr {
     pub msg: String,
     pub request: RequestContext,
-    pub timeout: Duration,
     pub trace: Box<Trace>,
 }
 
@@ -86,7 +84,7 @@ impl MiruError for TimeoutErr {
 
 impl fmt::Display for TimeoutErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Request {} timed out after {} seconds", self.request, self.timeout.as_secs())
+        write!(f, "Request {} timed out after {} seconds", self.request, self.request.timeout.as_secs())
     }
 }
 
@@ -361,11 +359,21 @@ impl MiruError for HTTPErr {
     }
 }
 
-pub fn reqwest_err_to_http_client_err(e: reqwest::Error, trace: Box<Trace>) -> HTTPErr {
+pub fn reqwest_err_to_http_client_err(
+    e: reqwest::Error,
+    context: &RequestContext,
+    trace: Box<Trace>,
+) -> HTTPErr {
     if e.is_connect() {
         HTTPErr::ConnectionErr(ConnectionErr { source: e, trace })
     } else if e.is_decode() {
         HTTPErr::DecodeRespBodyErr(DecodeRespBodyErr { source: e, trace })
+    } else if e.is_timeout() {
+        HTTPErr::TimeoutErr(TimeoutErr { 
+            msg: e.to_string(), 
+            request: context.clone(), 
+            trace 
+        })
     } else {
         HTTPErr::ReqwestErr(ReqwestErr { source: e, trace })
     }

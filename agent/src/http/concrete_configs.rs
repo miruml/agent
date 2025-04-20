@@ -32,13 +32,16 @@ impl ConcreteConfigsExt for HTTPClient {
             "{}/latest?config_slug={}&config_schema_digest={}",
             self.base_url, config_slug, config_schema_digest
         );
-        let request = self.build_get_request(&url, None)?;
+        let request = self.build_get_request(
+            &url,
+            self.default_timeout,
+            None,
+        )?;
 
         // send the request
         let response = self.send_cached(
             url,
             request,
-            self.timeout,
         ).await?.0;
         // parse the response
         let cncr_cfg = self
@@ -57,10 +60,15 @@ impl ConcreteConfigsExt for HTTPClient {
             "{}:{}:{}",
             url, request.config_slug, request.config_schema_digest,
         );
-        let request = self.build_post_request(&url, self.marshal_json_request(request)?, None)?;
+        let request = self.build_post_request(
+            &url,
+            self.marshal_json_request(request)?,
+            self.default_timeout,
+            None,
+        )?;
 
         // send the request
-        let response = self.send_cached(key, request, self.timeout).await?.0;
+        let response = self.send_cached(key, request).await?.0;
 
         // parse the response
         let response = self

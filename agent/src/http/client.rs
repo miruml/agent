@@ -38,6 +38,7 @@ type IsCacheHit = bool;
 pub struct RequestContext {
     pub url: String,
     pub method: reqwest::Method,
+    pub timeout: Duration,
 }
 
 
@@ -52,7 +53,7 @@ pub struct HTTPClient {
     // allow crate access since this struct is defined throughout the crate
     pub(crate) client: reqwest::Client,
     pub(crate) base_url: String,
-    pub(crate) timeout: Duration,
+    pub(crate) default_timeout: Duration,
     cache: Cache<RequestKey, (Response, RequestID)>,
 }
 
@@ -96,7 +97,7 @@ impl HTTPClient {
         HTTPClient {
             client: client.clone(),
             base_url: base + "/internal/devices/v1",
-            timeout: Duration::from_secs(10),
+            default_timeout: Duration::from_secs(10),
             cache: Cache::builder()
                 .time_to_live(Duration::from_secs(30))
                 .build(),
@@ -122,6 +123,7 @@ impl HTTPClient {
         method: reqwest::Method,
         url: &str,
         body: Option<String>,
+        timeout: Duration,
         token: Option<&str>,
     ) -> Result<reqwest::Request, HTTPErr> {
         // request type (GET, POST, etc.)
@@ -138,6 +140,11 @@ impl HTTPClient {
         if let Some(body) = body {
             request = request.body(body);
         }
+
+        // timeout
+        request = request.timeout(timeout);
+
+        // build
         request.build().map_err(|e| HTTPErr::ReqwestErr(ReqwestErr {
             source: e,
             trace: trace!(),
@@ -147,36 +154,47 @@ impl HTTPClient {
     pub fn build_get_request(
         &self,
         url: &str,
+        timeout: Duration,
         token: Option<&str>,
     ) -> Result<reqwest::Request, HTTPErr> {
-        self.build_request(reqwest::Method::GET, url, None, token)
+        self.build_request(reqwest::Method::GET, url, None, timeout, token)
     }
 
     pub fn build_post_request(
         &self,
         url: &str,
         body: String,
+        timeout: Duration,
         token: Option<&str>,
     ) -> Result<reqwest::Request, HTTPErr> {
-        self.build_request(reqwest::Method::POST, url, Some(body), token)
+        self.build_request(reqwest::Method::POST, url, Some(body), timeout, token)
     }
 
     pub async fn send(
         &self,
         request: reqwest::Request,
-        time_limit: Duration,
         context: &RequestContext,
     ) -> Result<reqwest::Response, HTTPErr> {
+        let time_limit = match request.timeout() {
+            Some(time_limit) => *time_limit,
+            None => self.default_timeout,
+        };
         // request server
-        let response = timeout(time_limit, self.client.execute(request))
-            .await
+        let response = timeout(
+            time_limit,
+            self.client.execute(request),
+        )
+        .await
             .map_err(|e| HTTPErr::TimeoutErr(TimeoutErr {
                 msg: e.to_string(),
                 request: context.clone(),
-                timeout: time_limit,
                 trace: trace!(),
             }))?
-            .map_err(|e| reqwest_err_to_http_client_err(e, trace!()))?;
+            .map_err(|e| reqwest_err_to_http_client_err(
+                e,
+                context,
+                trace!(),
+            ))?;
         Ok(response)
     }
 
@@ -184,18 +202,18 @@ impl HTTPClient {
         &self,
         key: RequestKey,
         request: reqwest::Request,
-        time_limit: Duration,
     ) -> Result<(String, IsCacheHit), HTTPErr> {
         let id = Uuid::new_v4();
         let context = RequestContext {
             url: request.url().to_string(),
             method: request.method().clone(),
+            timeout: *request.timeout().unwrap_or(&self.default_timeout),
         };
 
         let result = self
             .cache
             .try_get_with(key, async move {
-                let response = self.send(request, time_limit, &context).await?;
+                let response = self.send(request, &context).await?;
                 Ok((self.handle_response(response, &context).await?, id))
             })
             .await
@@ -245,7 +263,7 @@ impl HTTPClient {
         let text = response
             .text()
             .await
-            .map_err(|e| reqwest_err_to_http_client_err(e, trace!()))?;
+            .map_err(|e| reqwest_err_to_http_client_err(e, context, trace!()))?;
         Ok(text)
     }
 
@@ -262,13 +280,13 @@ impl HTTPClient {
     #[doc(hidden)]
     pub fn new_with(
         base_url: &str,
-        timeout: Duration,
+        default_timeout: Duration,
         cache: Cache<String, (String, Uuid)>,
     ) -> Self {
         HTTPClient {
             client: reqwest::Client::new(),
             base_url: base_url.to_string(),
-            timeout,
+            default_timeout,
             cache,
         }
     }
