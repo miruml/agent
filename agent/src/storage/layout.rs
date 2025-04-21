@@ -18,7 +18,7 @@ impl StorageLayout {
     }
 
     pub fn default_root_dir() -> Dir {
-        Dir::new(PathBuf::from("var").join("lib").join("miru"))
+        Dir::new(PathBuf::from("/").join("var").join("lib").join("miru"))
     }
 
     pub fn new_default() -> Self {

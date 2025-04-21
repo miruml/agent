@@ -70,7 +70,7 @@ pub fn init(stdout: bool, log_level: LogLevel) -> Result<WorkerGuard, Box<dyn st
     let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
 
     // set logging
-    let env_filter = EnvFilter::new(format!("miru={}", log_level));
+    let env_filter = EnvFilter::new(log_level.to_string());
 
     if stdout {
         let subscriber = fmt()

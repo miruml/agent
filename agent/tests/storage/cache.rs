@@ -8,6 +8,7 @@ mod tests {
     use config_agent::storage::{
         digests::{ConfigSchemaDigestCache, ConfigSchemaDigests},
         errors::StorageErr,
+        layout::StorageLayout,
     };
 
     // external crates
@@ -185,6 +186,28 @@ mod tests {
 
             // reading the digests should return the digests
             let read_digests = cache.read(key.clone()).await.unwrap();
+            assert_eq!(read_digests, digests);
+        }
+
+        #[tokio::test]
+        #[ignore]
+        async fn sandbox() {
+            let layout = StorageLayout::new_default();
+            let dir = layout.config_schema_digest_cache();
+            let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+            let raw_digest = "47d47a5be146128845c5c7889707f65cc7356587662221289eb09aacdf05a7ea";
+            let digests = ConfigSchemaDigests {
+                raw: raw_digest.to_string(),
+                resolved: "resolved-digest".to_string(),
+            };
+
+            cache
+                .write(raw_digest.to_string(), digests.clone(), false)
+                .await
+                .unwrap();
+
+            // reading the digests should return the digests
+            let read_digests = cache.read(raw_digest.to_string()).await.unwrap();
             assert_eq!(read_digests, digests);
         }
     }

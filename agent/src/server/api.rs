@@ -16,7 +16,13 @@ use axum::{
     Json, Router,
 };
 use serde_json::json;
-
+use tower::ServiceBuilder;
+use tower_http::{
+    LatencyUnit,
+    trace::{TraceLayer, DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse},
+};
+use tracing::Level;
+use tracing::info;
 #[derive(Clone)]
 pub struct AppState {
     pub http_client: Arc<HTTPClient>,
@@ -25,7 +31,7 @@ pub struct AppState {
 }
 
 pub async fn server() {
-    let result = init(true, LogLevel::Info);
+    let result = init(true, LogLevel::Debug);
     if let Err(e) = result {
         println!("Failed to initialize logging: {}", e);
     }
@@ -39,6 +45,8 @@ pub async fn server() {
         )),
         concrete_config_cache: Arc::new(ConcreteConfigCache::spawn(layout.concrete_config_cache())),
     });
+
+    info!("Starting server...");
 
     // build the app with the test route
     let app = Router::new()
@@ -54,6 +62,21 @@ pub async fn server() {
         )
         // ============================ CONFIG SCHEMAS ============================== //
         .route("/v1/config_schemas/hash", post(handlers::hash_schema))
+        .layer(ServiceBuilder::new()
+            .layer(TraceLayer::new_for_http()
+                .make_span_with(
+                DefaultMakeSpan::new().include_headers(true)
+            )
+            .on_request(
+                DefaultOnRequest::new().level(Level::INFO)
+            )
+            .on_response(
+                DefaultOnResponse::new()
+                    .level(Level::INFO)
+                    .latency_unit(LatencyUnit::Micros)
+            )
+        )
+        )
         .with_state(shared_state);
 
     // run the server over the unix socket

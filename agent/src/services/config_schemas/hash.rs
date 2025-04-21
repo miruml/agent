@@ -9,6 +9,7 @@ use crate::storage::digests::{ConfigSchemaDigestCache, ConfigSchemaDigests};
 use crate::trace;
 use crate::utils;
 use openapi_client::models::HashSchemaRequest;
+use tracing::debug;
 
 // external crates
 use serde_json::Value;
@@ -34,6 +35,7 @@ pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
 ) -> Result<String, ServiceErr> {
     // raw digest of the schema (but we need the digest of the resolved schema)
     let raw_digest = utils::hash_json(args.schema());
+    debug!("Schema raw digest: {}", raw_digest);
 
     // check for the raw digest in the storage for the known schema digest
     let digests =
