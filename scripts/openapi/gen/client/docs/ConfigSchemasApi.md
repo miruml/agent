@@ -8,6 +8,7 @@ Method | HTTP request | Description
 [**delete_config_schema**](ConfigSchemasApi.md#delete_config_schema) | **DELETE** /config_schemas/{config_schema_id} | Delete a config schema
 [**get_config_schema**](ConfigSchemasApi.md#get_config_schema) | **GET** /config_schemas/{config_schema_id} | Get a config schema
 [**hash_config_schema**](ConfigSchemasApi.md#hash_config_schema) | **POST** /config_schemas/hash | Hash a config schema
+[**hash_config_schema_serialized**](ConfigSchemasApi.md#hash_config_schema_serialized) | **POST** /config_schemas/hash/serialized | Hash a serialized config schema
 [**list_config_schemas**](ConfigSchemasApi.md#list_config_schemas) | **GET** /config_schemas | List the config schemas for a workspace
 [**render_config_schema**](ConfigSchemasApi.md#render_config_schema) | **POST** /config_schemas/{config_schema_id}/render | Render a config schema
 [**update_override_hierarchy**](ConfigSchemasApi.md#update_override_hierarchy) | **PUT** /config_schemas/{config_schema_id}/overrides/hierarchy | Update the hierarchy positions of the overrides for a config schema
@@ -112,6 +113,34 @@ Hash a config schema
 Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
 **hash_schema_request** | [**HashSchemaRequest**](HashSchemaRequest.md) |  | [required] |
+
+### Return type
+
+[**models::SchemaDigestResponse**](SchemaDigestResponse.md)
+
+### Authorization
+
+[ClerkAuth](../README.md#ClerkAuth)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## hash_config_schema_serialized
+
+> models::SchemaDigestResponse hash_config_schema_serialized(hash_schema_serialized_request)
+Hash a serialized config schema
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**hash_schema_serialized_request** | [**HashSchemaSerializedRequest**](HashSchemaSerializedRequest.md) |  | [required] |
 
 ### Return type
 

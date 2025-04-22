@@ -15,19 +15,19 @@ use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
 
-/// struct for typed errors of method [`hash_config_schema`]
+/// struct for typed errors of method [`hash_config_schema_serialized`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum HashConfigSchemaError {
+pub enum HashConfigSchemaSerializedError {
     UnknownValue(serde_json::Value),
 }
 
 
-pub async fn hash_config_schema(configuration: &configuration::Configuration, hash_schema_request: models::HashSchemaRequest) -> Result<models::SchemaDigestResponse, Error<HashConfigSchemaError>> {
+pub async fn hash_config_schema_serialized(configuration: &configuration::Configuration, hash_schema_serialized_request: models::HashSchemaSerializedRequest) -> Result<models::SchemaDigestResponse, Error<HashConfigSchemaSerializedError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_hash_schema_request = hash_schema_request;
+    let p_hash_schema_serialized_request = hash_schema_serialized_request;
 
-    let uri_str = format!("{}/config_schemas/hash", configuration.base_path);
+    let uri_str = format!("{}/config_schemas/hash/serialized", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -36,7 +36,7 @@ pub async fn hash_config_schema(configuration: &configuration::Configuration, ha
     if let Some(ref token) = configuration.bearer_access_token {
         req_builder = req_builder.bearer_auth(token.to_owned());
     };
-    req_builder = req_builder.json(&p_hash_schema_request);
+    req_builder = req_builder.json(&p_hash_schema_serialized_request);
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -58,7 +58,7 @@ pub async fn hash_config_schema(configuration: &configuration::Configuration, ha
         }
     } else {
         let content = resp.text().await?;
-        let entity: Option<HashConfigSchemaError> = serde_json::from_str(&content).ok();
+        let entity: Option<HashConfigSchemaSerializedError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

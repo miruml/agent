@@ -3,7 +3,7 @@ use config_agent::http::config_schemas::ConfigSchemasExt;
 use config_agent::http::errors::HTTPErr;
 use config_agent::http::prelude::*;
 use openapi_client::models::BackendConcreteConfig;
-use openapi_client::models::HashSchemaRequest;
+use openapi_client::models::HashSchemaSerializedRequest;
 use openapi_client::models::RefreshLatestConcreteConfigRequest;
 use openapi_client::models::SchemaDigestResponse;
 
@@ -31,7 +31,7 @@ impl MockConfigSchemasClient {
 impl ConfigSchemasExt for MockConfigSchemasClient {
     async fn hash_schema(
         &self,
-        _request: &HashSchemaRequest,
+        _request: &HashSchemaSerializedRequest,
     ) -> Result<SchemaDigestResponse, HTTPErr> {
         (self.hash_schema_result)()
     }

@@ -42,7 +42,7 @@ mod tests {
         use super::*;
 
         #[tokio::test]
-        async fn post_to_httpbin() {
+        async fn post_to_postman_echo() {
             let http_client = HTTPClient::new().await;
 
             // Create a simple JSON payload
@@ -54,9 +54,9 @@ mod tests {
             let body = serde_json::to_string(&payload).unwrap();
             let request = http_client
                 .build_post_request(
-                    "https://httpbin.org/post", // httpbin.org is commonly used for testing HTTP requests
+                    "https://postman-echo.com/post",
                     body,
-                    Duration::from_secs(1),
+                    Duration::from_secs(10),
                     None,
                 )
                 .unwrap();
@@ -64,6 +64,7 @@ mod tests {
                 .send(request.0, &request.1)
                 .await
                 .unwrap();
+            println!("response: {:?}", response);
             assert!(response.status().is_success());
 
             // Parse and verify the response

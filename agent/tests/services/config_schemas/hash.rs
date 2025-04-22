@@ -13,6 +13,7 @@ mod tests {
     use config_agent::utils;
     use config_agent::trace;
     use openapi_client::models::SchemaDigestResponse;
+    use openapi_server::models::hash_schema_serialized_request::Format;
 
     // test crates
     use crate::http::mock::MockConfigSchemasClient;
@@ -46,8 +47,8 @@ pub mod errors {
             "properties": {
                 "name": { "type": "string" }
             }
-        });
-        let args = hash::HashSchemaArgs { schema };
+        }).to_string();
+        let args = hash::HashSchemaArgs { schema, format: Format::Json };
 
         // run the test
         let result = hash::hash_schema(
@@ -81,10 +82,10 @@ pub mod success {
             "properties": {
                 "name": { "type": "string" }
             }
-        });
-        let raw_digest = utils::hash_json(&schema);
+        }).to_string();
+        let raw_digest = utils::hash_str(&schema);
         let resolved_digest = "resolved_digest";
-        let args = hash::HashSchemaArgs { schema };
+        let args = hash::HashSchemaArgs { schema, format: Format::Json };
 
         // save the digest to the storage
         let digests = ConfigSchemaDigests {
@@ -138,9 +139,9 @@ pub mod success {
             "properties": {
                 "name": { "type": "string" }
             }
-        });
-        let raw_digest = utils::hash_json(&schema);
-        let args = hash::HashSchemaArgs { schema };
+        }).to_string();
+        let raw_digest = utils::hash_str(&schema);
+        let args = hash::HashSchemaArgs { schema, format: Format::Json };
 
         // run the test
         let start = Instant::now();

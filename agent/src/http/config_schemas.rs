@@ -5,25 +5,25 @@ use std::sync::Arc;
 use crate::http::client::HTTPClient;
 use crate::http::errors::HTTPErr;
 use crate::utils;
-use openapi_client::models::HashSchemaRequest;
+use openapi_client::models::hash_schema_serialized_request::HashSchemaSerializedRequest;
 use openapi_client::models::SchemaDigestResponse;
 
 #[allow(async_fn_in_trait)]
 pub trait ConfigSchemasExt: Send + Sync {
     async fn hash_schema(
         &self,
-        request: &HashSchemaRequest,
+        request: &HashSchemaSerializedRequest,
     ) -> Result<SchemaDigestResponse, HTTPErr>;
 }
 
 impl ConfigSchemasExt for HTTPClient {
     async fn hash_schema(
         &self,
-        request: &HashSchemaRequest,
+        request: &HashSchemaSerializedRequest,
     ) -> Result<SchemaDigestResponse, HTTPErr> {
         // build the request
-        let url = format!("{}/config_schemas/hash", self.base_url);
-        let key = format!("{}:{}", url, utils::hash_json(&request.schema),);
+        let url = format!("{}/config_schemas/hash/serialized", self.base_url);
+        let key = format!("{}:{}", url, utils::hash_str(&request.schema));
         let (request, context) = self.build_post_request(
             &url,
             self.marshal_json_request(request)?,
@@ -45,7 +45,7 @@ impl ConfigSchemasExt for HTTPClient {
 impl ConfigSchemasExt for Arc<HTTPClient> {
     async fn hash_schema(
         &self,
-        request: &HashSchemaRequest,
+        request: &HashSchemaSerializedRequest,
     ) -> Result<SchemaDigestResponse, HTTPErr> {
         self.as_ref().hash_schema(request).await
     }

@@ -8,25 +8,33 @@ use crate::services::errors::{
 use crate::storage::digests::{ConfigSchemaDigestCache, ConfigSchemaDigests};
 use crate::trace;
 use crate::utils;
-use openapi_client::models::HashSchemaRequest;
+use openapi_client::models::hash_schema_serialized_request::{
+    HashSchemaSerializedRequest as ClientHashSchemaSerializedRequest,
+    Format as ClientFormat,
+};
+use openapi_server::models::hash_schema_serialized_request::Format as ServerFormat;
 use tracing::debug;
 
-// external crates
-use serde_json::Value;
-
 pub trait HashSchemaArgsI {
-    fn schema(&self) -> &Value;
+    fn schema(&self) -> &str;
+    fn format(&self) -> &ServerFormat;
 }
 
 pub struct HashSchemaArgs {
-    pub schema: Value,
+    pub schema: String,
+    pub format: ServerFormat,
 }
 
 impl HashSchemaArgsI for HashSchemaArgs {
-    fn schema(&self) -> &Value {
+    fn schema(&self) -> &str {
         &self.schema
     }
+
+    fn format(&self) -> &ServerFormat {
+        &self.format
+    }
 }
+
 
 pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
     args: &ArgsT,
@@ -34,7 +42,7 @@ pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
     cache: &ConfigSchemaDigestCache,
 ) -> Result<String, ServiceErr> {
     // raw digest of the schema (but we need the digest of the resolved schema)
-    let raw_digest = utils::hash_json(args.schema());
+    let raw_digest = utils::hash_str(args.schema());
     debug!("Schema raw digest: {}", raw_digest);
 
     // check for the raw digest in the storage for the known schema digest
@@ -52,8 +60,9 @@ pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
     }
 
     // if not found, send the hash request to the server
-    let hash_request = HashSchemaRequest {
-        schema: args.schema().clone(),
+    let hash_request = ClientHashSchemaSerializedRequest {
+        schema: args.schema().to_string(),
+        format: server_format_to_client_format(args.format()),
     };
     let digest_response =
         http_client
@@ -85,4 +94,12 @@ pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
 
     // return the hash
     Ok(resolved_digest)
+}
+
+
+fn server_format_to_client_format(format: &ServerFormat) -> ClientFormat {
+    match format {
+        ServerFormat::Json => ClientFormat::Json,
+        ServerFormat::Yaml => ClientFormat::Yaml,
+    }
 }

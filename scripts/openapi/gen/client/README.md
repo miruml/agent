@@ -45,6 +45,7 @@ Class | Method | HTTP request | Description
 *ConfigSchemasApi* | [**delete_config_schema**](docs/ConfigSchemasApi.md#delete_config_schema) | **DELETE** /config_schemas/{config_schema_id} | Delete a config schema
 *ConfigSchemasApi* | [**get_config_schema**](docs/ConfigSchemasApi.md#get_config_schema) | **GET** /config_schemas/{config_schema_id} | Get a config schema
 *ConfigSchemasApi* | [**hash_config_schema**](docs/ConfigSchemasApi.md#hash_config_schema) | **POST** /config_schemas/hash | Hash a config schema
+*ConfigSchemasApi* | [**hash_config_schema_serialized**](docs/ConfigSchemasApi.md#hash_config_schema_serialized) | **POST** /config_schemas/hash/serialized | Hash a serialized config schema
 *ConfigSchemasApi* | [**list_config_schemas**](docs/ConfigSchemasApi.md#list_config_schemas) | **GET** /config_schemas | List the config schemas for a workspace
 *ConfigSchemasApi* | [**render_config_schema**](docs/ConfigSchemasApi.md#render_config_schema) | **POST** /config_schemas/{config_schema_id}/render | Render a config schema
 *ConfigSchemasApi* | [**update_override_hierarchy**](docs/ConfigSchemasApi.md#update_override_hierarchy) | **PUT** /config_schemas/{config_schema_id}/overrides/hierarchy | Update the hierarchy positions of the overrides for a config schema
@@ -241,6 +242,7 @@ Class | Method | HTTP request | Description
  - [GroupDeviceList](docs/GroupDeviceList.md)
  - [HardwareType](docs/HardwareType.md)
  - [HashSchemaRequest](docs/HashSchemaRequest.md)
+ - [HashSchemaSerializedRequest](docs/HashSchemaSerializedRequest.md)
  - [Image](docs/Image.md)
  - [ImageList](docs/ImageList.md)
  - [InvalidComposeFile](docs/InvalidComposeFile.md)

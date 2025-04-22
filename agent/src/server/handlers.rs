@@ -7,7 +7,9 @@ use crate::services::concrete_configs::{
     read_latest, read_latest::ReadLatestArgs, refresh_latest, refresh_latest::RefreshLatestArgsI,
 };
 use crate::services::config_schemas::{hash, hash::HashSchemaArgsI};
-use openapi_server::models::HashSchemaRequest;
+use openapi_server::models::hash_schema_serialized_request::{
+    HashSchemaSerializedRequest, Format,
+};
 use openapi_server::models::RefreshLatestConcreteConfigRequest;
 use openapi_server::models::SchemaDigestResponse;
 use openapi_server::models::{Error, ErrorResponse};
@@ -15,18 +17,20 @@ use openapi_server::models::{Error, ErrorResponse};
 // external
 use axum::{extract::Query, extract::State, http::StatusCode, response::IntoResponse, Json};
 use serde_json::json;
-use serde_json::Value;
 use tracing::error;
 
-impl HashSchemaArgsI for HashSchemaRequest {
-    fn schema(&self) -> &Value {
+impl HashSchemaArgsI for HashSchemaSerializedRequest {
+    fn schema(&self) -> &str {
         &self.schema
+    }
+    fn format(&self) -> &Format {
+        &self.format
     }
 }
 
 pub async fn hash_schema(
     State(state): State<Arc<AppState>>,
-    Json(payload): Json<HashSchemaRequest>,
+    Json(payload): Json<HashSchemaSerializedRequest>,
 ) -> impl IntoResponse {
     let result = hash::hash_schema(
         &payload,

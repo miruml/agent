@@ -234,6 +234,8 @@ pub mod hardware_type;
 pub use self::hardware_type::HardwareType;
 pub mod hash_schema_request;
 pub use self::hash_schema_request::HashSchemaRequest;
+pub mod hash_schema_serialized_request;
+pub use self::hash_schema_serialized_request::HashSchemaSerializedRequest;
 pub mod image;
 pub use self::image::Image;
 pub mod image_list;

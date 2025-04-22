@@ -136,6 +136,7 @@ docs/GroupDeviceList.md
 docs/GroupsApi.md
 docs/HardwareType.md
 docs/HashSchemaRequest.md
+docs/HashSchemaSerializedRequest.md
 docs/Image.md
 docs/ImageList.md
 docs/ImagesApi.md
@@ -374,6 +375,7 @@ src/models/group_device.rs
 src/models/group_device_list.rs
 src/models/hardware_type.rs
 src/models/hash_schema_request.rs
+src/models/hash_schema_serialized_request.rs
 src/models/image.rs
 src/models/image_list.rs
 src/models/invalid_compose_file.rs

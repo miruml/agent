@@ -28,7 +28,7 @@ Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
 *ConcreteConfigsApi* | [**get_latest_concrete_config**](docs/ConcreteConfigsApi.md#get_latest_concrete_config) | **GET** /concrete_configs/latest | Get the latest concrete config
 *ConcreteConfigsApi* | [**refresh_latest_concrete_config**](docs/ConcreteConfigsApi.md#refresh_latest_concrete_config) | **POST** /concrete_configs/refresh_latest | Render the latest concrete config for a client
-*ConfigSchemasApi* | [**hash_config_schema**](docs/ConfigSchemasApi.md#hash_config_schema) | **POST** /config_schemas/hash | Hash a config schema
+*ConfigSchemasApi* | [**hash_config_schema_serialized**](docs/ConfigSchemasApi.md#hash_config_schema_serialized) | **POST** /config_schemas/hash/serialized | Hash a serialized config schema
 *ErrorsApi* | [**get_error**](docs/ErrorsApi.md#get_error) | **GET** /example-error | Get an error
 
 
@@ -37,7 +37,7 @@ Class | Method | HTTP request | Description
  - [BaseConcreteConfig](docs/BaseConcreteConfig.md)
  - [Error](docs/Error.md)
  - [ErrorResponse](docs/ErrorResponse.md)
- - [HashSchemaRequest](docs/HashSchemaRequest.md)
+ - [HashSchemaSerializedRequest](docs/HashSchemaSerializedRequest.md)
  - [RefreshLatestConcreteConfigRequest](docs/RefreshLatestConcreteConfigRequest.md)
  - [SchemaDigestResponse](docs/SchemaDigestResponse.md)
 
