@@ -8,11 +8,11 @@ use crate::services::errors::{
 use crate::storage::digests::{ConfigSchemaDigestCache, ConfigSchemaDigests};
 use crate::trace;
 use crate::utils;
-use openapi_client::models::hash_schema_serialized_request::{
+use openapi_client::models::{
     HashSchemaSerializedRequest as ClientHashSchemaSerializedRequest,
-    Format as ClientFormat,
+    HashSerializedConfigSchemaFormat as ClientFormat,
 };
-use openapi_server::models::hash_schema_serialized_request::Format as ServerFormat;
+use openapi_server::models::HashSerializedConfigSchemaFormat as ServerFormat;
 use tracing::debug;
 
 pub trait HashSchemaArgsI {
@@ -99,7 +99,7 @@ pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
 
 fn server_format_to_client_format(format: &ServerFormat) -> ClientFormat {
     match format {
-        ServerFormat::Json => ClientFormat::Json,
-        ServerFormat::Yaml => ClientFormat::Yaml,
+        ServerFormat::HASH_SERIALIZED_CONFIG_SCHEMA_FORMAT_JSON => ClientFormat::HASH_SERIALIZED_CONFIG_SCHEMA_FORMAT_JSON,
+        ServerFormat::HASH_SERIALIZED_CONFIG_SCHEMA_FORMAT_YAML => ClientFormat::HASH_SERIALIZED_CONFIG_SCHEMA_FORMAT_YAML,
     }
 }

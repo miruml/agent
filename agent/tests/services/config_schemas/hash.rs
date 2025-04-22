@@ -13,7 +13,7 @@ mod tests {
     use config_agent::utils;
     use config_agent::trace;
     use openapi_client::models::SchemaDigestResponse;
-    use openapi_server::models::hash_schema_serialized_request::Format;
+    use openapi_server::models::HashSerializedConfigSchemaFormat;
 
     // test crates
     use crate::http::mock::MockConfigSchemasClient;
@@ -48,7 +48,7 @@ pub mod errors {
                 "name": { "type": "string" }
             }
         }).to_string();
-        let args = hash::HashSchemaArgs { schema, format: Format::Json };
+        let args = hash::HashSchemaArgs { schema, format: HashSerializedConfigSchemaFormat::HASH_SERIALIZED_CONFIG_SCHEMA_FORMAT_JSON };
 
         // run the test
         let result = hash::hash_schema(
@@ -85,7 +85,7 @@ pub mod success {
         }).to_string();
         let raw_digest = utils::hash_str(&schema);
         let resolved_digest = "resolved_digest";
-        let args = hash::HashSchemaArgs { schema, format: Format::Json };
+        let args = hash::HashSchemaArgs { schema, format: HashSerializedConfigSchemaFormat::HASH_SERIALIZED_CONFIG_SCHEMA_FORMAT_JSON };
 
         // save the digest to the storage
         let digests = ConfigSchemaDigests {
@@ -141,7 +141,7 @@ pub mod success {
             }
         }).to_string();
         let raw_digest = utils::hash_str(&schema);
-        let args = hash::HashSchemaArgs { schema, format: Format::Json };
+        let args = hash::HashSchemaArgs { schema, format: HashSerializedConfigSchemaFormat::HASH_SERIALIZED_CONFIG_SCHEMA_FORMAT_JSON };
 
         // run the test
         let start = Instant::now();

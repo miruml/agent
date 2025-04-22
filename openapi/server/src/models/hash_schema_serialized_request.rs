@@ -14,31 +14,17 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct HashSchemaSerializedRequest {
     #[serde(rename = "format")]
-    pub format: Format,
+    pub format: models::HashSerializedConfigSchemaFormat,
     #[serde(rename = "schema")]
     pub schema: String,
 }
 
 impl HashSchemaSerializedRequest {
-    pub fn new(format: Format, schema: String) -> HashSchemaSerializedRequest {
+    pub fn new(format: models::HashSerializedConfigSchemaFormat, schema: String) -> HashSchemaSerializedRequest {
         HashSchemaSerializedRequest {
             format,
             schema,
         }
-    }
-}
-/// 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
-pub enum Format {
-    #[serde(rename = "json")]
-    Json,
-    #[serde(rename = "yaml")]
-    Yaml,
-}
-
-impl Default for Format {
-    fn default() -> Format {
-        Self::Json
     }
 }
 

@@ -236,6 +236,8 @@ pub mod hash_schema_request;
 pub use self::hash_schema_request::HashSchemaRequest;
 pub mod hash_schema_serialized_request;
 pub use self::hash_schema_serialized_request::HashSchemaSerializedRequest;
+pub mod hash_serialized_config_schema_format;
+pub use self::hash_serialized_config_schema_format::HashSerializedConfigSchemaFormat;
 pub mod image;
 pub use self::image::Image;
 pub mod image_list;

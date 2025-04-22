@@ -243,6 +243,7 @@ Class | Method | HTTP request | Description
  - [HardwareType](docs/HardwareType.md)
  - [HashSchemaRequest](docs/HashSchemaRequest.md)
  - [HashSchemaSerializedRequest](docs/HashSchemaSerializedRequest.md)
+ - [HashSerializedConfigSchemaFormat](docs/HashSerializedConfigSchemaFormat.md)
  - [Image](docs/Image.md)
  - [ImageList](docs/ImageList.md)
  - [InvalidComposeFile](docs/InvalidComposeFile.md)

@@ -38,6 +38,7 @@ Class | Method | HTTP request | Description
  - [Error](docs/Error.md)
  - [ErrorResponse](docs/ErrorResponse.md)
  - [HashSchemaSerializedRequest](docs/HashSchemaSerializedRequest.md)
+ - [HashSerializedConfigSchemaFormat](docs/HashSerializedConfigSchemaFormat.md)
  - [RefreshLatestConcreteConfigRequest](docs/RefreshLatestConcreteConfigRequest.md)
  - [SchemaDigestResponse](docs/SchemaDigestResponse.md)
 

@@ -10,6 +10,7 @@ docs/Error.md
 docs/ErrorResponse.md
 docs/ErrorsApi.md
 docs/HashSchemaSerializedRequest.md
+docs/HashSerializedConfigSchemaFormat.md
 docs/RefreshLatestConcreteConfigRequest.md
 docs/SchemaDigestResponse.md
 git_push.sh
@@ -23,6 +24,7 @@ src/models/base_concrete_config.rs
 src/models/error.rs
 src/models/error_response.rs
 src/models/hash_schema_serialized_request.rs
+src/models/hash_serialized_config_schema_format.rs
 src/models/mod.rs
 src/models/refresh_latest_concrete_config_request.rs
 src/models/schema_digest_response.rs

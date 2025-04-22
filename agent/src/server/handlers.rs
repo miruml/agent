@@ -7,8 +7,8 @@ use crate::services::concrete_configs::{
     read_latest, read_latest::ReadLatestArgs, refresh_latest, refresh_latest::RefreshLatestArgsI,
 };
 use crate::services::config_schemas::{hash, hash::HashSchemaArgsI};
-use openapi_server::models::hash_schema_serialized_request::{
-    HashSchemaSerializedRequest, Format,
+use openapi_server::models::{
+    HashSchemaSerializedRequest, HashSerializedConfigSchemaFormat,
 };
 use openapi_server::models::RefreshLatestConcreteConfigRequest;
 use openapi_server::models::SchemaDigestResponse;
@@ -23,7 +23,7 @@ impl HashSchemaArgsI for HashSchemaSerializedRequest {
     fn schema(&self) -> &str {
         &self.schema
     }
-    fn format(&self) -> &Format {
+    fn format(&self) -> &HashSerializedConfigSchemaFormat {
         &self.format
     }
 }
