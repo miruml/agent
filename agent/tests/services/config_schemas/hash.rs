@@ -4,13 +4,13 @@ mod tests {
     use std::time::{Duration, Instant};
 
     // internal crates
+    use config_agent::crypt::sha256;
     use config_agent::filesys::dir::Dir;
     use config_agent::http::client::HTTPClient;
     use config_agent::http::errors::{HTTPErr, MockErr};
     use config_agent::services::config_schemas::hash;
     use config_agent::services::errors::{ServiceErr, ServiceHTTPErr};
     use config_agent::storage::digests::{ConfigSchemaDigestCache, ConfigSchemaDigests};
-    use config_agent::utils;
     use config_agent::trace;
     use openapi_client::models::SchemaDigestResponse;
     use openapi_server::models::HashSerializedConfigSchemaFormat;
@@ -83,7 +83,7 @@ pub mod success {
                 "name": { "type": "string" }
             }
         }).to_string();
-        let raw_digest = utils::hash_str(&schema);
+        let raw_digest = sha256::hash_str(&schema);
         let resolved_digest = "resolved_digest";
         let args = hash::HashSchemaArgs { schema, format: HashSerializedConfigSchemaFormat::HASH_SERIALIZED_CONFIG_SCHEMA_FORMAT_JSON };
 
@@ -140,7 +140,7 @@ pub mod success {
                 "name": { "type": "string" }
             }
         }).to_string();
-        let raw_digest = utils::hash_str(&schema);
+        let raw_digest = sha256::hash_str(&schema);
         let args = hash::HashSchemaArgs { schema, format: HashSerializedConfigSchemaFormat::HASH_SERIALIZED_CONFIG_SCHEMA_FORMAT_JSON };
 
         // run the test

@@ -4,7 +4,7 @@ use std::sync::Arc;
 // internal crates
 use crate::http::client::HTTPClient;
 use crate::http::errors::HTTPErr;
-use crate::utils;
+use crate::crypt::sha256;
 use openapi_client::models::hash_schema_serialized_request::HashSchemaSerializedRequest;
 use openapi_client::models::SchemaDigestResponse;
 
@@ -23,7 +23,7 @@ impl ConfigSchemasExt for HTTPClient {
     ) -> Result<SchemaDigestResponse, HTTPErr> {
         // build the request
         let url = format!("{}/config_schemas/hash/serialized", self.base_url);
-        let key = format!("{}:{}", url, utils::hash_str(&request.schema));
+        let key = format!("{}:{}", url, sha256::hash_str(&request.schema));
         let (request, context) = self.build_post_request(
             &url,
             self.marshal_json_request(request)?,

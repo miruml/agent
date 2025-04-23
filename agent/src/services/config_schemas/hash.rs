@@ -7,7 +7,7 @@ use crate::services::errors::{
 };
 use crate::storage::digests::{ConfigSchemaDigestCache, ConfigSchemaDigests};
 use crate::trace;
-use crate::utils;
+use crate::crypt::sha256;
 use openapi_client::models::{
     HashSchemaSerializedRequest as ClientHashSchemaSerializedRequest,
     HashSerializedConfigSchemaFormat as ClientFormat,
@@ -42,7 +42,7 @@ pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
     cache: &ConfigSchemaDigestCache,
 ) -> Result<String, ServiceErr> {
     // raw digest of the schema (but we need the digest of the resolved schema)
-    let raw_digest = utils::hash_str(args.schema());
+    let raw_digest = sha256::hash_str(args.schema());
     debug!("Schema raw digest: {}", raw_digest);
 
     // check for the raw digest in the storage for the known schema digest

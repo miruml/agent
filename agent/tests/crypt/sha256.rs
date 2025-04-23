@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     // internal crates
-    use config_agent::utils::{hash_bytes, hash_json, hash_str};
+    use config_agent::crypt::sha256::{hash_bytes, hash_json, hash_str};
     use serde_json::json;
     // external crates
     #[allow(unused_imports)]

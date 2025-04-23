@@ -1,0 +1,80 @@
+// internal crates
+use crate::crypt::base64;
+use crate::crypt::errors::{
+    CryptErr,
+    InvalidJWTErr,
+    InvalidJWTPayloadFormatErr,
+};
+use crate::trace;
+// external crates
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct Claims {
+    pub sub: String,
+    pub iss: String,
+    pub aud: String,
+    pub exp: i64,
+    pub iat: i64,
+}
+
+/// Decode a Miru JWT payload without verification
+pub fn decode_miru_jwt_payload(token: &str) -> Result<Claims, CryptErr> {
+    let parts: Vec<&str> = token.split('.').collect();
+    if parts.len() != 3 {
+        return Err(CryptErr::InvalidJWTErr(InvalidJWTErr {
+            msg: "Invalid JWT format".to_string(),
+            trace: trace!(),
+        }));
+    }
+
+    let payload = base64::decode_string_url_safe_no_pad(parts[1])?;
+    let claims: Claims =
+        serde_json::from_str(&payload).map_err(|e| CryptErr::InvalidJWTPayloadErr(InvalidJWTPayloadFormatErr {
+            msg: e.to_string(),
+            trace: trace!(),
+        }))?;
+
+    Ok(claims)
+}
+
+/// Validate a claim's payload for a Miru JWT and returns the device id
+pub fn validate_miru_device_claims(claim: Claims) -> Result<String, CryptErr> {
+    if claim.iss != "miru" {
+        return Err(CryptErr::InvalidJWTErr(InvalidJWTErr {
+            msg: "Invalid issuer".to_string(),
+            trace: trace!(),
+        }));
+    }
+
+    if claim.aud != "client" {
+        return Err(CryptErr::InvalidJWTErr(InvalidJWTErr {
+            msg: "Invalid audience".to_string(),
+            trace: trace!(),
+        }));
+    }
+
+    // grant a 15 second tolerance for the issued at time (iat) field
+    let iat_tol = 15;
+    if claim.iat > chrono::Utc::now().timestamp() + iat_tol {
+        return Err(CryptErr::InvalidJWTErr(InvalidJWTErr {
+            msg: "Issued at time is in the future".to_string(),
+            trace: trace!(),
+        }));
+    }
+
+    if claim.exp < chrono::Utc::now().timestamp() {
+        return Err(CryptErr::InvalidJWTErr(InvalidJWTErr {
+            msg: "Expiration time is in the past".to_string(),
+            trace: trace!(),
+        }));
+    }
+
+    Ok(claim.sub)
+}
+
+/// Decode a Miru JWT payload and validate the claims. The "sub" field is the device
+pub fn validate_miru_jwt_format(token: &str) -> Result<String, CryptErr> {
+    let claims = decode_miru_jwt_payload(token)?;
+    validate_miru_device_claims(claims)
+}

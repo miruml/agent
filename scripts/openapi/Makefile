@@ -1,6 +1,6 @@
 # Common variables
 OPENAPI_DIR := ../../../openapi
-OPENAPI_AGENT_DIR := $(OPENAPI_DIR)/configs/agent
+OPENAPI_AGENT_DIR := $(OPENAPI_DIR)/configs/agent-server
 OPENAPI_FRONTEND_DIR := $(OPENAPI_DIR)/all/frontend
 
 # Agent API variables
