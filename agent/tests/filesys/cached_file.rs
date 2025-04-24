@@ -2,7 +2,7 @@
 mod tests {
 
     // internal crates
-    use config_agent::auth::token::Token;
+    use config_agent::storage::token::Token;
     use config_agent::filesys::{
         cached_file::CachedFile,
         dir::Dir,

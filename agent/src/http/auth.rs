@@ -1,4 +1,3 @@
-
 // internal crates
 use crate::http::errors::HTTPErr;
 use crate::http::client::HTTPClient;
@@ -9,7 +8,10 @@ use openapi_client::models::{
     Client,
 };
 
-#[allow(async_fn_in_trait)]
+// external crates
+use async_trait::async_trait;
+
+#[async_trait]
 pub trait ClientAuthExt: Send + Sync {
     async fn activate_client(
         &self,
@@ -34,6 +36,7 @@ impl HTTPClient {
     }
 }
 
+#[async_trait]
 impl ClientAuthExt for HTTPClient {
     async fn activate_client(
         &self,

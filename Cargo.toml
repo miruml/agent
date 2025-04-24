@@ -12,6 +12,7 @@ version = "0.1.0"
 git_commit = "arglebargle"
 
 [workspace.dependencies]
+async-trait = "0.1.88"
 atomicwrites = "0.4.4"
 axum = { version = "0.8.3" }
 base64 = "0.22.1"

@@ -6,6 +6,7 @@ rust-version = { workspace = true }
 include = ["src/**/*"]
 
 [dependencies]
+async-trait = { workspace = true }
 atomicwrites = { workspace = true }
 axum = { workspace = true }
 base64 = { workspace = true }
