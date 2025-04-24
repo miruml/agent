@@ -1,5 +1,6 @@
 // internal
-use config_agent::server::api::{server, init_state};
+use config_agent::server::api::server;
+use config_agent::server::state::init_state;
 use config_agent::logs::{init, LogLevel};
 use config_agent::storage::layout::StorageLayout;
 

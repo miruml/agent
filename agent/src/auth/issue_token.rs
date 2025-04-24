@@ -12,7 +12,7 @@ use crate::filesys::file::File;
 use crate::trace;
 
 // external crates
-use chrono::{DateTime, Utc, Duration};
+use chrono::{Utc, Duration};
 use serde::Serialize;
 use uuid::Uuid;
 

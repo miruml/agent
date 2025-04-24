@@ -8,6 +8,7 @@ use crate::filesys::{
 // external crates
 use serde::{de::DeserializeOwned, Serialize};
 
+#[derive(Debug)]
 pub struct CachedFile<T>
 where
     T: Serialize + DeserializeOwned,
