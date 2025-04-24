@@ -5,7 +5,6 @@ this_files_dir=$(pwd)
 openapi_dir=../../../openapi
 openapi_dir=$(realpath $openapi_dir)
 openapi_configs_dir=$openapi_dir/configs
-openapi_all_dir=$openapi_dir/all
 agent_dir=../../
 agent_dir=$(realpath $agent_dir)
 git_info_file=$agent_dir/scripts/openapi/git-info.txt
@@ -13,11 +12,7 @@ gen_dir=./gen
 
 cd $openapi_configs_dir
 pwd
-make bundle-agent
-
-cd $openapi_all_dir
-pwd
-make bundle-frontend
+make bundle-all
 
 # Check for any changes (staged, unstaged, or untracked)
 echo ""

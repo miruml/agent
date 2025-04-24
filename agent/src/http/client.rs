@@ -232,11 +232,11 @@ impl HTTPClient {
         Ok((result.0, is_cache_hit))
     }
 
-    pub fn marshal_json_request<T>(&self, request: &T) -> Result<String, HTTPErr>
+    pub fn marshal_json_payload<T>(&self, payload: &T) -> Result<String, HTTPErr>
     where
         T: Serialize,
     {
-        serde_json::to_string(request).map_err(|e| HTTPErr::MarshalJSONErr(MarshalJSONErr {
+        serde_json::to_string(payload).map_err(|e| HTTPErr::MarshalJSONErr(MarshalJSONErr {
             source: e,
             trace: trace!(),
         }))

@@ -15,64 +15,36 @@ use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
 
-/// struct for typed errors of method [`create_client`]
+/// struct for typed errors of method [`activate_client`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum CreateClientError {
+pub enum ActivateClientError {
     UnknownValue(serde_json::Value),
 }
 
-/// struct for typed errors of method [`delete_client`]
+/// struct for typed errors of method [`issue_client_token`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum DeleteClientError {
-    UnknownValue(serde_json::Value),
-}
-
-/// struct for typed errors of method [`get_client`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum GetClientError {
-    UnknownValue(serde_json::Value),
-}
-
-/// struct for typed errors of method [`list_clients`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum ListClientsError {
-    UnknownValue(serde_json::Value),
-}
-
-/// struct for typed errors of method [`update_client`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum UpdateClientError {
+pub enum IssueClientTokenError {
     UnknownValue(serde_json::Value),
 }
 
 
-pub async fn create_client(configuration: &configuration::Configuration, workspace_id: &str, create_client_request: models::CreateClientRequest, expand_left_square_bracket_right_square_bracket: Option<Vec<models::ClientExpand>>) -> Result<models::Client, Error<CreateClientError>> {
+pub async fn activate_client(configuration: &configuration::Configuration, client_id: &str, activate_client_request: Option<models::ActivateClientRequest>) -> Result<models::Client, Error<ActivateClientError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_workspace_id = workspace_id;
-    let p_create_client_request = create_client_request;
-    let p_expand_left_square_bracket_right_square_bracket = expand_left_square_bracket_right_square_bracket;
+    let p_client_id = client_id;
+    let p_activate_client_request = activate_client_request;
 
-    let uri_str = format!("{}/clients", configuration.base_path, workspace_id=crate::apis::urlencode(p_workspace_id));
+    let uri_str = format!("{}/clients/{client_id}/activate", configuration.base_path, client_id=crate::apis::urlencode(p_client_id));
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
 
-    if let Some(ref param_value) = p_expand_left_square_bracket_right_square_bracket {
-        req_builder = match "multi" {
-            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand[]".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
-            _ => req_builder.query(&[("expand[]", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
-        };
-    }
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
     }
     if let Some(ref token) = configuration.bearer_access_token {
         req_builder = req_builder.bearer_auth(token.to_owned());
     };
-    req_builder = req_builder.json(&p_create_client_request);
+    req_builder = req_builder.json(&p_activate_client_request);
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -94,31 +66,26 @@ pub async fn create_client(configuration: &configuration::Configuration, workspa
         }
     } else {
         let content = resp.text().await?;
-        let entity: Option<CreateClientError> = serde_json::from_str(&content).ok();
+        let entity: Option<ActivateClientError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }
 
-pub async fn delete_client(configuration: &configuration::Configuration, client_id: &str, expand_left_square_bracket_right_square_bracket: Option<Vec<models::ClientExpand>>) -> Result<models::Client, Error<DeleteClientError>> {
+pub async fn issue_client_token(configuration: &configuration::Configuration, client_id: &str, issue_client_token_request: Option<models::IssueClientTokenRequest>) -> Result<models::IssueClientTokenResponse, Error<IssueClientTokenError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_client_id = client_id;
-    let p_expand_left_square_bracket_right_square_bracket = expand_left_square_bracket_right_square_bracket;
+    let p_issue_client_token_request = issue_client_token_request;
 
-    let uri_str = format!("{}/clients/{client_id}", configuration.base_path, client_id=crate::apis::urlencode(p_client_id));
-    let mut req_builder = configuration.client.request(reqwest::Method::DELETE, &uri_str);
+    let uri_str = format!("{}/clients/{client_id}/issue_token", configuration.base_path, client_id=crate::apis::urlencode(p_client_id));
+    let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
 
-    if let Some(ref param_value) = p_expand_left_square_bracket_right_square_bracket {
-        req_builder = match "multi" {
-            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand[]".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
-            _ => req_builder.query(&[("expand[]", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
-        };
-    }
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
     }
     if let Some(ref token) = configuration.bearer_access_token {
         req_builder = req_builder.bearer_auth(token.to_owned());
     };
+    req_builder = req_builder.json(&p_issue_client_token_request);
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -135,173 +102,12 @@ pub async fn delete_client(configuration: &configuration::Configuration, client_
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::Client`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::Client`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::IssueClientTokenResponse`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::IssueClientTokenResponse`")))),
         }
     } else {
         let content = resp.text().await?;
-        let entity: Option<DeleteClientError> = serde_json::from_str(&content).ok();
-        Err(Error::ResponseError(ResponseContent { status, content, entity }))
-    }
-}
-
-pub async fn get_client(configuration: &configuration::Configuration, client_id: &str, expand_left_square_bracket_right_square_bracket: Option<Vec<models::ClientExpand>>) -> Result<models::Client, Error<GetClientError>> {
-    // add a prefix to parameters to efficiently prevent name collisions
-    let p_client_id = client_id;
-    let p_expand_left_square_bracket_right_square_bracket = expand_left_square_bracket_right_square_bracket;
-
-    let uri_str = format!("{}/clients/{client_id}", configuration.base_path, client_id=crate::apis::urlencode(p_client_id));
-    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
-
-    if let Some(ref param_value) = p_expand_left_square_bracket_right_square_bracket {
-        req_builder = match "multi" {
-            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand[]".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
-            _ => req_builder.query(&[("expand[]", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
-        };
-    }
-    if let Some(ref user_agent) = configuration.user_agent {
-        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
-    }
-    if let Some(ref token) = configuration.bearer_access_token {
-        req_builder = req_builder.bearer_auth(token.to_owned());
-    };
-
-    let req = req_builder.build()?;
-    let resp = configuration.client.execute(req).await?;
-
-    let status = resp.status();
-    let content_type = resp
-        .headers()
-        .get("content-type")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("application/octet-stream");
-    let content_type = super::ContentType::from(content_type);
-
-    if !status.is_client_error() && !status.is_server_error() {
-        let content = resp.text().await?;
-        match content_type {
-            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::Client`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::Client`")))),
-        }
-    } else {
-        let content = resp.text().await?;
-        let entity: Option<GetClientError> = serde_json::from_str(&content).ok();
-        Err(Error::ResponseError(ResponseContent { status, content, entity }))
-    }
-}
-
-pub async fn list_clients(configuration: &configuration::Configuration, offset: Option<i32>, limit: Option<i32>, order_by: Option<Vec<models::ClientOrderBy>>, expand_left_square_bracket_right_square_bracket: Option<Vec<models::ClientExpand>>, search: Option<Vec<models::ClientSearch>>) -> Result<models::ClientList, Error<ListClientsError>> {
-    // add a prefix to parameters to efficiently prevent name collisions
-    let p_offset = offset;
-    let p_limit = limit;
-    let p_order_by = order_by;
-    let p_expand_left_square_bracket_right_square_bracket = expand_left_square_bracket_right_square_bracket;
-    let p_search = search;
-
-    let uri_str = format!("{}/clients", configuration.base_path);
-    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
-
-    if let Some(ref param_value) = p_offset {
-        req_builder = req_builder.query(&[("offset", &param_value.to_string())]);
-    }
-    if let Some(ref param_value) = p_limit {
-        req_builder = req_builder.query(&[("limit", &param_value.to_string())]);
-    }
-    if let Some(ref param_value) = p_order_by {
-        req_builder = match "multi" {
-            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("order_by".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
-            _ => req_builder.query(&[("order_by", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
-        };
-    }
-    if let Some(ref param_value) = p_expand_left_square_bracket_right_square_bracket {
-        req_builder = match "multi" {
-            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand[]".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
-            _ => req_builder.query(&[("expand[]", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
-        };
-    }
-    if let Some(ref param_value) = p_search {
-        req_builder = match "multi" {
-            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("search".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
-            _ => req_builder.query(&[("search", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
-        };
-    }
-    if let Some(ref user_agent) = configuration.user_agent {
-        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
-    }
-    if let Some(ref token) = configuration.bearer_access_token {
-        req_builder = req_builder.bearer_auth(token.to_owned());
-    };
-
-    let req = req_builder.build()?;
-    let resp = configuration.client.execute(req).await?;
-
-    let status = resp.status();
-    let content_type = resp
-        .headers()
-        .get("content-type")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("application/octet-stream");
-    let content_type = super::ContentType::from(content_type);
-
-    if !status.is_client_error() && !status.is_server_error() {
-        let content = resp.text().await?;
-        match content_type {
-            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::ClientList`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::ClientList`")))),
-        }
-    } else {
-        let content = resp.text().await?;
-        let entity: Option<ListClientsError> = serde_json::from_str(&content).ok();
-        Err(Error::ResponseError(ResponseContent { status, content, entity }))
-    }
-}
-
-pub async fn update_client(configuration: &configuration::Configuration, client_id: &str, update_client_request: models::UpdateClientRequest, expand_left_square_bracket_right_square_bracket: Option<Vec<models::ClientExpand>>) -> Result<models::Client, Error<UpdateClientError>> {
-    // add a prefix to parameters to efficiently prevent name collisions
-    let p_client_id = client_id;
-    let p_update_client_request = update_client_request;
-    let p_expand_left_square_bracket_right_square_bracket = expand_left_square_bracket_right_square_bracket;
-
-    let uri_str = format!("{}/clients/{client_id}", configuration.base_path, client_id=crate::apis::urlencode(p_client_id));
-    let mut req_builder = configuration.client.request(reqwest::Method::PUT, &uri_str);
-
-    if let Some(ref param_value) = p_expand_left_square_bracket_right_square_bracket {
-        req_builder = match "multi" {
-            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand[]".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
-            _ => req_builder.query(&[("expand[]", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
-        };
-    }
-    if let Some(ref user_agent) = configuration.user_agent {
-        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
-    }
-    if let Some(ref token) = configuration.bearer_access_token {
-        req_builder = req_builder.bearer_auth(token.to_owned());
-    };
-    req_builder = req_builder.json(&p_update_client_request);
-
-    let req = req_builder.build()?;
-    let resp = configuration.client.execute(req).await?;
-
-    let status = resp.status();
-    let content_type = resp
-        .headers()
-        .get("content-type")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("application/octet-stream");
-    let content_type = super::ContentType::from(content_type);
-
-    if !status.is_client_error() && !status.is_server_error() {
-        let content = resp.text().await?;
-        match content_type {
-            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::Client`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::Client`")))),
-        }
-    } else {
-        let content = resp.text().await?;
-        let entity: Option<UpdateClientError> = serde_json::from_str(&content).ok();
+        let entity: Option<IssueClientTokenError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

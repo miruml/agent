@@ -1,6 +1,6 @@
 # \ConcreteConfigsApi
 
-All URIs are relative to *https://dev.api.miruml.com/internal/v1*
+All URIs are relative to *https://configs.dev.api.miruml.com/internal/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------

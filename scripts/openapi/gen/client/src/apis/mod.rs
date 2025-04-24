@@ -111,30 +111,9 @@ impl From<&str> for ContentType {
     }
 }
 
-pub mod artifacts_api;
-pub mod client_tags_api;
 pub mod clients_api;
-pub mod compose_file_api;
 pub mod concrete_configs_api;
 pub mod config_schemas_api;
-pub mod configs_api;
-pub mod container_repositories_api;
-pub mod containers_api;
-pub mod deployments_api;
-pub mod devices_api;
 pub mod errors_api;
-pub mod git_commits_api;
-pub mod git_hub_sources_api;
-pub mod groups_api;
-pub mod images_api;
-pub mod job_runs_api;
-pub mod job_templates_api;
-pub mod jobs_api;
-pub mod overrides_api;
-pub mod registry_sources_api;
-pub mod tag_types_api;
-pub mod tags_api;
-pub mod users_api;
-pub mod workspaces_api;
 
 pub mod configuration;

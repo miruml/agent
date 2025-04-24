@@ -17,8 +17,17 @@ pub trait ConcreteConfigsExt: Send + Sync {
 
     async fn refresh_latest_concrete_config(
         &self,
-        request: &RefreshLatestConcreteConfigRequest,
+        payload: &RefreshLatestConcreteConfigRequest,
     ) -> Result<BackendConcreteConfig, HTTPErr>;
+}
+
+impl HTTPClient {
+    fn concrete_configs_url(&self) -> String {
+        format!(
+            "{}/concrete_configs",
+            self.base_url
+        )
+    }
 }
 
 impl ConcreteConfigsExt for HTTPClient {
@@ -30,7 +39,7 @@ impl ConcreteConfigsExt for HTTPClient {
         // build the request
         let url = format!(
             "{}/latest?config_slug={}&config_schema_digest={}",
-            self.base_url, config_slug, config_schema_digest
+            self.concrete_configs_url(), config_slug, config_schema_digest
         );
         let (request, context) = self.build_get_request(
             &url,
@@ -38,35 +47,35 @@ impl ConcreteConfigsExt for HTTPClient {
             None,
         )?;
 
-        // send the request
+        // send the request (with caching)
         let response = self.send_cached(
             url,
             request,
             &context,
         ).await?.0;
+
         // parse the response
-        let cncr_cfg = self
+        self
             .parse_json_response_text::<Option<BackendConcreteConfig>>(
                 response,
                 &context,
             )
-            .await?;
-        Ok(cncr_cfg)
+            .await
     }
 
     async fn refresh_latest_concrete_config(
         &self,
-        request: &RefreshLatestConcreteConfigRequest,
+        payload: &RefreshLatestConcreteConfigRequest,
     ) -> Result<BackendConcreteConfig, HTTPErr> {
         // build the request
-        let url = format!("{}/refresh_latest", self.base_url);
+        let url = format!("{}/refresh_latest", self.concrete_configs_url());
         let key = format!(
             "{}:{}:{}",
-            url, request.config_slug, request.config_schema_digest,
+            url, payload.config_slug, payload.config_schema_digest,
         );
         let (request, context) = self.build_post_request(
             &url,
-            self.marshal_json_request(request)?,
+            self.marshal_json_payload(payload)?,
             self.default_timeout,
             None,
         )?;
@@ -79,10 +88,9 @@ impl ConcreteConfigsExt for HTTPClient {
         ).await?.0;
 
         // parse the response
-        let response = self
+        self
             .parse_json_response_text::<BackendConcreteConfig>(response, &context)
-            .await?;
-        Ok(response)
+            .await
     }
 }
 

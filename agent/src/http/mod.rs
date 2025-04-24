@@ -1,3 +1,4 @@
+pub mod auth;
 pub mod client;
 pub mod concrete_configs;
 pub mod config_schemas;
