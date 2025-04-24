@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 // internal crates
 use crate::errors::MiruError;
-use crate::server::api::AppState;
+use crate::server::api::ServerState;
 use crate::services::concrete_configs::{
     read_latest, read_latest::ReadLatestArgs, refresh_latest, refresh_latest::RefreshLatestArgsI,
 };
@@ -29,7 +29,7 @@ impl HashSchemaArgsI for HashSchemaSerializedRequest {
 }
 
 pub async fn hash_schema(
-    State(state): State<Arc<AppState>>,
+    State(state): State<Arc<ServerState>>,
     Json(payload): Json<HashSchemaSerializedRequest>,
 ) -> impl IntoResponse {
     let result = hash::hash_schema(
@@ -53,7 +53,7 @@ pub async fn hash_schema(
 
 pub async fn read_latest_concrete_config(
     Query(query): Query<ReadLatestArgs>,
-    State(state): State<Arc<AppState>>,
+    State(state): State<Arc<ServerState>>,
 ) -> impl IntoResponse {
     let result =
         read_latest::read_latest(&query, &state.http_client, &state.concrete_config_cache).await;
@@ -80,7 +80,7 @@ impl RefreshLatestArgsI for RefreshLatestConcreteConfigRequest {
 }
 
 pub async fn refresh_latest_concrete_config(
-    State(state): State<Arc<AppState>>,
+    State(state): State<Arc<ServerState>>,
     Json(payload): Json<RefreshLatestConcreteConfigRequest>,
 ) -> impl IntoResponse {
     let result =

@@ -192,7 +192,7 @@ mod tests {
         #[tokio::test]
         #[ignore]
         async fn sandbox() {
-            let layout = StorageLayout::new_default();
+            let layout = StorageLayout::default();
             let dir = layout.config_schema_digest_cache();
             let cache = ConfigSchemaDigestCache::spawn(dir.clone());
             let raw_digest = "47d47a5be146128845c5c7889707f65cc7356587662221289eb09aacdf05a7ea";

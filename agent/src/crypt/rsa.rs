@@ -27,7 +27,7 @@ use openssl::sign::{Signer, Verifier};
 /// can be shared publicly, but it's simpler to treat both keys the same. The private
 /// key file is given read/write permissions only to the owner (600) and the public key
 /// file is given read permissions to the owner and group (644). https://www.redhat.com/sysadmin/linux-file-permissions-explained
-pub async fn gen_rsa_key_pair(
+pub async fn gen_key_pair(
     num_bits: u32,
     private_key_file: &File,
     public_key_file: &File,
@@ -99,7 +99,7 @@ pub async fn gen_rsa_key_pair(
 }
 
 /// Read an RSA private key from the specified file.
-pub async fn read_rsa_private_key_file(private_key_file: &File) -> Result<Rsa<Private>, CryptErr> {
+pub async fn read_private_key(private_key_file: &File) -> Result<Rsa<Private>, CryptErr> {
     // Ensure the file exists
     private_key_file
         .assert_exists()
@@ -122,7 +122,7 @@ pub async fn read_rsa_private_key_file(private_key_file: &File) -> Result<Rsa<Pr
 }
 
 /// Read an RSA public key from the specified file.
-pub async fn read_rsa_public_key_file(public_key_file: &File) -> Result<Rsa<Public>, CryptErr> {
+pub async fn read_public_key(public_key_file: &File) -> Result<Rsa<Public>, CryptErr> {
     public_key_file
         .assert_exists()
         .map_err(|e| CryptErr::FileSysErr(CryptFileSysErr {
@@ -145,9 +145,9 @@ pub async fn read_rsa_public_key_file(public_key_file: &File) -> Result<Rsa<Publ
 
 /// Create a signature from the provided data using the private key stored in the
 /// specified file
-pub async fn create_rsa_signature(private_key_file: &File, data: &[u8]) -> Result<Vec<u8>, CryptErr> {
+pub async fn sign(private_key_file: &File, data: &[u8]) -> Result<Vec<u8>, CryptErr> {
     // Read the private key
-    let rsa_private_key = read_rsa_private_key_file(private_key_file).await?;
+    let rsa_private_key = read_private_key(private_key_file).await?;
     let private_key = PKey::from_rsa(rsa_private_key).map_err(|e| CryptErr::RSAToPKeyErr(RSAToPKeyErr {
         source: e,
         trace: trace!(),
@@ -171,13 +171,13 @@ pub async fn create_rsa_signature(private_key_file: &File, data: &[u8]) -> Resul
 }
 
 /// Verify a signature using the public key stored in the specified file
-pub async fn verify_rsa_signature(
+pub async fn verify(
     public_key_file: &File,
     data: &[u8],
     signature: &[u8],
 ) -> Result<bool, CryptErr> {
     // Read the public key
-    let rsa_public_key = read_rsa_public_key_file(public_key_file).await?;
+    let rsa_public_key = read_public_key(public_key_file).await?;
     let public_key = PKey::from_rsa(rsa_public_key).map_err(|e| CryptErr::RSAToPKeyErr(RSAToPKeyErr {
         source: e,
         trace: trace!(),
