@@ -1,6 +1,6 @@
+
 // internal
-use config_agent::server::api::server;
-use config_agent::server::state::init_state;
+use config_agent::server::serve::run;
 use config_agent::logs::{init, LogLevel};
 use config_agent::storage::layout::StorageLayout;
 
@@ -15,17 +15,9 @@ async fn main() {
         println!("Failed to initialize logging: {}", e);
     }
 
-    // initialize the server state
-    let layout = StorageLayout::default();
-    let result = init_state(layout).await;
-    match result {
-        Ok(server_state) => {
-            // start the server
-            server(server_state).await;
-        }
-        Err(e) => {
-            error!("Failed to initialize server state: {}", e);
-            std::process::exit(1);
-        }
+    // run the server
+    let result = run(StorageLayout::default()).await;
+    if let Err(e) = result {
+        error!("Failed to run the server: {}", e);
     }
 }

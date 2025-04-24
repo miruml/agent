@@ -29,7 +29,7 @@ pub mod errors {
         let dir = Dir::create_temp_dir("pulled_from_server_resp")
             .await
             .unwrap();
-        let cache = ConfigSchemaDigestCache::spawn(dir);
+        let (cache, _) = ConfigSchemaDigestCache::spawn(dir);
 
         // create the mock
         let mut mock_client = MockConfigSchemasClient::default();
@@ -74,7 +74,7 @@ pub mod success {
         let dir = Dir::create_temp_dir("pulled_from_server_resp")
             .await
             .unwrap();
-        let cache = ConfigSchemaDigestCache::spawn(dir);
+        let (cache, _) = ConfigSchemaDigestCache::spawn(dir);
 
         // define the schema
         let schema = json!({
@@ -121,7 +121,7 @@ pub mod success {
         let dir = Dir::create_temp_dir("pulled_from_server_resp")
             .await
             .unwrap();
-        let cache = ConfigSchemaDigestCache::spawn(dir);
+        let (cache, _) = ConfigSchemaDigestCache::spawn(dir);
 
         // create the mock
         let mut mock_client = MockConfigSchemasClient::default();

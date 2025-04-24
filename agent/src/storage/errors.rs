@@ -126,6 +126,37 @@ impl fmt::Display for ReceiveActorMessageErr {
 }
 
 #[derive(Debug)]
+pub struct JoinHandleErr {
+    pub source: Box<dyn std::error::Error + Send + Sync>,
+    pub trace: Box<Trace>,
+}
+
+
+impl MiruError for JoinHandleErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for JoinHandleErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "failed to join handle: {}", self.source)
+    }
+}
+
+#[derive(Debug)]
 pub enum StorageErr {
     // storage errors
     CacheElementNotFound(CacheElementNotFound),
@@ -136,6 +167,7 @@ pub enum StorageErr {
     // external crate errors
     SendActorMessageErr(SendActorMessageErr),
     ReceiveActorMessageErr(ReceiveActorMessageErr),
+    JoinHandleErr(JoinHandleErr),
 }
 
 macro_rules! forward_error_method {
@@ -145,6 +177,7 @@ macro_rules! forward_error_method {
             Self::CacheElementNotFound(e) => e.$method($($arg)?),
             Self::SendActorMessageErr(e) => e.$method($($arg)?),
             Self::ReceiveActorMessageErr(e) => e.$method($($arg)?),
+            Self::JoinHandleErr(e) => e.$method($($arg)?),
         }
     };
 }

@@ -33,6 +33,7 @@ use chrono::{Utc, Duration, DateTime};
 use serde::Serialize;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio::sync::oneshot;
+use tokio::task::JoinHandle;
 use tracing::error;
 use uuid::Uuid;
 
@@ -164,6 +165,9 @@ enum WorkerCommand {
     RefreshToken {
         respond_to: oneshot::Sender<Result<(), AuthErr>>,
     },
+    Shutdown {
+        respond_to: oneshot::Sender<Result<(), AuthErr>>,
+    },
 }
 
 struct Worker<HTTPClientT: ClientAuthExt> {
@@ -175,6 +179,12 @@ impl<HTTPClientT: ClientAuthExt> Worker<HTTPClientT> {
     async fn run(mut self) {
         while let Some(cmd) = self.receiver.recv().await {
             match cmd {
+                WorkerCommand::Shutdown { respond_to } => {
+                    if let Err(e) = respond_to.send(Ok(())) {
+                        error!("Actor failed to send shutdown response: {:?}", e);
+                    }
+                    break;
+                }
                 WorkerCommand::GetToken { respond_to } => {
                     let token = self.token_mngr.get_token().await;
                     respond_to.send(Ok(token)).unwrap();
@@ -201,7 +211,7 @@ impl TokenManager {
         http_client: Arc<HTTPClientT>,
         token_file: CachedFile<Token>,
         private_key_file: File,
-    ) -> Result<Self, AuthErr> {
+    ) -> Result<(Self, JoinHandle<()>), AuthErr> {
         let (sender, receiver) = mpsc::channel(32);
         let worker = Worker {
             token_mngr: SingleThreadTokenManager::new(
@@ -212,8 +222,21 @@ impl TokenManager {
             )?,
             receiver,
         };
-        tokio::spawn(worker.run());
-        Ok(Self { sender })
+        let worker_handle = tokio::spawn(worker.run());
+        Ok((Self { sender }, worker_handle))
+    }
+
+    pub async fn shutdown(&self) -> Result<(), AuthErr> {
+        let (send, recv) = oneshot::channel();
+        self.sender.send(WorkerCommand::Shutdown { respond_to: send }).await.map_err(|e| AuthErr::SendActorMessageErr(SendActorMessageErr{
+            source: Box::new(e),
+            trace: trace!(),
+        }))?;
+        recv.await.map_err(|e| AuthErr::ReceiveActorMessageErr(ReceiveActorMessageErr{
+            source: Box::new(e),
+            trace: trace!(),
+        }))??;
+        Ok(())
     }
 
     pub async fn get_token(&self) -> Result<Arc<Token>, AuthErr> {

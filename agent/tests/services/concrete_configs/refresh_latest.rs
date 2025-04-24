@@ -26,7 +26,7 @@ mod tests {
         #[tokio::test]
         async fn server_request_error() {
             let dir = Dir::create_temp_dir("refresh_latest_errors").await.unwrap();
-            let cache = ConcreteConfigCache::spawn(dir);
+            let (cache, _) = ConcreteConfigCache::spawn(dir);
 
             // create the mock http client
             let mut http_client = MockConcreteConfigsClient::default();
@@ -59,7 +59,7 @@ mod tests {
             let dir = Dir::create_temp_dir("refresh_latest_success")
                 .await
                 .unwrap();
-            let cache = ConcreteConfigCache::spawn(dir);
+            let (cache, _) = ConcreteConfigCache::spawn(dir);
 
             // create the mock http client
             let backend_concrete_config = BackendConcreteConfig::default();

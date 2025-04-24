@@ -12,10 +12,7 @@ mod tests {
         dir::Dir,
         file::File,
     };
-    use config_agent::http::{
-        client::HTTPClient,
-        errors::{HTTPErr, MockErr},
-    };
+    use config_agent::http::errors::{HTTPErr, MockErr};
     use config_agent::storage::token::Token;
     use config_agent::trace;
     use openapi_client::models::IssueClientTokenResponse;
@@ -33,10 +30,12 @@ mod tests {
             let token_file = TokenFile::new_with_default(dir.file("token.json"), Token::default()).await.unwrap();
             token_file.file.delete().await.unwrap();
 
+            let mock_http_client = MockAuthClient::default();
+
             // spawn the token manager
             let result = TokenManager::spawn(
                 "client_id".to_string(),
-                Arc::new(HTTPClient::new().await),
+                Arc::new(mock_http_client),
                 token_file,
                 File::new("private_key.pem"),
             ).unwrap_err();
@@ -54,9 +53,11 @@ mod tests {
             let private_key_file = dir.file("private_key.pem");
             private_key_file.delete().await.unwrap();
 
+            let mock_http_client = MockAuthClient::default();
+
             let result = TokenManager::spawn(
                 "client_id".to_string(),
-                Arc::new(HTTPClient::new().await),
+                Arc::new(mock_http_client),
                 token_file,
                 private_key_file,
             ).unwrap_err();
@@ -68,19 +69,41 @@ mod tests {
             // create the token file
             let dir = Dir::create_temp_dir("testing").await.unwrap();
             let token_file = TokenFile::new_with_default(dir.file("token.json"), Token::default()).await.unwrap();
-            token_file.file.delete().await.unwrap();
-
-            // create the private key file
             let private_key_file = dir.file("private_key.pem");
-            private_key_file.write_string("private_key", false, false).await.unwrap();
+            let public_key_file = dir.file("public_key.pem");
+            rsa::gen_key_pair(4096, &private_key_file, &public_key_file).await.unwrap();
+            let mock_http_client = MockAuthClient::default();
 
-            let result = TokenManager::spawn(
+            TokenManager::spawn(
                 "client_id".to_string(),
-                Arc::new(HTTPClient::new().await),
+                Arc::new(mock_http_client),
                 token_file,
                 private_key_file,
-            ).unwrap_err();
-            assert!(matches!(result, AuthErr::FileSysErr(_)));
+            ).unwrap();
+        }
+    }
+
+    pub mod shutdown {
+        use super::*;
+
+        #[tokio::test]
+        async fn shutdown() {
+            // create the token file
+            let dir = Dir::create_temp_dir("testing").await.unwrap();
+            let token_file = TokenFile::new_with_default(dir.file("token.json"), Token::default()).await.unwrap();
+            let private_key_file = dir.file("private_key.pem");
+            let public_key_file = dir.file("public_key.pem");
+            rsa::gen_key_pair(4096, &private_key_file, &public_key_file).await.unwrap();
+
+            let mock_http_client = MockAuthClient::default();
+            let (token_mngr, worker_handle) = TokenManager::spawn(
+                "client_id".to_string(),
+                Arc::new(mock_http_client),
+                token_file,
+                private_key_file,
+            ).unwrap();
+            token_mngr.shutdown().await.unwrap();
+            worker_handle.await.unwrap();
         }
     }
 
@@ -97,9 +120,11 @@ mod tests {
             let private_key_file = dir.file("private_key.pem");
             private_key_file.write_string("private_key", false, false).await.unwrap();
 
-            let token_mngr = TokenManager::spawn(
+            let mock_http_client = MockAuthClient::default();
+
+            let (token_mngr, _) = TokenManager::spawn(
                 "client_id".to_string(),
-                Arc::new(HTTPClient::new().await),
+                Arc::new(mock_http_client),
                 token_file,
                 private_key_file,
             ).unwrap();
@@ -132,7 +157,7 @@ mod tests {
             mock_http_client.issue_client_token_result = Box::new(move || Ok(expected.clone()));
 
             // spawn the token manager
-            let token_mngr = TokenManager::spawn(
+            let (token_mngr, _) = TokenManager::spawn(
                 "client_id".to_string(),
                 Arc::new(mock_http_client),
                 token_file,
@@ -166,7 +191,7 @@ mod tests {
             };
 
             // spawn the token manager
-            let token_mngr = TokenManager::spawn(
+            let (token_mngr, _) = TokenManager::spawn(
                 "client_id".to_string(),
                 Arc::new(mock_http_client),
                 token_file,
@@ -203,7 +228,7 @@ mod tests {
             };
 
             // spawn the token manager
-            let token_mngr = TokenManager::spawn(
+            let (token_mngr, _) = TokenManager::spawn(
                 "client_id".to_string(),
                 Arc::new(mock_http_client),
                 token_file,
@@ -246,7 +271,7 @@ mod tests {
             };
 
             // spawn the token manager
-            let token_mngr = TokenManager::spawn(
+            let (token_mngr, _) = TokenManager::spawn(
                 "client_id".to_string(),
                 Arc::new(mock_http_client),
                 cached_token_file,

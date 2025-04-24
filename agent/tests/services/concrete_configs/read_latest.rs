@@ -31,7 +31,7 @@ mod tests {
         #[tokio::test]
         async fn network_connection_error_and_storage_not_found() {
             let dir = Dir::create_temp_dir("read_latest_errors").await.unwrap();
-            let cache = ConcreteConfigCache::spawn(dir);
+            let (cache, _) = ConcreteConfigCache::spawn(dir);
 
             // create the mock http client
             let mut http_client = MockConcreteConfigsClient::default();
@@ -63,7 +63,7 @@ mod tests {
         #[tokio::test]
         async fn non_network_connection_error() {
             let dir = Dir::create_temp_dir("read_latest_errors").await.unwrap();
-            let cache = ConcreteConfigCache::spawn(dir);
+            let (cache, _) = ConcreteConfigCache::spawn(dir);
 
             // create the mock http client
             let mut http_client = MockConcreteConfigsClient::default();
@@ -96,7 +96,7 @@ mod tests {
             let dir = Dir::create_temp_dir("read_latest_errors").await.unwrap();
 
             // create the concrete config in storage
-            let cache = ConcreteConfigCache::spawn(dir);
+            let (cache, _) = ConcreteConfigCache::spawn(dir);
             let config_slug = "config-slug";
             let config_schema_digest = "config-schema-digest";
             let concrete_config = ConcreteConfig {
@@ -142,7 +142,7 @@ mod tests {
             let dir = Dir::create_temp_dir("read_latest_errors").await.unwrap();
 
             // create the concrete config in storage
-            let cache = ConcreteConfigCache::spawn(dir);
+            let (cache, _) = ConcreteConfigCache::spawn(dir);
             let config_slug = "config-slug";
             let config_schema_digest = "config-schema-digest";
             let concrete_config = ConcreteConfig {
@@ -179,7 +179,7 @@ mod tests {
         #[tokio::test]
         async fn from_server_found() {
             let dir = Dir::create_temp_dir("read_latest_errors").await.unwrap();
-            let cache = ConcreteConfigCache::spawn(dir);
+            let (cache, _) = ConcreteConfigCache::spawn(dir);
 
             // create the mock http client
             let backend_concrete_config = BackendConcreteConfig::default();

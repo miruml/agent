@@ -19,6 +19,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio::sync::oneshot;
+use tokio::task::JoinHandle;
 use tracing::error;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -237,6 +238,9 @@ where
         max_size: usize,
         respond_to: oneshot::Sender<Result<(), StorageErr>>,
     },
+    Shutdown {
+        respond_to: oneshot::Sender<Result<(), StorageErr>>,
+    },
 }
 
 struct Worker<K, V>
@@ -256,6 +260,12 @@ where
     async fn run(mut self) {
         while let Some(cmd) = self.receiver.recv().await {
             match cmd {
+                WorkerCommand::Shutdown { respond_to } => {
+                    if let Err(e) = respond_to.send(Ok(())) {
+                        error!("Actor failed to send shutdown response: {:?}", e);
+                    }
+                    break;
+                }
                 WorkerCommand::ReadOptional { key, respond_to } => {
                     let result = self.cache.read_optional(&key).await;
                     if let Err(e) = respond_to.send(result) {
@@ -312,14 +322,27 @@ where
     K: Debug + Send + Sync + ToString + Serialize + DeserializeOwned + 'static,
     V: Debug + Send + Sync + Serialize + DeserializeOwned + 'static,
 {
-    pub fn spawn(dir: Dir) -> Self {
+    pub fn spawn(dir: Dir) -> (Self, JoinHandle<()>) {
         let (sender, receiver) = mpsc::channel(64);
         let worker = Worker {
             cache: SingleThreadCache::new(dir),
             receiver,
         };
-        tokio::spawn(worker.run());
-        Self { sender }
+        let worker_handle = tokio::spawn(worker.run());
+        (Self { sender }, worker_handle)
+    }
+
+    pub async fn shutdown(&self) -> Result<(), StorageErr> {
+        let (send, recv) = oneshot::channel();
+        self.sender.send(WorkerCommand::Shutdown { respond_to: send }).await.map_err(|e| StorageErr::SendActorMessageErr(SendActorMessageErr{
+            source: Box::new(e),
+            trace: trace!(),
+        }))?;
+        recv.await.map_err(|e| StorageErr::ReceiveActorMessageErr(ReceiveActorMessageErr{
+            source: Box::new(e),
+            trace: trace!(),
+        }))??;
+        Ok(())
     }
 
     pub async fn read_optional(&self, key: K) -> Result<Option<V>, StorageErr> {

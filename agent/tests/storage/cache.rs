@@ -30,13 +30,28 @@ mod tests {
         }
     }
 
+    pub mod shutdown {
+        use super::*;
+
+        #[tokio::test]
+        async fn shutdown() {
+            let dir = Dir::create_temp_dir("testing")
+                .await
+                .unwrap()
+                .subdir(PathBuf::from("cfg_sch_digest_reg"));
+            let (cache, worker_handle) = ConfigSchemaDigestCache::spawn(dir.clone());
+            cache.shutdown().await.unwrap();
+            worker_handle.await.unwrap();
+        }
+    }
+
     pub mod read_optional {
         use super::*;
 
         #[tokio::test]
         async fn doesnt_exist() {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
-            let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+            let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
             let key = "1234567890".to_string();
             let read_digests = cache.read_optional(key.clone()).await.unwrap();
             assert_eq!(read_digests, None);
@@ -45,7 +60,7 @@ mod tests {
         #[tokio::test]
         async fn exists() {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
-            let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+            let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
             let digests = ConfigSchemaDigests {
                 raw: "1234567890".to_string(),
                 resolved: "1234567890".to_string(),
@@ -66,7 +81,7 @@ mod tests {
         #[tokio::test]
         async fn doesnt_exist() {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
-            let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+            let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
             assert!(matches!(
                 cache.read("1234567890".to_string()).await.unwrap_err(),
                 StorageErr::CacheElementNotFound { .. }
@@ -76,7 +91,7 @@ mod tests {
         #[tokio::test]
         async fn exists() {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
-            let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+            let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
             let digests = ConfigSchemaDigests {
                 raw: "1234567890".to_string(),
                 resolved: "1234567890".to_string(),
@@ -99,7 +114,7 @@ mod tests {
         #[tokio::test]
         async fn doesnt_exist_overwrite_false() {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
-            let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+            let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
             let digests = ConfigSchemaDigests {
                 raw: "1234567890".to_string(),
                 resolved: "1234567890".to_string(),
@@ -121,7 +136,7 @@ mod tests {
         #[tokio::test]
         async fn doesnt_exist_overwrite_true() {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
-            let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+            let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
             let digests = ConfigSchemaDigests {
                 raw: "1234567890".to_string(),
                 resolved: "1234567890".to_string(),
@@ -143,7 +158,7 @@ mod tests {
         #[tokio::test]
         async fn exists_overwrite_false() {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
-            let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+            let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
             let digests = ConfigSchemaDigests {
                 raw: "1234567890".to_string(),
                 resolved: "1234567890".to_string(),
@@ -167,7 +182,7 @@ mod tests {
         #[tokio::test]
         async fn exists_overwrite_true() {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
-            let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+            let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
             let digests = ConfigSchemaDigests {
                 raw: "1234567890".to_string(),
                 resolved: "1234567890".to_string(),
@@ -194,7 +209,7 @@ mod tests {
         async fn sandbox() {
             let layout = StorageLayout::default();
             let dir = layout.config_schema_digest_cache();
-            let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+            let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
             let raw_digest = "47d47a5be146128845c5c7889707f65cc7356587662221289eb09aacdf05a7ea";
             let digests = ConfigSchemaDigests {
                 raw: raw_digest.to_string(),
@@ -218,7 +233,7 @@ mod tests {
         #[tokio::test]
         async fn doesnt_exist() {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
-            let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+            let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
             let key = "1234567890".to_string();
             cache.delete(key.clone()).await.unwrap();
         }
@@ -226,7 +241,7 @@ mod tests {
         #[tokio::test]
         async fn exists() {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
-            let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+            let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
             let digests = ConfigSchemaDigests {
                 raw: "1234567890".to_string(),
                 resolved: "1234567890".to_string(),
@@ -254,14 +269,14 @@ mod tests {
         #[tokio::test]
         async fn empty_cache() {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
-            let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+            let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
             cache.prune(10).await.unwrap();
         }
 
         #[tokio::test]
         async fn cache_equal_to_max_size() {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
-            let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+            let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
 
             // create 10 entries
             for i in 0..10 {
@@ -291,7 +306,7 @@ mod tests {
         #[tokio::test]
         async fn remove_invalid_entries() {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
-            let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+            let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
 
             // write invalid json files to files in the cache directory
             let invalid_json_file = dir.file("invalid.json");
@@ -331,7 +346,7 @@ mod tests {
         #[tokio::test]
         async fn remove_oldest_entries() {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
-            let cache = ConfigSchemaDigestCache::spawn(dir.clone());
+            let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
 
             // write invalid json files to files in the cache directory
             let invalid_json_file = dir.file("invalid.json");
