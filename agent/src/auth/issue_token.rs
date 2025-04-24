@@ -20,7 +20,7 @@ use uuid::Uuid;
 pub struct IssueTokenClaim {
     pub client_id: String,
     pub nonce: String,
-    pub expiration: DateTime<Utc>,
+    pub expiration: i64,
 }
 
 pub struct IssueTokenRequest {
@@ -38,7 +38,7 @@ pub async fn prepare_issue_token_request(
     let claims = IssueTokenClaim {
         client_id: client_id.to_string(),
         nonce,
-        expiration,
+        expiration: expiration.timestamp(),
     };
 
     // serialize the claims into a JSON byte vector
@@ -59,4 +59,3 @@ pub async fn prepare_issue_token_request(
         signature,
     })
 }
-

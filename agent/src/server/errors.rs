@@ -2,9 +2,11 @@
 use std::fmt;
 
 // internal crates
+use crate::auth::errors::AuthErr;
 use crate::errors::MiruError;
 use crate::errors::{Code, HTTPCode, Trace};
 use crate::filesys::errors::FileSysErr;
+use crate::http::errors::HTTPErr;
 
 #[derive(Debug)]
 pub struct ServerFileSysErr {
@@ -37,15 +39,110 @@ impl fmt::Display for ServerFileSysErr {
 }
 
 #[derive(Debug)]
-pub enum ServerErr {
-    FileSysErr(ServerFileSysErr),
+pub struct ServerAuthErr {
+    pub source: AuthErr,
+    pub trace: Box<Trace>,
 }
 
+impl MiruError for ServerAuthErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for ServerAuthErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "server auth error: {}", self.source)
+    }
+}
+
+#[derive(Debug)]
+pub struct ServerHTTPErr {
+    pub source: HTTPErr,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for ServerHTTPErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for ServerHTTPErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "http client error: {}", self.source)
+    }
+}
+
+#[derive(Debug)]
+pub struct TimestampConversionErr {
+    pub msg: String,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for TimestampConversionErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for TimestampConversionErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "timestamp conversion error: {}", self.msg)
+    }
+}
+
+#[derive(Debug)]
+pub enum ServerErr {
+    AuthErr(ServerAuthErr),
+    FileSysErr(ServerFileSysErr),
+    HTTPErr(ServerHTTPErr),
+    TimestampConversionErr(TimestampConversionErr),
+}
 
 macro_rules! forward_error_method {
     ($self:ident, $method:ident $(, $arg:expr)?) => {
         match $self {
-            Self::FileSysErr(e) => e.$method($($arg)?)
+            Self::AuthErr(e) => e.$method($($arg)?),
+            Self::FileSysErr(e) => e.$method($($arg)?),
+            Self::HTTPErr(e) => e.$method($($arg)?),
+            Self::TimestampConversionErr(e) => e.$method($($arg)?),
         }
     };
 }
