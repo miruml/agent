@@ -9,6 +9,8 @@ use crate::trace;
 // external crates
 use serde::{Deserialize, Serialize};
 
+type ClientID = String;
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Claims {
     pub sub: String,
@@ -19,7 +21,7 @@ pub struct Claims {
 }
 
 /// Decode a Miru JWT payload without verification
-pub fn decode_miru_jwt_payload(token: &str) -> Result<Claims, CryptErr> {
+pub fn decode(token: &str) -> Result<Claims, CryptErr> {
     let parts: Vec<&str> = token.split('.').collect();
     if parts.len() != 3 {
         return Err(CryptErr::InvalidJWTErr(InvalidJWTErr {
@@ -38,8 +40,13 @@ pub fn decode_miru_jwt_payload(token: &str) -> Result<Claims, CryptErr> {
     Ok(claims)
 }
 
-/// Validate a claim's payload for a Miru JWT and returns the device id
-pub fn validate_miru_device_claims(claim: Claims) -> Result<String, CryptErr> {
+pub fn extract_client_id(token: &str) -> Result<ClientID, CryptErr> {
+    let claims = decode(token)?;
+    Ok(claims.sub)
+}
+
+/// Validate a claim's payload for a Miru JWT and returns the client_id
+pub fn validate_claims(claim: Claims) -> Result<ClientID, CryptErr> {
     if claim.iss != "miru" {
         return Err(CryptErr::InvalidJWTErr(InvalidJWTErr {
             msg: "Invalid issuer".to_string(),
@@ -74,7 +81,7 @@ pub fn validate_miru_device_claims(claim: Claims) -> Result<String, CryptErr> {
 }
 
 /// Decode a Miru JWT payload and validate the claims. The "sub" field is the device
-pub fn validate_miru_jwt_format(token: &str) -> Result<String, CryptErr> {
-    let claims = decode_miru_jwt_payload(token)?;
-    validate_miru_device_claims(claims)
+pub fn validate_format(token: &str) -> Result<String, CryptErr> {
+    let claims = decode(token)?;
+    validate_claims(claims)
 }

@@ -25,8 +25,8 @@ impl StorageLayout {
         AuthLayout::new(self.root.subdir("auth"))
     }
 
-    pub fn agent_cfg(&self) -> File {
-        self.root.file("agent_config.json")
+    pub fn agent_file(&self) -> File {
+        self.root.file("agent.json")
     }
 
     pub fn config_schema_digest_cache(&self) -> Dir {

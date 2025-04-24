@@ -3,40 +3,13 @@ use std::fmt;
 
 // internal crates
 use crate::auth::errors::AuthErr;
+use crate::crypt::errors::CryptErr;
 use crate::errors::MiruError;
 use crate::errors::{Code, HTTPCode, Trace};
 use crate::filesys::errors::FileSysErr;
 use crate::http::errors::HTTPErr;
 
-#[derive(Debug)]
-pub struct ServerFileSysErr {
-    pub source: FileSysErr,
-    pub trace: Box<Trace>,
-}
 
-impl MiruError for ServerFileSysErr {
-    fn code(&self) -> Code {
-        Code::InternalServerError
-    }
-
-    fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
-    }
-
-    fn is_network_connection_error(&self) -> bool {
-        false
-    }
-
-    fn params(&self) -> Option<serde_json::Value> {
-        None
-    }
-}
-
-impl fmt::Display for ServerFileSysErr {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "server file system error: {}", self.source)
-    }
-}
 
 #[derive(Debug)]
 pub struct ServerAuthErr {
@@ -65,6 +38,66 @@ impl MiruError for ServerAuthErr {
 impl fmt::Display for ServerAuthErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "server auth error: {}", self.source)
+    }
+}
+
+#[derive(Debug)]
+pub struct ServerCryptErr {
+    pub source: CryptErr,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for ServerCryptErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for ServerCryptErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "server crypt error: {}", self.source)
+    }
+}
+
+#[derive(Debug)]
+pub struct ServerFileSysErr {
+    pub source: FileSysErr,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for ServerFileSysErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for ServerFileSysErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "server file system error: {}", self.source)
     }
 }
 
@@ -131,6 +164,7 @@ impl fmt::Display for TimestampConversionErr {
 #[derive(Debug)]
 pub enum ServerErr {
     AuthErr(ServerAuthErr),
+    CryptErr(ServerCryptErr),
     FileSysErr(ServerFileSysErr),
     HTTPErr(ServerHTTPErr),
     TimestampConversionErr(TimestampConversionErr),
@@ -140,6 +174,7 @@ macro_rules! forward_error_method {
     ($self:ident, $method:ident $(, $arg:expr)?) => {
         match $self {
             Self::AuthErr(e) => e.$method($($arg)?),
+            Self::CryptErr(e) => e.$method($($arg)?),
             Self::FileSysErr(e) => e.$method($($arg)?),
             Self::HTTPErr(e) => e.$method($($arg)?),
             Self::TimestampConversionErr(e) => e.$method($($arg)?),

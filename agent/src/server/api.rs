@@ -21,7 +21,6 @@ use tracing::Level;
 use tracing::info;
 
 
-
 pub async fn server(server_state: ServerState) {
     let shared_state = Arc::new(server_state);
 
