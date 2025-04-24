@@ -16,8 +16,11 @@ use crate::crypt::{
     base64,
     rsa,
 };
-use crate::filesys::file::File;
-use crate::filesys::cached_file::CachedFile;
+use crate::filesys::{
+    cached_file::CachedFile,
+    file::File,
+    path::PathExt,
+};
 use crate::http::auth::ClientAuthExt;
 use crate::storage::token::Token;
 use crate::trace;
@@ -32,6 +35,8 @@ use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio::sync::oneshot;
 use tracing::error;
 use uuid::Uuid;
+
+pub type TokenFile = CachedFile<Token>;
 
 #[derive(Serialize)]
 struct IssueTokenClaim {
@@ -58,15 +63,23 @@ impl<HTTPClientT: ClientAuthExt> SingleThreadTokenManager<HTTPClientT> {
         token_file: CachedFile<Token>,
         private_key_file: File,
         refresh_cooldown: Duration,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, AuthErr> {
+        token_file.file.assert_exists().map_err(|e| AuthErr::FileSysErr(AuthFileSysErr {
+            source: e,
+            trace: trace!(),
+        }))?;
+        private_key_file.assert_exists().map_err(|e| AuthErr::FileSysErr(AuthFileSysErr {
+            source: e,
+            trace: trace!(),
+        }))?;
+        Ok(Self {
             client_id,
             http_client,
             token_file,
             private_key_file,
             last_refresh: None,
             refresh_cooldown,
-        }
+        })
     }
 
     async fn get_token(&self) -> Arc<Token> {
@@ -189,6 +202,7 @@ impl<HTTPClientT: ClientAuthExt> Worker<HTTPClientT> {
     }
 }
 
+#[derive(Debug)]
 pub struct TokenManager {
     sender: Sender<WorkerCommand>,
 }
@@ -200,8 +214,8 @@ impl TokenManager {
         token_file: CachedFile<Token>,
         private_key_file: File,
         refresh_cooldown: Duration,
-    ) -> Self {
-        let (sender, receiver) = mpsc::channel(64);
+    ) -> Result<Self, AuthErr> {
+        let (sender, receiver) = mpsc::channel(32);
         let worker = Worker {
             token_mngr: SingleThreadTokenManager::new(
                 client_id,
@@ -209,11 +223,11 @@ impl TokenManager {
                 token_file,
                 private_key_file,
                 refresh_cooldown,
-            ),
+            )?,
             receiver,
         };
         tokio::spawn(worker.run());
-        Self { sender }
+        Ok(Self { sender })
     }
 
     pub async fn get_token(&self) -> Result<Arc<Token>, AuthErr> {

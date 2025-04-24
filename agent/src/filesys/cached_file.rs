@@ -13,7 +13,7 @@ pub struct CachedFile<T>
 where
     T: Serialize + DeserializeOwned,
 {
-    file: File,
+    pub file: File,
     cache: Arc<T>,
 }
 

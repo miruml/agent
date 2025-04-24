@@ -1,42 +1,57 @@
 // internal crates
+use config_agent::http::auth::ClientAuthExt;
 use config_agent::http::config_schemas::ConfigSchemasExt;
 use config_agent::http::errors::HTTPErr;
 use config_agent::http::prelude::*;
-use openapi_client::models::BackendConcreteConfig;
-use openapi_client::models::HashSchemaSerializedRequest;
-use openapi_client::models::RefreshLatestConcreteConfigRequest;
-use openapi_client::models::SchemaDigestResponse;
+use openapi_client::models::{
+    ActivateClientRequest,
+    BackendConcreteConfig,
+    Client,
+    HashSchemaSerializedRequest,
+    IssueClientTokenRequest,
+    IssueClientTokenResponse,
+    RefreshLatestConcreteConfigRequest,
+    SchemaDigestResponse,
+};
 
-pub struct MockConfigSchemasClient {
-    pub hash_schema_result: Box<dyn Fn() -> Result<SchemaDigestResponse, HTTPErr> + Send + Sync>,
+// external crates
+use async_trait::async_trait;
+
+// ================================== AUTH EXT ===================================== //
+pub struct MockAuthClient {
+    pub activate_client_result: Box<dyn Fn() -> Result<Client, HTTPErr> + Send + Sync>,
+    pub issue_client_token_result: Box<dyn Fn() -> Result<IssueClientTokenResponse, HTTPErr> + Send + Sync>,
 }
 
-impl Default for MockConfigSchemasClient {
+impl Default for MockAuthClient {
     fn default() -> Self {
         Self {
-            hash_schema_result: Box::new(|| Ok(SchemaDigestResponse::default())),
+            activate_client_result: Box::new(|| Ok(Client::default())),
+            issue_client_token_result: Box::new(|| Ok(IssueClientTokenResponse::default())),
         }
     }
 }
 
-impl MockConfigSchemasClient {
-    pub fn set_hash_schema<F>(&mut self, hash_schema_result: F)
-    where
-        F: Fn() -> Result<SchemaDigestResponse, HTTPErr> + Send + Sync + 'static,
-    {
-        self.hash_schema_result = Box::new(hash_schema_result);
-    }
-}
-
-impl ConfigSchemasExt for MockConfigSchemasClient {
-    async fn hash_schema(
+#[async_trait]
+impl ClientAuthExt for MockAuthClient {
+    async fn activate_client(
         &self,
-        _request: &HashSchemaSerializedRequest,
-    ) -> Result<SchemaDigestResponse, HTTPErr> {
-        (self.hash_schema_result)()
+        _: &str,
+        _: &ActivateClientRequest,
+    ) -> Result<Client, HTTPErr> {
+        (self.activate_client_result)()
+    }
+
+    async fn issue_client_token(
+        &self,
+        _: &str,
+        _: &IssueClientTokenRequest,
+    ) -> Result<IssueClientTokenResponse, HTTPErr> {
+        (self.issue_client_token_result)()
     }
 }
 
+// ============================ CONCRETE CONFIGS EXT =============================== //
 pub struct MockConcreteConfigsClient {
     pub read_latest_result:
         Box<dyn Fn() -> Result<Option<BackendConcreteConfig>, HTTPErr> + Send + Sync>,
@@ -83,5 +98,36 @@ impl ConcreteConfigsExt for MockConcreteConfigsClient {
         _: &RefreshLatestConcreteConfigRequest,
     ) -> Result<BackendConcreteConfig, HTTPErr> {
         (self.refresh_latest_result)()
+    }
+}
+
+// =========================== CONFIG SCHEMAS EXT ================================== //
+pub struct MockConfigSchemasClient {
+    pub hash_schema_result: Box<dyn Fn() -> Result<SchemaDigestResponse, HTTPErr> + Send + Sync>,
+}
+
+impl Default for MockConfigSchemasClient {
+    fn default() -> Self {
+        Self {
+            hash_schema_result: Box::new(|| Ok(SchemaDigestResponse::default())),
+        }
+    }
+}
+
+impl MockConfigSchemasClient {
+    pub fn set_hash_schema<F>(&mut self, hash_schema_result: F)
+    where
+        F: Fn() -> Result<SchemaDigestResponse, HTTPErr> + Send + Sync + 'static,
+    {
+        self.hash_schema_result = Box::new(hash_schema_result);
+    }
+}
+
+impl ConfigSchemasExt for MockConfigSchemasClient {
+    async fn hash_schema(
+        &self,
+        _request: &HashSchemaSerializedRequest,
+    ) -> Result<SchemaDigestResponse, HTTPErr> {
+        (self.hash_schema_result)()
     }
 }

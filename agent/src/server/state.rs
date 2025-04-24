@@ -8,6 +8,7 @@ use crate::filesys::{cached_file::CachedFile, file::File};
 use crate::http::client::HTTPClient;
 use crate::server::errors::{
     ServerErr,
+    ServerAuthErr,
     ServerCryptErr,
     ServerFileSysErr,
 };
@@ -21,6 +22,10 @@ use crate::trace;
 // external crates
 use chrono::Duration;
 use tracing::error;
+
+
+type ClientID = String;
+
 #[derive(Clone)]
 pub struct ServerState {
     pub http_client: Arc<HTTPClient>,
@@ -54,8 +59,10 @@ pub async fn init_state(layout: StorageLayout) -> Result<ServerState, ServerErr>
         token_file,
         private_key_file,
         Duration::seconds(15),
-    );
-
+    ).map_err(|e| ServerErr::AuthErr(ServerAuthErr {
+        source: e,
+        trace: trace!(),
+    }))?;
 
     // initialize the server state
     let server_state = ServerState {
@@ -72,7 +79,6 @@ pub async fn init_state(layout: StorageLayout) -> Result<ServerState, ServerErr>
     Ok(server_state)
 }
 
-type ClientID = String;
 pub async fn get_client_id(
     agent_file: &File,
     token_file: &CachedFile<Token>,
