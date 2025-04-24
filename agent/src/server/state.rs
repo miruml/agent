@@ -2,7 +2,10 @@
 use std::sync::Arc;
 
 // internal crates
-use crate::auth::token_mngr::TokenManager;
+use crate::auth::{
+    token_mngr::TokenManager,
+    refresh::run_token_refresh_loop,
+};
 use crate::crypt::jwt;
 use crate::filesys::{cached_file::CachedFile, file::File};
 use crate::http::client::HTTPClient;
@@ -20,7 +23,7 @@ use crate::storage::token::Token;
 use crate::trace;
 
 // external crates
-use chrono::Duration;
+use tokio::time::Duration;
 use tracing::error;
 
 
@@ -58,11 +61,17 @@ pub async fn init_state(layout: StorageLayout) -> Result<ServerState, ServerErr>
         http_client.clone(),
         token_file,
         private_key_file,
-        Duration::seconds(15),
     ).map_err(|e| ServerErr::AuthErr(ServerAuthErr {
         source: e,
         trace: trace!(),
     }))?;
+    let token_mngr = Arc::new(token_mngr);
+    let token_mngr_for_spawn = token_mngr.clone();
+
+    // run the token refresh loop
+    tokio::spawn(async move {
+        run_token_refresh_loop(&token_mngr_for_spawn, Duration::from_secs(60)).await
+    });
 
     // initialize the server state
     let server_state = ServerState {
@@ -73,7 +82,7 @@ pub async fn init_state(layout: StorageLayout) -> Result<ServerState, ServerErr>
         concrete_config_cache: Arc::new(ConcreteConfigCache::spawn(
             layout.concrete_config_cache(),
         )),
-        token_mngr: Arc::new(token_mngr),
+        token_mngr,
     };
 
     Ok(server_state)

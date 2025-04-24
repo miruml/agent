@@ -102,7 +102,7 @@ pub async fn refresh_latest_concrete_config(
 fn to_error_response(e: impl MiruError) -> ErrorResponse {
     ErrorResponse {
         error: Box::new(Error {
-            code: e.code().to_string().to_string(),
+            code: e.code().as_str().to_string(),
             params: e.params(),
             message: e.to_string(),
             debug_message: format!("{:?}", e),

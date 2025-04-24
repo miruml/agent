@@ -39,7 +39,6 @@ mod tests {
                 Arc::new(HTTPClient::new().await),
                 token_file,
                 File::new("private_key.pem"),
-                Duration::days(1),
             ).unwrap_err();
             assert!(matches!(result, AuthErr::FileSysErr(_)));
         }
@@ -60,7 +59,6 @@ mod tests {
                 Arc::new(HTTPClient::new().await),
                 token_file,
                 private_key_file,
-                Duration::days(1),
             ).unwrap_err();
             assert!(matches!(result, AuthErr::FileSysErr(_)));
         }
@@ -81,7 +79,6 @@ mod tests {
                 Arc::new(HTTPClient::new().await),
                 token_file,
                 private_key_file,
-                Duration::days(1),
             ).unwrap_err();
             assert!(matches!(result, AuthErr::FileSysErr(_)));
         }
@@ -105,7 +102,6 @@ mod tests {
                 Arc::new(HTTPClient::new().await),
                 token_file,
                 private_key_file,
-                Duration::days(1),
             ).unwrap();
 
             let token = token_mngr.get_token().await.unwrap();
@@ -141,7 +137,6 @@ mod tests {
                 Arc::new(mock_http_client),
                 token_file,
                 private_key_file,
-                Duration::days(1),
             ).unwrap();
 
             // refresh the token
@@ -176,7 +171,6 @@ mod tests {
                 Arc::new(mock_http_client),
                 token_file,
                 private_key_file,
-                Duration::days(1),
             ).unwrap();
 
             // refresh the token
@@ -214,7 +208,6 @@ mod tests {
                 Arc::new(mock_http_client),
                 token_file,
                 private_key_file,
-                Duration::days(1),
             ).unwrap();
 
             // refresh the token
@@ -258,7 +251,6 @@ mod tests {
                 Arc::new(mock_http_client),
                 cached_token_file,
                 private_key_file,
-                Duration::days(1),
             ).unwrap();
 
             // delete the token file just because it should still work

@@ -6,7 +6,7 @@ use crate::errors::{MiruError, Code, HTTPCode};
 use crate::errors::Trace;
 use openapi_client::models::ErrorResponse;
 use crate::http::client::RequestContext;
-
+use crate::http::backend::BackendErrorCodes;
 // external crates
 #[allow(unused_imports)]
 use tracing::{debug, error, info, trace, warn};
@@ -385,6 +385,22 @@ pub enum HTTPErr {
 
     // mock errors (not for production use)
     MockErr(MockErr),
+}
+
+impl HTTPErr {
+    pub fn is_invalid_token_error(&self) -> bool {
+        match self {
+            HTTPErr::RequestFailed(e) => {
+                match &e.error {
+                    Some(error) => {
+                        error.error.code == BackendErrorCodes::InvalidJWTAuth.as_str()
+                    }
+                    None => false,
+                }
+            }
+            _ => false,
+        }
+    }
 }
 
 macro_rules! forward_error_method {

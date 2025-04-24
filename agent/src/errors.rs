@@ -14,7 +14,7 @@ pub enum Code {
 }
 
 impl Code {
-    pub fn to_string(&self) -> &str {
+    pub fn as_str(&self) -> &str {
         match self {
             Self::InternalServerError => "internal_server_error",
             Self::ResourceNotFound => "resource_not_found",

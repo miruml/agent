@@ -51,8 +51,6 @@ struct SingleThreadTokenManager<HTTPClientT: ClientAuthExt> {
     http_client: Arc<HTTPClientT>,
     token_file: CachedFile<Token>,
     private_key_file: File,
-    last_refresh: Option<DateTime<Utc>>,
-    refresh_cooldown: Duration,
 }
 
 impl<HTTPClientT: ClientAuthExt> SingleThreadTokenManager<HTTPClientT> {
@@ -62,7 +60,6 @@ impl<HTTPClientT: ClientAuthExt> SingleThreadTokenManager<HTTPClientT> {
         http_client: Arc<HTTPClientT>,
         token_file: CachedFile<Token>,
         private_key_file: File,
-        refresh_cooldown: Duration,
     ) -> Result<Self, AuthErr> {
         token_file.file.assert_exists().map_err(|e| AuthErr::FileSysErr(AuthFileSysErr {
             source: e,
@@ -77,8 +74,6 @@ impl<HTTPClientT: ClientAuthExt> SingleThreadTokenManager<HTTPClientT> {
             http_client,
             token_file,
             private_key_file,
-            last_refresh: None,
-            refresh_cooldown,
         })
     }
 
@@ -88,13 +83,6 @@ impl<HTTPClientT: ClientAuthExt> SingleThreadTokenManager<HTTPClientT> {
     }
 
     async fn refresh_token(&mut self) -> Result<(), AuthErr> {
-        // exit if we are still in the cooldown period
-        if let Some(last_refresh) = self.last_refresh {
-            if Utc::now() < last_refresh + self.refresh_cooldown {
-                return Ok(());
-            }
-        }
-
         // attempt to issue a new token
         let token = self.issue_token().await?;
 
@@ -213,7 +201,6 @@ impl TokenManager {
         http_client: Arc<HTTPClientT>,
         token_file: CachedFile<Token>,
         private_key_file: File,
-        refresh_cooldown: Duration,
     ) -> Result<Self, AuthErr> {
         let (sender, receiver) = mpsc::channel(32);
         let worker = Worker {
@@ -222,7 +209,6 @@ impl TokenManager {
                 http_client,
                 token_file,
                 private_key_file,
-                refresh_cooldown,
             )?,
             receiver,
         };
