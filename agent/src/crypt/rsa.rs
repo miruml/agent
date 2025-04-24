@@ -12,11 +12,13 @@ use crate::crypt::errors::{
 use crate::filesys::file::File;
 use crate::filesys::path::PathExt;
 use crate::trace;
+
 // external libraries
 use openssl::hash::MessageDigest;
 use openssl::pkey::{PKey, Private, Public};
 use openssl::rsa::Rsa;
 use openssl::sign::{Signer, Verifier};
+use secrecy::ExposeSecret;
 
 /// Generate an RSA key pair and write the private and public keys to the specified
 /// files. If the files exists, an error is returned. Files are returned instead of
@@ -110,12 +112,12 @@ pub async fn read_private_key(private_key_file: &File) -> Result<Rsa<Private>, C
 
     // Read the private key
     let private_key_pem = private_key_file
-        .read_bytes().await
+        .read_secret_bytes().await
         .map_err(|e| CryptErr::FileSysErr(CryptFileSysErr {
             source: e,
             trace: trace!(),
         }))?;
-    Rsa::private_key_from_pem(&private_key_pem).map_err(|e| CryptErr::ReadKeyErr(ReadKeyErr {
+    Rsa::private_key_from_pem(private_key_pem.expose_secret()).map_err(|e| CryptErr::ReadKeyErr(ReadKeyErr {
         source: e,
         trace: trace!(),
     }))
@@ -132,12 +134,12 @@ pub async fn read_public_key(public_key_file: &File) -> Result<Rsa<Public>, Cryp
 
     // Read the public key
     let public_key_pem = public_key_file
-        .read_bytes().await
+        .read_secret_bytes().await
         .map_err(|e| CryptErr::FileSysErr(CryptFileSysErr {
             source: e,
             trace: trace!(),
         }))?;
-    Rsa::public_key_from_pem(&public_key_pem).map_err(|e| CryptErr::ReadKeyErr(ReadKeyErr {
+    Rsa::public_key_from_pem(public_key_pem.expose_secret()).map_err(|e| CryptErr::ReadKeyErr(ReadKeyErr {
         source: e,
         trace: trace!(),
     }))

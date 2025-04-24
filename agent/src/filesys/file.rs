@@ -28,6 +28,7 @@ use crate::trace;
 
 // external crates
 use atomicwrites::{AllowOverwrite, AtomicFile};
+use secrecy::{ExposeSecretMut, SecretBox};
 use serde::de::DeserializeOwned;
 use tokio::fs::File as TokioFile;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -121,6 +122,35 @@ impl File {
                 trace: trace!(),
             }))?;
         Ok(buf)
+    }
+
+    pub async fn read_secret_bytes(&self) -> Result<SecretBox<Vec<u8>>, FileSysErr> {
+        self.assert_exists()?;
+        
+        let mut file = TokioFile::open(self.to_string()).await.map_err(|e| 
+            FileSysErr::OpenFileErr(OpenFileErr {
+                source: e,
+                file: self.clone(),
+                trace: trace!(),
+            })
+        )?;
+        
+        // Get file size to pre-allocate
+        let size = self.size().await?;
+        
+        // Create SecretBox with pre-allocated Vec
+        let mut secret = SecretBox::new(Box::new(Vec::with_capacity(size as usize)));
+        
+        // Read directly into the SecretBox
+        file.read_to_end(secret.expose_secret_mut())
+            .await
+            .map_err(|e| FileSysErr::ReadFileErr(ReadFileErr {
+                source: e,
+                file: self.clone(),
+                trace: trace!(),
+            }))?;
+        
+        Ok(secret)
     }
 
     /// Read the contents of a file as a string

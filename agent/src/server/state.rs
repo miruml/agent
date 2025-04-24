@@ -47,7 +47,7 @@ pub async fn init_state(layout: StorageLayout) -> Result<ServerState, ServerErr>
         trace: trace!(),
     }))?;
 
-    let client_id = get_client_id(&agent_file, &token_file).await?;
+    let client_id = init_client_id(&agent_file, &token_file).await?;
 
     // initialize the http client
     let http_client = Arc::new(HTTPClient::new().await);
@@ -79,7 +79,7 @@ pub async fn init_state(layout: StorageLayout) -> Result<ServerState, ServerErr>
     Ok(server_state)
 }
 
-pub async fn get_client_id(
+async fn init_client_id(
     agent_file: &File,
     token_file: &CachedFile<Token>,
 ) -> Result<ClientID, ServerErr> {
@@ -101,7 +101,7 @@ pub async fn get_client_id(
         trace: trace!(),
     }))?;
 
-    // write the client id to the agent file
+    // write the client id to the agent file since it doesn't exist (for some reason)
     let agent = Agent { client_id: client_id.clone() };
     agent_file.write_json(&agent, true, true).await.map_err(|e| ServerErr::FileSysErr(ServerFileSysErr {
         source: e,

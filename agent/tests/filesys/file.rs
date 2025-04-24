@@ -9,6 +9,7 @@ mod tests {
     use config_agent::filesys::{dir::Dir, errors::FileSysErr, file, file::File, path::PathExt};
 
     // external crates
+    use secrecy::ExposeSecret;
     use serde_json::json;
     #[allow(unused_imports)]
     use tracing::{debug, error, info, trace, warn};
@@ -202,6 +203,29 @@ mod tests {
                 .await
                 .unwrap();
             assert_eq!(file.read_bytes().await.unwrap(), b"arglebargle");
+        }
+    }
+
+    pub mod read_secret_bytes {
+        use super::*;
+
+        #[tokio::test]
+        async fn read_doesnt_exist() {
+            let file = File::new(PathBuf::from("doesnt_exist").join("test-file.json"));
+            assert!(matches!(
+                file.read_secret_bytes().await.unwrap_err(),
+                FileSysErr::PathDoesNotExistErr { .. }
+            ));
+        }
+
+        #[tokio::test]
+        async fn read_success() {
+            let dir = Dir::create_temp_dir("testing").await.unwrap();
+            let file = dir.file("test-file");
+            file.write_string("arglebargle", false, false)
+                .await
+                .unwrap();
+            assert_eq!(file.read_secret_bytes().await.unwrap().expose_secret(), b"arglebargle");
         }
     }
 
