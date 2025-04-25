@@ -301,16 +301,15 @@ pub async fn run_refresh_loop(
     shutdown_signal: impl Future<Output = ()> + Send + 'static,
 ) {
     let mut shutdown = Box::pin(shutdown_signal);
-    let mut sleep_duration: tokio::time::Duration;
+
+    // we want the first refresh to occur immediately if the token is expired
+    let mut sleep_duration = determine_refresh_loop_sleep_duration(
+        &token_mngr,
+        expiration_threshold,
+        tokio::time::Duration::from_secs(0),
+    ).await;
 
     loop {
-        // determine how long to sleep before refreshing the token.
-        sleep_duration = determine_refresh_loop_sleep_duration(
-            &token_mngr,
-            expiration_threshold,
-            cooldown,
-        ).await;
-
         tokio::select! {
             // exit if the shutdown signal is received
             _ = shutdown.as_mut() => {
@@ -323,10 +322,45 @@ pub async fn run_refresh_loop(
         }
 
         // refresh the token
-        if let Err(e) = token_mngr.refresh_token().await {
-            error!("Error refreshing token: {:#?}", e);
+        if refresh_token(
+            &token_mngr,
+            3,
+            tokio::time::Duration::from_millis(100),
+        ).await.is_err() {
+            error!("Error refreshing token");
+        } else {
+            info!("Token refreshed successfully");
         }
+
+        // determine how long to sleep before refreshing the token.
+        sleep_duration = determine_refresh_loop_sleep_duration(
+            &token_mngr,
+            expiration_threshold,
+            cooldown,
+        ).await;
     }
+}
+
+async fn refresh_token(
+    token_mngr: &TokenManager,
+    attempts: usize,
+    retry_delay: tokio::time::Duration,
+) -> Result<(), AuthErr> {
+    for i in 0..attempts {
+        match token_mngr.refresh_token().await {
+            Ok(_) => {
+                return Ok(());
+            }
+            Err(e) => {
+                error!("Error refreshing token: {:#?}", e);
+                if i == attempts - 1 {
+                    return Err(e);
+                }
+            }
+        }
+        tokio::time::sleep(retry_delay).await;
+    }
+    Ok(())
 }
 
 pub async fn determine_refresh_loop_sleep_duration(
