@@ -7,6 +7,7 @@ use crate::crypt::errors::CryptErr;
 use crate::errors::MiruError;
 use crate::errors::{Code, HTTPCode, Trace};
 use crate::filesys::errors::FileSysErr;
+use crate::filesys::file::File;
 use crate::http::errors::HTTPErr;
 use crate::storage::errors::StorageErr;
 
@@ -223,12 +224,13 @@ impl fmt::Display for ServerStorageErr {
 }
 
 #[derive(Debug)]
-pub struct IOErr {
+pub struct BindUnixSocketErr {
+    pub socket_file: File,
     pub source: Box<std::io::Error>,
     pub trace: Box<Trace>,
 }
 
-impl MiruError for IOErr {
+impl MiruError for BindUnixSocketErr {
     fn code(&self) -> Code {
         Code::InternalServerError
     }
@@ -246,9 +248,40 @@ impl MiruError for IOErr {
     }
 }
 
-impl fmt::Display for IOErr {
+impl fmt::Display for BindUnixSocketErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "server io error: {}", self.source)
+        write!(f, "failed to bind unix socket '{}': {}", self.socket_file, self.source)
+    }
+}
+
+
+#[derive(Debug)]
+pub struct RunAxumServerErr {
+    pub source: Box<std::io::Error>,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for RunAxumServerErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for RunAxumServerErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "failed to run axum server: {}", self.source)
     }
 }
 
@@ -357,7 +390,8 @@ pub enum ServerErr {
     StorageErr(ServerStorageErr),
 
     // external crate errors
-    IOErr(IOErr),
+    BindUnixSocketErr(BindUnixSocketErr),
+    RunAxumServerErr(RunAxumServerErr),
     SendShutdownSignalErr(SendShutdownSignalErr),
     JoinHandleErr(JoinHandleErr),
 }
@@ -373,7 +407,8 @@ macro_rules! forward_error_method {
             Self::FileSysErr(e) => e.$method($($arg)?),
             Self::HTTPErr(e) => e.$method($($arg)?),
             Self::StorageErr(e) => e.$method($($arg)?),
-            Self::IOErr(e) => e.$method($($arg)?),
+            Self::BindUnixSocketErr(e) => e.$method($($arg)?),
+            Self::RunAxumServerErr(e) => e.$method($($arg)?),
             Self::SendShutdownSignalErr(e) => e.$method($($arg)?),
             Self::JoinHandleErr(e) => e.$method($($arg)?),
         }

@@ -322,14 +322,17 @@ pub async fn run_refresh_loop(
         }
 
         // refresh the token
-        if refresh_token(
+        match refresh_token(
             &token_mngr,
             3,
             tokio::time::Duration::from_millis(100),
-        ).await.is_err() {
-            error!("Error refreshing token");
-        } else {
-            info!("Token refreshed successfully");
+        ).await {
+            Ok(_) => {
+                info!("Token refreshed successfully");
+            }
+            Err(e) => {
+                error!("Error refreshing token: {:#?}", e);
+            }
         }
 
         // determine how long to sleep before refreshing the token.
@@ -352,7 +355,6 @@ async fn refresh_token(
                 return Ok(());
             }
             Err(e) => {
-                error!("Error refreshing token: {:#?}", e);
                 if i == attempts - 1 {
                     return Err(e);
                 }

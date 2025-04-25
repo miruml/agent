@@ -1,9 +1,15 @@
 // standard library
 use std::future::Future;
 use std::sync::Arc;
+use std::{env, os::unix::io::{FromRawFd, RawFd}};
 
 // internal crates
-use crate::server::errors::{IOErr, ServerErr};
+use crate::filesys::{file::File, path::PathExt};
+use crate::server::errors::{
+    BindUnixSocketErr,
+    RunAxumServerErr,
+    ServerErr,
+};
 use crate::server::handlers;
 use crate::server::state::ServerState;
 use crate::trace;
@@ -16,6 +22,7 @@ use axum::{
 };
 use serde_json::json;
 use tokio::task::JoinHandle;
+use tokio::net::UnixListener;
 use tower::ServiceBuilder;
 use tower_http::{
     trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
@@ -24,6 +31,7 @@ use tower_http::{
 use tracing::Level;
 
 pub(crate) async fn serve(
+    socket_file: &File,
     state: Arc<ServerState>,
     shutdown_signal: impl Future<Output = ()> + Send + 'static,
 ) -> Result<JoinHandle<Result<(), ServerErr>>, ServerErr> {
@@ -69,15 +77,13 @@ pub(crate) async fn serve(
         )
         .with_state(state);
 
-    // run the server over the unix socket
-    let socket_path = "/tmp/miru.sock";
-    let _ = std::fs::remove_file(socket_path);
-    let listener = tokio::net::UnixListener::bind(socket_path).map_err(|e| {
-        ServerErr::IOErr(IOErr {
-            source: Box::new(e),
-            trace: trace!(),
-        })
-    })?;
+    // obtain the unix socket file listener
+    let listener = acquire_unix_socket_listener(
+        socket_file,
+        async move {
+            create_unix_socket_listener(socket_file).await
+        },
+    ).await?;
 
     // serve with graceful shutdown
     let server_handle = tokio::task::spawn(async move {
@@ -85,7 +91,7 @@ pub(crate) async fn serve(
             .with_graceful_shutdown(shutdown_signal)
             .await
             .map_err(|e| {
-                ServerErr::IOErr(IOErr {
+                ServerErr::RunAxumServerErr(RunAxumServerErr {
                     source: Box::new(e),
                     trace: trace!(),
                 })
@@ -93,6 +99,62 @@ pub(crate) async fn serve(
     });
 
     Ok(server_handle)
+}
+
+async fn acquire_unix_socket_listener(
+    socket_file: &File,
+    fallback: impl Future<Output = Result<UnixListener, ServerErr>>,
+) -> Result<UnixListener, ServerErr> {
+    let listener = if let Ok(listen_fds) = env::var("LISTEN_FDS") {
+        let listen_fds = listen_fds.parse::<u32>().map_err(|e| {
+            ServerErr::BindUnixSocketErr(BindUnixSocketErr {
+                socket_file: socket_file.clone(),
+                source: Box::new(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    format!("Failed to parse LISTEN_FDS: {}", e),
+                )),
+                trace: trace!(),
+            })
+        })?;
+        if listen_fds >= 1 {
+            // FD#3 is the first one
+            let fd: RawFd = 3;
+            // SAFETY: fd=3 was handed to us by systemd
+            let std_listener = unsafe { 
+                std::os::unix::net::UnixListener::from_raw_fd(fd) 
+            };
+            std_listener.set_nonblocking(true).map_err(|e| {
+                ServerErr::BindUnixSocketErr(BindUnixSocketErr {
+                    socket_file: socket_file.clone(),
+                    source: Box::new(e),
+                    trace: trace!(),
+                })
+            })?;
+            UnixListener::from_std(std_listener).map_err(|e| {
+                ServerErr::BindUnixSocketErr(BindUnixSocketErr {
+                    socket_file: socket_file.clone(),
+                    source: Box::new(e),
+                    trace: trace!(),
+                })
+            })?
+        } else {
+            fallback.await?
+        }
+    } else {
+        fallback.await?
+    };
+    Ok(listener)
+}
+
+async fn create_unix_socket_listener(socket_file: &File) -> Result<UnixListener, ServerErr> {
+    let socket_path = socket_file.path();
+    tokio::net::UnixListener::bind(socket_path).map_err(|e| {
+        ServerErr::BindUnixSocketErr(BindUnixSocketErr {
+            socket_file: socket_file.clone(),
+            source: Box::new(e),
+            trace: trace!(),
+        })
+    })
 }
 
 async fn test() -> (StatusCode, Json<serde_json::Value>) {

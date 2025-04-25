@@ -7,6 +7,7 @@ use std::time::{Duration, SystemTime};
 
 // internal crates
 use crate::auth::token_mngr::run_refresh_loop;
+use crate::filesys::file::File;
 use crate::server::errors::{JoinHandleErr, ServerErr, ShutdownMngrDuplicateArgErr};
 use crate::server::serve::serve;
 use crate::server::state::ServerState;
@@ -27,6 +28,7 @@ pub struct ServerComponents {
 
 pub struct RunServerOptions {
     pub layout: StorageLayout,
+    pub socket_file: File,
     pub token_refresh_expiration_threshold: Duration,
     pub token_refresh_cooldown: Duration,
     pub max_runtime: Duration,
@@ -38,6 +40,7 @@ pub struct RunServerOptions {
 impl Default for RunServerOptions {
     fn default() -> Self {
         Self {
+            socket_file: File::new("/run/miru/miru.sock"),
             layout: StorageLayout::default(),
             token_refresh_expiration_threshold: Duration::from_secs(15 * 60), // 15 minutes
             token_refresh_cooldown: Duration::from_secs(30),
@@ -134,6 +137,7 @@ async fn start_server(
 
     // run the axum server with graceful shutdown
     let server_handle = serve(
+        &options.socket_file,
         state.clone(),
         async move {
             let _ = shutdown_rx2_server.recv().await;

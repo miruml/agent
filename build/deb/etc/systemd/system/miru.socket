@@ -1,0 +1,11 @@
+[Unit]
+Description=Miru OTA deployment manager socket
+
+[Socket]
+ListenStream=/run/miru.sock
+SocketMode=0660
+SocketGroup=miru
+RemoveOnStop=yes
+
+[Install]
+WantedBy=sockets.target
