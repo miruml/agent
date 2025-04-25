@@ -317,6 +317,7 @@ where
     }
 }
 
+#[derive(Debug)]
 pub struct Cache<K, V>
 where
     K: Send + Sync + ToString + Serialize + DeserializeOwned + 'static,

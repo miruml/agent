@@ -11,6 +11,37 @@ use crate::http::errors::HTTPErr;
 use crate::storage::errors::StorageErr;
 
 #[derive(Debug)]
+pub struct MissingClientIDErr {
+    pub agent_file_err: FileSysErr,
+    pub jwt_err: CryptErr,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for MissingClientIDErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for MissingClientIDErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "unable to determine client id from the agent file or the token on file: agent file error: {}, jwt error: {}", self.agent_file_err, self.jwt_err)
+    }
+}
+
+#[derive(Debug)]
 pub struct ServerAuthErr {
     pub source: AuthErr,
     pub trace: Box<Trace>,
@@ -283,6 +314,7 @@ impl fmt::Display for TimestampConversionErr {
 #[derive(Debug)]
 pub enum ServerErr {
     // server errors
+    MissingClientIDErr(MissingClientIDErr),
     TimestampConversionErr(TimestampConversionErr),
 
     // internal crate errors
@@ -301,6 +333,7 @@ pub enum ServerErr {
 macro_rules! forward_error_method {
     ($self:ident, $method:ident $(, $arg:expr)?) => {
         match $self {
+            Self::MissingClientIDErr(e) => e.$method($($arg)?),
             Self::TimestampConversionErr(e) => e.$method($($arg)?),
             Self::AuthErr(e) => e.$method($($arg)?),
             Self::CryptErr(e) => e.$method($($arg)?),

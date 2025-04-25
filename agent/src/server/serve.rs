@@ -52,7 +52,7 @@ pub async fn serve(
                     move |req: axum::extract::Request, next: axum::middleware::Next| {
                         let state = state_for_middleware.clone();
                         async move {
-                            state.update_last_activity();
+                            state.record_activity();
                             next.run(req).await
                         }
                     },

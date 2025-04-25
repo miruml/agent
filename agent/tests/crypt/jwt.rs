@@ -48,7 +48,7 @@ mod tests {
             let invalid_payloads = vec![
                 json!({
                     // missing the issuer
-                    "aud": "device",
+                    "aud": "client",
                     "exp": 1721517034,
                     "iat": 1721495434,
                     "sub": "75899aa4-b08a-4047-8526-880b1b832973"
@@ -56,7 +56,7 @@ mod tests {
                 .to_string(),
                 json!({
                     // missing the audience
-                    "iss": "Miru",
+                    "iss": "miru",
                     "exp": 1721517034,
                     "iat": 1721495434,
                     "sub": "75899aa4-b08a-4047-8526-880b1b832973"
@@ -64,24 +64,24 @@ mod tests {
                 .to_string(),
                 json!({
                     // missing the subject
-                    "iss": "Miru",
-                    "aud": "device",
+                    "iss": "miru",
+                    "aud": "client",
                     "exp": 1721517034,
                     "iat": 1721495434,
                 })
                 .to_string(),
                 json!({
                     // missing the expiration time
-                    "iss": "Miru",
-                    "aud": "device",
+                    "iss": "miru",
+                    "aud": "client",
                     "iat": 1721495434,
                     "sub": "75899aa4-b08a-4047-8526-880b1b832973"
                 })
                 .to_string(),
                 json!({
                     // missing the issued at time
-                    "iss": "Miru",
-                    "aud": "device",
+                    "iss": "miru",
+                    "aud": "client",
                     "exp": 1721517034,
                     "sub": "75899aa4-b08a-4047-8526-880b1b832973"
                 })
@@ -102,8 +102,8 @@ mod tests {
         #[test]
         fn success() {
             let payload = json!({
-                "iss": "Miru",
-                "aud": "device",
+                "iss": "miru",
+                "aud": "client",
                 "exp": 1721517034,
                 "iat": 1721495434,
                 "sub": "75899aa4-b08a-4047-8526-880b1b832973"
@@ -116,8 +116,8 @@ mod tests {
         );
             let claims = jwt::decode(&token).unwrap();
             let expected = Claims {
-                iss: "Miru".to_string(),
-                aud: "device".to_string(),
+                iss: "miru".to_string(),
+                aud: "client".to_string(),
                 exp: 1721517034,
                 iat: 1721495434,
                 sub: "75899aa4-b08a-4047-8526-880b1b832973".to_string(),
@@ -144,8 +144,8 @@ mod tests {
         #[test]
         fn success() {
             let payload = json!({
-                "iss": "Miru",
-                "aud": "device",
+                "iss": "miru",
+                "aud": "client",
                 "exp": 1721517034,
                 "iat": 1721495434,
                 "sub": "75899aa4-b08a-4047-8526-880b1b832973"
@@ -168,7 +168,7 @@ mod tests {
         fn client_claims_invalid() {
             let now = chrono::Utc::now().timestamp();
             let invalid_claims = vec![
-                // issuer isn't Miru
+                // issuer isn't miru
                 Claims {
                     iss: "Uncle Sam".to_string(),
                     aud: "client".to_string(),

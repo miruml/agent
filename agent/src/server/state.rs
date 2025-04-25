@@ -7,10 +7,19 @@ use std::time::{SystemTime, UNIX_EPOCH};
 // internal crates
 use crate::auth::token_mngr::TokenManager;
 use crate::crypt::jwt;
-use crate::filesys::{cached_file::CachedFile, file::File};
+use crate::filesys::{
+    cached_file::CachedFile,
+    errors::FileSysErr,
+    file::File,
+    path::PathExt,
+};
 use crate::http::client::HTTPClient;
 use crate::server::errors::{
-    ServerAuthErr, ServerCryptErr, ServerErr, ServerFileSysErr, ServerStorageErr,
+    ServerAuthErr,
+    ServerErr,
+    ServerFileSysErr,
+    ServerStorageErr,
+    MissingClientIDErr,
 };
 use crate::storage::agent::Agent;
 use crate::storage::concrete_configs::ConcreteConfigCache;
@@ -19,12 +28,9 @@ use crate::storage::layout::StorageLayout;
 use crate::storage::token::Token;
 use crate::trace;
 
-// external crates
-use tracing::error;
-
 type ClientID = String;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ServerState {
     pub http_client: Arc<HTTPClient>,
     pub config_schema_digest_cache: Arc<ConfigSchemaDigestCache>,
@@ -37,8 +43,14 @@ impl ServerState {
     pub async fn new(layout: StorageLayout) -> Result<(Self, impl Future<Output = ()>), ServerErr> {
         // storage layout stuff
         let auth_dir = layout.auth_dir();
-        let agent_file = layout.agent_file();
         let private_key_file = auth_dir.private_key_file();
+        private_key_file.assert_exists().map_err(|e| {
+            ServerErr::FileSysErr(ServerFileSysErr {
+                source: e,
+                trace: trace!(),
+            })
+        })?;
+        let agent_file = layout.agent_file();
         let token_file = CachedFile::new_with_default(auth_dir.token_file(), Token::default())
             .await
             .map_err(|e| {
@@ -135,23 +147,27 @@ impl ServerState {
         token_file: &CachedFile<Token>,
     ) -> Result<ClientID, ServerErr> {
         // attempt to get the client id from the agent file
-        match agent_file.read_json::<Agent>().await {
+        let agent_file_err = match agent_file.read_json::<Agent>().await {
             Ok(agent) => {
                 return Ok(agent.client_id);
             }
             Err(e) => {
-                error!("Error reading agent file: {:?}", e);
+                e
             }
-        }
+        };
 
         // attempt to get the client id from the existing token on file
         let token = token_file.read();
-        let client_id = jwt::extract_client_id(&token.token).map_err(|e| {
-            ServerErr::CryptErr(ServerCryptErr {
-                source: e,
-                trace: trace!(),
-            })
-        })?;
+        let client_id = match jwt::extract_client_id(&token.token) {
+            Ok(client_id) => client_id,
+            Err(e) => {
+                return Err(ServerErr::MissingClientIDErr(MissingClientIDErr {
+                    agent_file_err,
+                    jwt_err: e,
+                    trace: trace!(),
+                }));
+            }
+        };
 
         // write the client id to the agent file since it doesn't exist (for some reason)
         let agent = Agent {
@@ -170,7 +186,7 @@ impl ServerState {
         Ok(client_id)
     }
 
-    pub fn update_last_activity(&self) {
+    pub fn record_activity(&self) {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
