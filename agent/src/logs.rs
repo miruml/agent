@@ -64,7 +64,10 @@ impl Display for LogLevel {
 
 /// Initialize the application. This function creates a logger and initialized the
 /// Miru application context.
-pub fn init(stdout: bool, log_level: LogLevel) -> Result<WorkerGuard, Box<dyn std::error::Error>> {
+pub fn init(
+    stdout: bool,
+    log_level: LogLevel,
+) -> Result<WorkerGuard, Box<dyn std::error::Error>> {
     // initialize the file appender for logging
     let file_appender = tracing_appender::rolling::hourly("/var/log/miru", "miru.log");
     let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);

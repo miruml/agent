@@ -78,7 +78,7 @@ pub fn validate_claims(claim: Claims) -> Result<ClientID, CryptErr> {
 }
 
 /// Decode a Miru JWT payload and validate the claims. The "sub" field is the device
-pub fn validate_format(token: &str) -> Result<String, CryptErr> {
+pub fn validate(token: &str) -> Result<String, CryptErr> {
     let claims = decode(token)?;
     validate_claims(claims)
 }

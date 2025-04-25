@@ -1,0 +1,14 @@
+[package]
+name = "config-agent-installer"
+version = { workspace = true }
+edition = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+config-agent = { workspace = true }
+dialoguer = { workspace = true }
+indicatif = { workspace = true }
+openapi-client = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }

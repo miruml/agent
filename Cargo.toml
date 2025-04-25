@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = [ "agent", "openapi/server", "openapi/client"]
+members = [ "agent", "installer", "openapi/server", "openapi/client"]
 
 [workspace.package]
 edition = "2021"
@@ -17,7 +17,10 @@ atomicwrites = "0.4.4"
 axum = { version = "0.8.3" }
 base64 = "0.22.1"
 chrono = { version = "0.4.40", features = ["serde"] }
+config-agent = { path = "agent" }
+dialoguer = "0.11.0"
 futures = "0.3.31"
+indicatif = "0.17.11"
 moka = { version = "0.12.10", features = ["future"] }
 reqwest = "0.12.9"
 openapi-client = { path = "openapi/client"}

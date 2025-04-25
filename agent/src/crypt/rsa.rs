@@ -27,21 +27,8 @@ pub async fn gen_key_pair(
     num_bits: u32,
     private_key_file: &File,
     public_key_file: &File,
+    overwrite: bool,
 ) -> Result<(), CryptErr> {
-    // Ensure the files don't already exist
-    private_key_file.assert_doesnt_exist().map_err(|e| {
-        CryptErr::FileSysErr(CryptFileSysErr {
-            source: e,
-            trace: trace!(),
-        })
-    })?;
-    public_key_file.assert_doesnt_exist().map_err(|e| {
-        CryptErr::FileSysErr(CryptFileSysErr {
-            source: e,
-            trace: trace!(),
-        })
-    })?;
-
     // Generate the RSA key pair
     let rsa = Rsa::generate(num_bits).map_err(|e| {
         CryptErr::GenerateRSAKeyPairErr(GenerateRSAKeyPairErr {
@@ -58,7 +45,7 @@ pub async fn gen_key_pair(
         })
     })?;
     private_key_file
-        .write_bytes(&private_key_pem, true, true)
+        .write_bytes(&private_key_pem, overwrite, true)
         .await
         .map_err(|e| {
             CryptErr::FileSysErr(CryptFileSysErr {
@@ -83,7 +70,7 @@ pub async fn gen_key_pair(
         })
     })?;
     public_key_file
-        .write_bytes(&public_key_pem, true, true)
+        .write_bytes(&public_key_pem, overwrite, true)
         .await
         .map_err(|e| {
             CryptErr::FileSysErr(CryptFileSysErr {

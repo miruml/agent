@@ -14,7 +14,7 @@ mod tests {
 
         // TEST CASES
         #[tokio::test]
-        async fn success() {
+        async fn success_doesnt_exist_overwrite_true() {
             let crypt_dir = Dir::create_temp_dir("crypt_rsa_test").await.unwrap();
             let private_key_path = crypt_dir.path().join("private_key.pem");
             let public_key_path = crypt_dir.path().join("public_key.pem");
@@ -24,7 +24,12 @@ mod tests {
             private_key_file.delete().await.unwrap();
             public_key_file.delete().await.unwrap();
 
-            let result = rsa::gen_key_pair(4096, &private_key_file, &public_key_file).await;
+            let result = rsa::gen_key_pair(
+                4096,
+                &private_key_file,
+                &public_key_file,
+                true,
+            ).await;
             assert!(result.is_ok());
 
             assert!(private_key_file.exists());
@@ -32,23 +37,30 @@ mod tests {
         }
 
         #[tokio::test]
-        async fn invalid_key_size() {
+        async fn success_doesnt_exist_overwrite_false() {
             let crypt_dir = Dir::create_temp_dir("crypt_rsa_test").await.unwrap();
             let private_key_path = crypt_dir.path().join("private_key.pem");
             let public_key_path = crypt_dir.path().join("public_key.pem");
 
             let private_key_file = File::new(private_key_path.clone());
             let public_key_file = File::new(public_key_path.clone());
+            private_key_file.delete().await.unwrap();
+            public_key_file.delete().await.unwrap();
 
-            // Invalid key size
-            let result = rsa::gen_key_pair(0, &private_key_file, &public_key_file)
-                .await
-                .unwrap_err();
-            assert!(matches!(result, CryptErr::GenerateRSAKeyPairErr { .. }));
+            let result = rsa::gen_key_pair(
+                4096,
+                &private_key_file,
+                &public_key_file,
+                false,
+            ).await;
+            assert!(result.is_ok());
+
+            assert!(private_key_file.exists());
+            assert!(public_key_file.exists());
         }
 
         #[tokio::test]
-        async fn existing_files() {
+        async fn success_existing_files_overwrite_true() {
             let crypt_dir = Dir::create_temp_dir("crypt_rsa_test").await.unwrap();
             let private_key_path = crypt_dir.path().join("private_key.pem");
             let public_key_path = crypt_dir.path().join("public_key.pem");
@@ -63,17 +75,88 @@ mod tests {
                 .write_bytes(&[4, 4], true, false)
                 .await
                 .unwrap();
-            let result = rsa::gen_key_pair(4096, &private_key_file, &public_key_file).await;
-            assert!(result.is_err());
+            rsa::gen_key_pair(
+                4096,
+                &private_key_file,
+                &public_key_file,
+                true,
+            ).await.unwrap();
+            public_key_file.delete().await.unwrap();
 
             // private key file exists
             private_key_file
                 .write_bytes(&[4, 4], true, false)
                 .await
                 .unwrap();
-            let result = rsa::gen_key_pair(4096, &private_key_file, &public_key_file).await;
-            assert!(result.is_err());
+            rsa::gen_key_pair(
+                4096,
+                &private_key_file,
+                &public_key_file,
+                false,
+            ).await.unwrap_err();
+
+            assert!(private_key_file.exists());
+            assert!(public_key_file.exists());
         }
+
+        #[tokio::test]
+        async fn failure_existing_files_overwrite_false() {
+            let crypt_dir = Dir::create_temp_dir("crypt_rsa_test").await.unwrap();
+            let private_key_path = crypt_dir.path().join("private_key.pem");
+            let public_key_path = crypt_dir.path().join("public_key.pem");
+
+            let private_key_file = File::new(private_key_path.clone());
+            let public_key_file = File::new(public_key_path.clone());
+            private_key_file.delete().await.unwrap();
+            public_key_file.delete().await.unwrap();
+
+            // public key file exists
+            public_key_file
+                .write_bytes(&[4, 4], true, false)
+                .await
+                .unwrap();
+            rsa::gen_key_pair(
+                4096,
+                &private_key_file,
+                &public_key_file,
+                false,
+            ).await.unwrap_err();
+            public_key_file.delete().await.unwrap();
+
+            // private key file exists
+            private_key_file
+                .write_bytes(&[4, 4], true, false)
+                .await
+                .unwrap();
+            rsa::gen_key_pair(
+                4096,
+                &private_key_file,
+                &public_key_file,
+                false,
+            ).await.unwrap_err();
+        }
+
+        #[tokio::test]
+        async fn invalid_key_size() {
+            let crypt_dir = Dir::create_temp_dir("crypt_rsa_test").await.unwrap();
+            let private_key_path = crypt_dir.path().join("private_key.pem");
+            let public_key_path = crypt_dir.path().join("public_key.pem");
+
+            let private_key_file = File::new(private_key_path.clone());
+            let public_key_file = File::new(public_key_path.clone());
+
+            // Invalid key size
+            let result = rsa::gen_key_pair(
+                0,
+                &private_key_file,
+                &public_key_file,
+                true,
+            ).await
+                .unwrap_err();
+            assert!(matches!(result, CryptErr::GenerateRSAKeyPairErr { .. }));
+        }
+
+
     }
 
     pub mod read_private_key {
@@ -90,7 +173,7 @@ mod tests {
             private_key_file.delete().await.unwrap();
             public_key_file.delete().await.unwrap();
 
-            rsa::gen_key_pair(4096, &private_key_file, &public_key_file)
+            rsa::gen_key_pair(4096, &private_key_file, &public_key_file, true)
                 .await
                 .unwrap();
 
@@ -141,7 +224,7 @@ mod tests {
             private_key_file.delete().await.unwrap();
             public_key_file.delete().await.unwrap();
 
-            rsa::gen_key_pair(4096, &private_key_file, &public_key_file)
+            rsa::gen_key_pair(4096, &private_key_file, &public_key_file, true)
                 .await
                 .unwrap();
 
@@ -192,7 +275,7 @@ mod tests {
             private_key_file.delete().await.unwrap();
             public_key_file.delete().await.unwrap();
 
-            rsa::gen_key_pair(4096, &private_key_file, &public_key_file)
+            rsa::gen_key_pair(4096, &private_key_file, &public_key_file, true)
                 .await
                 .unwrap();
 
@@ -246,7 +329,7 @@ mod tests {
             private_key_file.delete().await.unwrap();
             public_key_file.delete().await.unwrap();
 
-            rsa::gen_key_pair(4096, &private_key_file, &public_key_file)
+            rsa::gen_key_pair(4096, &private_key_file, &public_key_file, true)
                 .await
                 .unwrap();
 

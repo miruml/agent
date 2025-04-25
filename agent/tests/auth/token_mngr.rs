@@ -82,7 +82,7 @@ mod tests {
                 .unwrap();
             let private_key_file = dir.file("private_key.pem");
             let public_key_file = dir.file("public_key.pem");
-            rsa::gen_key_pair(4096, &private_key_file, &public_key_file)
+            rsa::gen_key_pair(4096, &private_key_file, &public_key_file, true)
                 .await
                 .unwrap();
             let mock_http_client = MockAuthClient::default();
@@ -109,7 +109,7 @@ mod tests {
                 .unwrap();
             let private_key_file = dir.file("private_key.pem");
             let public_key_file = dir.file("public_key.pem");
-            rsa::gen_key_pair(4096, &private_key_file, &public_key_file)
+            rsa::gen_key_pair(4096, &private_key_file, &public_key_file, true)
                 .await
                 .unwrap();
 
@@ -203,7 +203,7 @@ mod tests {
                 .unwrap();
             let private_key_file = dir.file("private_key.pem");
             let public_key_file = dir.file("public_key.pem");
-            rsa::gen_key_pair(4096, &private_key_file, &public_key_file)
+            rsa::gen_key_pair(4096, &private_key_file, &public_key_file, true)
                 .await
                 .unwrap();
 
@@ -241,7 +241,7 @@ mod tests {
                 .unwrap();
             let private_key_file = dir.file("private_key.pem");
             let public_key_file = dir.file("public_key.pem");
-            rsa::gen_key_pair(4096, &private_key_file, &public_key_file)
+            rsa::gen_key_pair(4096, &private_key_file, &public_key_file, true)
                 .await
                 .unwrap();
 
@@ -287,7 +287,7 @@ mod tests {
                     .unwrap();
             let private_key_file = dir.file("private_key.pem");
             let public_key_file = dir.file("public_key.pem");
-            rsa::gen_key_pair(4096, &private_key_file, &public_key_file)
+            rsa::gen_key_pair(4096, &private_key_file, &public_key_file, true)
                 .await
                 .unwrap();
 
@@ -338,7 +338,7 @@ mod tests {
                 .unwrap();
         let private_key_file = dir.file("private_key.pem");
         let public_key_file = dir.file("public_key.pem");
-        rsa::gen_key_pair(4096, &private_key_file, &public_key_file)
+        rsa::gen_key_pair(4096, &private_key_file, &public_key_file, true)
             .await
             .unwrap();
 

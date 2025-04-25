@@ -2,8 +2,10 @@
 use std::fmt;
 
 // internal crates
+use crate::crypt::errors::CryptErr;
 use crate::errors::{Code, HTTPCode, MiruError, Trace};
 use crate::filesys::errors::FileSysErr;
+
 #[derive(Debug)]
 pub struct CacheElementNotFound {
     pub msg: String,
@@ -31,6 +33,36 @@ impl MiruError for CacheElementNotFound {
 impl fmt::Display for CacheElementNotFound {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "unable to find cache element: {}", self.msg)
+    }
+}
+
+#[derive(Debug)]
+pub struct StorageCryptErr {
+    pub source: CryptErr,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for StorageCryptErr {
+    fn code(&self) -> Code {
+        self.source.code()
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        self.source.http_status()
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        self.source.is_network_connection_error()
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        self.source.params()
+    }
+}
+
+impl fmt::Display for StorageCryptErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "crypt error: {}", self.source)
     }
 }
 
@@ -160,6 +192,7 @@ pub enum StorageErr {
     CacheElementNotFound(CacheElementNotFound),
 
     // internal crate errors
+    CryptErr(StorageCryptErr),
     FileSysErr(StorageFileSysErr),
 
     // external crate errors
@@ -171,6 +204,7 @@ pub enum StorageErr {
 macro_rules! forward_error_method {
     ($self:ident, $method:ident $(, $arg:expr)?) => {
         match $self {
+            Self::CryptErr(e) => e.$method($($arg)?),
             Self::FileSysErr(e) => e.$method($($arg)?),
             Self::CacheElementNotFound(e) => e.$method($($arg)?),
             Self::SendActorMessageErr(e) => e.$method($($arg)?),

@@ -225,7 +225,7 @@ mod tests {
 
     #[test]
     #[ignore]
-    fn test_validate_miru_jwt_format() {
+    fn test_validate() {
         // testing this would be redundant since it's such a simple wrapper
     }
 }
