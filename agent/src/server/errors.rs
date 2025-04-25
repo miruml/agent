@@ -12,8 +12,8 @@ use crate::storage::errors::StorageErr;
 
 #[derive(Debug)]
 pub struct MissingClientIDErr {
-    pub agent_file_err: FileSysErr,
-    pub jwt_err: CryptErr,
+    pub agent_file_err: Box<FileSysErr>,
+    pub jwt_err: Box<CryptErr>,
     pub trace: Box<Trace>,
 }
 
@@ -42,8 +42,39 @@ impl fmt::Display for MissingClientIDErr {
 }
 
 #[derive(Debug)]
+pub struct ShutdownMngrDuplicateArgErr {
+    pub arg_name: Box<String>,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for ShutdownMngrDuplicateArgErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for ShutdownMngrDuplicateArgErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "shutdown manager was provided the same argument ({}) twice", self.arg_name)
+    }
+}
+
+
+#[derive(Debug)]
 pub struct ServerAuthErr {
-    pub source: AuthErr,
+    pub source: Box<AuthErr>,
     pub trace: Box<Trace>,
 }
 
@@ -73,7 +104,7 @@ impl fmt::Display for ServerAuthErr {
 
 #[derive(Debug)]
 pub struct ServerCryptErr {
-    pub source: CryptErr,
+    pub source: Box<CryptErr>,
     pub trace: Box<Trace>,
 }
 
@@ -103,7 +134,7 @@ impl fmt::Display for ServerCryptErr {
 
 #[derive(Debug)]
 pub struct ServerFileSysErr {
-    pub source: FileSysErr,
+    pub source: Box<FileSysErr>,
     pub trace: Box<Trace>,
 }
 
@@ -133,7 +164,7 @@ impl fmt::Display for ServerFileSysErr {
 
 #[derive(Debug)]
 pub struct ServerHTTPErr {
-    pub source: HTTPErr,
+    pub source: Box<HTTPErr>,
     pub trace: Box<Trace>,
 }
 
@@ -163,7 +194,7 @@ impl fmt::Display for ServerHTTPErr {
 
 #[derive(Debug)]
 pub struct ServerStorageErr {
-    pub source: StorageErr,
+    pub source: Box<StorageErr>,
     pub trace: Box<Trace>,
 }
 
@@ -193,7 +224,7 @@ impl fmt::Display for ServerStorageErr {
 
 #[derive(Debug)]
 pub struct IOErr {
-    pub source: std::io::Error,
+    pub source: Box<std::io::Error>,
     pub trace: Box<Trace>,
 }
 
@@ -253,7 +284,7 @@ impl fmt::Display for JoinHandleErr {
 
 #[derive(Debug)]
 pub struct SendShutdownSignalErr {
-    pub service: String,
+    pub service: Box<String>,
     pub trace: Box<Trace>,
 }
 
@@ -283,7 +314,7 @@ impl fmt::Display for SendShutdownSignalErr {
 
 #[derive(Debug)]
 pub struct TimestampConversionErr {
-    pub msg: String,
+    pub msg: Box<String>,
     pub trace: Box<Trace>,
 }
 
@@ -316,6 +347,7 @@ pub enum ServerErr {
     // server errors
     MissingClientIDErr(MissingClientIDErr),
     TimestampConversionErr(TimestampConversionErr),
+    ShutdownMngrDuplicateArgErr(ShutdownMngrDuplicateArgErr),
 
     // internal crate errors
     AuthErr(ServerAuthErr),
@@ -335,6 +367,7 @@ macro_rules! forward_error_method {
         match $self {
             Self::MissingClientIDErr(e) => e.$method($($arg)?),
             Self::TimestampConversionErr(e) => e.$method($($arg)?),
+            Self::ShutdownMngrDuplicateArgErr(e) => e.$method($($arg)?),
             Self::AuthErr(e) => e.$method($($arg)?),
             Self::CryptErr(e) => e.$method($($arg)?),
             Self::FileSysErr(e) => e.$method($($arg)?),

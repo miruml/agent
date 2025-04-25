@@ -9,7 +9,6 @@ use crate::auth::token_mngr::TokenManager;
 use crate::crypt::jwt;
 use crate::filesys::{
     cached_file::CachedFile,
-    errors::FileSysErr,
     file::File,
     path::PathExt,
 };
@@ -46,7 +45,7 @@ impl ServerState {
         let private_key_file = auth_dir.private_key_file();
         private_key_file.assert_exists().map_err(|e| {
             ServerErr::FileSysErr(ServerFileSysErr {
-                source: e,
+                source: Box::new(e),
                 trace: trace!(),
             })
         })?;
@@ -55,7 +54,7 @@ impl ServerState {
             .await
             .map_err(|e| {
                 ServerErr::FileSysErr(ServerFileSysErr {
-                    source: e,
+                    source: Box::new(e),
                     trace: trace!(),
                 })
             })?;
@@ -79,7 +78,7 @@ impl ServerState {
             TokenManager::spawn(client_id, http_client.clone(), token_file, private_key_file)
                 .map_err(|e| {
                     ServerErr::AuthErr(ServerAuthErr {
-                        source: e,
+                        source: Box::new(e),
                         trace: trace!(),
                     })
                 })?;
@@ -120,13 +119,13 @@ impl ServerState {
             .await
             .map_err(|e| {
                 ServerErr::StorageErr(ServerStorageErr {
-                    source: e,
+                    source: Box::new(e),
                     trace: trace!(),
                 })
             })?;
         self.concrete_config_cache.shutdown().await.map_err(|e| {
             ServerErr::StorageErr(ServerStorageErr {
-                source: e,
+                source: Box::new(e),
                 trace: trace!(),
             })
         })?;
@@ -134,7 +133,7 @@ impl ServerState {
         // shutdown the token manager
         self.token_mngr.shutdown().await.map_err(|e| {
             ServerErr::AuthErr(ServerAuthErr {
-                source: e,
+                source: Box::new(e),
                 trace: trace!(),
             })
         })?;
@@ -162,8 +161,8 @@ impl ServerState {
             Ok(client_id) => client_id,
             Err(e) => {
                 return Err(ServerErr::MissingClientIDErr(MissingClientIDErr {
-                    agent_file_err,
-                    jwt_err: e,
+                    agent_file_err: Box::new(agent_file_err),
+                    jwt_err: Box::new(e),
                     trace: trace!(),
                 }));
             }
@@ -178,7 +177,7 @@ impl ServerState {
             .await
             .map_err(|e| {
                 ServerErr::FileSysErr(ServerFileSysErr {
-                    source: e,
+                    source: Box::new(e),
                     trace: trace!(),
                 })
             })?;

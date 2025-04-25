@@ -7,7 +7,7 @@ use std::time::{Duration, SystemTime};
 
 // internal crates
 use crate::auth::refresh::run_token_refresh_loop;
-use crate::server::errors::{JoinHandleErr, ServerErr};
+use crate::server::errors::{JoinHandleErr, ServerErr, ShutdownMngrDuplicateArgErr};
 use crate::server::serve::serve;
 use crate::server::state::ServerState;
 use crate::storage::layout::StorageLayout;
@@ -27,6 +27,7 @@ pub struct ServerComponents {
 
 pub struct RunServerOptions {
     pub layout: StorageLayout,
+    pub max_runtime: Duration,
     pub idle_timeout: Duration,
     pub idle_timeout_poll_interval: Duration,
     pub max_shutdown_delay: Duration,
@@ -36,9 +37,10 @@ impl Default for RunServerOptions {
     fn default() -> Self {
         Self {
             layout: StorageLayout::default(),
+            max_runtime: Duration::from_secs(60*15), // 15 minutes
             idle_timeout: Duration::from_secs(60),
             idle_timeout_poll_interval: Duration::from_secs(5),
-            max_shutdown_delay: Duration::from_secs(30),
+            max_shutdown_delay: Duration::from_secs(15),
         }
     }
 }
@@ -47,49 +49,62 @@ pub async fn run(options: RunServerOptions) -> Result<(), ServerErr> {
     // Create a single shutdown channel that all components will listen to
     let (shutdown_tx, _shutdown_rx): (tokio::sync::broadcast::Sender<()>, _) =
         tokio::sync::broadcast::channel(1);
+    let mut shutdown_manager = ShutdownManager::new(
+        shutdown_tx.clone(),
+        options.max_shutdown_delay,
+    );
     let shutdown_rx_refresh = shutdown_tx.subscribe();
     let shutdown_rx2_server = shutdown_tx.subscribe();
 
-    // start the server
-    let start_server_result =
-        start_server(options.layout, shutdown_rx_refresh, shutdown_rx2_server).await?;
+    // start the server (and shutdown if failures occur)
+    let state =
+        match start_server(
+            options.layout,
+            &mut shutdown_manager,
+            shutdown_rx_refresh,
+            shutdown_rx2_server,
+        )
+        .await {
+            Ok(state) => state,
+            Err(e) => {
+                error!("Failed to start server: {}", e);
+                shutdown_manager.shutdown().await?;
+                return Err(e);
+            }
+        };
 
-    // wait for ctrl-c or idle timeout to trigger a shutdown
+    // wait for ctrl-c, an idle timeout, or max runtime reached to trigger a shutdown
     tokio::select! {
         _ = tokio::signal::ctrl_c() => {
             info!("Ctrl-C received, shutting down...");
         }
         _ = await_idle_timeout(
-            start_server_result.state.last_activity.clone(),
+            state.last_activity.clone(),
             options.idle_timeout,
             options.idle_timeout_poll_interval,
         ) => {
             info!("Idle timeout reached, shutting down...");
         }
+        _ = await_max_runtime(options.max_runtime) => {
+            info!("Max runtime reached, shutting down...");
+        }
     }
 
     // shutdown the server
     drop(shutdown_tx);
-    match tokio::time::timeout(options.max_shutdown_delay, shutdown(start_server_result)).await {
-        Ok(result) => result,
-        Err(_) => {
-            error!(
-                "Shutdown timed out after {:?}, forcing shutdown...",
-                options.max_shutdown_delay
-            );
-            std::process::exit(1);
-        }
-    }
+    shutdown_manager.shutdown().await
 }
 
 async fn start_server(
     layout: StorageLayout,
+    shutdown_manager: &mut ShutdownManager,
     mut shutdown_rx_refresh: broadcast::Receiver<()>,
     mut shutdown_rx2_server: broadcast::Receiver<()>,
-) -> Result<ServerComponents, ServerErr> {
+) -> Result<Arc<ServerState>, ServerErr> {
     // initialize the server state
     let (state, state_handle) = ServerState::new(layout).await?;
     let state = Arc::new(state);
+    shutdown_manager.with_state(state.clone(), Box::pin(state_handle))?;
 
     // initialize the token refresh loop
     let token_mngr_for_spawn = state.token_mngr.clone();
@@ -99,19 +114,16 @@ async fn start_server(
         })
         .await;
     });
+    shutdown_manager.with_token_refresh_handle(token_refresh_handle)?;
 
     // run the server with graceful shutdown
     let server_handle = serve(state.clone(), async move {
         let _ = shutdown_rx2_server.recv().await;
     })
     .await?;
+    shutdown_manager.with_server_handle(server_handle)?;
 
-    Ok(ServerComponents {
-        state,
-        state_handle: Box::pin(state_handle),
-        token_refresh_handle,
-        server_handle,
-    })
+    Ok(state)
 }
 
 async fn await_idle_timeout(
@@ -120,7 +132,6 @@ async fn await_idle_timeout(
     poll_interval: Duration,
 ) -> Result<(), ServerErr> {
     loop {
-        info!("Checking server idle timeout...");
         tokio::time::sleep(poll_interval).await;
         let last_activity = SystemTime::UNIX_EPOCH
             + Duration::from_secs(shared_last_activity.load(Ordering::Relaxed));
@@ -137,35 +148,143 @@ async fn await_idle_timeout(
     }
 }
 
-async fn shutdown(server_components: ServerComponents) -> Result<(), ServerErr> {
-    // the shutdown order is important here. The refresh and server threads rely on the
-    // state so the state must be shutdown last.
-    info!("Shutting down program...");
-
-    // 1. refresh
-    let token_refresh_handle = server_components.token_refresh_handle;
-    token_refresh_handle.await.map_err(|e| {
-        ServerErr::JoinHandleErr(JoinHandleErr {
-            source: Box::new(e),
-            trace: trace!(),
-        })
-    })?;
-
-    // 2. server
-    let server_handle = server_components.server_handle;
-    server_handle.await.map_err(|e| {
-        ServerErr::JoinHandleErr(JoinHandleErr {
-            source: Box::new(e),
-            trace: trace!(),
-        })
-    })??;
-
-    // 3. state
-    let state = server_components.state;
-    let state_handle = server_components.state_handle;
-    state.shutdown().await?;
-    state_handle.await;
-
-    info!("Program shutdown complete");
+async fn await_max_runtime(max_runtime: Duration) -> Result<(), ServerErr> {
+    tokio::time::sleep(max_runtime).await;
     Ok(())
+}
+
+struct StateShutdownParams {
+    state: Arc<ServerState>,
+    state_handle: Pin<Box<dyn Future<Output = ()> + Send>>,
+}
+
+struct ShutdownManager {
+    // shutdown transmitter
+    shutdown_tx: broadcast::Sender<()>,
+
+    // server components requiring shutdown
+    state_params: Option<StateShutdownParams>,
+    token_refresh_handle: Option<JoinHandle<()>>,
+    server_handle: Option<JoinHandle<Result<(), ServerErr>>>,
+
+    // shutdown options
+    max_shutdown_delay: Duration,
+}
+
+impl ShutdownManager {
+    pub fn new(shutdown_tx: broadcast::Sender<()>, max_shutdown_delay: Duration) -> Self {
+        Self {
+            shutdown_tx,
+            state_params: None,
+            token_refresh_handle: None,
+            server_handle: None,
+            max_shutdown_delay,
+        }
+    }
+
+    pub fn with_state(
+        &mut self,
+        state: Arc<ServerState>,
+        state_handle: Pin<Box<dyn Future<Output = ()> + Send>>,
+    ) -> Result<(), ServerErr> {
+        if self.state_params.is_some() {
+            return Err(ServerErr::ShutdownMngrDuplicateArgErr(ShutdownMngrDuplicateArgErr {
+                arg_name: Box::new("state".to_string()),
+                trace: trace!(),
+            }));
+        }
+        self.state_params = Some(StateShutdownParams {
+            state,
+            state_handle,
+        });
+        Ok(())
+    }
+
+    pub fn with_token_refresh_handle(
+        &mut self,
+        token_refresh_handle: JoinHandle<()>,
+    ) -> Result<(), ServerErr> {
+        if self.token_refresh_handle.is_some() {
+            return Err(ServerErr::ShutdownMngrDuplicateArgErr(ShutdownMngrDuplicateArgErr {
+                arg_name: Box::new("token_refresh_handle".to_string()),
+                trace: trace!(),
+            }));
+        }
+        self.token_refresh_handle = Some(token_refresh_handle);
+        Ok(())
+    }
+
+    pub fn with_server_handle(
+        &mut self,
+        server_handle: JoinHandle<Result<(), ServerErr>>,
+    ) -> Result<(), ServerErr> {
+        if self.server_handle.is_some() {
+            return Err(ServerErr::ShutdownMngrDuplicateArgErr(ShutdownMngrDuplicateArgErr {
+                arg_name: Box::new("server_handle".to_string()),
+                trace: trace!(),
+            }));
+        }
+        self.server_handle = Some(server_handle);
+        Ok(())
+    }
+
+    pub async fn shutdown(&mut self) -> Result<(), ServerErr> {
+        // send the shutdown signal to all components
+        let _ = self.shutdown_tx.send(());
+
+        match tokio::time::timeout(
+            self.max_shutdown_delay,
+            self.shutdown_impl()
+        ).await {
+            Ok(result) => result,
+            Err(_) => {
+                error!(
+                    "Shutdown timed out after {:?}, forcing shutdown...",
+                    self.max_shutdown_delay
+                );
+                std::process::exit(1);
+            }
+        }
+    }
+
+    async fn shutdown_impl(&mut self) -> Result<(), ServerErr> {
+        // the shutdown order is important here. The refresh and server threads rely on the
+        // state so the state must be shutdown last.
+        info!("Shutting down program...");
+
+        // 1. refresh
+        if let Some(token_refresh_handle) = self.token_refresh_handle.take() {
+            token_refresh_handle.await.map_err(|e| {
+                ServerErr::JoinHandleErr(JoinHandleErr {
+                    source: Box::new(e),
+                    trace: trace!(),
+                })
+            })?;
+        } else {
+            info!("Token refresh handle not found, skipping token refresh shutdown...");
+        }
+
+        // 2. server
+        if let Some(server_handle) = self.server_handle.take() {
+            server_handle.await.map_err(|e| {
+                ServerErr::JoinHandleErr(JoinHandleErr {
+                    source: Box::new(e),
+                    trace: trace!(),
+                })
+            })??;
+        } else {
+            info!("Server handle not found, skipping server shutdown...");
+        }
+
+        // 3. state
+        if let Some(state_params) = self.state_params.take() {
+            state_params.state.shutdown().await?;
+            state_params.state_handle.await;
+        } else {
+            info!("State not found, skipping state shutdown...");
+        }
+
+        info!("Program shutdown complete");
+        Ok(())
+    }
 }

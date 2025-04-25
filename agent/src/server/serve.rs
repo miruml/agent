@@ -24,7 +24,7 @@ use tower_http::{
 use tracing::info;
 use tracing::Level;
 
-pub async fn serve(
+pub(crate) async fn serve(
     state: Arc<ServerState>,
     shutdown_signal: impl Future<Output = ()> + Send + 'static,
 ) -> Result<JoinHandle<Result<(), ServerErr>>, ServerErr> {
@@ -76,7 +76,7 @@ pub async fn serve(
     let _ = std::fs::remove_file(socket_path);
     let listener = tokio::net::UnixListener::bind(socket_path).map_err(|e| {
         ServerErr::IOErr(IOErr {
-            source: e,
+            source: Box::new(e),
             trace: trace!(),
         })
     })?;
@@ -88,7 +88,7 @@ pub async fn serve(
             .await
             .map_err(|e| {
                 ServerErr::IOErr(IOErr {
-                    source: e,
+                    source: Box::new(e),
                     trace: trace!(),
                 })
             })
