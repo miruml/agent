@@ -49,7 +49,10 @@ impl Default for RunServerOptions {
     }
 }
 
-pub async fn run(options: RunServerOptions) -> Result<(), ServerErr> {
+pub async fn run(
+    options: RunServerOptions,
+    shutdown_signal: impl Future<Output = ()> + Send + 'static,
+) -> Result<(), ServerErr> {
     info!("Starting miru agent...");
 
     // Create a single shutdown channel that all components will listen to
@@ -81,8 +84,8 @@ pub async fn run(options: RunServerOptions) -> Result<(), ServerErr> {
 
     // wait for ctrl-c, an idle timeout, or max runtime reached to trigger a shutdown
     tokio::select! {
-        _ = tokio::signal::ctrl_c() => {
-            info!("Ctrl-C received, shutting down...");
+        _ = shutdown_signal => {
+            info!("Shutdown signal received, shutting down...");
         }
         _ = await_idle_timeout(
             state.last_activity.clone(),
@@ -129,11 +132,13 @@ async fn start_server(
     });
     shutdown_manager.with_token_refresh_handle(token_refresh_handle)?;
 
-    // run the server with graceful shutdown
-    let server_handle = serve(state.clone(), async move {
-        let _ = shutdown_rx2_server.recv().await;
-    })
-    .await?;
+    // run the axum server with graceful shutdown
+    let server_handle = serve(
+        state.clone(),
+        async move {
+            let _ = shutdown_rx2_server.recv().await;
+        }
+    ).await?;
     shutdown_manager.with_server_handle(server_handle)?;
 
     Ok(state)

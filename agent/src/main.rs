@@ -14,7 +14,13 @@ async fn main() {
     }
 
     // run the server
-    let result = run(RunServerOptions::default()).await;
+    let result = run(
+        RunServerOptions::default(),
+        // use ctrl-c to trigger shutdown
+        async {
+            let _ = tokio::signal::ctrl_c().await;
+        },
+    ).await;
     if let Err(e) = result {
         error!("Failed to run the server: {}", e);
     }

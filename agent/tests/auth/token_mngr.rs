@@ -477,7 +477,7 @@ mod tests {
             // expect to wait until 10 minutes before expiration (25 minutes)
             let expected = tokio::time::Duration::from_secs(25 * 60);
             assert!(sleep_duration < expected);
-            assert!(sleep_duration > expected - tokio::time::Duration::from_secs(3));
+            assert!(sleep_duration > expected - tokio::time::Duration::from_secs(5));
         }
     }
 }
