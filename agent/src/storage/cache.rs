@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
-use tracing::error;
+use tracing::{error, info};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CacheEntry<K, V>
@@ -333,6 +333,7 @@ where
     }
 
     pub async fn shutdown(&self) -> Result<(), StorageErr> {
+        info!("Shutting down {} cache...", std::any::type_name::<V>());
         let (send, recv) = oneshot::channel();
         self.sender.send(WorkerCommand::Shutdown { respond_to: send }).await.map_err(|e| StorageErr::SendActorMessageErr(SendActorMessageErr{
             source: Box::new(e),
@@ -342,6 +343,7 @@ where
             source: Box::new(e),
             trace: trace!(),
         }))??;
+        info!("{} cache shutdown complete", std::any::type_name::<V>());
         Ok(())
     }
 

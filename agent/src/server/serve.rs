@@ -3,11 +3,9 @@ use std::future::Future;
 use std::sync::Arc;
 
 // internal crates
-use crate::auth::refresh::run_token_refresh_loop;
 use crate::server::handlers;
 use crate::server::state::ServerState;
-use crate::server::errors::{ServerErr, JoinHandleErr, IOErr, SendShutdownSignalErr};
-use crate::storage::layout::StorageLayout;
+use crate::server::errors::{ServerErr, IOErr};
 use crate::trace;
 
 // external
@@ -18,8 +16,6 @@ use axum::{
 };
 use serde_json::json;
 use tokio::task::JoinHandle;
-use tokio::time::Duration;
-use tokio::sync::oneshot;
 use tower::ServiceBuilder;
 use tower_http::{
     LatencyUnit,
@@ -28,65 +24,6 @@ use tower_http::{
 use tracing::Level;
 use tracing::info;
 
-pub async fn run(layout: StorageLayout) -> Result<(), ServerErr> {
-    let (state, state_handle) = ServerState::new(layout).await?;
-    let state = Arc::new(state);
-
-    // run the token refresh loop to keep the token fresh for the duration of the
-    // server's lifetime
-    let token_mngr_for_spawn = state.token_mngr.clone();
-    let (refresh_shutdown_tx, refresh_shutdown_rx) = oneshot::channel::<()>();
-    let refresh_shutdown = async move {
-        let _ = refresh_shutdown_rx.await;
-        info!("Shutting down token refresh loop...");
-    };
-    let refresh_handle = run_token_refresh_loop(
-        token_mngr_for_spawn,
-        Duration::from_secs(60),
-        refresh_shutdown,
-    );
-
-    // serve with a graceful shutdown
-    let (server_shutdown_tx, server_shutdown_rx) = oneshot::channel::<()>();
-    let server_shutdown= async move {
-        let _ = server_shutdown_rx.await;
-        info!("Shutting down server...");
-    };
-    let server_handle = serve(
-        state.clone(),
-        server_shutdown,
-    ).await?;
-
-    // wait 10 seconds and then shutdown everything (state, refresh, server)
-    std::thread::sleep(Duration::from_secs(10));
-
-    // send the shutdown signals
-    // 1. state
-    state.shutdown().await?;
-    // 2. refresh
-    refresh_shutdown_tx.send(()).map_err(|_| ServerErr::SendShutdownSignalErr(SendShutdownSignalErr {
-        service: "token refresher".to_string(),
-        trace: trace!(),
-    }))?;
-    // 3. server
-    server_shutdown_tx.send(()).map_err(|_| ServerErr::SendShutdownSignalErr(SendShutdownSignalErr {
-        service: "server".to_string(),
-        trace: trace!(),
-    }))?;
-
-    // wait for the shutdown to complete
-    // 1. state
-    state_handle.await;
-    // 2. refresh
-    refresh_handle.await;
-    // 3. server
-    server_handle.await.map_err(|e| ServerErr::JoinHandleErr(JoinHandleErr {
-        source: Box::new(e),
-        trace: trace!(),
-    }))??;
-
-    Ok(())
-}
 
 pub async fn serve(
     state: Arc<ServerState>,
@@ -95,6 +32,7 @@ pub async fn serve(
     info!("Starting server...");
 
     // build the app with the test route
+    let state_for_middleware = state.clone();
     let app = Router::new()
         .route("/v1/test", get(test))
         // ============================ CONCRETE CONFIGS ============================== //
@@ -109,6 +47,15 @@ pub async fn serve(
         // ============================ CONFIG SCHEMAS ============================== //
         .route("/v1/config_schemas/hash", post(handlers::hash_schema))
         .layer(ServiceBuilder::new()
+            // activity middleware
+            .layer(axum::middleware::from_fn(move |req: axum::extract::Request, next: axum::middleware::Next| {
+                let state = state_for_middleware.clone();
+                async move {
+                    state.update_last_activity();
+                    next.run(req).await
+                }
+            }))
+            // logging middleware
             .layer(TraceLayer::new_for_http()
                 .make_span_with(
                 DefaultMakeSpan::new().include_headers(true)

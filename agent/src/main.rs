@@ -1,6 +1,6 @@
 
 // internal
-use config_agent::server::serve::run;
+use config_agent::server::run::run;
 use config_agent::logs::{init, LogLevel};
 use config_agent::storage::layout::StorageLayout;
 

@@ -34,7 +34,7 @@ use serde::Serialize;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
-use tracing::error;
+use tracing::{info, error};
 use uuid::Uuid;
 
 pub type TokenFile = CachedFile<Token>;
@@ -227,6 +227,7 @@ impl TokenManager {
     }
 
     pub async fn shutdown(&self) -> Result<(), AuthErr> {
+        info!("Shutting down token manager...");
         let (send, recv) = oneshot::channel();
         self.sender.send(WorkerCommand::Shutdown { respond_to: send }).await.map_err(|e| AuthErr::SendActorMessageErr(SendActorMessageErr{
             source: Box::new(e),
@@ -236,6 +237,7 @@ impl TokenManager {
             source: Box::new(e),
             trace: trace!(),
         }))??;
+        info!("Token manager shutdown complete");
         Ok(())
     }
 
@@ -253,10 +255,12 @@ impl TokenManager {
 
     pub async fn refresh_token(&self) -> Result<(), AuthErr> {
         let (send, recv) = oneshot::channel();
-        self.sender.send(WorkerCommand::RefreshToken { respond_to: send }).await.map_err(|e| AuthErr::SendActorMessageErr(SendActorMessageErr{
-            source: Box::new(e),
-            trace: trace!(),
-        }))?;
+        self.sender.send(WorkerCommand::RefreshToken { respond_to: send }).await.map_err(|e| {
+            AuthErr::SendActorMessageErr(SendActorMessageErr{
+                source: Box::new(e),
+                trace: trace!(),
+            })
+        })?;
         recv.await.map_err(|e| AuthErr::ReceiveActorMessageErr(ReceiveActorMessageErr{
             source: Box::new(e),
             trace: trace!(),

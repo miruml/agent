@@ -1,6 +1,8 @@
 // standard library
 use std::future::Future;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 // internal crates
 use crate::auth::token_mngr::TokenManager;
@@ -33,6 +35,7 @@ pub struct ServerState {
     pub config_schema_digest_cache: Arc<ConfigSchemaDigestCache>,
     pub concrete_config_cache: Arc<ConcreteConfigCache>,
     pub token_mngr: Arc<TokenManager>,
+    pub last_activity: Arc<AtomicU64>,
 }
 
 impl ServerState {
@@ -85,6 +88,12 @@ impl ServerState {
             config_schema_digest_cache,
             concrete_config_cache,
             token_mngr,
+            last_activity: Arc::new(AtomicU64::new(
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs()
+            )),
         };
 
         // return the shutdown handler
@@ -151,6 +160,14 @@ impl ServerState {
         }))?;
 
         Ok(client_id)
+    }
+
+    pub fn update_last_activity(&self) {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        self.last_activity.store(now, Ordering::Relaxed);
     }
 }
 

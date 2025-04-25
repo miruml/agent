@@ -24,7 +24,7 @@ mod tests {
         private_key_file.delete().await.unwrap();
         public_key_file.delete().await.unwrap();
 
-        let result = rsa::gen_key_pair(2048, &private_key_file, &public_key_file).await;
+        let result = rsa::gen_key_pair(4096, &private_key_file, &public_key_file).await;
         assert!(result.is_ok());
 
         assert!(private_key_file.exists());
@@ -58,12 +58,12 @@ mod tests {
 
         // public key file exists
         public_key_file.write_bytes(&[4, 4], true, false).await.unwrap();
-        let result = rsa::gen_key_pair(2048, &private_key_file, &public_key_file).await;
+        let result = rsa::gen_key_pair(4096, &private_key_file, &public_key_file).await;
         assert!(result.is_err());
 
         // private key file exists
         private_key_file.write_bytes(&[4, 4], true, false).await.unwrap();
-        let result = rsa::gen_key_pair(2048, &private_key_file, &public_key_file).await;
+        let result = rsa::gen_key_pair(4096, &private_key_file, &public_key_file).await;
         assert!(result.is_err());
     }
 }
@@ -82,7 +82,7 @@ pub mod read_private_key {
         private_key_file.delete().await.unwrap();
         public_key_file.delete().await.unwrap();
 
-        rsa::gen_key_pair(2048, &private_key_file, &public_key_file).await.unwrap();
+        rsa::gen_key_pair(4096, &private_key_file, &public_key_file).await.unwrap();
 
         let result = rsa::read_private_key(&private_key_file).await;
         assert!(result.is_ok());
@@ -129,7 +129,7 @@ pub mod read_public_key {
         private_key_file.delete().await.unwrap();
         public_key_file.delete().await.unwrap();
 
-        rsa::gen_key_pair(2048, &private_key_file, &public_key_file).await.unwrap();
+        rsa::gen_key_pair(4096, &private_key_file, &public_key_file).await.unwrap();
 
         let result = rsa::read_public_key(&public_key_file).await;
         assert!(result.is_ok());
@@ -175,7 +175,7 @@ pub mod sign {
         private_key_file.delete().await.unwrap();
         public_key_file.delete().await.unwrap();
 
-        rsa::gen_key_pair(2048, &private_key_file, &public_key_file).await.unwrap();
+        rsa::gen_key_pair(4096, &private_key_file, &public_key_file).await.unwrap();
 
         let data = b"hello world";
         let signature = rsa::sign(&private_key_file, data).await.unwrap();
@@ -224,7 +224,7 @@ pub mod verify {
         private_key_file.delete().await.unwrap();
         public_key_file.delete().await.unwrap();
 
-        rsa::gen_key_pair(2048, &private_key_file, &public_key_file).await.unwrap();
+        rsa::gen_key_pair(4096, &private_key_file, &public_key_file).await.unwrap();
 
         let data = b"hello world";
         let signature = rsa::sign(&private_key_file, data).await.unwrap();
