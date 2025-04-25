@@ -1,8 +1,6 @@
-
 // internal
-use config_agent::server::run::run;
+use config_agent::server::run::{run, RunServerOptions};
 use config_agent::logs::{init, LogLevel};
-use config_agent::storage::layout::StorageLayout;
 
 // external
 use tracing::error;
@@ -16,7 +14,7 @@ async fn main() {
     }
 
     // run the server
-    let result = run(StorageLayout::default()).await;
+    let result = run(RunServerOptions::default()).await;
     if let Err(e) = result {
         error!("Failed to run the server: {}", e);
     }
