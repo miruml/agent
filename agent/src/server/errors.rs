@@ -10,7 +10,6 @@ use crate::filesys::errors::FileSysErr;
 use crate::http::errors::HTTPErr;
 use crate::storage::errors::StorageErr;
 
-
 #[derive(Debug)]
 pub struct ServerAuthErr {
     pub source: AuthErr,
@@ -175,7 +174,7 @@ impl MiruError for IOErr {
     fn http_status(&self) -> HTTPCode {
         HTTPCode::INTERNAL_SERVER_ERROR
     }
-    
+
     fn is_network_connection_error(&self) -> bool {
         false
     }
@@ -238,7 +237,7 @@ impl MiruError for SendShutdownSignalErr {
 
     fn is_network_connection_error(&self) -> bool {
         false
-            }
+    }
 
     fn params(&self) -> Option<serde_json::Value> {
         None
@@ -250,7 +249,6 @@ impl fmt::Display for SendShutdownSignalErr {
         write!(f, "failed to send shutdown signal to {}", self.service)
     }
 }
-
 
 #[derive(Debug)]
 pub struct TimestampConversionErr {

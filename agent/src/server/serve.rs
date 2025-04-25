@@ -3,9 +3,9 @@ use std::future::Future;
 use std::sync::Arc;
 
 // internal crates
+use crate::server::errors::{IOErr, ServerErr};
 use crate::server::handlers;
 use crate::server::state::ServerState;
-use crate::server::errors::{ServerErr, IOErr};
 use crate::trace;
 
 // external
@@ -18,12 +18,11 @@ use serde_json::json;
 use tokio::task::JoinHandle;
 use tower::ServiceBuilder;
 use tower_http::{
+    trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
     LatencyUnit,
-    trace::{TraceLayer, DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse},
 };
-use tracing::Level;
 use tracing::info;
-
+use tracing::Level;
 
 pub async fn serve(
     state: Arc<ServerState>,
@@ -46,49 +45,53 @@ pub async fn serve(
         )
         // ============================ CONFIG SCHEMAS ============================== //
         .route("/v1/config_schemas/hash", post(handlers::hash_schema))
-        .layer(ServiceBuilder::new()
-            // activity middleware
-            .layer(axum::middleware::from_fn(move |req: axum::extract::Request, next: axum::middleware::Next| {
-                let state = state_for_middleware.clone();
-                async move {
-                    state.update_last_activity();
-                    next.run(req).await
-                }
-            }))
-            // logging middleware
-            .layer(TraceLayer::new_for_http()
-                .make_span_with(
-                DefaultMakeSpan::new().include_headers(true)
-            )
-            .on_request(
-                DefaultOnRequest::new().level(Level::INFO)
-            )
-            .on_response(
-                DefaultOnResponse::new()
-                    .level(Level::INFO)
-                    .latency_unit(LatencyUnit::Micros)
-            )
-        )
+        .layer(
+            ServiceBuilder::new()
+                // activity middleware
+                .layer(axum::middleware::from_fn(
+                    move |req: axum::extract::Request, next: axum::middleware::Next| {
+                        let state = state_for_middleware.clone();
+                        async move {
+                            state.update_last_activity();
+                            next.run(req).await
+                        }
+                    },
+                ))
+                // logging middleware
+                .layer(
+                    TraceLayer::new_for_http()
+                        .make_span_with(DefaultMakeSpan::new().include_headers(true))
+                        .on_request(DefaultOnRequest::new().level(Level::INFO))
+                        .on_response(
+                            DefaultOnResponse::new()
+                                .level(Level::INFO)
+                                .latency_unit(LatencyUnit::Micros),
+                        ),
+                ),
         )
         .with_state(state);
 
     // run the server over the unix socket
     let socket_path = "/tmp/miru.sock";
     let _ = std::fs::remove_file(socket_path);
-    let listener = tokio::net::UnixListener::bind(socket_path).map_err(|e| ServerErr::IOErr(IOErr {
-        source: e,
-        trace: trace!(),
-    }))?;
+    let listener = tokio::net::UnixListener::bind(socket_path).map_err(|e| {
+        ServerErr::IOErr(IOErr {
+            source: e,
+            trace: trace!(),
+        })
+    })?;
 
     // serve with graceful shutdown
-    let server_handle =  tokio::task::spawn(async move {
+    let server_handle = tokio::task::spawn(async move {
         axum::serve(listener, app)
             .with_graceful_shutdown(shutdown_signal)
             .await
-            .map_err(|e| ServerErr::IOErr(IOErr {
-                source: e,
-                trace: trace!(),
-            }))
+            .map_err(|e| {
+                ServerErr::IOErr(IOErr {
+                    source: e,
+                    trace: trace!(),
+                })
+            })
     });
 
     Ok(server_handle)

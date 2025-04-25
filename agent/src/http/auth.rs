@@ -1,11 +1,8 @@
 // internal crates
-use crate::http::errors::HTTPErr;
 use crate::http::client::HTTPClient;
+use crate::http::errors::HTTPErr;
 use openapi_client::models::{
-    IssueClientTokenRequest,
-    IssueClientTokenResponse,
-    ActivateClientRequest,
-    Client,
+    ActivateClientRequest, Client, IssueClientTokenRequest, IssueClientTokenResponse,
 };
 
 // external crates
@@ -57,8 +54,7 @@ impl ClientAuthExt for HTTPClient {
         let text_resp = self.handle_response(http_resp, &context).await?;
 
         // parse the response
-        self
-            .parse_json_response_text::<Client>(text_resp, &context)
+        self.parse_json_response_text::<Client>(text_resp, &context)
             .await
     }
 
@@ -80,8 +76,7 @@ impl ClientAuthExt for HTTPClient {
         let text_resp = self.handle_response(http_resp, &context).await?;
 
         // parse the response
-        self
-            .parse_json_response_text::<IssueClientTokenResponse>(text_resp, &context)
+        self.parse_json_response_text::<IssueClientTokenResponse>(text_resp, &context)
             .await
     }
 }

@@ -79,11 +79,11 @@ impl MiruError for CryptFileSysErr {
     fn code(&self) -> Code {
         self.source.code()
     }
-    
+
     fn http_status(&self) -> HTTPCode {
         self.source.http_status()
     }
-    
+
     fn is_network_connection_error(&self) -> bool {
         false
     }
@@ -99,9 +99,6 @@ impl fmt::Display for CryptFileSysErr {
     }
 }
 
-
-
-
 #[derive(Debug)]
 pub struct Base64DecodeErr {
     pub source: base64::DecodeError,
@@ -116,7 +113,7 @@ impl MiruError for Base64DecodeErr {
     fn http_status(&self) -> HTTPCode {
         HTTPCode::INTERNAL_SERVER_ERROR
     }
-    
+
     fn is_network_connection_error(&self) -> bool {
         false
     }
@@ -262,7 +259,7 @@ impl MiruError for RSAToPKeyErr {
     fn code(&self) -> Code {
         Code::InternalServerError
     }
-    
+
     fn http_status(&self) -> HTTPCode {
         HTTPCode::INTERNAL_SERVER_ERROR
     }
@@ -341,7 +338,6 @@ impl fmt::Display for VerifyDataErr {
         write!(f, "Verify data error: {}", self.source)
     }
 }
-
 
 #[derive(Debug)]
 pub enum CryptErr {

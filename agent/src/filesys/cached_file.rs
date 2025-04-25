@@ -1,10 +1,7 @@
 // standard library
 use std::sync::Arc;
 // internal crates
-use crate::filesys::{
-    file::File,
-    errors::FileSysErr
-};
+use crate::filesys::{errors::FileSysErr, file::File};
 // external crates
 use serde::{de::DeserializeOwned, Serialize};
 
@@ -36,9 +33,7 @@ where
         let result = Self::new(file.clone()).await;
         match result {
             Ok(cached_file) => Ok(cached_file),
-            Err(_) => {
-                Self::create(file, &default, true).await
-            }
+            Err(_) => Self::create(file, &default, true).await,
         }
     }
 
@@ -55,9 +50,7 @@ where
     }
 
     pub async fn write(&mut self, data: T) -> Result<(), FileSysErr> {
-        self.file
-            .write_json(&data, true, true)
-            .await?;
+        self.file.write_json(&data, true, true).await?;
         self.cache = Arc::new(data);
         Ok(())
     }

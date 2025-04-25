@@ -103,10 +103,9 @@ impl fmt::Display for ServiceHTTPErr {
     }
 }
 
-
 #[derive(Debug)]
 pub enum ServiceErr {
-    // service errors 
+    // service errors
     LatestConcreteConfigNotFound(LatestConcreteConfigNotFound),
 
     // internal crate errors

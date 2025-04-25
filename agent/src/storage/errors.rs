@@ -64,7 +64,6 @@ impl fmt::Display for StorageFileSysErr {
     }
 }
 
-
 #[derive(Debug)]
 pub struct SendActorMessageErr {
     pub source: Box<dyn std::error::Error + Send + Sync>,
@@ -112,7 +111,7 @@ impl MiruError for ReceiveActorMessageErr {
 
     fn is_network_connection_error(&self) -> bool {
         false
-            }
+    }
 
     fn params(&self) -> Option<serde_json::Value> {
         None
@@ -130,7 +129,6 @@ pub struct JoinHandleErr {
     pub source: Box<dyn std::error::Error + Send + Sync>,
     pub trace: Box<Trace>,
 }
-
 
 impl MiruError for JoinHandleErr {
     fn code(&self) -> Code {

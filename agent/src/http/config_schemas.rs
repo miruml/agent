@@ -2,9 +2,9 @@
 use std::sync::Arc;
 
 // internal crates
+use crate::crypt::sha256;
 use crate::http::client::HTTPClient;
 use crate::http::errors::HTTPErr;
-use crate::crypt::sha256;
 use openapi_client::models::hash_schema_serialized_request::HashSchemaSerializedRequest;
 use openapi_client::models::SchemaDigestResponse;
 
@@ -35,8 +35,7 @@ impl ConfigSchemasExt for HTTPClient {
         let response = self.send_cached(key, request, &context).await?.0;
 
         // parse the response
-        self
-            .parse_json_response_text::<SchemaDigestResponse>(response, &context)
+        self.parse_json_response_text::<SchemaDigestResponse>(response, &context)
             .await
     }
 }

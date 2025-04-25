@@ -3,10 +3,7 @@ use crate::errors::MiruError;
 use crate::http::prelude::*;
 use crate::services::concrete_configs::utils;
 use crate::services::errors::{
-    ServiceErr,
-    ServiceHTTPErr,
-    ServiceStorageErr,
-    LatestConcreteConfigNotFound,
+    LatestConcreteConfigNotFound, ServiceErr, ServiceHTTPErr, ServiceStorageErr,
 };
 
 use crate::storage::concrete_configs::{ConcreteConfigCache, ConcreteConfigCacheKey};
@@ -76,31 +73,33 @@ pub async fn read_latest<ArgsT: ReadLatestArgsI, HTTPClientT: ConcreteConfigsExt
         cache
             .write(key, concrete_config.clone(), true)
             .await
-            .map_err(|e| ServiceErr::StorageErr(ServiceStorageErr {
-                source: e,
-                trace: trace!(),
-            }))?;
+            .map_err(|e| {
+                ServiceErr::StorageErr(ServiceStorageErr {
+                    source: e,
+                    trace: trace!(),
+                })
+            })?;
         return Ok(utils::convert_cncr_cfg_storage_to_sdk(concrete_config));
     }
 
     // if unsuccessful, attempt to read the latest concrete config from storage
-    let latest_concrete_config =
-        cache
-            .read_optional(key)
-            .await
-            .map_err(|e| ServiceErr::StorageErr(ServiceStorageErr {
-                source: e,
-                trace: trace!(),
-            }))?;
+    let latest_concrete_config = cache.read_optional(key).await.map_err(|e| {
+        ServiceErr::StorageErr(ServiceStorageErr {
+            source: e,
+            trace: trace!(),
+        })
+    })?;
 
     match latest_concrete_config {
         Some(latest_concrete_config) => Ok(utils::convert_cncr_cfg_storage_to_sdk(
             latest_concrete_config,
         )),
-        None => Err(ServiceErr::LatestConcreteConfigNotFound(LatestConcreteConfigNotFound {
-            config_slug: args.config_slug().to_string(),
-            config_schema_digest: args.config_schema_digest().to_string(),
-            trace: trace!(),
-        })),
+        None => Err(ServiceErr::LatestConcreteConfigNotFound(
+            LatestConcreteConfigNotFound {
+                config_slug: args.config_slug().to_string(),
+                config_schema_digest: args.config_schema_digest().to_string(),
+                trace: trace!(),
+            },
+        )),
     }
 }

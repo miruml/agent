@@ -1,6 +1,6 @@
 // internal
-use config_agent::server::run::{run, RunServerOptions};
 use config_agent::logs::{init, LogLevel};
+use config_agent::server::run::{run, RunServerOptions};
 
 // external
 use tracing::error;

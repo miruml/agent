@@ -1,9 +1,5 @@
 // internal crates
-use crate::crypt::errors::{
-    CryptErr,
-    Base64DecodeErr,
-    ConvertBytesToStringErr,
-};
+use crate::crypt::errors::{Base64DecodeErr, ConvertBytesToStringErr, CryptErr};
 use crate::trace;
 // external crates
 use base64::{
@@ -55,12 +51,12 @@ pub fn decode_bytes(
     token: &str,
     method: base64::engine::general_purpose::GeneralPurpose,
 ) -> Result<Vec<u8>, CryptErr> {
-    method
-        .decode(token.as_bytes())
-        .map_err(|e| CryptErr::Base64DecodeErr(Base64DecodeErr {
+    method.decode(token.as_bytes()).map_err(|e| {
+        CryptErr::Base64DecodeErr(Base64DecodeErr {
             source: e,
             trace: trace!(),
-        }))
+        })
+    })
 }
 
 pub fn decode_bytes_standard(token: &str) -> Result<Vec<u8>, CryptErr> {
@@ -80,10 +76,12 @@ pub fn decode_string(
     method: base64::engine::general_purpose::GeneralPurpose,
 ) -> Result<String, CryptErr> {
     let bytes = decode_bytes(token, method)?;
-    let string = String::from_utf8(bytes).map_err(|e| CryptErr::ConvertBytesToStringErr(ConvertBytesToStringErr {
-        source: e,
-        trace: trace!(),
-    }))?;
+    let string = String::from_utf8(bytes).map_err(|e| {
+        CryptErr::ConvertBytesToStringErr(ConvertBytesToStringErr {
+            source: e,
+            trace: trace!(),
+        })
+    })?;
     Ok(string)
 }
 

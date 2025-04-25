@@ -204,7 +204,7 @@ impl MiruError for ReceiveActorMessageErr {
 
     fn is_network_connection_error(&self) -> bool {
         false
-            }
+    }
 
     fn params(&self) -> Option<serde_json::Value> {
         None
@@ -221,7 +221,7 @@ impl fmt::Display for ReceiveActorMessageErr {
 pub enum AuthErr {
     // auth errors
     TimestampConversionErr(TimestampConversionErr),
-    
+
     // internal crate errors
     CryptErr(AuthCryptErr),
     FileSysErr(AuthFileSysErr),

@@ -1,22 +1,22 @@
 // standard library
 use std::future::Future;
 use std::pin::Pin;
-use std::sync::Arc;
-use std::time::{SystemTime, Duration};
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
+use std::time::{Duration, SystemTime};
 
 // internal crates
 use crate::auth::refresh::run_token_refresh_loop;
+use crate::server::errors::{JoinHandleErr, ServerErr};
 use crate::server::serve::serve;
 use crate::server::state::ServerState;
-use crate::server::errors::{ServerErr, JoinHandleErr};
 use crate::storage::layout::StorageLayout;
 use crate::trace;
 
 // external
 use tokio::sync::broadcast;
 use tokio::task::JoinHandle;
-use tracing::{info, error};
+use tracing::{error, info};
 
 pub struct ServerComponents {
     pub state: Arc<ServerState>,
@@ -45,16 +45,14 @@ impl Default for RunServerOptions {
 
 pub async fn run(options: RunServerOptions) -> Result<(), ServerErr> {
     // Create a single shutdown channel that all components will listen to
-    let (shutdown_tx, _shutdown_rx): (tokio::sync::broadcast::Sender<()>, _) = tokio::sync::broadcast::channel(1);
+    let (shutdown_tx, _shutdown_rx): (tokio::sync::broadcast::Sender<()>, _) =
+        tokio::sync::broadcast::channel(1);
     let shutdown_rx_refresh = shutdown_tx.subscribe();
     let shutdown_rx2_server = shutdown_tx.subscribe();
 
     // start the server
-    let start_server_result = start_server(
-        options.layout,
-        shutdown_rx_refresh,
-        shutdown_rx2_server,
-    ).await?;
+    let start_server_result =
+        start_server(options.layout, shutdown_rx_refresh, shutdown_rx2_server).await?;
 
     // wait for ctrl-c or idle timeout to trigger a shutdown
     tokio::select! {
@@ -75,7 +73,10 @@ pub async fn run(options: RunServerOptions) -> Result<(), ServerErr> {
     match tokio::time::timeout(options.max_shutdown_delay, shutdown(start_server_result)).await {
         Ok(result) => result,
         Err(_) => {
-            error!("Shutdown timed out after {:?}, forcing shutdown...", options.max_shutdown_delay);
+            error!(
+                "Shutdown timed out after {:?}, forcing shutdown...",
+                options.max_shutdown_delay
+            );
             std::process::exit(1);
         }
     }
@@ -93,18 +94,17 @@ async fn start_server(
     // initialize the token refresh loop
     let token_mngr_for_spawn = state.token_mngr.clone();
     let token_refresh_handle = tokio::spawn(async move {
-        run_token_refresh_loop(
-            token_mngr_for_spawn,
-            Duration::from_secs(30),
-            async move { let _ = shutdown_rx_refresh.recv().await; },
-        ).await;
+        run_token_refresh_loop(token_mngr_for_spawn, Duration::from_secs(30), async move {
+            let _ = shutdown_rx_refresh.recv().await;
+        })
+        .await;
     });
 
     // run the server with graceful shutdown
-    let server_handle = serve(
-        state.clone(),
-        async move { let _ = shutdown_rx2_server.recv().await; },
-    ).await?;
+    let server_handle = serve(state.clone(), async move {
+        let _ = shutdown_rx2_server.recv().await;
+    })
+    .await?;
 
     Ok(ServerComponents {
         state,
@@ -122,9 +122,8 @@ async fn await_idle_timeout(
     loop {
         info!("Checking server idle timeout...");
         tokio::time::sleep(poll_interval).await;
-        let last_activity = SystemTime::UNIX_EPOCH + Duration::from_secs(
-            shared_last_activity.load(Ordering::Relaxed)
-        );
+        let last_activity = SystemTime::UNIX_EPOCH
+            + Duration::from_secs(shared_last_activity.load(Ordering::Relaxed));
         match SystemTime::now().duration_since(last_activity) {
             Ok(duration) if duration > idle_timeout => {
                 info!("Server idle timeout reached, shutting down...");
@@ -145,17 +144,21 @@ async fn shutdown(server_components: ServerComponents) -> Result<(), ServerErr> 
 
     // 1. refresh
     let token_refresh_handle = server_components.token_refresh_handle;
-    token_refresh_handle.await.map_err(|e| ServerErr::JoinHandleErr(JoinHandleErr {
-        source: Box::new(e),
-        trace: trace!(),
-    }))?;
+    token_refresh_handle.await.map_err(|e| {
+        ServerErr::JoinHandleErr(JoinHandleErr {
+            source: Box::new(e),
+            trace: trace!(),
+        })
+    })?;
 
     // 2. server
     let server_handle = server_components.server_handle;
-    server_handle.await.map_err(|e| ServerErr::JoinHandleErr(JoinHandleErr {
-        source: Box::new(e),
-        trace: trace!(),
-    }))??;
+    server_handle.await.map_err(|e| {
+        ServerErr::JoinHandleErr(JoinHandleErr {
+            source: Box::new(e),
+            trace: trace!(),
+        })
+    })??;
 
     // 3. state
     let state = server_components.state;

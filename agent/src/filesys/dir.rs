@@ -6,15 +6,8 @@ use std::path::PathBuf;
 // internal crates
 use crate::filesys::{
     errors::{
-        FileSysErr,
-        InvalidDirNameErr,
-        UnknownHomeDirErr,
-        UnknownDirNameErr,
-        UnknownParentDirForDirErr,
-        ReadDirErr,
-        CreateDirErr,
-        DeleteDirErr,
-        UnknownCurrentDirErr,
+        CreateDirErr, DeleteDirErr, FileSysErr, InvalidDirNameErr, ReadDirErr,
+        UnknownCurrentDirErr, UnknownDirNameErr, UnknownHomeDirErr, UnknownParentDirForDirErr,
     },
     file::File,
     path::PathExt,
@@ -53,20 +46,23 @@ impl Dir {
     /// Create a new Dir instance for the home directory
     pub fn new_home_dir() -> Result<Dir, FileSysErr> {
         let home_dir = std::env::var("HOME")
-            .map_err(|e| FileSysErr::UnknownHomeDirErr(UnknownHomeDirErr {
-                source: e,
-                trace: trace!(),
-            }))
+            .map_err(|e| {
+                FileSysErr::UnknownHomeDirErr(UnknownHomeDirErr {
+                    source: e,
+                    trace: trace!(),
+                })
+            })
             .map(PathBuf::from)?;
         Ok(Dir { path: home_dir })
     }
 
     pub fn new_current_dir() -> Result<Dir, FileSysErr> {
-        let current_dir =
-            std::env::current_dir().map_err(|e| FileSysErr::UnknownCurrentDirErr(UnknownCurrentDirErr {
+        let current_dir = std::env::current_dir().map_err(|e| {
+            FileSysErr::UnknownCurrentDirErr(UnknownCurrentDirErr {
                 source: e,
                 trace: trace!(),
-            }))?;
+            })
+        })?;
         Ok(Dir { path: current_dir })
     }
 
@@ -107,10 +103,12 @@ impl Dir {
         let abs_path = self.abs_path()?;
         let parent = abs_path
             .parent()
-            .ok_or(FileSysErr::UnknownParentDirForDirErr(UnknownParentDirForDirErr {
-                dir: self.clone(),
-                trace: trace!(),
-            }))?;
+            .ok_or(FileSysErr::UnknownParentDirForDirErr(
+                UnknownParentDirForDirErr {
+                    dir: self.clone(),
+                    trace: trace!(),
+                },
+            ))?;
         Ok(Dir::new(parent))
     }
 
@@ -161,11 +159,13 @@ impl Dir {
         }
         tokio::fs::create_dir_all(self.to_string())
             .await
-            .map_err(|e| FileSysErr::CreateDirErr(CreateDirErr {
-                source: e,
-                dir: self.clone(),
-                trace: trace!(),
-            }))?;
+            .map_err(|e| {
+                FileSysErr::CreateDirErr(CreateDirErr {
+                    source: e,
+                    dir: self.clone(),
+                    trace: trace!(),
+                })
+            })?;
         Ok(())
     }
 
@@ -174,13 +174,13 @@ impl Dir {
         if !self.exists() {
             return Ok(());
         }
-        tokio::fs::remove_dir_all(self.path())
-            .await
-            .map_err(|e| FileSysErr::DeleteDirErr(DeleteDirErr {
+        tokio::fs::remove_dir_all(self.path()).await.map_err(|e| {
+            FileSysErr::DeleteDirErr(DeleteDirErr {
                 source: e,
                 dir: self.clone(),
                 trace: trace!(),
-            }))?;
+            })
+        })?;
         Ok(())
     }
 
@@ -203,24 +203,21 @@ impl Dir {
     /// Return the subdirectories of this directory
     pub async fn subdirs(&self) -> Result<Vec<Dir>, FileSysErr> {
         let mut dirs = Vec::new();
-        let mut entries =
-            tokio::fs::read_dir(self.to_string())
-                .await
-                .map_err(|e| FileSysErr::ReadDirErr(ReadDirErr {
-                    source: e,
-                    dir: self.clone(),
-                    trace: trace!(),
-                }))?;
-
-        while let Some(entry) = entries
-            .next_entry()
-            .await
-            .map_err(|e| FileSysErr::ReadDirErr(ReadDirErr {
+        let mut entries = tokio::fs::read_dir(self.to_string()).await.map_err(|e| {
+            FileSysErr::ReadDirErr(ReadDirErr {
                 source: e,
                 dir: self.clone(),
                 trace: trace!(),
-            }))?
-        {
+            })
+        })?;
+
+        while let Some(entry) = entries.next_entry().await.map_err(|e| {
+            FileSysErr::ReadDirErr(ReadDirErr {
+                source: e,
+                dir: self.clone(),
+                trace: trace!(),
+            })
+        })? {
             if entry.path().is_dir() {
                 let dir = Dir::new(entry.path());
                 dir.assert_exists()?;
@@ -234,24 +231,21 @@ impl Dir {
     pub async fn files(&self) -> Result<Vec<File>, FileSysErr> {
         let mut files = Vec::new();
 
-        let mut entries =
-            tokio::fs::read_dir(self.to_string())
-                .await
-                .map_err(|e| FileSysErr::ReadDirErr(ReadDirErr {
-                    source: e,
-                    dir: self.clone(),
-                    trace: trace!(),
-                }))?;
-
-        while let Some(entry) = entries
-            .next_entry()
-            .await
-            .map_err(|e| FileSysErr::ReadDirErr(ReadDirErr {
+        let mut entries = tokio::fs::read_dir(self.to_string()).await.map_err(|e| {
+            FileSysErr::ReadDirErr(ReadDirErr {
                 source: e,
                 dir: self.clone(),
                 trace: trace!(),
-            }))?
-        {
+            })
+        })?;
+
+        while let Some(entry) = entries.next_entry().await.map_err(|e| {
+            FileSysErr::ReadDirErr(ReadDirErr {
+                source: e,
+                dir: self.clone(),
+                trace: trace!(),
+            })
+        })? {
             if entry.path().is_file() {
                 let file = File::new(entry.path());
                 file.assert_exists()?;

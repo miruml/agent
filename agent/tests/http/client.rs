@@ -23,19 +23,11 @@ mod tests {
         async fn get_example_dot_com() {
             let http_client = HTTPClient::new().await;
             let request = http_client
-                .build_get_request(
-                    "https://example.com/",
-                    Duration::from_secs(1),
-                    None,
-                )
+                .build_get_request("https://example.com/", Duration::from_secs(1), None)
                 .unwrap();
-            let result = http_client
-                .send(request.0, &request.1)
-                .await
-                .unwrap();
+            let result = http_client.send(request.0, &request.1).await.unwrap();
             assert!(result.status().is_success());
         }
-
     }
 
     pub mod build_post_request {
@@ -60,10 +52,7 @@ mod tests {
                     None,
                 )
                 .unwrap();
-            let response = http_client
-                .send(request.0, &request.1)
-                .await
-                .unwrap();
+            let response = http_client.send(request.0, &request.1).await.unwrap();
             println!("response: {:?}", response);
             assert!(response.status().is_success());
 
@@ -88,16 +77,9 @@ mod tests {
             async fn get_example_dot_com() {
                 let http_client = HTTPClient::new().await;
                 let request = http_client
-                    .build_get_request(
-                        "https://example.com/",
-                        Duration::from_secs(1),
-                        None,
-                    )
+                    .build_get_request("https://example.com/", Duration::from_secs(1), None)
                     .unwrap();
-                let result = http_client
-                    .send(request.0, &request.1)
-                    .await
-                    .unwrap();
+                let result = http_client.send(request.0, &request.1).await.unwrap();
                 assert!(result.status().is_success());
             }
         }
@@ -109,16 +91,9 @@ mod tests {
             async fn network_connection_error() {
                 let http_client = HTTPClient::new().await;
                 let request = http_client
-                    .build_get_request(
-                        "http://localhost:8080",
-                        Duration::from_secs(1),
-                        None,
-                    )
+                    .build_get_request("http://localhost:8080", Duration::from_secs(1), None)
                     .unwrap();
-                let result = http_client
-                    .send(request.0, &request.1)
-                    .await
-                    .unwrap_err();
+                let result = http_client.send(request.0, &request.1).await.unwrap_err();
                 assert!(result.is_network_connection_error());
             }
 
@@ -127,16 +102,9 @@ mod tests {
             async fn timeout_error() {
                 let http_client = HTTPClient::new().await;
                 let request = http_client
-                    .build_get_request(
-                        "https://example.com/",
-                        Duration::from_millis(1),
-                        None,
-                    )
+                    .build_get_request("https://example.com/", Duration::from_millis(1), None)
                     .unwrap();
-                let result = http_client
-                    .send(request.0, &request.1)
-                    .await
-                    .unwrap_err();
+                let result = http_client.send(request.0, &request.1).await.unwrap_err();
                 assert!(matches!(result, HTTPErr::TimeoutErr { .. }));
             }
         }
@@ -156,11 +124,9 @@ mod tests {
 
                 // send the first request
                 let start = Instant::now();
-                let request = http_client.build_get_request(
-                    url,
-                    Duration::from_secs(1),
-                    None,
-                ).unwrap();
+                let request = http_client
+                    .build_get_request(url, Duration::from_secs(1), None)
+                    .unwrap();
                 let is_cache_hit = http_client
                     .send_cached(url.to_string(), request.0, &request.1)
                     .await
@@ -173,11 +139,9 @@ mod tests {
                 // send subsequent requests and check they are cached
                 for _ in 0..5 {
                     let start = Instant::now();
-                    let request = http_client.build_get_request(
-                        url,
-                        Duration::from_secs(1),
-                        None,
-                    ).unwrap();
+                    let request = http_client
+                        .build_get_request(url, Duration::from_secs(1), None)
+                        .unwrap();
                     let is_cache_hit = http_client
                         .send_cached(url.to_string(), request.0, &request.1)
                         .await
@@ -204,11 +168,9 @@ mod tests {
                     let http_client = http_client.clone();
                     let url = url.to_string();
                     let handle = tokio::spawn(async move {
-                        let request = http_client.build_get_request(
-                            &url,
-                            Duration::from_secs(1),
-                            None,
-                        ).unwrap();
+                        let request = http_client
+                            .build_get_request(&url, Duration::from_secs(1), None)
+                            .unwrap();
                         http_client
                             .send_cached(url.to_string(), request.0, &request.1)
                             .await
@@ -243,11 +205,9 @@ mod tests {
 
                 // send the first request
                 let start = Instant::now();
-                let request = http_client.build_get_request(
-                    url,
-                    Duration::from_secs(1),
-                    None,
-                ).unwrap();
+                let request = http_client
+                    .build_get_request(url, Duration::from_secs(1), None)
+                    .unwrap();
                 http_client
                     .send_cached(url.to_string(), request.0, &request.1)
                     .await
@@ -258,11 +218,9 @@ mod tests {
                 // send subsequent requests and check they are not cached
                 for _ in 0..5 {
                     let start = Instant::now();
-                    let request = http_client.build_get_request(
-                        url,
-                        Duration::from_secs(1),
-                        None,
-                    ).unwrap();
+                    let request = http_client
+                        .build_get_request(url, Duration::from_secs(1), None)
+                        .unwrap();
                     http_client
                         .send_cached(url.to_string(), request.0, &request.1)
                         .await
@@ -286,11 +244,9 @@ mod tests {
 
                 // send the first request
                 let start = Instant::now();
-                let request = http_client.build_get_request(
-                    url,
-                    Duration::from_secs(1),
-                    None,
-                ).unwrap();
+                let request = http_client
+                    .build_get_request(url, Duration::from_secs(1), None)
+                    .unwrap();
                 http_client
                     .send_cached(url.to_string(), request.0, &request.1)
                     .await
@@ -303,11 +259,9 @@ mod tests {
 
                 // send subsequent requests and check they are not cached
                 let start = Instant::now();
-                let request = http_client.build_get_request(
-                    url,
-                    Duration::from_secs(1),
-                    None,
-                ).unwrap();
+                let request = http_client
+                    .build_get_request(url, Duration::from_secs(1), None)
+                    .unwrap();
                 http_client
                     .send_cached(url.to_string(), request.0, &request.1)
                     .await
@@ -324,11 +278,7 @@ mod tests {
             async fn network_connection_error() {
                 let http_client = HTTPClient::new().await;
                 let request = http_client
-                    .build_get_request(
-                        "http://localhost:8080",
-                        Duration::from_secs(1),
-                        None,
-                    )
+                    .build_get_request("http://localhost:8080", Duration::from_secs(1), None)
                     .unwrap();
                 let result = http_client
                     .send_cached("test".to_string(), request.0, &request.1)
@@ -342,11 +292,7 @@ mod tests {
             async fn timeout_error() {
                 let http_client = HTTPClient::new().await;
                 let request = http_client
-                    .build_get_request(
-                        "https://example.com/",
-                        Duration::from_millis(1),
-                        None,
-                    )
+                    .build_get_request("https://example.com/", Duration::from_millis(1), None)
                     .unwrap();
                 let result = http_client
                     .send_cached("test".to_string(), request.0, &request.1)
@@ -365,16 +311,9 @@ mod tests {
             // make a request to a non-existent endpoint
             let http_client = HTTPClient::new().await;
             let request = http_client
-                .build_get_request(
-                    "https://httpstat.us/404",
-                    Duration::from_secs(1),
-                    None,
-                )
+                .build_get_request("https://httpstat.us/404", Duration::from_secs(1), None)
                 .unwrap();
-            let resp = http_client
-                .send(request.0, &request.1)
-                .await
-                .unwrap();
+            let resp = http_client.send(request.0, &request.1).await.unwrap();
 
             // call the handle_response method
             let response = http_client

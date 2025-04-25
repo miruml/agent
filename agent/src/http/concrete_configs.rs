@@ -23,10 +23,7 @@ pub trait ConcreteConfigsExt: Send + Sync {
 
 impl HTTPClient {
     fn concrete_configs_url(&self) -> String {
-        format!(
-            "{}/concrete_configs",
-            self.base_url
-        )
+        format!("{}/concrete_configs", self.base_url)
     }
 }
 
@@ -39,27 +36,17 @@ impl ConcreteConfigsExt for HTTPClient {
         // build the request
         let url = format!(
             "{}/latest?config_slug={}&config_schema_digest={}",
-            self.concrete_configs_url(), config_slug, config_schema_digest
+            self.concrete_configs_url(),
+            config_slug,
+            config_schema_digest
         );
-        let (request, context) = self.build_get_request(
-            &url,
-            self.default_timeout,
-            None,
-        )?;
+        let (request, context) = self.build_get_request(&url, self.default_timeout, None)?;
 
         // send the request (with caching)
-        let response = self.send_cached(
-            url,
-            request,
-            &context,
-        ).await?.0;
+        let response = self.send_cached(url, request, &context).await?.0;
 
         // parse the response
-        self
-            .parse_json_response_text::<Option<BackendConcreteConfig>>(
-                response,
-                &context,
-            )
+        self.parse_json_response_text::<Option<BackendConcreteConfig>>(response, &context)
             .await
     }
 
@@ -81,15 +68,10 @@ impl ConcreteConfigsExt for HTTPClient {
         )?;
 
         // send the request
-        let response = self.send_cached(
-            key,
-            request,
-            &context,
-        ).await?.0;
+        let response = self.send_cached(key, request, &context).await?.0;
 
         // parse the response
-        self
-            .parse_json_response_text::<BackendConcreteConfig>(response, &context)
+        self.parse_json_response_text::<BackendConcreteConfig>(response, &context)
             .await
     }
 }

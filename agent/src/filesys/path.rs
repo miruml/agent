@@ -6,10 +6,7 @@ use std::{
 
 // internal crates
 use crate::filesys::errors::{
-    FileSysErr,
-    PathDoesNotExistErr,
-    PathExistsErr,
-    UnknownCurrentDirErr,
+    FileSysErr, PathDoesNotExistErr, PathExistsErr, UnknownCurrentDirErr,
 };
 use crate::trace;
 
@@ -20,11 +17,12 @@ pub trait PathExt {
         let path = match self.path().is_absolute() {
             true => self.path().clone(),
             false => {
-                let current_dir =
-                    env::current_dir().map_err(|e| FileSysErr::UnknownCurrentDirErr(UnknownCurrentDirErr {
+                let current_dir = env::current_dir().map_err(|e| {
+                    FileSysErr::UnknownCurrentDirErr(UnknownCurrentDirErr {
                         source: e,
                         trace: trace!(),
-                    }))?;
+                    })
+                })?;
                 current_dir.join(self.path())
             }
         };

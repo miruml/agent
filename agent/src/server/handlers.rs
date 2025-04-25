@@ -7,12 +7,10 @@ use crate::services::concrete_configs::{
     read_latest, read_latest::ReadLatestArgs, refresh_latest, refresh_latest::RefreshLatestArgsI,
 };
 use crate::services::config_schemas::{hash, hash::HashSchemaArgsI};
-use openapi_server::models::{
-    HashSchemaSerializedRequest, HashSerializedConfigSchemaFormat,
-};
 use openapi_server::models::RefreshLatestConcreteConfigRequest;
 use openapi_server::models::SchemaDigestResponse;
 use openapi_server::models::{Error, ErrorResponse};
+use openapi_server::models::{HashSchemaSerializedRequest, HashSerializedConfigSchemaFormat};
 
 // external
 use axum::{extract::Query, extract::State, http::StatusCode, response::IntoResponse, Json};
@@ -43,10 +41,7 @@ pub async fn hash_schema(
         Ok(digest) => (StatusCode::OK, Json(json!(SchemaDigestResponse { digest }))),
         Err(e) => {
             error!("Error hashing schema: {:?}", e);
-            (
-                e.http_status(),
-                Json(json!(to_error_response(e))),
-            )
+            (e.http_status(), Json(json!(to_error_response(e))))
         }
     }
 }
@@ -62,10 +57,7 @@ pub async fn read_latest_concrete_config(
         Ok(concrete_config) => (StatusCode::OK, Json(json!(concrete_config))),
         Err(e) => {
             error!("Error reading latest concrete config: {:?}", e);
-            (
-                e.http_status(),
-                Json(json!(to_error_response(e))),
-            )
+            (e.http_status(), Json(json!(to_error_response(e))))
         }
     }
 }
@@ -91,10 +83,7 @@ pub async fn refresh_latest_concrete_config(
         Ok(concrete_config) => (StatusCode::OK, Json(json!(concrete_config))),
         Err(e) => {
             error!("Error refreshing latest concrete config: {:?}", e);
-            (
-                e.http_status(),
-                Json(json!(to_error_response(e))),
-            )
+            (e.http_status(), Json(json!(to_error_response(e))))
         }
     }
 }

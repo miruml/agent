@@ -10,7 +10,7 @@ use crate::utils::time_delta_to_duration;
 // external crates
 use chrono::Utc;
 use tokio::time::Duration;
-use tracing::{info, error};
+use tracing::{error, info};
 
 pub async fn run_token_refresh_loop(
     token_mngr: Arc<TokenManager>,
@@ -41,10 +41,7 @@ pub async fn run_token_refresh_loop(
     }
 }
 
-async fn determine_sleep_duration(
-    token_mngr: &TokenManager,
-    cooldown: Duration,
-) -> Duration {
+async fn determine_sleep_duration(token_mngr: &TokenManager, cooldown: Duration) -> Duration {
     match token_mngr.get_token().await {
         Ok(token) => {
             // determine the expiration time of the token
@@ -53,7 +50,7 @@ async fn determine_sleep_duration(
 
             // wait until 10 minutes before expiration to refresh the token
             let mut sleep_duration = time_delta_to_duration(duration_until_expiration);
-            sleep_duration -= Duration::from_secs(10*60);
+            sleep_duration -= Duration::from_secs(10 * 60);
             sleep_duration = max(cooldown, sleep_duration);
             sleep_duration
         }

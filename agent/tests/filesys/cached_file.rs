@@ -2,16 +2,13 @@
 mod tests {
 
     // internal crates
-    use config_agent::storage::token::Token;
     use config_agent::filesys::{
-        cached_file::CachedFile,
-        dir::Dir,
-        errors::FileSysErr,
-        path::PathExt,
+        cached_file::CachedFile, dir::Dir, errors::FileSysErr, path::PathExt,
     };
+    use config_agent::storage::token::Token;
 
     // external crates
-    use chrono::{Utc, Duration};
+    use chrono::{Duration, Utc};
     #[allow(unused_imports)]
     use tracing::{debug, error, info, trace, warn};
 
@@ -23,8 +20,7 @@ mod tests {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
             let file = dir.file("test-file");
             let result = CachedFile::<Token>::new(file).await;
-            assert!(
-                matches!(result, Err(FileSysErr::PathDoesNotExistErr(_))));
+            assert!(matches!(result, Err(FileSysErr::PathDoesNotExistErr(_))));
         }
 
         #[tokio::test]
@@ -33,12 +29,13 @@ mod tests {
             let file = dir.file("test-file");
 
             // create the file
-            file.write_string("invalid-data", false, false).await.unwrap();
+            file.write_string("invalid-data", false, false)
+                .await
+                .unwrap();
 
             // ensure the contents is correct
             let result = CachedFile::<Token>::new(file).await;
-            assert!(
-                matches!(result, Err(FileSysErr::ParseJSONErr(_))));
+            assert!(matches!(result, Err(FileSysErr::ParseJSONErr(_))));
         }
 
         #[tokio::test]
@@ -67,7 +64,9 @@ mod tests {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
             let file = dir.file("test-file");
 
-            let cached_file = CachedFile::<Token>::new_with_default(file, Token::default()).await.unwrap();
+            let cached_file = CachedFile::<Token>::new_with_default(file, Token::default())
+                .await
+                .unwrap();
             assert_eq!(cached_file.read().as_ref(), &Token::default());
         }
 
@@ -77,9 +76,13 @@ mod tests {
             let file = dir.file("test-file");
 
             // create the file
-            file.write_string("invalid-data", false, false).await.unwrap();
+            file.write_string("invalid-data", false, false)
+                .await
+                .unwrap();
 
-            let cached_file = CachedFile::<Token>::new_with_default(file, Token::default()).await.unwrap();
+            let cached_file = CachedFile::<Token>::new_with_default(file, Token::default())
+                .await
+                .unwrap();
             assert_eq!(cached_file.read().as_ref(), &Token::default());
         }
 
@@ -109,7 +112,9 @@ mod tests {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
             let file = dir.file("test-file");
 
-            let cached_file = CachedFile::<Token>::create(file, &Token::default(), false).await.unwrap();
+            let cached_file = CachedFile::<Token>::create(file, &Token::default(), false)
+                .await
+                .unwrap();
             assert_eq!(cached_file.read().as_ref(), &Token::default());
         }
 
@@ -118,7 +123,9 @@ mod tests {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
             let file = dir.file("test-file");
 
-            let cached_file = CachedFile::<Token>::create(file, &Token::default(), true).await.unwrap();
+            let cached_file = CachedFile::<Token>::create(file, &Token::default(), true)
+                .await
+                .unwrap();
             assert_eq!(cached_file.read().as_ref(), &Token::default());
         }
 
@@ -128,11 +135,16 @@ mod tests {
             let file = dir.file("test-file");
 
             // create the file
-            file.write_string("invalid-data", false, false).await.unwrap();
+            file.write_string("invalid-data", false, false)
+                .await
+                .unwrap();
 
             // should throw an error since already exists
             let result = CachedFile::<Token>::create(file, &Token::default(), false).await;
-            assert!(matches!(result, Err(FileSysErr::InvalidFileOverwriteErr(_))));
+            assert!(matches!(
+                result,
+                Err(FileSysErr::InvalidFileOverwriteErr(_))
+            ));
         }
 
         #[tokio::test]
@@ -141,10 +153,14 @@ mod tests {
             let file = dir.file("test-file");
 
             // create the file
-            file.write_string("invalid-data", false, false).await.unwrap();
+            file.write_string("invalid-data", false, false)
+                .await
+                .unwrap();
 
             // should throw an error since already exists
-            let cached_file = CachedFile::<Token>::create(file, &Token::default(), true).await.unwrap();
+            let cached_file = CachedFile::<Token>::create(file, &Token::default(), true)
+                .await
+                .unwrap();
             assert_eq!(cached_file.read().as_ref(), &Token::default());
         }
     }
@@ -157,7 +173,9 @@ mod tests {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
             let file = dir.file("test-file");
 
-            let cached_file = CachedFile::<Token>::create(file, &Token::default(), false).await.unwrap();
+            let cached_file = CachedFile::<Token>::create(file, &Token::default(), false)
+                .await
+                .unwrap();
             assert_eq!(cached_file.read().as_ref(), &Token::default());
         }
 
@@ -167,7 +185,9 @@ mod tests {
             let file = dir.file("test-file");
 
             // create the file
-            let cached_file = CachedFile::<Token>::create(file.clone(), &Token::default(), true).await.unwrap();
+            let cached_file = CachedFile::<Token>::create(file.clone(), &Token::default(), true)
+                .await
+                .unwrap();
 
             // delete the file
             file.delete().await.unwrap();
@@ -187,7 +207,9 @@ mod tests {
             let file = dir.file("test-file");
 
             // create the file
-            let mut cached_file = CachedFile::<Token>::create(file, &Token::default(), false).await.unwrap();
+            let mut cached_file = CachedFile::<Token>::create(file, &Token::default(), false)
+                .await
+                .unwrap();
             assert_eq!(cached_file.read().as_ref(), &Token::default());
 
             // write to the file
@@ -205,7 +227,10 @@ mod tests {
             let file = dir.file("test-file");
 
             // create the file
-            let mut cached_file = CachedFile::<Token>::create(file.clone(), &Token::default(), false).await.unwrap();
+            let mut cached_file =
+                CachedFile::<Token>::create(file.clone(), &Token::default(), false)
+                    .await
+                    .unwrap();
             assert_eq!(cached_file.read().as_ref(), &Token::default());
 
             // delete the file

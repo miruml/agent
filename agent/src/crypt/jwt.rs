@@ -1,10 +1,6 @@
 // internal crates
 use crate::crypt::base64;
-use crate::crypt::errors::{
-    CryptErr,
-    InvalidJWTErr,
-    InvalidJWTPayloadFormatErr,
-};
+use crate::crypt::errors::{CryptErr, InvalidJWTErr, InvalidJWTPayloadFormatErr};
 use crate::trace;
 // external crates
 use serde::{Deserialize, Serialize};
@@ -31,11 +27,12 @@ pub fn decode(token: &str) -> Result<Claims, CryptErr> {
     }
 
     let payload = base64::decode_string_url_safe_no_pad(parts[1])?;
-    let claims: Claims =
-        serde_json::from_str(&payload).map_err(|e| CryptErr::InvalidJWTPayloadErr(InvalidJWTPayloadFormatErr {
+    let claims: Claims = serde_json::from_str(&payload).map_err(|e| {
+        CryptErr::InvalidJWTPayloadErr(InvalidJWTPayloadFormatErr {
             msg: e.to_string(),
             trace: trace!(),
-        }))?;
+        })
+    })?;
 
     Ok(claims)
 }

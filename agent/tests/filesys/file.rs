@@ -225,7 +225,10 @@ mod tests {
             file.write_string("arglebargle", false, false)
                 .await
                 .unwrap();
-            assert_eq!(file.read_secret_bytes().await.unwrap().expose_secret(), b"arglebargle");
+            assert_eq!(
+                file.read_secret_bytes().await.unwrap().expose_secret(),
+                b"arglebargle"
+            );
         }
     }
 

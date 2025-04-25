@@ -1,17 +1,15 @@
-// standard library 
+// standard library
 use std::fmt;
 
 // internal crates
-use crate::errors::{MiruError, Code, HTTPCode};
 use crate::errors::Trace;
-use openapi_client::models::ErrorResponse;
-use crate::http::client::RequestContext;
+use crate::errors::{Code, HTTPCode, MiruError};
 use crate::http::backend::BackendErrorCodes;
+use crate::http::client::RequestContext;
+use openapi_client::models::ErrorResponse;
 // external crates
 #[allow(unused_imports)]
 use tracing::{debug, error, info, trace, warn};
-
-
 
 #[derive(Debug)]
 pub struct RequestFailed {
@@ -46,16 +44,12 @@ impl fmt::Display for RequestFailed {
             None => "unknown miru server error".to_string(),
         };
         write!(
-            f, 
+            f,
             "Request {} failed with status code {}: {}",
-            self.request,
-            self.status,
-            debug_msg
+            self.request, self.status, debug_msg
         )
     }
 }
-
-
 
 #[derive(Debug)]
 pub struct TimeoutErr {
@@ -84,7 +78,12 @@ impl MiruError for TimeoutErr {
 
 impl fmt::Display for TimeoutErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Request {} timed out after {} seconds", self.request, self.request.timeout.as_secs())
+        write!(
+            f,
+            "Request {} timed out after {} seconds",
+            self.request,
+            self.request.timeout.as_secs()
+        )
     }
 }
 
@@ -146,7 +145,11 @@ impl MiruError for ConnectionErr {
 
 impl fmt::Display for ConnectionErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Request {} failed with network connection error: {}", self.request, self.source)
+        write!(
+            f,
+            "Request {} failed with network connection error: {}",
+            self.request, self.source
+        )
     }
 }
 
@@ -177,7 +180,11 @@ impl MiruError for DecodeRespBodyErr {
 
 impl fmt::Display for DecodeRespBodyErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Request {} failed to decode response body: {}", self.request, self.source)
+        write!(
+            f,
+            "Request {} failed to decode response body: {}",
+            self.request, self.source
+        )
     }
 }
 
@@ -242,8 +249,6 @@ impl fmt::Display for MarshalJSONErr {
     }
 }
 
-
-
 #[derive(Debug)]
 pub struct UnmarshalJSONErr {
     pub request: RequestContext,
@@ -271,7 +276,11 @@ impl MiruError for UnmarshalJSONErr {
 
 impl fmt::Display for UnmarshalJSONErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Request {} failed to unmarshal JSON: {}", self.request, self.source)
+        write!(
+            f,
+            "Request {} failed to unmarshal JSON: {}",
+            self.request, self.source
+        )
     }
 }
 
@@ -332,7 +341,11 @@ impl MiruError for ReqwestErr {
 
 impl fmt::Display for ReqwestErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Request {} failed with reqwest crate error: {}", self.request, self.source)
+        write!(
+            f,
+            "Request {} failed with reqwest crate error: {}",
+            self.request, self.source
+        )
     }
 }
 
@@ -362,10 +375,13 @@ impl MiruError for MockErr {
 
 impl fmt::Display for MockErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Mock error (is network connection error: {})", self.is_network_connection_error)
+        write!(
+            f,
+            "Mock error (is network connection error: {})",
+            self.is_network_connection_error
+        )
     }
 }
-
 
 #[derive(Debug)]
 pub enum HTTPErr {
@@ -390,14 +406,10 @@ pub enum HTTPErr {
 impl HTTPErr {
     pub fn is_invalid_token_error(&self) -> bool {
         match self {
-            HTTPErr::RequestFailed(e) => {
-                match &e.error {
-                    Some(error) => {
-                        error.error.code == BackendErrorCodes::InvalidJWTAuth.as_str()
-                    }
-                    None => false,
-                }
-            }
+            HTTPErr::RequestFailed(e) => match &e.error {
+                Some(error) => error.error.code == BackendErrorCodes::InvalidJWTAuth.as_str(),
+                None => false,
+            },
             _ => false,
         }
     }
@@ -451,26 +463,28 @@ pub fn reqwest_err_to_http_client_err(
     trace: Box<Trace>,
 ) -> HTTPErr {
     if e.is_connect() {
-        HTTPErr::ConnectionErr(ConnectionErr { 
-            request: context.clone(), 
-            source: e, 
-            trace 
+        HTTPErr::ConnectionErr(ConnectionErr {
+            request: context.clone(),
+            source: e,
+            trace,
         })
     } else if e.is_decode() {
-        HTTPErr::DecodeRespBodyErr(DecodeRespBodyErr { 
-            request: context.clone(), 
-            source: e, trace })
+        HTTPErr::DecodeRespBodyErr(DecodeRespBodyErr {
+            request: context.clone(),
+            source: e,
+            trace,
+        })
     } else if e.is_timeout() {
-        HTTPErr::TimeoutErr(TimeoutErr { 
-            msg: e.to_string(), 
-            request: context.clone(), 
-            trace 
+        HTTPErr::TimeoutErr(TimeoutErr {
+            msg: e.to_string(),
+            request: context.clone(),
+            trace,
         })
     } else {
-        HTTPErr::ReqwestErr(ReqwestErr { 
-            request: context.clone(), 
-            source: e, 
-            trace 
+        HTTPErr::ReqwestErr(ReqwestErr {
+            request: context.clone(),
+            source: e,
+            trace,
         })
     }
 }

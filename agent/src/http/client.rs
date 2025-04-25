@@ -1,6 +1,6 @@
 // standard library
-use std::sync::Arc;
 use std::fmt;
+use std::sync::Arc;
 
 // internal crates
 use crate::env;
@@ -8,13 +8,8 @@ use crate::errors::MiruError;
 use crate::http::{
     errors::{reqwest_err_to_http_client_err, HTTPErr},
     errors::{
-        CacheErr, 
-        InvalidHeaderValueErr,
-        MarshalJSONErr,
-        UnmarshalJSONErr,
-        RequestFailed,
-        BuildReqwestErr,
-        TimeoutErr,
+        BuildReqwestErr, CacheErr, InvalidHeaderValueErr, MarshalJSONErr, RequestFailed,
+        TimeoutErr, UnmarshalJSONErr,
     },
 };
 use crate::trace;
@@ -34,7 +29,6 @@ type Response = String;
 type RequestID = Uuid;
 type IsCacheHit = bool;
 
-
 #[derive(Clone, Debug)]
 pub struct RequestContext {
     pub url: String,
@@ -42,10 +36,15 @@ pub struct RequestContext {
     pub timeout: Duration,
 }
 
-
 impl fmt::Display for RequestContext {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {} (timeout: {}ms)", self.method, self.url, self.timeout.as_millis())
+        write!(
+            f,
+            "{} {} (timeout: {}ms)",
+            self.method,
+            self.url,
+            self.timeout.as_millis()
+        )
     }
 }
 
@@ -105,11 +104,7 @@ impl HTTPClient {
         }
     }
 
-    fn add_token_to_headers(
-        &self,
-        headers: &mut HeaderMap,
-        token: &str,
-    ) -> Result<(), HTTPErr> {
+    fn add_token_to_headers(&self, headers: &mut HeaderMap, token: &str) -> Result<(), HTTPErr> {
         headers.insert(
             AUTHORIZATION,
             HeaderValue::from_str(&format!("Bearer {}", token)).map_err(|e| {
@@ -150,15 +145,20 @@ impl HTTPClient {
         request = request.timeout(timeout);
 
         // build
-        let reqwest = request.build().map_err(|e| HTTPErr::BuildReqwestErr(BuildReqwestErr {
-            source: e,
-            trace: trace!(),
-        }))?;
-        Ok((reqwest, RequestContext {
-            url: url.to_string(),
-            method,
-            timeout,
-        }))
+        let reqwest = request.build().map_err(|e| {
+            HTTPErr::BuildReqwestErr(BuildReqwestErr {
+                source: e,
+                trace: trace!(),
+            })
+        })?;
+        Ok((
+            reqwest,
+            RequestContext {
+                url: url.to_string(),
+                method,
+                timeout,
+            },
+        ))
     }
 
     pub fn build_get_request(
@@ -190,21 +190,16 @@ impl HTTPClient {
             None => self.default_timeout,
         };
         // request server
-        let response = timeout(
-            time_limit,
-            self.client.execute(request),
-        )
-        .await
-            .map_err(|e| HTTPErr::TimeoutErr(TimeoutErr {
-                msg: e.to_string(),
-                request: context.clone(),
-                trace: trace!(),
-            }))?
-            .map_err(|e| reqwest_err_to_http_client_err(
-                e,
-                context,
-                trace!(),
-            ))?;
+        let response = timeout(time_limit, self.client.execute(request))
+            .await
+            .map_err(|e| {
+                HTTPErr::TimeoutErr(TimeoutErr {
+                    msg: e.to_string(),
+                    request: context.clone(),
+                    trace: trace!(),
+                })
+            })?
+            .map_err(|e| reqwest_err_to_http_client_err(e, context, trace!()))?;
         Ok(response)
     }
 
@@ -223,11 +218,13 @@ impl HTTPClient {
                 Ok((self.handle_response(response, context).await?, id))
             })
             .await
-            .map_err(|e: Arc<HTTPErr>| HTTPErr::CacheErr(CacheErr {
-                is_network_connection_error: e.is_network_connection_error(),
-                msg: e.to_string(),
-                trace: trace!(),
-            }))?;
+            .map_err(|e: Arc<HTTPErr>| {
+                HTTPErr::CacheErr(CacheErr {
+                    is_network_connection_error: e.is_network_connection_error(),
+                    msg: e.to_string(),
+                    trace: trace!(),
+                })
+            })?;
         let is_cache_hit = result.1 != id;
         Ok((result.0, is_cache_hit))
     }
@@ -236,10 +233,12 @@ impl HTTPClient {
     where
         T: Serialize,
     {
-        serde_json::to_string(payload).map_err(|e| HTTPErr::MarshalJSONErr(MarshalJSONErr {
-            source: e,
-            trace: trace!(),
-        }))
+        serde_json::to_string(payload).map_err(|e| {
+            HTTPErr::MarshalJSONErr(MarshalJSONErr {
+                source: e,
+                trace: trace!(),
+            })
+        })
     }
 
     pub async fn handle_response(
@@ -281,11 +280,13 @@ impl HTTPClient {
     where
         T: DeserializeOwned,
     {
-        serde_json::from_str::<T>(&text).map_err(|e| HTTPErr::UnmarshalJSONErr(UnmarshalJSONErr {
-            request: context.clone(),
-            source: e,
-            trace: trace!(),
-        }))
+        serde_json::from_str::<T>(&text).map_err(|e| {
+            HTTPErr::UnmarshalJSONErr(UnmarshalJSONErr {
+                request: context.clone(),
+                source: e,
+                trace: trace!(),
+            })
+        })
     }
 
     #[doc(hidden)]

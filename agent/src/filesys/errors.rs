@@ -66,7 +66,6 @@ impl fmt::Display for InvalidDirNameErr {
     }
 }
 
-
 #[derive(Debug)]
 pub struct UnknownDirNameErr {
     pub dir: Dir,
@@ -93,10 +92,13 @@ impl MiruError for UnknownDirNameErr {
 
 impl fmt::Display for UnknownDirNameErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "unable to determine directory name for directory path: {}", self.dir)
+        write!(
+            f,
+            "unable to determine directory name for directory path: {}",
+            self.dir
+        )
     }
 }
-
 
 #[derive(Debug)]
 pub struct UnknownFileNameErr {
@@ -124,10 +126,13 @@ impl MiruError for UnknownFileNameErr {
 
 impl fmt::Display for UnknownFileNameErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "unable to determine file name for file path: {}", self.file)
+        write!(
+            f,
+            "unable to determine file name for file path: {}",
+            self.file
+        )
     }
 }
-
 
 #[derive(Debug)]
 pub struct PathDoesNotExistErr {
@@ -155,10 +160,13 @@ impl MiruError for PathDoesNotExistErr {
 
 impl fmt::Display for PathDoesNotExistErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "path does not exist: {}", self.path.to_str().unwrap_or("unknown"))
+        write!(
+            f,
+            "path does not exist: {}",
+            self.path.to_str().unwrap_or("unknown")
+        )
     }
 }
-
 
 #[derive(Debug)]
 pub struct PathExistsErr {
@@ -186,10 +194,13 @@ impl MiruError for PathExistsErr {
 
 impl fmt::Display for PathExistsErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "path exists: {}", self.path.to_str().unwrap_or("unknown"))
+        write!(
+            f,
+            "path exists: {}",
+            self.path.to_str().unwrap_or("unknown")
+        )
     }
 }
-
 
 #[derive(Debug)]
 pub struct InvalidFileOverwriteErr {
@@ -218,10 +229,13 @@ impl MiruError for InvalidFileOverwriteErr {
 
 impl fmt::Display for InvalidFileOverwriteErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "cannot overwrite existing file (allow overwrite is {}): {}", self.overwrite, self.file)
+        write!(
+            f,
+            "cannot overwrite existing file (allow overwrite is {}): {}",
+            self.overwrite, self.file
+        )
     }
 }
-
 
 #[derive(Debug)]
 pub struct UnknownParentDirForDirErr {
@@ -249,10 +263,13 @@ impl MiruError for UnknownParentDirForDirErr {
 
 impl fmt::Display for UnknownParentDirForDirErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "unable to determine parent directory for directory: {}", self.dir)
+        write!(
+            f,
+            "unable to determine parent directory for directory: {}",
+            self.dir
+        )
     }
 }
-
 
 #[derive(Debug)]
 pub struct UnknownParentDirForFileErr {
@@ -280,10 +297,13 @@ impl MiruError for UnknownParentDirForFileErr {
 
 impl fmt::Display for UnknownParentDirForFileErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "unable to determine parent directory for file: {}", self.file)
+        write!(
+            f,
+            "unable to determine parent directory for file: {}",
+            self.file
+        )
     }
 }
-
 
 #[derive(Debug)]
 pub struct ReadDirErr {
@@ -316,7 +336,6 @@ impl fmt::Display for ReadDirErr {
     }
 }
 
-
 #[derive(Debug)]
 pub struct AtomicWriteFileErr {
     pub file: File,
@@ -347,7 +366,6 @@ impl fmt::Display for AtomicWriteFileErr {
         write!(f, "failed to write file atomically: {}", self.file)
     }
 }
-
 
 #[derive(Debug)]
 pub struct ConvertUTF8Err {
@@ -407,7 +425,11 @@ impl MiruError for CopyFileErr {
 
 impl fmt::Display for CopyFileErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "failed to copy file '{}' to '{}': {}", self.src_file, self.dest_file, self.source)
+        write!(
+            f,
+            "failed to copy file '{}' to '{}': {}",
+            self.src_file, self.dest_file, self.source
+        )
     }
 }
 
@@ -438,7 +460,11 @@ impl MiruError for CreateDirErr {
 
 impl fmt::Display for CreateDirErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "failed to create directory '{}': {}", self.dir, self.source)
+        write!(
+            f,
+            "failed to create directory '{}': {}",
+            self.dir, self.source
+        )
     }
 }
 
@@ -470,7 +496,11 @@ impl MiruError for CreateSymlinkErr {
 
 impl fmt::Display for CreateSymlinkErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "failed to create symlink '{}' aliasing to file '{}': {}", self.link, self.file, self.source)
+        write!(
+            f,
+            "failed to create symlink '{}' aliasing to file '{}': {}",
+            self.link, self.file, self.source
+        )
     }
 }
 
@@ -504,7 +534,6 @@ impl fmt::Display for CreateTmpDirErr {
     }
 }
 
-
 #[derive(Debug)]
 pub struct DeleteDirErr {
     pub source: std::io::Error,
@@ -532,10 +561,13 @@ impl MiruError for DeleteDirErr {
 
 impl fmt::Display for DeleteDirErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "failed to delete directory '{}': {}", self.dir, self.source)
+        write!(
+            f,
+            "failed to delete directory '{}': {}",
+            self.dir, self.source
+        )
     }
 }
-
 
 #[derive(Debug)]
 pub struct DeleteFileErr {
@@ -595,10 +627,13 @@ impl MiruError for FileMetadataErr {
 
 impl fmt::Display for FileMetadataErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "failed to extract file metadata for file '{}': {}", self.file, self.source)
+        write!(
+            f,
+            "failed to extract file metadata for file '{}': {}",
+            self.file, self.source
+        )
     }
 }
-
 
 #[derive(Debug)]
 pub struct MoveFileErr {
@@ -628,10 +663,13 @@ impl MiruError for MoveFileErr {
 
 impl fmt::Display for MoveFileErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "failed to move file '{}' to '{}': {}", self.src_file, self.dest_file, self.source)
+        write!(
+            f,
+            "failed to move file '{}' to '{}': {}",
+            self.src_file, self.dest_file, self.source
+        )
     }
 }
-
 
 #[derive(Debug)]
 pub struct OpenFileErr {
@@ -691,7 +729,11 @@ impl MiruError for ParseJSONErr {
 
 impl fmt::Display for ParseJSONErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "failed to parse JSON for file '{}': {}", self.file, self.source)
+        write!(
+            f,
+            "failed to parse JSON for file '{}': {}",
+            self.file, self.source
+        )
     }
 }
 
@@ -725,7 +767,6 @@ impl fmt::Display for ReadFileErr {
         write!(f, "failed to read file '{}': {}", self.file, self.source)
     }
 }
-
 
 #[derive(Debug)]
 pub struct UnknownCurrentDirErr {
@@ -784,7 +825,11 @@ impl MiruError for WriteFileErr {
 
 impl fmt::Display for WriteFileErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "failed to write to file '{}': {}", self.file, self.source)
+        write!(
+            f,
+            "failed to write to file '{}': {}",
+            self.file, self.source
+        )
     }
 }
 
@@ -798,7 +843,6 @@ pub enum FileSysErr {
     PathExistsErr(PathExistsErr),
     UnknownParentDirForDirErr(UnknownParentDirForDirErr),
     UnknownParentDirForFileErr(UnknownParentDirForFileErr),
-
 
     // internal crate errors
 

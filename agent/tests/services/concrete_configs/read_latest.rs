@@ -11,10 +11,7 @@ mod tests {
             read_latest::{ReadLatestArgs, ReadLatestArgsI},
             utils,
         },
-        errors::{
-            ServiceErr,
-            LatestConcreteConfigNotFound,
-        },
+        errors::{LatestConcreteConfigNotFound, ServiceErr},
     };
     use config_agent::storage::concrete_configs::{
         ConcreteConfig, ConcreteConfigCache, ConcreteConfigCacheKey,
@@ -52,11 +49,13 @@ mod tests {
             // assert the result
             assert!(matches!(
                 result,
-                Err(ServiceErr::LatestConcreteConfigNotFound(LatestConcreteConfigNotFound {
-                    config_slug: _,
-                    config_schema_digest: _,
-                    trace: _,
-                })),
+                Err(ServiceErr::LatestConcreteConfigNotFound(
+                    LatestConcreteConfigNotFound {
+                        config_slug: _,
+                        config_schema_digest: _,
+                        trace: _,
+                    }
+                )),
             ));
         }
 
