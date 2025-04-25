@@ -27,7 +27,7 @@ mod tests {
             let result = ServerState::new(layout).await;
             match result {
                 Err(ServerErr::FileSysErr(e)) => {
-                    assert!(matches!(e.source, FileSysErr::PathDoesNotExistErr(_)));
+                    assert!(matches!(*e.source, FileSysErr::PathDoesNotExistErr(_)));
                 }
                 Err(e) => {
                     panic!("Expected FileSysErr not {:?}", e);

@@ -1,5 +1,6 @@
 // standard library
 use std::sync::Arc;
+use std::future::Future;
 
 // internal crates
 use crate::auth::errors::{
@@ -11,6 +12,7 @@ use crate::filesys::{cached_file::CachedFile, file::File, path::PathExt};
 use crate::http::auth::ClientAuthExt;
 use crate::storage::token::Token;
 use crate::trace;
+use crate::utils::time_delta_to_positive_duration;
 use openapi_client::models::{IssueClientClaims, IssueClientTokenRequest};
 
 // external crates
@@ -288,5 +290,67 @@ impl TokenManager {
                 trace: trace!(),
             })
         })?
+    }
+}
+
+// =============================== REFRESH LOOP ==================================== //
+pub async fn run_refresh_loop(
+    token_mngr: Arc<TokenManager>,
+    expiration_threshold: tokio::time::Duration,
+    cooldown: tokio::time::Duration,
+    shutdown_signal: impl Future<Output = ()> + Send + 'static,
+) {
+    let mut shutdown = Box::pin(shutdown_signal);
+    let mut sleep_duration: tokio::time::Duration;
+
+    loop {
+        // determine how long to sleep before refreshing the token.
+        sleep_duration = determine_refresh_loop_sleep_duration(
+            &token_mngr,
+            expiration_threshold,
+            cooldown,
+        ).await;
+
+        tokio::select! {
+            // exit if the shutdown signal is received
+            _ = shutdown.as_mut() => {
+                info!("Token refresh loop shutdown complete");
+                return;
+            }
+            // else sleep and wait to refresh the token
+            _ = tokio::time::sleep(sleep_duration) => {
+            },
+        }
+
+        // refresh the token
+        if let Err(e) = token_mngr.refresh_token().await {
+            error!("Error refreshing token: {:#?}", e);
+        }
+    }
+}
+
+pub async fn determine_refresh_loop_sleep_duration(
+    token_mngr: &TokenManager,
+    expiration_threshold: tokio::time::Duration,
+    cooldown: tokio::time::Duration
+) -> tokio::time::Duration {
+    match token_mngr.get_token().await {
+        Ok(token) => {
+            // determine the expiration time of the token
+            let expiration = token.expires_at;
+            let duration_until_expiration = expiration - Utc::now();
+
+            // attempt to refresh token when expiration is within the threshold
+            let sleep_duration = time_delta_to_positive_duration(duration_until_expiration);
+            if sleep_duration <= expiration_threshold + cooldown {
+                cooldown
+            } else {
+                sleep_duration - expiration_threshold
+            }
+        }
+        Err(e) => {
+            error!("Error fetching token from token manager: {:#?}", e);
+            cooldown
+        }
     }
 }

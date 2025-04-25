@@ -21,14 +21,12 @@ use tower_http::{
     trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
     LatencyUnit,
 };
-use tracing::info;
 use tracing::Level;
 
 pub(crate) async fn serve(
     state: Arc<ServerState>,
     shutdown_signal: impl Future<Output = ()> + Send + 'static,
 ) -> Result<JoinHandle<Result<(), ServerErr>>, ServerErr> {
-    info!("Starting server...");
 
     // build the app with the test route
     let state_for_middleware = state.clone();

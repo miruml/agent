@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
 // internal crates
-use crate::auth::refresh::run_token_refresh_loop;
+use crate::auth::token_mngr::run_refresh_loop;
 use crate::server::errors::{JoinHandleErr, ServerErr, ShutdownMngrDuplicateArgErr};
 use crate::server::serve::serve;
 use crate::server::state::ServerState;
@@ -27,6 +27,8 @@ pub struct ServerComponents {
 
 pub struct RunServerOptions {
     pub layout: StorageLayout,
+    pub token_refresh_expiration_threshold: Duration,
+    pub token_refresh_cooldown: Duration,
     pub max_runtime: Duration,
     pub idle_timeout: Duration,
     pub idle_timeout_poll_interval: Duration,
@@ -37,6 +39,8 @@ impl Default for RunServerOptions {
     fn default() -> Self {
         Self {
             layout: StorageLayout::default(),
+            token_refresh_expiration_threshold: Duration::from_secs(15 * 60), // 15 minutes
+            token_refresh_cooldown: Duration::from_secs(30),
             max_runtime: Duration::from_secs(60*15), // 15 minutes
             idle_timeout: Duration::from_secs(60),
             idle_timeout_poll_interval: Duration::from_secs(5),
@@ -46,6 +50,8 @@ impl Default for RunServerOptions {
 }
 
 pub async fn run(options: RunServerOptions) -> Result<(), ServerErr> {
+    info!("Starting miru agent...");
+
     // Create a single shutdown channel that all components will listen to
     let (shutdown_tx, _shutdown_rx): (tokio::sync::broadcast::Sender<()>, _) =
         tokio::sync::broadcast::channel(1);
@@ -59,7 +65,7 @@ pub async fn run(options: RunServerOptions) -> Result<(), ServerErr> {
     // start the server (and shutdown if failures occur)
     let state =
         match start_server(
-            options.layout,
+            &options,
             &mut shutdown_manager,
             shutdown_rx_refresh,
             shutdown_rx2_server,
@@ -83,10 +89,10 @@ pub async fn run(options: RunServerOptions) -> Result<(), ServerErr> {
             options.idle_timeout,
             options.idle_timeout_poll_interval,
         ) => {
-            info!("Idle timeout reached, shutting down...");
+            info!("Idle timeout ({:?}) reached, shutting down...", options.idle_timeout);
         }
         _ = await_max_runtime(options.max_runtime) => {
-            info!("Max runtime reached, shutting down...");
+            info!("Max runtime ({:?}) reached, shutting down...", options.max_runtime);
         }
     }
 
@@ -96,22 +102,29 @@ pub async fn run(options: RunServerOptions) -> Result<(), ServerErr> {
 }
 
 async fn start_server(
-    layout: StorageLayout,
+    options: &RunServerOptions,
     shutdown_manager: &mut ShutdownManager,
     mut shutdown_rx_refresh: broadcast::Receiver<()>,
     mut shutdown_rx2_server: broadcast::Receiver<()>,
 ) -> Result<Arc<ServerState>, ServerErr> {
     // initialize the server state
-    let (state, state_handle) = ServerState::new(layout).await?;
+    let (state, state_handle) = ServerState::new(options.layout.clone()).await?;
     let state = Arc::new(state);
     shutdown_manager.with_state(state.clone(), Box::pin(state_handle))?;
 
     // initialize the token refresh loop
     let token_mngr_for_spawn = state.token_mngr.clone();
+    let token_refresh_expiration_threshold = options.token_refresh_expiration_threshold;
+    let token_refresh_cooldown = options.token_refresh_cooldown;
     let token_refresh_handle = tokio::spawn(async move {
-        run_token_refresh_loop(token_mngr_for_spawn, Duration::from_secs(30), async move {
-            let _ = shutdown_rx_refresh.recv().await;
-        })
+        run_refresh_loop(
+            token_mngr_for_spawn,
+            token_refresh_expiration_threshold,
+            token_refresh_cooldown,
+            async move {
+                let _ = shutdown_rx_refresh.recv().await;
+            },
+        )
         .await;
     });
     shutdown_manager.with_token_refresh_handle(token_refresh_handle)?;
@@ -153,6 +166,7 @@ async fn await_max_runtime(max_runtime: Duration) -> Result<(), ServerErr> {
     Ok(())
 }
 
+// ============================== SHUTDOWN MANAGER ================================ //
 struct StateShutdownParams {
     state: Arc<ServerState>,
     state_handle: Pin<Box<dyn Future<Output = ()> + Send>>,
@@ -250,7 +264,7 @@ impl ShutdownManager {
     async fn shutdown_impl(&mut self) -> Result<(), ServerErr> {
         // the shutdown order is important here. The refresh and server threads rely on the
         // state so the state must be shutdown last.
-        info!("Shutting down program...");
+        info!("Shutting down miru agent...");
 
         // 1. refresh
         if let Some(token_refresh_handle) = self.token_refresh_handle.take() {
