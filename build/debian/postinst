@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# determine the version of systemd
+socket_name="miru.socket"
+
+cleanInstall() {
+    printf "\033[32m Post Install of an clean install\033[0m\n"
+    printf "\033[32m Reload the service unit from disk\033[0m\n"
+    systemctl daemon-reload ||:
+
+    # socket installation 
+    printf "\033[32m Set the enabled flag for the socket unit\033[0m\n"
+    systemctl enable ${socket_name} ||:
+    printf "\033[32m Restart the socket\033[0m\n"
+    systemctl restart ${socket_name} ||:
+}
+
+upgrade() {
+    printf "\033[32m Post Install of an upgrade\033[0m\n"
+    printf "\033[32m Reload the service unit from disk\033[0m\n"
+    systemctl daemon-reload ||:
+
+    # socket upgrade
+    systemctl restart ${socket_name} ||:
+}
+
+# Step 2, check if this is a clean install or an upgrade
+action="$1"
+if [ "$1" = "configure" ] && [ -z "$2" ]; then
+  action="install"
+elif [ "$1" = "configure" ] && [ -n "$2" ]; then
+  action="upgrade"
+fi
+
+case "$action" in
+  "install")
+    cleanInstall
+    ;;
+  "upgrade")
+    printf "\033[32m Post Install of an upgrade\033[0m\n"
+    upgrade
+    ;;
+esac
+
+exit 0

@@ -1,0 +1,97 @@
+# This is an example .goreleaser.yml file with some sensible defaults.
+# Make sure to check the documentation at https://goreleaser.com
+
+# The lines below are called `modelines`. See `:help modeline`
+# Feel free to remove those if you don't want/need to use them.
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+
+version: 2
+
+builds:
+  - id: "miru-agent"
+    builder: rust
+    binary: "config-agent"
+    targets:
+      - x86_64-unknown-linux-gnu
+      - aarch64-unknown-linux-gnu
+    dir: ..
+    command: zigbuild
+    flags:
+      - --release
+      - -p=config-agent
+
+nfpms:
+  - id: miru-agent
+    package_name: miru-agent
+    file_name_template: "{{ .PackageName }}_{{ .Version }}_{{ .Arch }}"
+    vendor: "Miru"
+    homepage: "https://miruml.com"
+    maintainer: "Benjamin Smidt <ben@miruml.com>"
+    description: |
+      miru provides the infrastructure to version, manage, and deploy application configurations at scale. This debian package is the miru agent, which handles configuration deployment to your robots in production.
+    
+    formats:
+      - deb
+
+    section: "default"
+    priority: "extra"
+    dependencies:
+      - systemd
+      - pkg-config
+
+    contents:
+      - src: "{{ .ArtifactPath }}"
+        dst: "/usr/bin/miru/miru-agent-{{ .Version }}"
+        file_info:
+          owner: miru
+          group: miru
+          mode: 0755
+      - src: "/usr/bin/miru/miru-agent-{{ .Version }}"
+        dst: "/usr/bin/miru/miru-agent"
+        type: symlink
+      - src: "debian/miru.service"
+        dst: "/lib/systemd/system/miru.service"
+      - src: "debian/miru.socket"
+        dst: "/lib/systemd/system/miru.socket"
+
+    scripts:
+      postinstall: "debian/postinst"
+      postremove: "debian/postrm"
+
+archives:
+  - formats: [tar.gz]
+    # this name template makes the OS and Arch compatible with the results of `uname`.
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    # use zip for windows archives
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+changelog:
+  disable: true
+
+release:
+  github:
+    owner: miruml
+    name: agent
+  footer: >-
+    ## Miru Agent {{.Tag}}
+    
+    New release of Miru Agent. Download the appropriate binary for your system.
+    
+    For documentation, visit: https://docs.miruml.com
+
+    ---
+
+    Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
+
+source:
+  enabled: false
+

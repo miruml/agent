@@ -1,0 +1,939 @@
+- semver: 0.1.0
+  date: 2025-04-25T15:53:01-07:00
+  packager: miru
+  changes:
+    - commit: 82d11e251e14020dfd6c4ea700da3110db613618
+      note: 'fix(server): fix systemd socket binding'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: fix
+        scope: server
+        description: fix systemd socket binding
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: 8c33f7f55898f53fd30820407c2ddceacd2f9d08
+      note: 'feat(installer): add installer v1'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: feat
+        scope: installer
+        description: add installer v1
+        body: ""
+        footer: []
+        major: false
+        minor: true
+        patch: false
+    - commit: 5b225289064c6e843a555e47738a1327b313b3b2
+      note: 'refactor(auth): increase initial attempts for token refresh'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: refactor
+        scope: auth
+        description: increase initial attempts for token refresh
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: a8c60f0cf78039bb9494adb1ae2a5802ec542e0f
+      note: 'test(server): add server run test cases'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: test
+        scope: server
+        description: add server run test cases
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: b94d0dd99b5252dc83ec90b10679d41b6b26f383
+      note: 'test(auth): add token manager refresh loop test cases'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: test
+        scope: auth
+        description: add token manager refresh loop test cases
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: f7ae39dea4786f4bc4c14d4e8d7d6bc30d7acaa9
+      note: 'refactor(server): use dedicated shutdown manager'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: refactor
+        scope: server
+        description: use dedicated shutdown manager
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: dc96d0540bc580a16a4584462d7091c09c8fcb65
+      note: 'test(server): test server state struct'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: test
+        scope: server
+        description: test server state struct
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: 7eb649d4f78bebb441be3845a3566b007533229a
+      note: 'style: lint'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: style
+        scope: ""
+        description: lint
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: 16b946d44fb682a629e6326763db244555b18c8d
+      note: 'refactor(server): refactor state + shutdown management'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: refactor
+        scope: server
+        description: refactor state + shutdown management
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: 1721f8eac9ff10ba0f7b0011c0e7dc9714a7d1f9
+      note: 'feat(server): idle countdown timer implemented'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: feat
+        scope: server
+        description: idle countdown timer implemented
+        body: ""
+        footer: []
+        major: false
+        minor: true
+        patch: false
+    - commit: 839a78429eecfae31f57052d03c610ba87a14f10
+      note: 'feat(server): add graceful shutdown'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: feat
+        scope: server
+        description: add graceful shutdown
+        body: ""
+        footer: []
+        major: false
+        minor: true
+        patch: false
+    - commit: 7ca64c7dc1a571e59eea74a9c713423a3cc2fb4a
+      note: 'feat(auth): add infinite token refresh loop'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: feat
+        scope: auth
+        description: add infinite token refresh loop
+        body: ""
+        footer: []
+        major: false
+        minor: true
+        patch: false
+    - commit: 6d95c12a6dccd09b5265fbf0d27acb09aa964bea
+      note: 'feat(filesys.secrets): add read_secret_bytes method'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: feat
+        scope: filesys.secrets
+        description: add read_secret_bytes method
+        body: ""
+        footer: []
+        major: false
+        minor: true
+        patch: false
+    - commit: 3c9ff605bf5eb8cb72791f1f71a34fa22e53575d
+      note: 'test(auth): tested multithreaded auth token manager'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: test
+        scope: auth
+        description: tested multithreaded auth token manager
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: 7a04e0f73675ae0afe88fe9fce41ec23e7843cdb
+      note: 'feat(storage.agent): add agent information to storage / server'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: feat
+        scope: storage.agent
+        description: add agent information to storage / server
+        body: ""
+        footer: []
+        major: false
+        minor: true
+        patch: false
+    - commit: 022ed0dcb03b8561218f720a9c69ceabc95c27b4
+      note: 'feat(auth.token_mngr): wrote multithreaded token manager'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: feat
+        scope: auth.token_mngr
+        description: wrote multithreaded token manager
+        body: ""
+        footer: []
+        major: false
+        minor: true
+        patch: false
+    - commit: fd5e9646c5a4c0530277d6a89cf2dcd58191949c
+      note: 'test(filesys): test cached file implementation'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: test
+        scope: filesys
+        description: test cached file implementation
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: b724f70c96cc07adc23cb9dd7f0c5ee86b73ff3d
+      note: 'feat(auth): add token refresh functions'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: feat
+        scope: auth
+        description: add token refresh functions
+        body: ""
+        footer: []
+        major: false
+        minor: true
+        patch: false
+    - commit: dd25d9bafedc205c14d62a587ff01750f2bf33e9
+      note: 'feat(cached_file + auth): add cached file and prepare issue token request'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: feat
+        scope: cached_file + auth
+        description: add cached file and prepare issue token request
+        body: ""
+        footer: []
+        major: false
+        minor: true
+        patch: false
+    - commit: c590f5cf08eec0f0fbeb4793133fea5bc80c202c
+      note: 'feat(http.client): add client authentication routes'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: feat
+        scope: http.client
+        description: add client authentication routes
+        body: ""
+        footer: []
+        major: false
+        minor: true
+        patch: false
+    - commit: 13faf63131650f5bdb2ec54e3bc0566316bc8262
+      note: 'feat(crypt): add crypt crate with base64, jwt, rsa, and sha256 mods'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: feat
+        scope: crypt
+        description: add crypt crate with base64, jwt, rsa, and sha256 mods
+        body: ""
+        footer: []
+        major: false
+        minor: true
+        patch: false
+    - commit: 0abfe14c641ffc7f76af00f99d05138ee288040d
+      note: 'chore: update openapi spec'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: chore
+        scope: ""
+        description: update openapi spec
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: false
+    - commit: a54dc4e033ff406e074ba6a5a437991922ae458b
+      note: 'refactor(hash_schema): use serialized hash schema route'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: refactor
+        scope: hash_schema
+        description: use serialized hash schema route
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: 1cd667602cb08ec9cbf37e3f869977ab21245243
+      note: 'fix(server): fix logging and /var/lib/miru route'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: fix
+        scope: server
+        description: fix logging and /var/lib/miru route
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: 945a75594e6e5fdd13b9ae075b7d399ac3bc4038
+      note: 'refactor(http.client): add more information to error handling'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: refactor
+        scope: http.client
+        description: add more information to error handling
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: 90b3cf38c60df515abd056ff69c8366cee08248c
+      note: 'refactor(http.client): use reqwest timeouts instead of custom timeout logic'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: refactor
+        scope: http.client
+        description: use reqwest timeouts instead of custom timeout logic
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: 4e0162d27950928882f31af5b227aa1c58d29cb3
+      note: 'refactor(http_client): rename http_client to http'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: refactor
+        scope: http_client
+        description: rename http_client to http
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: 6c4d9dd3fca7436ff1fdf14125847f99e14ba1e2
+      note: 'refactor(errors): refactor errors to store server return information'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: refactor
+        scope: errors
+        description: refactor errors to store server return information
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: 20e67164c759bc9d21f09e8f8ae8612c7995b54e
+      note: 'style: lint'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: style
+        scope: ""
+        description: lint
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: 41c93b91546382743810163da3c4cb414570752f
+      note: 'feat(server): hook up all services to server'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: feat
+        scope: server
+        description: hook up all services to server
+        body: ""
+        footer: []
+        major: false
+        minor: true
+        patch: false
+    - commit: 25c674d1bd00075ebc88f404c6dc158ce05ea348
+      note: 'test(storage): test prune cache'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: test
+        scope: storage
+        description: test prune cache
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: b55a14ee35d5a5071b8ce4528f371040fa905f8d
+      note: 'feat(cache.prune): add prune function to cache'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: feat
+        scope: cache.prune
+        description: add prune function to cache
+        body: ""
+        footer: []
+        major: false
+        minor: true
+        patch: false
+    - commit: 25c6e0fabde7f696f806be67851e29b00ddb5cbe
+      note: 'refactor(storage): abstract cache implementation into single struct'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: refactor
+        scope: storage
+        description: abstract cache implementation into single struct
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: 935e68b7bd9e243c8d2881bc19784748a7de9385
+      note: 'test(services): tested refresh latest service'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: test
+        scope: services
+        description: tested refresh latest service
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: 696bb28353baf8b7f1670b3de328dcc16161bf11
+      note: 'test(services): testing read latest concrete config complete'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: test
+        scope: services
+        description: testing read latest concrete config complete
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: bf3504f5171be4202c90e8c7295402ea3cc2ee39
+      note: 'refactor(storage): add dedicatd concrete config model'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: refactor
+        scope: storage
+        description: add dedicatd concrete config model
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: d9801859e064e88311b1dbd81ecc3298035ee1ff
+      note: 'refactor(storage): parallelize concrete config cache'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: refactor
+        scope: storage
+        description: parallelize concrete config cache
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: 87eae40f4d7db1e5f2182ee33bad166eea3a721f
+      note: 'fix(filesystem): fix file tests with async lambdas'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: fix
+        scope: filesystem
+        description: fix file tests with async lambdas
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: 330a23dc95f7544c22fa92c1bab8460362925a9b
+      note: 'test(http_client): cache tests successfully passing'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: test
+        scope: http_client
+        description: cache tests successfully passing
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: 98ac0537b26f1993f8252dbd760b443622780aea
+      note: 'refactor(http_client): switch cache to use moka'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: refactor
+        scope: http_client
+        description: switch cache to use moka
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: 88bcd09d0b39aeb684c32698da7fa2252d011478
+      note: 'test(http_client): add http client test cases'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: test
+        scope: http_client
+        description: add http client test cases
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: b4cf6ea94c0284e8e1749a736e29ef33b8c519b7
+      note: 'refactor(filesys): switch filesystem to be async'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: refactor
+        scope: filesys
+        description: switch filesystem to be async
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: b319e684bd59013dcde46765462a0cc7690ac3b4
+      note: 'refactor(filesys): add atomic writes'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: refactor
+        scope: filesys
+        description: add atomic writes
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: 67454b93a2cfd557cfbaa7a2bcb1116e4a9e4b88
+      note: 'test(services): add success tests for hash schema'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: test
+        scope: services
+        description: add success tests for hash schema
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: f97c42ecd032f3666e2788d8848e038891564c38
+      note: 'test(storage): test config schema digest registry'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: test
+        scope: storage
+        description: test config schema digest registry
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: 81518c96d8c3f99fd73687f49eff7ad85786adde
+      note: 'test(filesys): filesysem module test cases written and passing'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: test
+        scope: filesys
+        description: filesysem module test cases written and passing
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: ca6e2b19cf371586bf6a8378dd71206a51b6472d
+      note: 'test(filesystem): add tests to file module'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: test
+        scope: filesystem
+        description: add tests to file module
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: eb9c0a9812b847e0c61ef993439bc1264dbacc91
+      note: 'test(filesystem): dir module tests complete'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: test
+        scope: filesystem
+        description: dir module tests complete
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: 9a3e4992cad88bf5418962aa1eb13e66e7dc2df2
+      note: 'feat(http_client): add caching mechanism for request deduplication'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: feat
+        scope: http_client
+        description: add caching mechanism for request deduplication
+        body: ""
+        footer: []
+        major: false
+        minor: true
+        patch: false
+    - commit: ce9f3df8fb3539819284bae64abbff0232c0372e
+      note: 'feat(hash_schema): add async config cache'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: feat
+        scope: hash_schema
+        description: add async config cache
+        body: ""
+        footer: []
+        major: false
+        minor: true
+        patch: false
+    - commit: e220832303d89da61f70cdc8aff6d7ba3a354b05
+      note: 'feat(services): added basic render / read latest cncr config services'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: feat
+        scope: services
+        description: added basic render / read latest cncr config services
+        body: ""
+        footer: []
+        major: false
+        minor: true
+        patch: false
+    - commit: ea56dc07b1a885e2f45b1e0f9d569b36140b9281
+      note: 'feat(services.hash_schema): drafted basic hash schema service implementation'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: feat
+        scope: services.hash_schema
+        description: drafted basic hash schema service implementation
+        body: ""
+        footer: []
+        major: false
+        minor: true
+        patch: false
+    - commit: 1dbe99e784b358d14a54f107072a97a500df79d0
+      note: 'refactor(openapi): moved openapi definitions to separate crates'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: refactor
+        scope: openapi
+        description: moved openapi definitions to separate crates
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: true
+    - commit: 402daf18dfc763b0c9f68d068a9512c5f2c5aa23
+      note: 'feat(http_client): add hash schema route'
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: feat
+        scope: http_client
+        description: add hash schema route
+        body: ""
+        footer: []
+        major: false
+        minor: true
+        patch: false
+    - commit: 7fc51c166b13ad905cb0cf3ae6e955e9c70d0bd8
+      note: init commit
+      author:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      committer:
+        name: Benjamin Smidt
+        email: benjamin.raymond.smidt@gmail.com
+      conventional_commit:
+        category: chore
+        scope: ""
+        description: init commit
+        body: ""
+        footer: []
+        major: false
+        minor: false
+        patch: false

@@ -27,3 +27,7 @@ prod/
 local/
 dev/
 deleteme_dir/
+
+# distribution files
+dist/
+zig*/

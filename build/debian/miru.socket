@@ -2,7 +2,8 @@
 Description=Miru OTA deployment manager socket
 
 [Socket]
-ListenStream=/run/miru.sock
+ListenStream=/run/miru/miru.sock
+RuntimeDirectory=miru
 SocketMode=0660
 SocketGroup=miru
 RemoveOnStop=yes

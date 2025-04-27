@@ -1,0 +1,42 @@
+#!/bin/sh
+
+remove() {
+    printf "\033[32m Post Remove of a normal remove\033[0m\n"
+    echo "Remove" > /tmp/miru-agent-postremove-remove-proof
+}
+
+purge() {
+    printf "\033[32m Post Remove purge\033[0m\n"
+    echo "Purge" > /tmp/miru-agent-postremove-purge-proof
+    printf "\033[32m Post Remove remove /var/lib/miru \033[0m\n"
+    rm -rf /var/lib/miru
+    printf "\033[32m Post Remove remove /var/log/miru \033[0m\n"
+    rm -rf /var/log/miru
+}
+
+upgrade() {
+    printf "\033[32m Post Remove of an upgrade\033[0m\n"
+    echo "Upgrade" > /tmp/miru-agent-postremove-upgrade-proof
+}
+
+echo "$@"
+
+action="$1"
+
+case "$action" in
+  "0" | "remove")
+    remove
+    ;;
+  "1" | "upgrade")
+    upgrade
+    ;;
+  "purge")
+    purge
+    ;;
+  *)
+    printf "\033[32m Alpine\033[0m"
+    remove
+    ;;
+esac
+
+exit 0

@@ -1,0 +1,54 @@
+[Unit]
+Description=Miru OTA deployment manager
+After=network.target
+Requires=miru.socket
+
+[Service]
+Type=simple
+
+# user and group
+Group=miru
+User=miru
+
+# runtime
+StateDirectory=miru
+LogsDirectory=miru
+ExecStart=/usr/local/bin/miru/config-agent
+WorkingDirectory=/var/lib/miru
+
+# logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=miru-agent
+
+# security
+# Allows read / write access
+ReadWritePaths=/var/lib/miru /var/log/miru
+# Makes the entire filesystem read-only except for paths in ReadWritePaths
+ProtectSystem=strict
+# Prevents access to /home, /root, and /run/user
+ProtectHome=true
+# Prevents the service and its children from gaining new privileges
+NoNewPrivileges=true
+# Gives the service a private /tmp and /var/tmp
+PrivateTmp=true
+# Restricts access to /dev, only allowing minimal device nodes
+PrivateDevices=true
+# Restricts the service’s view of /proc to only its own processes (Linux 5.8+)
+ProtectProc=invisible
+# Makes kernel tunable files (e.g., /proc/sys, /sys) read-only or inaccessible
+ProtectKernelTunables=true
+# Prevents loading or unloading of kernel modules
+ProtectKernelModules=true
+# Prevents modification of cgroup settings
+ProtectControlGroups=true
+# Limits network protocols to UNIX sockets, IPv4, and IPv6
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+# Prevents gaining real-time scheduling privileges
+RestrictRealtime=true
+# Prevents creating or executing set-user-ID or set-group-ID files
+RestrictSUIDSGID=true
+
+
+[Install]
+WantedBy=multi-user.target

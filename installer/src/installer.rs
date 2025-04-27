@@ -64,7 +64,10 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
         self.intro()?;
 
         // setup the storage so that the agent can authenticate its keys and such
-        let agent = Agent { client_id: "placeholder".to_string() };
+        let agent = Agent { 
+            client_id: "placeholder".to_string(),
+            activated: false,
+        };
         setup_storage(&self.layout, &agent).await.map_err(|e| InstallerErr::StorageErr(InstallerStorageErr {
             source: e,
             trace: trace!(),
@@ -75,7 +78,7 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
 
         // update the storage layout to hold the client id and such
         let agent_file = self.layout.agent_file();
-        let agent = Agent { client_id };
+        let agent = Agent { client_id, activated: true };
         agent_file.write_json(&agent, true, true).await.map_err(|e| InstallerErr::FileSysErr(InstallerFileSysErr {
             source: e,
             trace: trace!(),
