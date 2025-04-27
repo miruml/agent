@@ -21,7 +21,7 @@ mod tests {
         #[tokio::test]
         #[serial_test::serial(example_dot_com)]
         async fn get_example_dot_com() {
-            let http_client = HTTPClient::new().await;
+            let http_client = HTTPClient::new("doesntmatter").await;
             let request = http_client
                 .build_get_request("https://example.com/", Duration::from_secs(1), None)
                 .unwrap();
@@ -35,7 +35,7 @@ mod tests {
 
         #[tokio::test]
         async fn post_to_postman_echo() {
-            let http_client = HTTPClient::new().await;
+            let http_client = HTTPClient::new("doesntmatter").await;
 
             // Create a simple JSON payload
             let payload = serde_json::json!({
@@ -75,7 +75,7 @@ mod tests {
             #[tokio::test]
             #[serial_test::serial(example_dot_com)]
             async fn get_example_dot_com() {
-                let http_client = HTTPClient::new().await;
+                let http_client = HTTPClient::new("doesntmatter").await;
                 let request = http_client
                     .build_get_request("https://example.com/", Duration::from_secs(1), None)
                     .unwrap();
@@ -89,7 +89,7 @@ mod tests {
 
             #[tokio::test]
             async fn network_connection_error() {
-                let http_client = HTTPClient::new().await;
+                let http_client = HTTPClient::new("doesntmatter").await;
                 let request = http_client
                     .build_get_request("http://localhost:8080", Duration::from_secs(1), None)
                     .unwrap();
@@ -100,7 +100,7 @@ mod tests {
             #[tokio::test]
             #[serial_test::serial(example_dot_com)]
             async fn timeout_error() {
-                let http_client = HTTPClient::new().await;
+                let http_client = HTTPClient::new("doesntmatter").await;
                 let request = http_client
                     .build_get_request("https://example.com/", Duration::from_millis(1), None)
                     .unwrap();
@@ -119,7 +119,7 @@ mod tests {
             #[tokio::test]
             #[serial_test::serial(example_dot_com)]
             async fn sequential_cache_hit() {
-                let http_client = HTTPClient::new().await;
+                let http_client = HTTPClient::new("doesntmatter").await;
                 let url = "https://example.com/";
 
                 // send the first request
@@ -156,7 +156,7 @@ mod tests {
             #[tokio::test]
             #[serial_test::serial(example_dot_com)]
             async fn concurrent_cache_hit() {
-                let http_client = Arc::new(HTTPClient::new().await);
+                let http_client = Arc::new(HTTPClient::new("doesntmatter").await);
                 let url = "https://example.com/";
 
                 let start = Instant::now();
@@ -200,7 +200,7 @@ mod tests {
 
             #[tokio::test]
             async fn errors_not_cached() {
-                let http_client = HTTPClient::new().await;
+                let http_client = HTTPClient::new("doesntmatter").await;
                 let url = "https://httpstat.us/404";
 
                 // send the first request
@@ -276,7 +276,7 @@ mod tests {
 
             #[tokio::test]
             async fn network_connection_error() {
-                let http_client = HTTPClient::new().await;
+                let http_client = HTTPClient::new("doesntmatter").await;
                 let request = http_client
                     .build_get_request("http://localhost:8080", Duration::from_secs(1), None)
                     .unwrap();
@@ -290,7 +290,7 @@ mod tests {
             #[tokio::test]
             #[serial_test::serial(example_dot_com)]
             async fn timeout_error() {
-                let http_client = HTTPClient::new().await;
+                let http_client = HTTPClient::new("doesntmatter").await;
                 let request = http_client
                     .build_get_request("https://example.com/", Duration::from_millis(1), None)
                     .unwrap();
@@ -309,7 +309,7 @@ mod tests {
         #[tokio::test]
         async fn endpoint_not_found() {
             // make a request to a non-existent endpoint
-            let http_client = HTTPClient::new().await;
+            let http_client = HTTPClient::new("doesntmatter").await;
             let request = http_client
                 .build_get_request("https://httpstat.us/404", Duration::from_secs(1), None)
                 .unwrap();

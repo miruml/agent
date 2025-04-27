@@ -1,11 +1,13 @@
 #[cfg(test)]
 mod tests {
     // std crates
+    use std::sync::Arc;
     use std::sync::atomic::Ordering;
 
     // internal crates
     use config_agent::filesys::dir::Dir;
     use config_agent::filesys::errors::FileSysErr;
+    use config_agent::http::client::HTTPClient;
     use config_agent::server::errors::ServerErr;
     use config_agent::server::state::ServerState;
     use config_agent::storage::{agent::Agent, layout::StorageLayout, token::Token};
@@ -20,7 +22,11 @@ mod tests {
         async fn fail_missing_private_key_file() {
             let dir = Dir::create_temp_dir("testing").await.unwrap();
             let layout = StorageLayout::new(dir);
-            let result = ServerState::new(layout).await;
+            let result = ServerState::new(
+                layout,
+                Arc::new(HTTPClient::new("doesntmatter").await),
+            )
+            .await;
             match result {
                 Err(ServerErr::FileSysErr(e)) => {
                     assert!(matches!(*e.source, FileSysErr::PathDoesNotExistErr(_)));
@@ -45,7 +51,11 @@ mod tests {
                 .await
                 .unwrap();
 
-            let result = ServerState::new(layout).await;
+            let result = ServerState::new(
+                layout,
+                Arc::new(HTTPClient::new("doesntmatter").await),
+            )
+            .await;
             assert!(matches!(result, Err(ServerErr::MissingClientIDErr(_))));
         }
 
@@ -70,7 +80,12 @@ mod tests {
             };
             token_file.write_json(&token, false, false).await.unwrap();
 
-            let (state, _) = ServerState::new(layout.clone()).await.unwrap();
+            let (state, _) = ServerState::new(
+                layout.clone(),
+                Arc::new(HTTPClient::new("doesntmatter").await),
+            )
+            .await
+            .unwrap();
 
             // the agent file should not have the client id
             let agent_file = layout.agent_file();
@@ -97,13 +112,15 @@ mod tests {
 
             // create the agent file
             let agent_file = layout.agent_file();
-            let agent = Agent {
-                client_id: "cli_123".to_string(),
-                activated: true,
-            };
+            let agent = Agent::default();
             agent_file.write_json(&agent, false, false).await.unwrap();
 
-            let (state, _) = ServerState::new(layout.clone()).await.unwrap();
+            let (state, _) = ServerState::new(
+                layout.clone(),
+                Arc::new(HTTPClient::new("doesntmatter").await),
+            )
+            .await
+            .unwrap();
 
             // the token file should now have the default token
             let token_file = layout.auth_dir().token_file();
@@ -133,13 +150,15 @@ mod tests {
 
             // create the agent file
             let agent_file = layout.agent_file();
-            let agent = Agent {
-                client_id: "cli_123".to_string(),
-                activated: true,
-            };
+            let agent = Agent::default();
             agent_file.write_json(&agent, false, false).await.unwrap();
 
-            let (state, state_handle) = ServerState::new(layout.clone()).await.unwrap();
+            let (state, state_handle) = ServerState::new(
+                layout.clone(),
+                Arc::new(HTTPClient::new("doesntmatter").await),
+            )
+            .await
+            .unwrap();
             state.shutdown().await.unwrap();
             state_handle.await;
         }
@@ -162,13 +181,15 @@ mod tests {
 
             // create the agent file
             let agent_file = layout.agent_file();
-            let agent = Agent {
-                client_id: "cli_123".to_string(),
-                activated: true,
-            };
+            let agent = Agent::default();
             agent_file.write_json(&agent, false, false).await.unwrap();
 
-            let (state, _) = ServerState::new(layout.clone()).await.unwrap();
+            let (state, _) = ServerState::new(
+                layout.clone(),
+                Arc::new(HTTPClient::new("doesntmatter").await),
+            )
+            .await
+            .unwrap();
             let before_record = Utc::now().timestamp();
             std::thread::sleep(std::time::Duration::from_secs(1));
             state.record_activity();

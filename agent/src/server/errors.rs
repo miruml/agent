@@ -9,6 +9,7 @@ use crate::errors::{Code, HTTPCode, Trace};
 use crate::filesys::errors::FileSysErr;
 use crate::filesys::file::File;
 use crate::http::errors::HTTPErr;
+use crate::services::errors::ServiceErr;
 use crate::storage::errors::StorageErr;
 
 #[derive(Debug)]
@@ -227,6 +228,36 @@ impl fmt::Display for ServerStorageErr {
 }
 
 #[derive(Debug)]
+pub struct ServerServiceErr {
+    pub source: Box<ServiceErr>,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for ServerServiceErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for ServerServiceErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "server service error: {}", self.source)
+    }
+}
+
+#[derive(Debug)]
 pub struct BindUnixSocketErr {
     pub socket_file: File,
     pub source: Box<std::io::Error>,
@@ -394,6 +425,7 @@ pub enum ServerErr {
     FileSysErr(ServerFileSysErr),
     HTTPErr(ServerHTTPErr),
     StorageErr(ServerStorageErr),
+    ServiceErr(ServerServiceErr),
 
     // external crate errors
     BindUnixSocketErr(BindUnixSocketErr),
@@ -413,6 +445,7 @@ macro_rules! forward_error_method {
             Self::FileSysErr(e) => e.$method($($arg)?),
             Self::HTTPErr(e) => e.$method($($arg)?),
             Self::StorageErr(e) => e.$method($($arg)?),
+            Self::ServiceErr(e) => e.$method($($arg)?),
             Self::BindUnixSocketErr(e) => e.$method($($arg)?),
             Self::RunAxumServerErr(e) => e.$method($($arg)?),
             Self::SendShutdownSignalErr(e) => e.$method($($arg)?),

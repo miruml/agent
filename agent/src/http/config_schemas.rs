@@ -13,6 +13,7 @@ pub trait ConfigSchemasExt: Send + Sync {
     async fn hash_schema(
         &self,
         payload: &HashSchemaSerializedRequest,
+        token: &str,
     ) -> Result<SchemaDigestResponse, HTTPErr>;
 }
 
@@ -20,6 +21,7 @@ impl ConfigSchemasExt for HTTPClient {
     async fn hash_schema(
         &self,
         payload: &HashSchemaSerializedRequest,
+        token: &str,
     ) -> Result<SchemaDigestResponse, HTTPErr> {
         // build the request
         let url = format!("{}/config_schemas/hash/serialized", self.base_url);
@@ -27,7 +29,7 @@ impl ConfigSchemasExt for HTTPClient {
             &url,
             self.marshal_json_payload(payload)?,
             self.default_timeout,
-            None,
+            Some(token),
         )?;
 
         // send the request (with caching)
@@ -44,7 +46,8 @@ impl ConfigSchemasExt for Arc<HTTPClient> {
     async fn hash_schema(
         &self,
         payload: &HashSchemaSerializedRequest,
+        token: &str,
     ) -> Result<SchemaDigestResponse, HTTPErr> {
-        self.as_ref().hash_schema(payload).await
+        self.as_ref().hash_schema(payload, token).await
     }
 }

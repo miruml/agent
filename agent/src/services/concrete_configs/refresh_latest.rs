@@ -27,8 +27,9 @@ impl RefreshLatestArgsI for RefreshLatestArgs {
 
 pub async fn refresh_latest<ArgsT: RefreshLatestArgsI, HTTPClientT: ConcreteConfigsExt>(
     args: &ArgsT,
-    http_client: &HTTPClientT,
     cache: &ConcreteConfigCache,
+    http_client: &HTTPClientT,
+    token: &str,
 ) -> Result<openapi_server::models::BaseConcreteConfig, ServiceErr> {
     // this should be retrieved from the agent config
     let client_id = "FIXME";
@@ -40,7 +41,10 @@ pub async fn refresh_latest<ArgsT: RefreshLatestArgsI, HTTPClientT: ConcreteConf
         config_schema_digest: args.config_schema_digest().to_string(),
     };
     let cncr_cfg = http_client
-        .refresh_latest_concrete_config(&payload)
+        .refresh_latest_concrete_config(
+            &payload,
+            token,
+        )
         .await
         .map_err(|e| {
             ServiceErr::HTTPErr(ServiceHTTPErr {

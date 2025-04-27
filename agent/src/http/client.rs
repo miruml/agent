@@ -3,7 +3,6 @@ use std::fmt;
 use std::sync::Arc;
 
 // internal crates
-use crate::env;
 use crate::errors::MiruError;
 use crate::http::{
     errors::{reqwest_err_to_http_client_err, HTTPErr},
@@ -83,20 +82,12 @@ async fn init_client() -> reqwest::Client {
 }
 
 impl HTTPClient {
-    pub async fn new() -> Self {
-        // default to production
-        let mut base = "https://configs.api.miruml.com".to_string();
-        if env::ENV == "local" {
-            base = "http://localhost:8080".to_string();
-        } else if env::ENV == "dev" {
-            base = "https://dev.api.miruml.com".to_string();
-        }
-
+    pub async fn new(base_url: &str) -> Self {
         let client = CLIENT.get_or_init(init_client).await;
 
         HTTPClient {
             client: client.clone(),
-            base_url: base + "/internal/agent/v1",
+            base_url: base_url.to_string(),
             default_timeout: Duration::from_secs(10),
             cache: Cache::builder()
                 .time_to_live(Duration::from_secs(30))

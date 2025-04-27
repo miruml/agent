@@ -30,7 +30,12 @@ impl Default for MockAuthClient {
 
 #[async_trait]
 impl ClientAuthExt for MockAuthClient {
-    async fn activate_client(&self, _: &str, _: &ActivateClientRequest) -> Result<Client, HTTPErr> {
+    async fn activate_client(
+        &self,
+        _: &str,
+        _: &ActivateClientRequest,
+        _: &str,
+    ) -> Result<Client, HTTPErr> {
         (self.activate_client_result)()
     }
 
@@ -81,6 +86,7 @@ impl ConcreteConfigsExt for MockConcreteConfigsClient {
         &self,
         _: &str,
         _: &str,
+        _: &str,
     ) -> Result<Option<BackendConcreteConfig>, HTTPErr> {
         (self.read_latest_result)()
     }
@@ -88,6 +94,7 @@ impl ConcreteConfigsExt for MockConcreteConfigsClient {
     async fn refresh_latest_concrete_config(
         &self,
         _: &RefreshLatestConcreteConfigRequest,
+        _: &str,
     ) -> Result<BackendConcreteConfig, HTTPErr> {
         (self.refresh_latest_result)()
     }
@@ -119,6 +126,7 @@ impl ConfigSchemasExt for MockConfigSchemasClient {
     async fn hash_schema(
         &self,
         _request: &HashSchemaSerializedRequest,
+        _: &str,
     ) -> Result<SchemaDigestResponse, HTTPErr> {
         (self.hash_schema_result)()
     }

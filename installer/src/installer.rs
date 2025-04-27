@@ -52,8 +52,8 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
 
         // setup the storage so that the agent can authenticate its keys and such
         let agent = Agent {
-            client_id: "placeholder".to_string(),
             activated: false,
+            ..Default::default()
         };
         setup_storage(&self.layout, &agent).await.map_err(|e| {
             InstallerErr::StorageErr(InstallerStorageErr {
@@ -70,6 +70,7 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
         let agent = Agent {
             client_id,
             activated: true,
+            ..Default::default()
         };
         agent_file
             .write_json(&agent, true, true)
@@ -202,7 +203,7 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
         let payload = ActivateClientRequest { public_key_pem };
         let client = self
             .http_client
-            .activate_client(client_id, &payload)
+            .activate_client(client_id, &payload, "doesntmatter")
             .await
             .map_err(|e| {
                 InstallerErr::HTTPErr(InstallerHTTPErr {

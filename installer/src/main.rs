@@ -22,7 +22,11 @@ async fn main() {
     };
 
     // run the installer
-    let mut installer = Installer::new(StorageLayout::default(), HTTPClient::new().await);
+    let http_client = HTTPClient::new("https://configs.api.miruml.com/internal/agent/v1").await;
+    let mut installer = Installer::new(
+        StorageLayout::default(),
+        http_client,
+    );
     let result = installer.install().await;
     match result {
         Ok(_) => {

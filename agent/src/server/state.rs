@@ -31,7 +31,10 @@ pub struct ServerState {
 }
 
 impl ServerState {
-    pub async fn new(layout: StorageLayout) -> Result<(Self, impl Future<Output = ()>), ServerErr> {
+    pub async fn new(
+        layout: StorageLayout,
+        http_client: Arc<HTTPClient>,
+    ) -> Result<(Self, impl Future<Output = ()>), ServerErr> {
         // storage layout stuff
         let auth_dir = layout.auth_dir();
         let private_key_file = auth_dir.private_key_file();
@@ -53,9 +56,6 @@ impl ServerState {
 
         // get the client id
         let client_id = Self::init_client_id(&agent_file, &token_file).await?;
-
-        // initialize the http client
-        let http_client = Arc::new(HTTPClient::new().await);
 
         // initialize the caches
         let (config_schema_digest_cache, config_schema_digest_cache_handle) =

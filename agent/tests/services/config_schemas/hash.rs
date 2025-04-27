@@ -55,7 +55,13 @@ mod tests {
             };
 
             // run the test
-            let result = hash::hash_schema(&args, &mock_client, &cache).await;
+            let result = hash::hash_schema(
+                &args,
+                &cache,
+                &mock_client,
+                "doesntmatter",
+            )
+            .await;
             assert!(matches!(
                 result,
                 Err(ServiceErr::HTTPErr(ServiceHTTPErr {
@@ -106,11 +112,17 @@ mod tests {
                 .await
                 .unwrap();
 
-            let http_client = HTTPClient::new().await;
+            let http_client = HTTPClient::new("doesntmatter").await;
 
             // first access should be less than 100ms
             let start = Instant::now();
-            let result = hash::hash_schema(&args, &http_client, &cache).await;
+            let result = hash::hash_schema(
+                &args,
+                &cache,
+                &http_client,
+                "doesntmatter",
+            )
+            .await;
             assert!(result.is_ok());
             assert_eq!(result.unwrap(), resolved_digest);
             let duration = start.elapsed();
@@ -118,7 +130,13 @@ mod tests {
 
             // second access should be less than 1ms
             let start = Instant::now();
-            let result = hash::hash_schema(&args, &http_client, &cache).await;
+            let result = hash::hash_schema(
+                &args,
+                &cache,
+                &http_client,
+                "doesntmatter",
+            )
+            .await;
             assert!(result.is_ok());
             assert_eq!(result.unwrap(), resolved_digest);
             let duration = start.elapsed();
@@ -158,7 +176,13 @@ mod tests {
 
             // run the test
             let start = Instant::now();
-            let result = hash::hash_schema(&args, &mock_client, &cache).await;
+            let result = hash::hash_schema(
+                &args,
+                &cache,
+                &mock_client,
+                "doesntmatter",
+            )
+            .await;
             println!("result: {:?}", result);
             assert!(result.is_ok());
             assert_eq!(result.unwrap(), resolved_digest);

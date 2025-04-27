@@ -8,6 +8,7 @@ use std::time::{Duration, SystemTime};
 // internal crates
 use crate::auth::token_mngr::run_refresh_loop;
 use crate::filesys::file::File;
+use crate::http::client::HTTPClient;
 use crate::server::errors::{JoinHandleErr, ServerErr, ShutdownMngrDuplicateArgErr};
 use crate::server::serve::serve;
 use crate::server::state::ServerState;
@@ -28,6 +29,7 @@ pub struct ServerComponents {
 
 pub struct RunServerOptions {
     pub layout: StorageLayout,
+    pub backend_base_url: String,
     pub socket_file: File,
     pub token_refresh_expiration_threshold: Duration,
     pub token_refresh_cooldown: Duration,
@@ -41,6 +43,7 @@ impl Default for RunServerOptions {
     fn default() -> Self {
         Self {
             socket_file: File::new("/run/miru/miru.sock"),
+            backend_base_url: "https://configs.api.miruml.com/internal/agent/v1".to_string(),
             layout: StorageLayout::default(),
             token_refresh_expiration_threshold: Duration::from_secs(15 * 60), // 15 minutes
             token_refresh_cooldown: Duration::from_secs(30),
@@ -112,7 +115,11 @@ async fn start_server(
     mut shutdown_rx2_server: broadcast::Receiver<()>,
 ) -> Result<Arc<ServerState>, ServerErr> {
     // initialize the server state
-    let (state, state_handle) = ServerState::new(options.layout.clone()).await?;
+    let (state, state_handle) = ServerState::new(
+        options.layout.clone(),
+        Arc::new(HTTPClient::new(&options.backend_base_url).await),
+    )
+    .await?;
     let state = Arc::new(state);
     shutdown_manager.with_state(state.clone(), Box::pin(state_handle))?;
 

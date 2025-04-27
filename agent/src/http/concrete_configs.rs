@@ -13,11 +13,13 @@ pub trait ConcreteConfigsExt: Send + Sync {
         &self,
         config_slug: &str,
         config_schema_digest: &str,
+        token: &str,
     ) -> Result<Option<BackendConcreteConfig>, HTTPErr>;
 
     async fn refresh_latest_concrete_config(
         &self,
         payload: &RefreshLatestConcreteConfigRequest,
+        token: &str,
     ) -> Result<BackendConcreteConfig, HTTPErr>;
 }
 
@@ -32,6 +34,7 @@ impl ConcreteConfigsExt for HTTPClient {
         &self,
         config_slug: &str,
         config_schema_digest: &str,
+        token: &str,
     ) -> Result<Option<BackendConcreteConfig>, HTTPErr> {
         // build the request
         let url = format!(
@@ -40,7 +43,7 @@ impl ConcreteConfigsExt for HTTPClient {
             config_slug,
             config_schema_digest
         );
-        let (request, context) = self.build_get_request(&url, self.default_timeout, None)?;
+        let (request, context) = self.build_get_request(&url, self.default_timeout, Some(token))?;
 
         // send the request (with caching)
         let response = self.send_cached(url, request, &context).await?.0;
@@ -53,6 +56,7 @@ impl ConcreteConfigsExt for HTTPClient {
     async fn refresh_latest_concrete_config(
         &self,
         payload: &RefreshLatestConcreteConfigRequest,
+        token: &str,
     ) -> Result<BackendConcreteConfig, HTTPErr> {
         // build the request
         let url = format!("{}/refresh_latest", self.concrete_configs_url());
@@ -64,7 +68,7 @@ impl ConcreteConfigsExt for HTTPClient {
             &url,
             self.marshal_json_payload(payload)?,
             self.default_timeout,
-            None,
+            Some(token),
         )?;
 
         // send the request
@@ -81,16 +85,20 @@ impl ConcreteConfigsExt for Arc<HTTPClient> {
         &self,
         config_slug: &str,
         config_schema_digest: &str,
+        token: &str,
     ) -> Result<Option<BackendConcreteConfig>, HTTPErr> {
         self.as_ref()
-            .read_latest_concrete_config(config_slug, config_schema_digest)
+            .read_latest_concrete_config(config_slug, config_schema_digest, token)
             .await
     }
 
     async fn refresh_latest_concrete_config(
         &self,
         request: &RefreshLatestConcreteConfigRequest,
+        token: &str,
     ) -> Result<BackendConcreteConfig, HTTPErr> {
-        self.as_ref().refresh_latest_concrete_config(request).await
+        self.as_ref()
+            .refresh_latest_concrete_config(request, token)
+            .await
     }
 }

@@ -8,6 +8,17 @@ use serde::{Deserialize, Serialize};
 pub struct Agent {
     pub client_id: String,
     pub activated: bool,
+    pub backend_base_url: String,
+}
+
+impl Default for Agent {
+    fn default() -> Self {
+        Self {
+            client_id: "placeholder".to_string(),
+            activated: false,
+            backend_base_url: "https://configs.api.miruml.com/internal/agent/v1".to_string(),
+        }
+    }
 }
 
 pub async fn assert_activated(agent_file: &File) -> Result<(), StorageErr> {

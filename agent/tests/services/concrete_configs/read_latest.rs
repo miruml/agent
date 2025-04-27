@@ -44,7 +44,13 @@ mod tests {
                 config_slug: "config-slug".to_string(),
                 config_schema_digest: "config-schema-digest".to_string(),
             };
-            let result = read_latest::read_latest(&args, &http_client, &cache).await;
+            let result = read_latest::read_latest(
+                &args,
+                &cache,
+                &http_client,
+                "doesntmatter",
+            )
+            .await;
 
             // assert the result
             assert!(matches!(
@@ -78,9 +84,14 @@ mod tests {
                 config_slug: "config-slug".to_string(),
                 config_schema_digest: "config-schema-digest".to_string(),
             };
-            let result = read_latest::read_latest(&args, &http_client, &cache)
-                .await
-                .unwrap_err();
+            let result = read_latest::read_latest(
+                &args,
+                &cache,
+                &http_client,
+                "doesntmatter",
+            )
+            .await
+            .unwrap_err();
 
             // assert the result
             assert!(matches!(result, ServiceErr::HTTPErr { .. }));
@@ -126,9 +137,14 @@ mod tests {
                 config_slug: config_slug.to_string(),
                 config_schema_digest: config_schema_digest.to_string(),
             };
-            let result = read_latest::read_latest(&args, &http_client, &cache)
-                .await
-                .unwrap();
+            let result = read_latest::read_latest(
+                &args,
+                &cache,
+                &http_client,
+                "doesntmatter",
+            )
+            .await
+            .unwrap();
 
             let expected = utils::convert_cncr_cfg_storage_to_sdk(concrete_config);
             assert_eq!(result, expected);
@@ -167,9 +183,14 @@ mod tests {
                 config_slug: config_slug.to_string(),
                 config_schema_digest: config_schema_digest.to_string(),
             };
-            let result = read_latest::read_latest(&args, &http_client, &cache)
-                .await
-                .unwrap();
+            let result = read_latest::read_latest(
+                &args,
+                &cache,
+                &http_client,
+                "doesntmatter",
+            )
+            .await
+            .unwrap();
 
             let expected = utils::convert_cncr_cfg_storage_to_sdk(concrete_config);
             assert_eq!(result, expected);
@@ -191,9 +212,14 @@ mod tests {
                 config_slug: "config-slug".to_string(),
                 config_schema_digest: "config-schema-digest".to_string(),
             };
-            let result = read_latest::read_latest(&args, &http_client, &cache)
-                .await
-                .unwrap();
+            let result = read_latest::read_latest(
+                &args,
+                &cache,
+                &http_client,
+                "doesntmatter",
+            )
+            .await
+            .unwrap();
 
             let storage_concrete_config = utils::convert_cncr_cfg_backend_to_storage(
                 backend_concrete_config,

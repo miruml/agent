@@ -23,10 +23,7 @@ mod tests {
 
             // create the agent file
             let agent_file = layout.agent_file();
-            let agent = Agent {
-                client_id: "cli_123".to_string(),
-                activated: true,
-            };
+            let agent = Agent::default();
             agent_file.write_json(&agent, false, false).await.unwrap();
         }
 

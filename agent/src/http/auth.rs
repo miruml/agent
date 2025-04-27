@@ -14,6 +14,7 @@ pub trait ClientAuthExt: Send + Sync {
         &self,
         client_id: &str,
         payload: &ActivateClientRequest,
+        token: &str,
     ) -> Result<Client, HTTPErr>;
 
     async fn issue_client_token(
@@ -39,6 +40,7 @@ impl ClientAuthExt for HTTPClient {
         &self,
         client_id: &str,
         payload: &ActivateClientRequest,
+        token: &str,
     ) -> Result<Client, HTTPErr> {
         // build the request
         let url = format!("{}/activate", self.client_url(client_id));
@@ -46,7 +48,7 @@ impl ClientAuthExt for HTTPClient {
             &url,
             self.marshal_json_payload(payload)?,
             self.default_timeout,
-            None,
+            Some(token),
         )?;
 
         // send the request (no caching)

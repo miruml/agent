@@ -33,8 +33,9 @@ impl HashSchemaArgsI for HashSchemaArgs {
 
 pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
     args: &ArgsT,
-    http_client: &HTTPClientT,
     cache: &ConfigSchemaDigestCache,
+    http_client: &HTTPClientT,
+    token: &str,
 ) -> Result<String, ServiceErr> {
     // raw digest of the schema (but we need the digest of the resolved schema)
     let raw_digest = sha256::hash_str(args.schema());
@@ -57,12 +58,15 @@ pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
         schema: args.schema().to_string(),
         format: server_format_to_client_format(args.format()),
     };
-    let digest_response = http_client.hash_schema(&hash_request).await.map_err(|e| {
-        ServiceErr::HTTPErr(ServiceHTTPErr {
-            source: e,
-            trace: trace!(),
-        })
-    })?;
+    let digest_response = http_client
+        .hash_schema(&hash_request, token)
+        .await
+        .map_err(|e| {
+            ServiceErr::HTTPErr(ServiceHTTPErr {
+                source: e,
+                trace: trace!(),
+            })
+        })?;
 
     // save the hash to the storage module
     let resolved_digest = digest_response.digest;

@@ -42,9 +42,14 @@ mod tests {
                 config_slug: "config-slug".to_string(),
                 config_schema_digest: "config-schema-digest".to_string(),
             };
-            let result = refresh_latest::refresh_latest(&args, &http_client, &cache)
-                .await
-                .unwrap_err();
+            let result = refresh_latest::refresh_latest(
+                &args,
+                &cache,
+                &http_client,
+                "doesntmatter",
+            )
+            .await
+            .unwrap_err();
 
             // assert the result
             assert!(matches!(result, ServiceErr::HTTPErr { .. }));
@@ -72,9 +77,14 @@ mod tests {
                 config_slug: "config-slug".to_string(),
                 config_schema_digest: "config-schema-digest".to_string(),
             };
-            let result = refresh_latest::refresh_latest(&args, &http_client, &cache)
-                .await
-                .unwrap();
+            let result = refresh_latest::refresh_latest(
+                &args,
+                &cache,
+                &http_client,
+                "doesntmatter",
+            )
+            .await
+            .unwrap();
 
             let storage_concrete_config = utils::convert_cncr_cfg_backend_to_storage(
                 backend_concrete_config,
