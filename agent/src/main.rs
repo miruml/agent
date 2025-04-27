@@ -3,6 +3,7 @@ use config_agent::logs::{init, LogLevel};
 use config_agent::server::run::{run, RunServerOptions};
 use config_agent::storage::agent::assert_activated;
 use config_agent::storage::layout::StorageLayout;
+use config_agent::storage::agent::Agent;
 
 // external
 use tokio::signal::unix::signal;
@@ -24,8 +25,21 @@ async fn main() {
         return;
     }
 
+    // use the url in the agent file
+    let agent = match agent_file.read_json::<Agent>().await {
+        Ok(agent) => agent,
+        Err(e) => {
+            error!("Unable to read agent file: {}", e);
+            return;
+        }
+    };
+
     // run the server
-    let result = run(RunServerOptions::default(), await_shutdown_signal()).await;
+    let options = RunServerOptions {
+        backend_base_url: agent.backend_base_url,
+        ..Default::default()
+    };
+    let result = run(options, await_shutdown_signal()).await;
     if let Err(e) = result {
         error!("Failed to run the server: {}", e);
     }

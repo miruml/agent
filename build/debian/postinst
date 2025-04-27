@@ -4,24 +4,40 @@
 socket_name="miru.socket"
 
 cleanInstall() {
+    socket_name="$1"
     printf "\033[32m Post Install of an clean install\033[0m\n"
-    printf "\033[32m Reload the service unit from disk\033[0m\n"
-    systemctl daemon-reload ||:
 
-    # socket installation 
+    # enable the socket
+    printf "\033[32m Enable the socket\033[0m\n"
+    systemctl enable "${socket_name}"
+
+    # reload the unit from disk 
+    printf "\033[32m Reload the service unit from disk\033[0m\n"
+    systemctl daemon-reload
+
+    # socket installation
     printf "\033[32m Set the enabled flag for the socket unit\033[0m\n"
-    systemctl enable ${socket_name} ||:
+    printf "socket_name: %s\n" "${socket_name}"
+    systemctl enable "${socket_name}"
     printf "\033[32m Restart the socket\033[0m\n"
-    systemctl restart ${socket_name} ||:
+    systemctl restart "${socket_name}"
 }
 
 upgrade() {
+    socket_name="$1"
     printf "\033[32m Post Install of an upgrade\033[0m\n"
+
+    # reload the unit from disk 
     printf "\033[32m Reload the service unit from disk\033[0m\n"
-    systemctl daemon-reload ||:
+    systemctl daemon-reload
+
+    # enable the socket
+    printf "\033[32m Enable the socket\033[0m\n"
+    systemctl enable "${socket_name}"
 
     # socket upgrade
-    systemctl restart ${socket_name} ||:
+    printf "\033[32m Restart the socket\033[0m\n"
+    systemctl restart "${socket_name}"
 }
 
 # Step 2, check if this is a clean install or an upgrade
@@ -34,11 +50,11 @@ fi
 
 case "$action" in
   "install")
-    cleanInstall
+    cleanInstall ${socket_name}
     ;;
   "upgrade")
     printf "\033[32m Post Install of an upgrade\033[0m\n"
-    upgrade
+    upgrade ${socket_name}
     ;;
 esac
 

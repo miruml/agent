@@ -13,7 +13,7 @@ User=miru
 # runtime
 StateDirectory=miru
 LogsDirectory=miru
-ExecStart=/usr/local/bin/miru/config-agent
+ExecStart=/usr/bin/miru-agent
 WorkingDirectory=/var/lib/miru
 
 # logging
