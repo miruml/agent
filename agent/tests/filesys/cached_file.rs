@@ -1,6 +1,3 @@
-#[cfg(test)]
-mod tests {
-
     // internal crates
     use config_agent::filesys::{
         cached_file::CachedFile, dir::Dir, errors::FileSysErr, path::PathExt,
@@ -246,4 +243,3 @@ mod tests {
             assert_eq!(cached_file.read().as_ref(), &token);
         }
     }
-}

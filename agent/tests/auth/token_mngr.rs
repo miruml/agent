@@ -1,5 +1,3 @@
-#[cfg(test)]
-mod tests {
     // standard library
     use std::sync::Arc;
 
@@ -459,4 +457,3 @@ mod tests {
             assert!(sleep_duration > expected - tokio::time::Duration::from_secs(5));
         }
     }
-}

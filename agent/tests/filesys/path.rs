@@ -1,5 +1,3 @@
-#[cfg(test)]
-mod tests {
     // internal crates
     use config_agent::filesys::{dir::Dir, path, path::PathExt};
     // external crates
@@ -249,4 +247,3 @@ mod tests {
             }
         }
     }
-}

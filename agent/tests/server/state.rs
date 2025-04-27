@@ -1,5 +1,3 @@
-#[cfg(test)]
-mod tests {
     // std crates
     use std::sync::Arc;
     use std::sync::atomic::Ordering;
@@ -196,4 +194,3 @@ mod tests {
             assert!(state.last_activity.load(Ordering::Relaxed) > before_record as u64);
         }
     }
-}

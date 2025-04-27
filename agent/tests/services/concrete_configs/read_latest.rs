@@ -1,7 +1,3 @@
-#[cfg(test)]
-mod tests {
-    // internal crates
-
     // internal crates
     use config_agent::filesys::dir::Dir;
     use config_agent::http::errors::{HTTPErr, MockErr};
@@ -238,4 +234,3 @@ mod tests {
             assert_eq!(cached_concrete_config, storage_concrete_config);
         }
     }
-}

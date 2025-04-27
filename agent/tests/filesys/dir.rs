@@ -1,5 +1,3 @@
-#[cfg(test)]
-mod tests {
     // internal crates
     use config_agent::filesys::{dir::Dir, errors::FileSysErr, path::PathExt};
     // external crates
@@ -559,4 +557,3 @@ mod tests {
             assert!(dir.exists());
         }
     }
-}

@@ -1,5 +1,3 @@
-#[cfg(test)]
-mod tests {
     // internal crates
     use config_agent::crypt::base64;
     use config_agent::crypt::errors::CryptErr;
@@ -228,4 +226,3 @@ mod tests {
     fn test_validate() {
         // testing this would be redundant since it's such a simple wrapper
     }
-}

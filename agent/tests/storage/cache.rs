@@ -1,5 +1,3 @@
-#[cfg(test)]
-mod tests {
     // standard library
     use std::path::PathBuf;
 
@@ -386,4 +384,3 @@ mod tests {
             }
         }
     }
-}

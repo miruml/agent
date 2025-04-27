@@ -1,5 +1,3 @@
-#[cfg(test)]
-mod tests {
     // internal crates
     use std::sync::Arc;
     use std::time::{Duration, Instant};
@@ -323,4 +321,3 @@ mod tests {
             assert!(matches!(response, HTTPErr::RequestFailed { .. }));
         }
     }
-}

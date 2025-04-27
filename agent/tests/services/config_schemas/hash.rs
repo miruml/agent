@@ -1,5 +1,3 @@
-#[cfg(test)]
-mod tests {
     // internal crates
     use std::time::{Duration, Instant};
 
@@ -194,4 +192,3 @@ mod tests {
             assert_eq!(cached_digest.resolved, resolved_digest);
         }
     }
-}

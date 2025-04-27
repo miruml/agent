@@ -1,5 +1,3 @@
-#[cfg(test)]
-mod tests {
     // internal crates
     use config_agent::filesys::dir::Dir;
     use config_agent::server::run::{run, RunServerOptions};
@@ -7,9 +5,6 @@ mod tests {
 
     // external crates
     use tokio::time::Duration;
-
-    pub mod run {
-        use super::*;
 
         async fn prepare_valid_server_storage(dir: Dir) {
             let layout = StorageLayout::new(dir);
@@ -123,5 +118,3 @@ mod tests {
                 .unwrap()
                 .unwrap();
         }
-    }
-}

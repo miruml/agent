@@ -4,7 +4,7 @@ use crate::storage::errors::{AgentNotActivatedErr, StorageErr, StorageFileSysErr
 use crate::trace;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Agent {
     pub client_id: String,
     pub activated: bool,

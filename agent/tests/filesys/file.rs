@@ -1,5 +1,3 @@
-#[cfg(test)]
-mod tests {
     // standard library
     use std::future::Future;
     use std::os::unix::fs::PermissionsExt;
@@ -869,4 +867,3 @@ mod tests {
             assert_eq!(file::sanitize_filename("my_file [v2]"), "my_file__v2_");
         }
     }
-}

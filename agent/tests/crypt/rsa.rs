@@ -1,5 +1,3 @@
-#[cfg(test)]
-mod tests {
     // internal crates
     use config_agent::crypt::errors::CryptErr;
     use config_agent::crypt::rsa;
@@ -344,4 +342,3 @@ mod tests {
             assert!(result.is_err());
         }
     }
-}
