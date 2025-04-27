@@ -4,24 +4,14 @@ use std::time::Duration;
 
 // internal crates
 use crate::errors::{
-    InstallerErr,
-    InstallerStorageErr,
-    InstallerCryptErr,
-    InstallerHTTPErr,
-    InstallerFileSysErr,
-    DialoguerErr,
-    IOErr,
-    ExecShellErr,
+    DialoguerErr, ExecShellErr, IOErr, InstallerCryptErr, InstallerErr, InstallerFileSysErr,
+    InstallerHTTPErr, InstallerStorageErr,
 };
 use crate::scripts;
 use crate::utils;
 use config_agent::crypt::jwt;
 use config_agent::http::auth::ClientAuthExt;
-use config_agent::storage::{
-    agent::Agent,
-    layout::StorageLayout,
-    setup::setup_storage,
-};
+use config_agent::storage::{agent::Agent, layout::StorageLayout, setup::setup_storage};
 use config_agent::trace;
 use openapi_client::models::ActivateClientRequest;
 
@@ -44,10 +34,7 @@ pub struct Installer<HTTPClientT: ClientAuthExt> {
 }
 
 impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
-    pub fn new(
-        layout: StorageLayout,
-        http_client: HTTPClientT,
-    ) -> Self {
+    pub fn new(layout: StorageLayout, http_client: HTTPClientT) -> Self {
         let wait_prompt = "Press Enter to continue".to_string();
         Installer {
             layout,
@@ -64,25 +51,35 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
         self.intro()?;
 
         // setup the storage so that the agent can authenticate its keys and such
-        let agent = Agent { 
+        let agent = Agent {
             client_id: "placeholder".to_string(),
             activated: false,
         };
-        setup_storage(&self.layout, &agent).await.map_err(|e| InstallerErr::StorageErr(InstallerStorageErr {
-            source: e,
-            trace: trace!(),
-        }))?;
+        setup_storage(&self.layout, &agent).await.map_err(|e| {
+            InstallerErr::StorageErr(InstallerStorageErr {
+                source: e,
+                trace: trace!(),
+            })
+        })?;
 
         // authenticate the agent
         let client_id = self.authenticate_agent().await?;
 
         // update the storage layout to hold the client id and such
         let agent_file = self.layout.agent_file();
-        let agent = Agent { client_id, activated: true };
-        agent_file.write_json(&agent, true, true).await.map_err(|e| InstallerErr::FileSysErr(InstallerFileSysErr {
-            source: e,
-            trace: trace!(),
-        }))?;
+        let agent = Agent {
+            client_id,
+            activated: true,
+        };
+        agent_file
+            .write_json(&agent, true, true)
+            .await
+            .map_err(|e| {
+                InstallerErr::FileSysErr(InstallerFileSysErr {
+                    source: e,
+                    trace: trace!(),
+                })
+            })?;
 
         // post installation script
         let post_installation_script = scripts::post_installation_script();
@@ -104,7 +101,8 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
             "Welcome! {} provides the infrastructure to version, manage, and deploy application configurations at scale. \n",
             utils::format_url(LANDING_PAGE_URL, "Miru")
         );
-        let prompt = "Press Enter to authenticate the miru agent and deploy your first configuration.\n";
+        let prompt =
+            "Press Enter to authenticate the miru agent and deploy your first configuration.\n";
         utils::wait(prompt)?;
         utils::clear_terminal();
         Ok(())
@@ -116,16 +114,15 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
             let token = self.get_jwt_from_user()?;
 
             // write the client id to the agent file
-            let client_id = jwt::extract_client_id(&token).map_err(|e| InstallerErr::CryptErr(InstallerCryptErr {
-                source: e,
-                trace: trace!(),
-            }))?;
+            let client_id = jwt::extract_client_id(&token).map_err(|e| {
+                InstallerErr::CryptErr(InstallerCryptErr {
+                    source: e,
+                    trace: trace!(),
+                })
+            })?;
 
             // authenticate the device with the server
-            let result = self.authenticate_with_server(
-                &client_id,
-                &token,
-            ).await;
+            let result = self.authenticate_with_server(&client_id, &token).await;
             match result {
                 // successful -> return
                 Ok(_) => {
@@ -164,10 +161,12 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
                 }
             })
             .interact()
-            .map_err(|e| InstallerErr::DialoguerErr(DialoguerErr {
-                source: e,
-                trace: trace!(),
-            }))?;
+            .map_err(|e| {
+                InstallerErr::DialoguerErr(DialoguerErr {
+                    source: e,
+                    trace: trace!(),
+                })
+            })?;
 
         utils::clear_terminal();
 
@@ -194,23 +193,29 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
 
         // activate the client with the server
         let public_key_file = self.layout.auth_dir().public_key_file();
-        let public_key_pem = public_key_file.read_string().await.map_err(|e| InstallerErr::FileSysErr(InstallerFileSysErr {
-            source: e,
-            trace: trace!(),
-        }))?;
-        let payload = ActivateClientRequest {
-            public_key_pem,
-        };
-        let client = self.http_client
-            .activate_client(client_id, &payload)
-            .await
-            .map_err(|e| InstallerErr::HTTPErr(InstallerHTTPErr {
+        let public_key_pem = public_key_file.read_string().await.map_err(|e| {
+            InstallerErr::FileSysErr(InstallerFileSysErr {
                 source: e,
                 trace: trace!(),
-            }))?;
+            })
+        })?;
+        let payload = ActivateClientRequest { public_key_pem };
+        let client = self
+            .http_client
+            .activate_client(client_id, &payload)
+            .await
+            .map_err(|e| {
+                InstallerErr::HTTPErr(InstallerHTTPErr {
+                    source: e,
+                    trace: trace!(),
+                })
+            })?;
 
         // complete
-        let msg = format!("Successfully activated the miru agent as the '{}' client\n\n", client.name);
+        let msg = format!(
+            "Successfully activated the miru agent as the '{}' client\n\n",
+            client.name
+        );
         pb.finish_with_message(msg);
         utils::wait(&self.default_wait_prompt)?;
         utils::clear_terminal();
@@ -225,17 +230,19 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
             .spawn()
-            .map_err(|e| InstallerErr::IOErr(IOErr {
-                source: e,
-                trace: trace!(),
-            }))?;
+            .map_err(|e| {
+                InstallerErr::IOErr(IOErr {
+                    source: e,
+                    trace: trace!(),
+                })
+            })?;
 
-        let status = child
-            .wait()
-            .map_err(|e| InstallerErr::IOErr(IOErr {
+        let status = child.wait().map_err(|e| {
+            InstallerErr::IOErr(IOErr {
                 source: e,
                 trace: trace!(),
-            }))?;
+            })
+        })?;
 
         if !status.success() {
             return Err(InstallerErr::ExecShellErr(ExecShellErr {

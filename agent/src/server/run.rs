@@ -44,7 +44,7 @@ impl Default for RunServerOptions {
             layout: StorageLayout::default(),
             token_refresh_expiration_threshold: Duration::from_secs(15 * 60), // 15 minutes
             token_refresh_cooldown: Duration::from_secs(30),
-            max_runtime: Duration::from_secs(60*15), // 15 minutes
+            max_runtime: Duration::from_secs(60 * 15), // 15 minutes
             idle_timeout: Duration::from_secs(60),
             idle_timeout_poll_interval: Duration::from_secs(5),
             max_shutdown_delay: Duration::from_secs(15),
@@ -61,29 +61,27 @@ pub async fn run(
     // Create a single shutdown channel that all components will listen to
     let (shutdown_tx, _shutdown_rx): (tokio::sync::broadcast::Sender<()>, _) =
         tokio::sync::broadcast::channel(1);
-    let mut shutdown_manager = ShutdownManager::new(
-        shutdown_tx.clone(),
-        options.max_shutdown_delay,
-    );
+    let mut shutdown_manager =
+        ShutdownManager::new(shutdown_tx.clone(), options.max_shutdown_delay);
     let shutdown_rx_refresh = shutdown_tx.subscribe();
     let shutdown_rx2_server = shutdown_tx.subscribe();
 
     // start the server (and shutdown if failures occur)
-    let state =
-        match start_server(
-            &options,
-            &mut shutdown_manager,
-            shutdown_rx_refresh,
-            shutdown_rx2_server,
-        )
-        .await {
-            Ok(state) => state,
-            Err(e) => {
-                error!("Failed to start server: {}", e);
-                shutdown_manager.shutdown().await?;
-                return Err(e);
-            }
-        };
+    let state = match start_server(
+        &options,
+        &mut shutdown_manager,
+        shutdown_rx_refresh,
+        shutdown_rx2_server,
+    )
+    .await
+    {
+        Ok(state) => state,
+        Err(e) => {
+            error!("Failed to start server: {}", e);
+            shutdown_manager.shutdown().await?;
+            return Err(e);
+        }
+    };
 
     // wait for ctrl-c, an idle timeout, or max runtime reached to trigger a shutdown
     tokio::select! {
@@ -136,13 +134,10 @@ async fn start_server(
     shutdown_manager.with_token_refresh_handle(token_refresh_handle)?;
 
     // run the axum server with graceful shutdown
-    let server_handle = serve(
-        &options.socket_file,
-        state.clone(),
-        async move {
-            let _ = shutdown_rx2_server.recv().await;
-        }
-    ).await?;
+    let server_handle = serve(&options.socket_file, state.clone(), async move {
+        let _ = shutdown_rx2_server.recv().await;
+    })
+    .await?;
     shutdown_manager.with_server_handle(server_handle)?;
 
     Ok(state)
@@ -211,10 +206,12 @@ impl ShutdownManager {
         state_handle: Pin<Box<dyn Future<Output = ()> + Send>>,
     ) -> Result<(), ServerErr> {
         if self.state_params.is_some() {
-            return Err(ServerErr::ShutdownMngrDuplicateArgErr(ShutdownMngrDuplicateArgErr {
-                arg_name: Box::new("state".to_string()),
-                trace: trace!(),
-            }));
+            return Err(ServerErr::ShutdownMngrDuplicateArgErr(
+                ShutdownMngrDuplicateArgErr {
+                    arg_name: Box::new("state".to_string()),
+                    trace: trace!(),
+                },
+            ));
         }
         self.state_params = Some(StateShutdownParams {
             state,
@@ -228,10 +225,12 @@ impl ShutdownManager {
         token_refresh_handle: JoinHandle<()>,
     ) -> Result<(), ServerErr> {
         if self.token_refresh_handle.is_some() {
-            return Err(ServerErr::ShutdownMngrDuplicateArgErr(ShutdownMngrDuplicateArgErr {
-                arg_name: Box::new("token_refresh_handle".to_string()),
-                trace: trace!(),
-            }));
+            return Err(ServerErr::ShutdownMngrDuplicateArgErr(
+                ShutdownMngrDuplicateArgErr {
+                    arg_name: Box::new("token_refresh_handle".to_string()),
+                    trace: trace!(),
+                },
+            ));
         }
         self.token_refresh_handle = Some(token_refresh_handle);
         Ok(())
@@ -242,10 +241,12 @@ impl ShutdownManager {
         server_handle: JoinHandle<Result<(), ServerErr>>,
     ) -> Result<(), ServerErr> {
         if self.server_handle.is_some() {
-            return Err(ServerErr::ShutdownMngrDuplicateArgErr(ShutdownMngrDuplicateArgErr {
-                arg_name: Box::new("server_handle".to_string()),
-                trace: trace!(),
-            }));
+            return Err(ServerErr::ShutdownMngrDuplicateArgErr(
+                ShutdownMngrDuplicateArgErr {
+                    arg_name: Box::new("server_handle".to_string()),
+                    trace: trace!(),
+                },
+            ));
         }
         self.server_handle = Some(server_handle);
         Ok(())
@@ -255,10 +256,7 @@ impl ShutdownManager {
         // send the shutdown signal to all components
         let _ = self.shutdown_tx.send(());
 
-        match tokio::time::timeout(
-            self.max_shutdown_delay,
-            self.shutdown_impl()
-        ).await {
+        match tokio::time::timeout(self.max_shutdown_delay, self.shutdown_impl()).await {
             Ok(result) => result,
             Err(_) => {
                 error!(

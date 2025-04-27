@@ -2,8 +2,8 @@
 use std::io::{self, Write};
 
 // internal crates
+use crate::errors::{DialoguerErr, InstallerErr};
 use config_agent::trace;
-use crate::errors::{InstallerErr, DialoguerErr};
 
 // external crates
 use dialoguer::console::{style, Style};
@@ -56,10 +56,12 @@ pub fn wait(prompt: &str) -> Result<(), InstallerErr> {
         .with_prompt(prompt)
         .allow_empty_password(true)
         .interact()
-        .map_err(|e| InstallerErr::DialoguerErr(DialoguerErr {
-            source: e,
-            trace: trace!(),
-        }))?;
+        .map_err(|e| {
+            InstallerErr::DialoguerErr(DialoguerErr {
+                source: e,
+                trace: trace!(),
+            })
+        })?;
     Ok(())
 }
 
@@ -67,10 +69,12 @@ pub fn confirm(prompt: &str) -> Result<bool, InstallerErr> {
     let continue_: bool = Confirm::with_theme(&confirm_theme())
         .with_prompt(prompt)
         .interact()
-        .map_err(|e| InstallerErr::DialoguerErr(DialoguerErr {
-            source: e,
-            trace: trace!(),
-        }))?;
+        .map_err(|e| {
+            InstallerErr::DialoguerErr(DialoguerErr {
+                source: e,
+                trace: trace!(),
+            })
+        })?;
     Ok(continue_)
 }
 

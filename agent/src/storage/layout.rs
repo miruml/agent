@@ -65,5 +65,3 @@ impl AuthLayout {
         self.root.file("token.json")
     }
 }
-
-

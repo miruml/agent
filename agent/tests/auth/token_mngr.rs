@@ -5,13 +5,10 @@ mod tests {
 
     // internal crates
     use crate::http::mock::MockAuthClient;
-    use config_agent::auth::token_mngr::{
-        TokenFile,
-        TokenManager,
-        run_refresh_loop,
-        determine_refresh_loop_sleep_duration,
-    };
     use config_agent::auth::errors::AuthErr;
+    use config_agent::auth::token_mngr::{
+        determine_refresh_loop_sleep_duration, run_refresh_loop, TokenFile, TokenManager,
+    };
     use config_agent::crypt::rsa;
     use config_agent::filesys::{dir::Dir, file::File};
     use config_agent::http::errors::{HTTPErr, MockErr};
@@ -417,18 +414,12 @@ mod tests {
                 token: "token".to_string(),
                 expires_at: Utc::now() - Duration::minutes(60),
             };
-            let (token_mngr, _) = create_token_manager(
-                &dir,
-                Some(token),
-            ).await;
+            let (token_mngr, _) = create_token_manager(&dir, Some(token)).await;
 
             let ten_minutes = tokio::time::Duration::from_secs(10 * 60);
             let cooldown = tokio::time::Duration::from_secs(30);
-            let sleep_duration = determine_refresh_loop_sleep_duration(
-                &token_mngr,
-                ten_minutes,
-                cooldown,
-            ).await;
+            let sleep_duration =
+                determine_refresh_loop_sleep_duration(&token_mngr, ten_minutes, cooldown).await;
             assert_eq!(sleep_duration, cooldown);
         }
 
@@ -439,18 +430,12 @@ mod tests {
                 token: "token".to_string(),
                 expires_at: Utc::now() + Duration::minutes(9),
             };
-            let (token_mngr, _) = create_token_manager(
-                &dir,
-                Some(token),
-            ).await;
+            let (token_mngr, _) = create_token_manager(&dir, Some(token)).await;
 
             let ten_minutes = tokio::time::Duration::from_secs(10 * 60);
             let cooldown = tokio::time::Duration::from_secs(30);
-            let sleep_duration = determine_refresh_loop_sleep_duration(
-                &token_mngr,
-                ten_minutes,
-                cooldown,
-            ).await;
+            let sleep_duration =
+                determine_refresh_loop_sleep_duration(&token_mngr, ten_minutes, cooldown).await;
             assert_eq!(sleep_duration, cooldown);
         }
 
@@ -461,18 +446,12 @@ mod tests {
                 token: "token".to_string(),
                 expires_at: Utc::now() + Duration::minutes(35),
             };
-            let (token_mngr, _) = create_token_manager(
-                &dir,
-                Some(token),
-            ).await;
+            let (token_mngr, _) = create_token_manager(&dir, Some(token)).await;
 
             let ten_minutes = tokio::time::Duration::from_secs(10 * 60);
             let cooldown = tokio::time::Duration::from_secs(30);
-            let sleep_duration = determine_refresh_loop_sleep_duration(
-                &token_mngr,
-                ten_minutes,
-                cooldown,
-            ).await;
+            let sleep_duration =
+                determine_refresh_loop_sleep_duration(&token_mngr, ten_minutes, cooldown).await;
 
             // expect to wait until 10 minutes before expiration (25 minutes)
             let expected = tokio::time::Duration::from_secs(25 * 60);

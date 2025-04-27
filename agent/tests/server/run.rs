@@ -2,14 +2,8 @@
 mod tests {
     // internal crates
     use config_agent::filesys::dir::Dir;
-    use config_agent::server::run::{
-        RunServerOptions,
-        run,
-    };
-    use config_agent::storage::{
-        agent::Agent,
-        layout::StorageLayout,
-    };
+    use config_agent::server::run::{run, RunServerOptions};
+    use config_agent::storage::{agent::Agent, layout::StorageLayout};
 
     // external crates
     use tokio::time::Duration;
@@ -22,7 +16,10 @@ mod tests {
 
             // create a private key file
             let private_key_file = layout.auth_dir().private_key_file();
-            private_key_file.write_string("test", false, false).await.unwrap();
+            private_key_file
+                .write_string("test", false, false)
+                .await
+                .unwrap();
 
             // create the agent file
             let agent_file = layout.agent_file();
@@ -41,13 +38,14 @@ mod tests {
                 ..Default::default()
             };
             tokio::time::timeout(Duration::from_secs(5), async move {
-                run(
-                    options,
-                    async {
-                        let _ = tokio::signal::ctrl_c().await;
-                    },
-                ).await.unwrap_err();
-            }).await.unwrap();
+                run(options, async {
+                    let _ = tokio::signal::ctrl_c().await;
+                })
+                .await
+                .unwrap_err();
+            })
+            .await
+            .unwrap();
         }
 
         #[tokio::test]
@@ -62,13 +60,14 @@ mod tests {
 
             // should safely run and shutdown in about 100ms
             tokio::time::timeout(Duration::from_secs(5), async move {
-                run(
-                    options,
-                    async {
-                        let _ = tokio::signal::ctrl_c().await;
-                    },
-                ).await.unwrap();
-            }).await.unwrap();
+                run(options, async {
+                    let _ = tokio::signal::ctrl_c().await;
+                })
+                .await
+                .unwrap();
+            })
+            .await
+            .unwrap();
         }
 
         #[tokio::test]
@@ -84,13 +83,14 @@ mod tests {
 
             // should safely run and shutdown in about 100ms
             tokio::time::timeout(Duration::from_secs(5), async move {
-                run(
-                    options,
-                    async {
-                        let _ = tokio::signal::ctrl_c().await;
-                    },
-                ).await.unwrap();
-            }).await.unwrap();
+                run(options, async {
+                    let _ = tokio::signal::ctrl_c().await;
+                })
+                .await
+                .unwrap();
+            })
+            .await
+            .unwrap();
         }
 
         #[tokio::test]
@@ -107,12 +107,11 @@ mod tests {
 
             // Spawn the server in a task
             let server_handle = tokio::spawn(async move {
-                run(
-                    options,
-                    async {
-                        let _ = rx.await;
-                    },
-                ).await.unwrap();
+                run(options, async {
+                    let _ = rx.await;
+                })
+                .await
+                .unwrap();
             });
 
             // Small delay to ensure server is running
@@ -122,11 +121,10 @@ mod tests {
             tx.send(()).unwrap();
 
             // Wait for server to shutdown with timeout
-            tokio::time::timeout(
-                Duration::from_secs(5),
-                server_handle
-            ).await.unwrap().unwrap();
+            tokio::time::timeout(Duration::from_secs(5), server_handle)
+                .await
+                .unwrap()
+                .unwrap();
         }
     }
-
 }

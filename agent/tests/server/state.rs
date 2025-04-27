@@ -5,14 +5,10 @@ mod tests {
 
     // internal crates
     use config_agent::filesys::dir::Dir;
-    use config_agent::storage::{
-        agent::Agent,
-        layout::StorageLayout,
-        token::Token,
-    };
-    use config_agent::server::state::ServerState;
-    use config_agent::server::errors::ServerErr;
     use config_agent::filesys::errors::FileSysErr;
+    use config_agent::server::errors::ServerErr;
+    use config_agent::server::state::ServerState;
+    use config_agent::storage::{agent::Agent, layout::StorageLayout, token::Token};
 
     // external crates
     use chrono::Utc;
@@ -44,7 +40,10 @@ mod tests {
             let layout = StorageLayout::new(dir);
             // create a private key file
             let private_key_file = layout.auth_dir().private_key_file();
-            private_key_file.write_string("test", false, false).await.unwrap();
+            private_key_file
+                .write_string("test", false, false)
+                .await
+                .unwrap();
 
             let result = ServerState::new(layout).await;
             assert!(matches!(result, Err(ServerErr::MissingClientIDErr(_))));
@@ -58,7 +57,10 @@ mod tests {
 
             // create a private key file
             let private_key_file = layout.auth_dir().private_key_file();
-            private_key_file.write_string("test", false, false).await.unwrap();
+            private_key_file
+                .write_string("test", false, false)
+                .await
+                .unwrap();
 
             // create the token file with a token containing a client id
             let token_file = layout.auth_dir().token_file();
@@ -88,7 +90,10 @@ mod tests {
 
             // create a private key file
             let private_key_file = layout.auth_dir().private_key_file();
-            private_key_file.write_string("test", false, false).await.unwrap();
+            private_key_file
+                .write_string("test", false, false)
+                .await
+                .unwrap();
 
             // create the agent file
             let agent_file = layout.agent_file();
@@ -121,7 +126,10 @@ mod tests {
 
             // create a private key file
             let private_key_file = layout.auth_dir().private_key_file();
-            private_key_file.write_string("test", false, false).await.unwrap();
+            private_key_file
+                .write_string("test", false, false)
+                .await
+                .unwrap();
 
             // create the agent file
             let agent_file = layout.agent_file();
@@ -147,7 +155,10 @@ mod tests {
 
             // create a private key file
             let private_key_file = layout.auth_dir().private_key_file();
-            private_key_file.write_string("test", false, false).await.unwrap();
+            private_key_file
+                .write_string("test", false, false)
+                .await
+                .unwrap();
 
             // create the agent file
             let agent_file = layout.agent_file();
@@ -164,5 +175,4 @@ mod tests {
             assert!(state.last_activity.load(Ordering::Relaxed) > before_record as u64);
         }
     }
-
 }

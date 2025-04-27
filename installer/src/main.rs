@@ -1,6 +1,6 @@
 // internal crates
-use config_agent::logs::{init, LogLevel};
 use config_agent::http::client::HTTPClient;
+use config_agent::logs::{init, LogLevel};
 use config_agent::storage::layout::StorageLayout;
 use config_agent_installer::installer::Installer;
 use config_agent_installer::utils;
@@ -11,7 +11,6 @@ use tracing::{debug, error, info, trace, warn};
 
 #[tokio::main]
 async fn main() {
-
     // initialize the logger
     let results = init(false, LogLevel::Info);
     let guard = match results {
@@ -23,10 +22,7 @@ async fn main() {
     };
 
     // run the installer
-    let mut installer = Installer::new(
-        StorageLayout::default(),
-        HTTPClient::new().await,
-    );
+    let mut installer = Installer::new(StorageLayout::default(), HTTPClient::new().await);
     let result = installer.install().await;
     match result {
         Ok(_) => {

@@ -2,9 +2,9 @@
 use std::fmt;
 
 // internal crates
-use config_agent::errors::{Code, HTTPCode, MiruError, Trace};
 use config_agent::auth::errors::AuthErr;
 use config_agent::crypt::errors::CryptErr;
+use config_agent::errors::{Code, HTTPCode, MiruError, Trace};
 use config_agent::filesys::errors::FileSysErr;
 use config_agent::http::errors::HTTPErr;
 use config_agent::storage::errors::StorageErr;
@@ -68,7 +68,6 @@ impl fmt::Display for InstallerCryptErr {
         write!(f, "{}", self.source)
     }
 }
-
 
 #[derive(Debug)]
 pub struct InstallerFileSysErr {

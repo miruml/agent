@@ -1,6 +1,6 @@
 // standard library
-use std::sync::Arc;
 use std::future::Future;
+use std::sync::Arc;
 
 // internal crates
 use crate::auth::errors::{
@@ -307,7 +307,8 @@ pub async fn run_refresh_loop(
         &token_mngr,
         expiration_threshold,
         tokio::time::Duration::from_secs(0),
-    ).await;
+    )
+    .await;
 
     loop {
         tokio::select! {
@@ -322,11 +323,7 @@ pub async fn run_refresh_loop(
         }
 
         // refresh the token
-        match refresh_token(
-            &token_mngr,
-            3,
-            tokio::time::Duration::from_millis(100),
-        ).await {
+        match refresh_token(&token_mngr, 3, tokio::time::Duration::from_millis(100)).await {
             Ok(_) => {
                 info!("Token refreshed successfully");
             }
@@ -336,11 +333,9 @@ pub async fn run_refresh_loop(
         }
 
         // determine how long to sleep before refreshing the token.
-        sleep_duration = determine_refresh_loop_sleep_duration(
-            &token_mngr,
-            expiration_threshold,
-            cooldown,
-        ).await;
+        sleep_duration =
+            determine_refresh_loop_sleep_duration(&token_mngr, expiration_threshold, cooldown)
+                .await;
     }
 }
 
@@ -368,7 +363,7 @@ async fn refresh_token(
 pub async fn determine_refresh_loop_sleep_duration(
     token_mngr: &TokenManager,
     expiration_threshold: tokio::time::Duration,
-    cooldown: tokio::time::Duration
+    cooldown: tokio::time::Duration,
 ) -> tokio::time::Duration {
     match token_mngr.get_token().await {
         Ok(token) => {

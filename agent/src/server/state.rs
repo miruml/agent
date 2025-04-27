@@ -7,18 +7,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 // internal crates
 use crate::auth::token_mngr::TokenManager;
 use crate::crypt::jwt;
-use crate::filesys::{
-    cached_file::CachedFile,
-    file::File,
-    path::PathExt,
-};
+use crate::filesys::{cached_file::CachedFile, file::File, path::PathExt};
 use crate::http::client::HTTPClient;
 use crate::server::errors::{
-    ServerAuthErr,
-    ServerErr,
-    ServerFileSysErr,
-    ServerStorageErr,
-    MissingClientIDErr,
+    MissingClientIDErr, ServerAuthErr, ServerErr, ServerFileSysErr, ServerStorageErr,
 };
 use crate::storage::agent::Agent;
 use crate::storage::concrete_configs::ConcreteConfigCache;
@@ -150,9 +142,7 @@ impl ServerState {
             Ok(agent) => {
                 return Ok(agent.client_id);
             }
-            Err(e) => {
-                e
-            }
+            Err(e) => e,
         };
 
         // attempt to get the client id from the existing token on file

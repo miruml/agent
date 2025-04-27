@@ -1,15 +1,14 @@
 // standard library
 use std::future::Future;
 use std::sync::Arc;
-use std::{env, os::unix::io::{FromRawFd, RawFd}};
+use std::{
+    env,
+    os::unix::io::{FromRawFd, RawFd},
+};
 
 // internal crates
 use crate::filesys::{file::File, path::PathExt};
-use crate::server::errors::{
-    BindUnixSocketErr,
-    RunAxumServerErr,
-    ServerErr,
-};
+use crate::server::errors::{BindUnixSocketErr, RunAxumServerErr, ServerErr};
 use crate::server::handlers;
 use crate::server::state::ServerState;
 use crate::trace;
@@ -21,8 +20,8 @@ use axum::{
     Json, Router,
 };
 use serde_json::json;
-use tokio::task::JoinHandle;
 use tokio::net::UnixListener;
+use tokio::task::JoinHandle;
 use tower::ServiceBuilder;
 use tower_http::{
     trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
@@ -35,7 +34,6 @@ pub(crate) async fn serve(
     state: Arc<ServerState>,
     shutdown_signal: impl Future<Output = ()> + Send + 'static,
 ) -> Result<JoinHandle<Result<(), ServerErr>>, ServerErr> {
-
     // build the app with the test route
     let state_for_middleware = state.clone();
     let app = Router::new()
@@ -78,12 +76,10 @@ pub(crate) async fn serve(
         .with_state(state);
 
     // obtain the unix socket file listener
-    let listener = acquire_unix_socket_listener(
-        socket_file,
-        async move {
-            create_unix_socket_listener(socket_file).await
-        },
-    ).await?;
+    let listener = acquire_unix_socket_listener(socket_file, async move {
+        create_unix_socket_listener(socket_file).await
+    })
+    .await?;
 
     // serve with graceful shutdown
     let server_handle = tokio::task::spawn(async move {
@@ -120,9 +116,7 @@ async fn acquire_unix_socket_listener(
             // FD#3 is the first one
             let fd: RawFd = 3;
             // SAFETY: fd=3 was handed to us by systemd
-            let std_listener = unsafe { 
-                std::os::unix::net::UnixListener::from_raw_fd(fd) 
-            };
+            let std_listener = unsafe { std::os::unix::net::UnixListener::from_raw_fd(fd) };
             std_listener.set_nonblocking(true).map_err(|e| {
                 ServerErr::BindUnixSocketErr(BindUnixSocketErr {
                     socket_file: socket_file.clone(),

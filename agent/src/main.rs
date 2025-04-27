@@ -1,12 +1,12 @@
 // internal
 use config_agent::logs::{init, LogLevel};
 use config_agent::server::run::{run, RunServerOptions};
-use config_agent::storage::layout::StorageLayout;
 use config_agent::storage::agent::assert_activated;
+use config_agent::storage::layout::StorageLayout;
 
 // external
-use tracing::{error, info};
 use tokio::signal::unix::signal;
+use tracing::{error, info};
 
 #[tokio::main]
 async fn main() {
@@ -25,10 +25,7 @@ async fn main() {
     }
 
     // run the server
-    let result = run(
-        RunServerOptions::default(),
-        await_shutdown_signal(),
-    ).await;
+    let result = run(RunServerOptions::default(), await_shutdown_signal()).await;
     if let Err(e) = result {
         error!("Failed to run the server: {}", e);
     }

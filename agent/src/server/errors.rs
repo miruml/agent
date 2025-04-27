@@ -68,10 +68,13 @@ impl MiruError for ShutdownMngrDuplicateArgErr {
 
 impl fmt::Display for ShutdownMngrDuplicateArgErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "shutdown manager was provided the same argument ({}) twice", self.arg_name)
+        write!(
+            f,
+            "shutdown manager was provided the same argument ({}) twice",
+            self.arg_name
+        )
     }
 }
-
 
 #[derive(Debug)]
 pub struct ServerAuthErr {
@@ -250,10 +253,13 @@ impl MiruError for BindUnixSocketErr {
 
 impl fmt::Display for BindUnixSocketErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "failed to bind unix socket '{}': {}", self.socket_file, self.source)
+        write!(
+            f,
+            "failed to bind unix socket '{}': {}",
+            self.socket_file, self.source
+        )
     }
 }
-
 
 #[derive(Debug)]
 pub struct RunAxumServerErr {
