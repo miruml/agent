@@ -2,11 +2,7 @@ use std::sync::Arc;
 
 // internal crates
 use crate::errors::MiruError;
-use crate::server::errors::{
-    ServerErr,
-    ServerAuthErr,
-    ServerServiceErr,
-};
+use crate::server::errors::{ServerAuthErr, ServerErr, ServerServiceErr};
 use crate::server::state::ServerState;
 use crate::services::concrete_configs::{
     read_latest, read_latest::ReadLatestArgs, refresh_latest, refresh_latest::RefreshLatestArgsI,

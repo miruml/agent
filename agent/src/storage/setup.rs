@@ -10,12 +10,15 @@ use crate::trace;
 pub async fn setup_storage(layout: &StorageLayout, agent: &Agent) -> Result<(), StorageErr> {
     // create the agent file
     let agent_file = layout.agent_file();
-    agent_file.write_json(&agent, true, true).await.map_err(|e| {
-        StorageErr::FileSysErr(StorageFileSysErr {
-            source: e,
-            trace: trace!(),
-        })
-    })?;
+    agent_file
+        .write_json(&agent, true, true)
+        .await
+        .map_err(|e| {
+            StorageErr::FileSysErr(StorageFileSysErr {
+                source: e,
+                trace: trace!(),
+            })
+        })?;
 
     // create the auth directory
     let auth_dir = layout.auth_dir();

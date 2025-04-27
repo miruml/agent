@@ -7,7 +7,7 @@ use config_agent::http::client::HTTPClient;
 use config_agent::logs::{init, LogOptions};
 use config_agent::storage::layout::StorageLayout;
 use config_agent_installer::installer::Installer;
-use config_agent_installer::users::{assert_username, assert_groupname};
+use config_agent_installer::users::{assert_groupname, assert_username};
 use config_agent_installer::utils;
 
 // external crates
@@ -38,12 +38,12 @@ async fn install() -> Result<(), Box<dyn std::error::Error>> {
     let tmp_dir = Dir::create_temp_dir("miru-agent-installer-logs").await?;
     let options = LogOptions {
         // sending logs to stdout will interfere with the installer outputs
-        stdout: false, 
+        stdout: false,
         log_dir: tmp_dir.path().to_path_buf(),
         ..Default::default()
     };
     let guard = init(options)?;
-    
+
     // determine the backend url to use for installation
     let default_backend_url = "https://configs.api.miruml.com/internal/agent/v1".to_string();
     let args: Vec<String> = env::args().collect();
@@ -51,10 +51,7 @@ async fn install() -> Result<(), Box<dyn std::error::Error>> {
 
     // create and run the installer
     let http_client = HTTPClient::new(backend_url).await;
-    let mut installer = Installer::new(
-        StorageLayout::default(),
-        http_client,
-    );
+    let mut installer = Installer::new(StorageLayout::default(), http_client);
     installer.install().await?;
 
     drop(guard);

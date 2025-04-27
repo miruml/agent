@@ -72,7 +72,7 @@ pub struct LogOptions {
 
 impl Default for LogOptions {
     fn default() -> Self {
-        Self { 
+        Self {
             stdout: true,
             log_level: LogLevel::Info,
             log_dir: PathBuf::from("/var/log/miru"),

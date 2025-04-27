@@ -1,10 +1,6 @@
-use crate::errors::{
-    InstallerErr,
-    InvalidOSUserErr,
-    InvalidOSGroupErr,
-};
-use users::{get_current_username, get_current_groupname};
+use crate::errors::{InstallerErr, InvalidOSGroupErr, InvalidOSUserErr};
 use config_agent::trace;
+use users::{get_current_groupname, get_current_username};
 
 pub fn assert_username(target_username: &str) -> Result<(), InstallerErr> {
     let username = match get_current_username() {

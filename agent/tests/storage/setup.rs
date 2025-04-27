@@ -1,10 +1,6 @@
 // internal crates
 use config_agent::filesys::{dir::Dir, path::PathExt};
-use config_agent::storage::{
-    agent::Agent,
-    layout::StorageLayout,
-    setup::setup_storage,
-};
+use config_agent::storage::{agent::Agent, layout::StorageLayout, setup::setup_storage};
 
 pub mod setup_storage {
     use super::*;
@@ -53,7 +49,10 @@ pub mod setup_storage {
 
         // create the agent file
         let agent_file = layout.agent_file();
-        agent_file.write_json(&Agent::default(), true, true).await.unwrap();
+        agent_file
+            .write_json(&Agent::default(), true, true)
+            .await
+            .unwrap();
 
         // setup the storage
         let agent = Agent::default();
@@ -88,7 +87,10 @@ pub mod setup_storage {
         // create the private key file
         let auth_layout = layout.auth_dir();
         let private_key_file = auth_layout.private_key_file();
-        private_key_file.write_string("test", true, true).await.unwrap();
+        private_key_file
+            .write_string("test", true, true)
+            .await
+            .unwrap();
 
         // setup the storage
         let agent = Agent::default();
@@ -106,7 +108,10 @@ pub mod setup_storage {
         // create the public key file
         let auth_layout = layout.auth_dir();
         let public_key_file = auth_layout.public_key_file();
-        public_key_file.write_string("test", true, true).await.unwrap();
+        public_key_file
+            .write_string("test", true, true)
+            .await
+            .unwrap();
 
         // setup the storage
         let agent = Agent::default();

@@ -8,12 +8,7 @@ use std::{
 
 // internal crates
 use crate::filesys::{file::File, path::PathExt};
-use crate::server::errors::{
-    BindUnixSocketErr,
-    ServerFileSysErr,
-    RunAxumServerErr,
-    ServerErr,
-};
+use crate::server::errors::{BindUnixSocketErr, RunAxumServerErr, ServerErr, ServerFileSysErr};
 use crate::server::handlers;
 use crate::server::state::ServerState;
 use crate::trace;

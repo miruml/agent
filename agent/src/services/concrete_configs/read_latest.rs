@@ -41,11 +41,7 @@ pub async fn read_latest<ArgsT: ReadLatestArgsI, HTTPClientT: ConcreteConfigsExt
 ) -> Result<BaseConcreteConfig, ServiceErr> {
     // read the latest concrete config from the server
     let result = http_client
-        .read_latest_concrete_config(
-            args.config_slug(),
-            args.config_schema_digest(),
-            token,
-        )
+        .read_latest_concrete_config(args.config_slug(), args.config_schema_digest(), token)
         .await;
 
     // if not a network connection error, return the error (ignore network connection

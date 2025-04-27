@@ -41,10 +41,7 @@ pub async fn refresh_latest<ArgsT: RefreshLatestArgsI, HTTPClientT: ConcreteConf
         config_schema_digest: args.config_schema_digest().to_string(),
     };
     let cncr_cfg = http_client
-        .refresh_latest_concrete_config(
-            &payload,
-            token,
-        )
+        .refresh_latest_concrete_config(&payload, token)
         .await
         .map_err(|e| {
             ServiceErr::HTTPErr(ServiceHTTPErr {

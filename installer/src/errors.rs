@@ -34,7 +34,10 @@ impl MiruError for UknownOSUserErr {
 
 impl fmt::Display for UknownOSUserErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Unable to determine the os user (must be run as the 'miru' user)")
+        write!(
+            f,
+            "Unable to determine the os user (must be run as the 'miru' user)"
+        )
     }
 }
 
@@ -63,7 +66,10 @@ impl MiruError for UknownOSGroupErr {
 
 impl fmt::Display for UknownOSGroupErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Unable to determine the os group (must be run as the 'miru' group)")
+        write!(
+            f,
+            "Unable to determine the os group (must be run as the 'miru' group)"
+        )
     }
 }
 
@@ -338,8 +344,6 @@ impl fmt::Display for IOErr {
         write!(f, "{}", self.source)
     }
 }
-
-
 
 #[derive(Debug)]
 pub struct ExecShellErr {

@@ -2,8 +2,8 @@
 use config_agent::logs::{init, LogOptions};
 use config_agent::server::run::{run, RunServerOptions};
 use config_agent::storage::agent::assert_activated;
-use config_agent::storage::layout::StorageLayout;
 use config_agent::storage::agent::Agent;
+use config_agent::storage::layout::StorageLayout;
 
 // external
 use tokio::signal::unix::signal;
