@@ -316,66 +316,6 @@ impl fmt::Display for DialoguerErr {
 }
 
 #[derive(Debug)]
-pub struct IOErr {
-    pub source: std::io::Error,
-    pub trace: Box<Trace>,
-}
-
-impl MiruError for IOErr {
-    fn code(&self) -> Code {
-        Code::InternalServerError
-    }
-
-    fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
-    }
-
-    fn is_network_connection_error(&self) -> bool {
-        false
-    }
-
-    fn params(&self) -> Option<serde_json::Value> {
-        None
-    }
-}
-
-impl fmt::Display for IOErr {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.source)
-    }
-}
-
-#[derive(Debug)]
-pub struct ExecShellErr {
-    pub msg: String,
-    pub trace: Box<Trace>,
-}
-
-impl MiruError for ExecShellErr {
-    fn code(&self) -> Code {
-        Code::InternalServerError
-    }
-
-    fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
-    }
-
-    fn is_network_connection_error(&self) -> bool {
-        false
-    }
-
-    fn params(&self) -> Option<serde_json::Value> {
-        None
-    }
-}
-
-impl fmt::Display for ExecShellErr {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.msg)
-    }
-}
-
-#[derive(Debug)]
 pub enum InstallerErr {
     // installer errors
     UknownOSUserErr(UknownOSUserErr),
@@ -392,8 +332,6 @@ pub enum InstallerErr {
 
     // external crate errors
     DialoguerErr(DialoguerErr),
-    IOErr(IOErr),
-    ExecShellErr(ExecShellErr),
 }
 
 macro_rules! forward_error_method {
@@ -414,8 +352,6 @@ macro_rules! forward_error_method {
 
             // external crate errors
             Self::DialoguerErr(e) => e.$method($($arg)?),
-            Self::IOErr(e) => e.$method($($arg)?),
-            Self::ExecShellErr(e) => e.$method($($arg)?),
         }
     };
 }

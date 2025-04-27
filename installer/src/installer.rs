@@ -1,11 +1,14 @@
 // standard library
-use std::process::{Command, Stdio};
 use std::time::Duration;
 
 // internal crates
 use crate::errors::{
-    DialoguerErr, ExecShellErr, IOErr, InstallerCryptErr, InstallerErr, InstallerFileSysErr,
-    InstallerHTTPErr, InstallerStorageErr,
+    DialoguerErr, 
+    InstallerCryptErr,
+    InstallerErr,
+    InstallerFileSysErr,
+    InstallerHTTPErr,
+    InstallerStorageErr,
 };
 use crate::{utils, utils::Colors};
 use config_agent::crypt::jwt;
@@ -191,37 +194,6 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
             utils::color_text(&client.name, Colors::Green)
         );
         pb.finish_with_message(msg);
-
-        Ok(())
-    }
-
-    pub fn exec_bash_script(&self, script: &str) -> Result<(), InstallerErr> {
-        let mut child = Command::new("bash")
-            .args(["-c", script])
-            .stdin(Stdio::inherit())
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .spawn()
-            .map_err(|e| {
-                InstallerErr::IOErr(IOErr {
-                    source: e,
-                    trace: trace!(),
-                })
-            })?;
-
-        let status = child.wait().map_err(|e| {
-            InstallerErr::IOErr(IOErr {
-                source: e,
-                trace: trace!(),
-            })
-        })?;
-
-        if !status.success() {
-            return Err(InstallerErr::ExecShellErr(ExecShellErr {
-                msg: "Bash script failed".to_string(),
-                trace: trace!(),
-            }));
-        }
 
         Ok(())
     }
