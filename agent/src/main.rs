@@ -1,5 +1,5 @@
 // internal
-use config_agent::logs::{init, LogLevel};
+use config_agent::logs::{init, LogOptions};
 use config_agent::server::run::{run, RunServerOptions};
 use config_agent::storage::agent::assert_activated;
 use config_agent::storage::layout::StorageLayout;
@@ -12,7 +12,7 @@ use tracing::{error, info};
 #[tokio::main]
 async fn main() {
     // initialize the logging
-    let result = init(true, LogLevel::Debug);
+    let result = init(LogOptions::default());
     if let Err(e) = result {
         println!("Failed to initialize logging: {}", e);
     }

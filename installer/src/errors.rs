@@ -279,6 +279,8 @@ macro_rules! forward_error_method {
     };
 }
 
+impl std::error::Error for InstallerErr {}
+
 impl fmt::Display for InstallerErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         forward_error_method!(self, fmt, f)

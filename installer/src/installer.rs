@@ -7,8 +7,7 @@ use crate::errors::{
     DialoguerErr, ExecShellErr, IOErr, InstallerCryptErr, InstallerErr, InstallerFileSysErr,
     InstallerHTTPErr, InstallerStorageErr,
 };
-use crate::scripts;
-use crate::utils;
+use crate::{utils, utils::Colors};
 use config_agent::crypt::jwt;
 use config_agent::http::auth::ClientAuthExt;
 use config_agent::storage::{agent::Agent, layout::StorageLayout, setup::setup_storage};
@@ -30,25 +29,19 @@ pub struct Installer<HTTPClientT: ClientAuthExt> {
     layout: StorageLayout,
     http_client: HTTPClientT,
     cur_title: String,
-    default_wait_prompt: String,
 }
 
 impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
     pub fn new(layout: StorageLayout, http_client: HTTPClientT) -> Self {
-        let wait_prompt = "Press Enter to continue".to_string();
         Installer {
             layout,
             http_client,
             cur_title: "Miru Installation".to_string(),
-            default_wait_prompt: wait_prompt,
         }
     }
 
     // walks user through the installation process
     pub async fn install(&mut self) -> Result<(), InstallerErr> {
-        // clear the terminal first
-        utils::clear_terminal();
-        self.intro()?;
 
         // setup the storage so that the agent can authenticate its keys and such
         let agent = Agent {
@@ -82,30 +75,6 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
                 })
             })?;
 
-        // post installation script
-        let post_installation_script = scripts::post_installation_script();
-        self.exec_bash_script(post_installation_script)?;
-        utils::clear_terminal();
-
-        // installation complete
-        self.cur_title = "Installation Complete".to_string();
-        utils::print_title(&self.cur_title);
-        println!("Miru has been successfully installed and authenticated on your device!");
-
-        Ok(())
-    }
-
-    pub fn intro(&mut self) -> Result<(), InstallerErr> {
-        self.cur_title = "Miru Agent Installation".to_string();
-        utils::print_title(&self.cur_title);
-        println!(
-            "Welcome! {} provides the infrastructure to version, manage, and deploy application configurations at scale. \n",
-            utils::format_url(LANDING_PAGE_URL, "Miru")
-        );
-        let prompt =
-            "Press Enter to authenticate the miru agent and deploy your first configuration.\n";
-        utils::wait(prompt)?;
-        utils::clear_terminal();
         Ok(())
     }
 
@@ -145,10 +114,15 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
     }
 
     pub fn get_jwt_from_user(&mut self) -> Result<String, InstallerErr> {
-        self.cur_title = "Authenticate the Miru Agent".to_string();
+        utils::clear_terminal();
+        self.cur_title = "Miru Agent Activation".to_string();
         utils::print_title(&self.cur_title);
+        println!(
+            "Welcome! {} provides the infrastructure to version, manage, and deploy application configurations at scale. \n",
+            utils::format_url(LANDING_PAGE_URL, "Miru")
+        );
 
-        println!("To authenticate the miru agent, you'll need to retrieve the authentication token from {} ({}) for the client you want to authenticate as.\n", utils::format_url(MIRU_AUTH_TOKEN_URL, "Web App"), utils::format_url(MIRU_AUTH_TOKEN_URL, MIRU_AUTH_TOKEN_URL));
+        println!("To authenticate the miru agent, you'll need to retrieve the authentication token from {} for the client you want to authenticate as.\n", utils::format_url(MIRU_AUTH_TOKEN_URL, MIRU_AUTH_TOKEN_URL));
 
         // prompt user for their json web token
         let token = Input::with_theme(&utils::input_theme())
@@ -203,7 +177,7 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
         let payload = ActivateClientRequest { public_key_pem };
         let client = self
             .http_client
-            .activate_client(client_id, &payload, "doesntmatter")
+            .activate_client(client_id, &payload, token)
             .await
             .map_err(|e| {
                 InstallerErr::HTTPErr(InstallerHTTPErr {
@@ -214,12 +188,10 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
 
         // complete
         let msg = format!(
-            "Successfully activated the miru agent as the '{}' client\n\n",
-            client.name
+            "Successfully activated the miru agent as the {} client!\n\n",
+            utils::color_text(&client.name, Colors::Green)
         );
         pb.finish_with_message(msg);
-        utils::wait(&self.default_wait_prompt)?;
-        utils::clear_terminal();
 
         Ok(())
     }

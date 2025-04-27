@@ -1,5 +1,7 @@
 // standard library
 use std::fmt::Display;
+use std::path::PathBuf;
+
 // external crates
 use serde::{Deserialize, Serialize};
 #[allow(unused_imports)]
@@ -62,17 +64,33 @@ impl Display for LogLevel {
     }
 }
 
+pub struct LogOptions {
+    pub stdout: bool,
+    pub log_level: LogLevel,
+    pub log_dir: PathBuf,
+}
+
+impl Default for LogOptions {
+    fn default() -> Self {
+        Self { 
+            stdout: true,
+            log_level: LogLevel::Info,
+            log_dir: PathBuf::from("/var/log/miru"),
+        }
+    }
+}
+
 /// Initialize the application. This function creates a logger and initialized the
 /// Miru application context.
-pub fn init(stdout: bool, log_level: LogLevel) -> Result<WorkerGuard, Box<dyn std::error::Error>> {
+pub fn init(options: LogOptions) -> Result<WorkerGuard, Box<dyn std::error::Error>> {
     // initialize the file appender for logging
-    let file_appender = tracing_appender::rolling::hourly("/var/log/miru", "miru.log");
+    let file_appender = tracing_appender::rolling::hourly(options.log_dir, "miru.log");
     let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
 
     // set logging
-    let env_filter = EnvFilter::new(log_level.to_string());
+    let env_filter = EnvFilter::new(options.log_level.to_string());
 
-    if stdout {
+    if options.stdout {
         let subscriber = fmt()
             .with_env_filter(env_filter)
             .with_file(true)

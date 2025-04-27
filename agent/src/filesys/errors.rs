@@ -898,6 +898,8 @@ macro_rules! forward_error_method {
     };
 }
 
+impl std::error::Error for FileSysErr {}
+
 impl fmt::Display for FileSysErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         forward_error_method!(self, fmt, f)

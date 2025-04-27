@@ -30,7 +30,7 @@ impl HTTPClient {
     }
 
     fn client_url(&self, client_id: &str) -> String {
-        format!("{}/clients/{}", self.clients_url(), client_id)
+        format!("{}/{}", self.clients_url(), client_id)
     }
 }
 
