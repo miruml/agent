@@ -96,7 +96,7 @@ impl HTTPClient {
 
         HTTPClient {
             client: client.clone(),
-            base_url: base + "/internal/devices/v1",
+            base_url: base + "/internal/agent/v1",
             default_timeout: Duration::from_secs(10),
             cache: Cache::builder()
                 .time_to_live(Duration::from_secs(30))

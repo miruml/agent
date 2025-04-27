@@ -28,6 +28,7 @@ mod tests {
             let agent_file = layout.agent_file();
             let agent = Agent {
                 client_id: "cli_123".to_string(),
+                activated: true,
             };
             agent_file.write_json(&agent, false, false).await.unwrap();
         }

@@ -168,20 +168,6 @@ impl ServerState {
             }
         };
 
-        // write the client id to the agent file since it doesn't exist (for some reason)
-        let agent = Agent {
-            client_id: client_id.clone(),
-        };
-        agent_file
-            .write_json(&agent, true, true)
-            .await
-            .map_err(|e| {
-                ServerErr::FileSysErr(ServerFileSysErr {
-                    source: Box::new(e),
-                    trace: trace!(),
-                })
-            })?;
-
         Ok(client_id)
     }
 

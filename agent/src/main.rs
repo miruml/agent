@@ -1,6 +1,8 @@
 // internal
 use config_agent::logs::{init, LogLevel};
 use config_agent::server::run::{run, RunServerOptions};
+use config_agent::storage::layout::StorageLayout;
+use config_agent::storage::agent::assert_activated;
 
 // external
 use tracing::{error, info};
@@ -12,6 +14,14 @@ async fn main() {
     let result = init(true, LogLevel::Debug);
     if let Err(e) = result {
         println!("Failed to initialize logging: {}", e);
+    }
+
+    // check the agent has been activated
+    let layout = StorageLayout::default();
+    let agent_file = layout.agent_file();
+    if let Err(e) = assert_activated(&agent_file).await {
+        error!("Agent is not yet activated: {}", e);
+        return;
     }
 
     // run the server

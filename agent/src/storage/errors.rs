@@ -7,6 +7,36 @@ use crate::errors::{Code, HTTPCode, MiruError, Trace};
 use crate::filesys::errors::FileSysErr;
 
 #[derive(Debug)]
+pub struct AgentNotActivatedErr {
+    pub msg: String,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for AgentNotActivatedErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for AgentNotActivatedErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "agent is not activated: {}", self.msg)
+    }
+}
+
+#[derive(Debug)]
 pub struct CacheElementNotFound {
     pub msg: String,
     pub trace: Box<Trace>,
@@ -189,6 +219,7 @@ impl fmt::Display for JoinHandleErr {
 #[derive(Debug)]
 pub enum StorageErr {
     // storage errors
+    AgentNotActivatedErr(AgentNotActivatedErr),
     CacheElementNotFound(CacheElementNotFound),
 
     // internal crate errors
@@ -204,6 +235,7 @@ pub enum StorageErr {
 macro_rules! forward_error_method {
     ($self:ident, $method:ident $(, $arg:expr)?) => {
         match $self {
+            Self::AgentNotActivatedErr(e) => e.$method($($arg)?),
             Self::CryptErr(e) => e.$method($($arg)?),
             Self::FileSysErr(e) => e.$method($($arg)?),
             Self::CacheElementNotFound(e) => e.$method($($arg)?),
