@@ -21,8 +21,9 @@ use secrecy::ExposeSecret;
 /// read and write to their respective files so their existence in memory is as brief as
 /// possible. The public key technically doesn't need such security measures since it
 /// can be shared publicly, but it's simpler to treat both keys the same. The private
-/// key file is given read/write permissions only to the owner (600) and the public key
-/// file is given read permissions to the owner and group (644). https://www.redhat.com/sysadmin/linux-file-permissions-explained
+/// key file is given read/write permissions only to the owner (600). The public key
+/// file is given read/write permissions for the owner and read permissions for the
+/// group (640). https://www.redhat.com/sysadmin/linux-file-permissions-explained
 pub async fn gen_key_pair(
     num_bits: u32,
     private_key_file: &File,
@@ -78,8 +79,9 @@ pub async fn gen_key_pair(
                 trace: trace!(),
             })
         })?;
-    // 644 gives the owner read/write permissions and the group and others read
-    public_key_file.set_permissions(0o644).await.map_err(|e| {
+    // 640 gives the owner read/write permissions, the group read permissions, and
+    // nothing for other
+    public_key_file.set_permissions(0o640).await.map_err(|e| {
         CryptErr::FileSysErr(CryptFileSysErr {
             source: e,
             trace: trace!(),

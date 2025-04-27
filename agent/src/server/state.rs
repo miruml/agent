@@ -45,8 +45,11 @@ impl ServerState {
             })
         })?;
         let agent_file = layout.agent_file();
-        let token_file = CachedFile::new_with_default(auth_dir.token_file(), Token::default())
-            .await
+        let token_file = CachedFile::new_with_default(
+            auth_dir.token_file(),
+            Token::default(),
+        )
+        .await
             .map_err(|e| {
                 ServerErr::FileSysErr(ServerFileSysErr {
                     source: Box::new(e),

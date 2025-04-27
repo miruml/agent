@@ -42,7 +42,6 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
 
     // walks user through the installation process
     pub async fn install(&mut self) -> Result<(), InstallerErr> {
-
         // setup the storage so that the agent can authenticate its keys and such
         let agent = Agent {
             activated: false,

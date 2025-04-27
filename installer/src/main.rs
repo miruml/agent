@@ -7,6 +7,7 @@ use config_agent::http::client::HTTPClient;
 use config_agent::logs::{init, LogOptions};
 use config_agent::storage::layout::StorageLayout;
 use config_agent_installer::installer::Installer;
+use config_agent_installer::users::{assert_username, assert_groupname};
 use config_agent_installer::utils;
 
 // external crates
@@ -29,6 +30,10 @@ async fn main() {
 }
 
 async fn install() -> Result<(), Box<dyn std::error::Error>> {
+    // assert the os user and group
+    assert_username("miru")?;
+    assert_groupname("miru")?;
+
     // initialize the logger
     let tmp_dir = Dir::create_temp_dir("miru-agent-installer-logs").await?;
     let options = LogOptions {

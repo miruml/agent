@@ -1,9 +1,11 @@
+// standard library
+use std::path::PathBuf;
+
 // internal crates
 use crate::filesys::dir::Dir;
 use crate::filesys::file::File;
 
 // external crates
-use std::path::PathBuf;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
 

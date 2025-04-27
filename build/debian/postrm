@@ -6,16 +6,14 @@ remove() {
     systemctl daemon-reload
 
     # stop the systemd services
-    printf "\033[32m Stopping the miru service\033[0m\n"
-    systemctl stop miru.service
     printf "\033[32m Stopping the miru socket\033[0m\n"
-    systemctl stop miru.socket
+    deb-systemd-invoke stop miru.socket
 
     # disable the systemd services
     printf "\033[32m Disabling the miru service\033[0m\n"
-    systemctl disable miru.service
+    deb-systemd-helper disable miru.service
     printf "\033[32m Disabling the miru socket\033[0m\n"
-    systemctl disable miru.socket
+    deb-systemd-helper disable miru.socket
 }
 
 purge() {
@@ -27,9 +25,9 @@ purge() {
 
     # disable the systemd services
     printf "\033[32m Purging the miru service\033[0m\n"
-    systemctl purge miru.service
+    deb-systemd-helper purge miru.service
     printf "\033[32m Purging the miru socket\033[0m\n"
-    systemctl purge miru.socket
+    deb-systemd-helper purge miru.socket
 
     # remove the files created by the miru agent
     printf "\033[32m Post Remove remove /var/lib/miru \033[0m\n"

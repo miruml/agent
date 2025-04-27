@@ -20,6 +20,17 @@ builds:
     flags:
       - --release
       - -p=config-agent
+  - id: "miru-agent-installer"
+    builder: rust
+    binary: "config-agent-installer"
+    targets:
+      - x86_64-unknown-linux-gnu
+      - aarch64-unknown-linux-gnu
+    dir: ..
+    command: zigbuild
+    flags:
+      - --release
+      - -p=config-agent-installer
 
 nfpms:
   - id: miru-agent
@@ -95,7 +106,7 @@ release:
   footer: >-
     ## Miru Agent {{.Tag}}
     
-    New release of Miru Agent. Download the appropriate binary for your system.
+    New release of Miru Agent. Download the appropriate debian package for your system.
     
     For documentation, visit: https://docs.miruml.com
 
