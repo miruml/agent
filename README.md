@@ -41,7 +41,13 @@ COMING SOON
 After installation, verify the installation by running:
 
 ```bash
-miru --help
+sudo curl --unix-socket /run/miru/miru.sock http://localhost/v1/test
+```
+
+You should see something similar to the following
+
+```bash
+{"server":"miru-config-agent","status":"ok"}
 ```
 
 ## Notes
