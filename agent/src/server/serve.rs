@@ -12,6 +12,7 @@ use crate::server::errors::{BindUnixSocketErr, RunAxumServerErr, ServerErr, Serv
 use crate::server::handlers;
 use crate::server::state::ServerState;
 use crate::trace;
+use crate::utils::version_info;
 
 // external
 use axum::{
@@ -38,6 +39,7 @@ pub(crate) async fn serve(
     let state_for_middleware = state.clone();
     let app = Router::new()
         .route("/v1/test", get(test))
+        .route("/v1/version", get(version))
         // ============================ CONCRETE CONFIGS ============================== //
         .route(
             "/v1/concrete_configs/latest",
@@ -157,12 +159,16 @@ async fn create_unix_socket_listener(socket_file: &File) -> Result<UnixListener,
     })
 }
 
+async fn version() -> (StatusCode, Json<serde_json::Value>) {
+    (StatusCode::OK, Json(version_info()))
+}
+
 async fn test() -> (StatusCode, Json<serde_json::Value>) {
     (
         StatusCode::OK,
         Json(json!({
             "status": "ok",
-            "server": "axum"
+            "server": "miru-config-agent"
         })),
     )
 }

@@ -3,6 +3,7 @@ name = "config-agent-installer"
 version = { workspace = true }
 edition = { workspace = true }
 rust-version = { workspace = true }
+build = "build.rs"
 
 [dependencies]
 config-agent = { workspace = true }

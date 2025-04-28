@@ -4,6 +4,7 @@ use config_agent::server::run::{run, RunServerOptions};
 use config_agent::storage::agent::assert_activated;
 use config_agent::storage::agent::Agent;
 use config_agent::storage::layout::StorageLayout;
+use config_agent::utils::{has_version_flag, version_info};
 
 // external
 use tokio::signal::unix::signal;
@@ -11,6 +12,12 @@ use tracing::{error, info};
 
 #[tokio::main]
 async fn main() {
+    // print the version and exit if that is all the is requested
+    if has_version_flag() {
+        println!("{}", version_info());
+        return;
+    }
+
     // initialize the logging
     let result = init(LogOptions::default());
     if let Err(e) = result {

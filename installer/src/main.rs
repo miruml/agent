@@ -9,6 +9,7 @@ use config_agent::storage::layout::StorageLayout;
 use config_agent_installer::installer::Installer;
 use config_agent_installer::users::{assert_groupname, assert_username};
 use config_agent_installer::utils;
+use config_agent::utils::{has_version_flag, version_info};
 
 // external crates
 #[allow(unused_imports)]
@@ -16,6 +17,12 @@ use tracing::{debug, error, info, trace, warn};
 
 #[tokio::main]
 async fn main() {
+    // print the version and exit if that is all the is requested
+    if has_version_flag() {
+        println!("{}", version_info());
+        return;
+    }
+
     match install().await {
         Ok(_) => {
             info!("Installation successful");
