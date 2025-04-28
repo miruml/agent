@@ -30,9 +30,9 @@ purge() {
     deb-systemd-helper purge miru.socket
 
     # remove the files created by the miru agent
-    printf "\033[32m Post Remove remove /var/lib/miru \033[0m\n"
+    printf "\033[32m Removing /var/lib/miru \033[0m\n"
     rm -rf /var/lib/miru
-    printf "\033[32m Post Remove remove /var/log/miru \033[0m\n"
+    printf "\033[32m Removing /var/log/miru \033[0m\n"
     rm -rf /var/log/miru
 
 }

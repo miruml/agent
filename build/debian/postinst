@@ -19,6 +19,21 @@ create_miru_group() {
   fi
 }
 
+create_miru_directories() {
+  if [ ! -d /var/lib/miru ]; then
+    printf "\033[32m Creating the /var/lib/miru directory\033[0m\n"
+    mkdir -p /var/lib/miru
+    chown -R miru:miru /var/lib/miru
+    chmod -R 755 /var/lib/miru
+  fi
+  if [ ! -d /var/log/miru ]; then
+    printf "\033[32m Creating the /var/log/miru directory\033[0m\n"
+    mkdir -p /var/log/miru
+    chown -R miru:miru /var/log/miru
+    chmod -R 755 /var/log/miru
+  fi
+}
+
 clean_install() {
     socket_name="$1"
     printf "\033[32m Post Install of an clean install\033[0m\n"
@@ -26,6 +41,7 @@ clean_install() {
     # create the miru user and group
     create_miru_user
     create_miru_group
+    create_miru_directories
 
     # enable the socket
     printf "\033[32m Enable the socket\033[0m\n"
@@ -49,6 +65,7 @@ upgrade() {
     # create the miru user and group
     create_miru_user
     create_miru_group
+    create_miru_directories
 
     # reload the unit from disk 
     printf "\033[32m Reload the service unit from disk\033[0m\n"
