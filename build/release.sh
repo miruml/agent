@@ -2,7 +2,8 @@
 set -e
 
 # Build the deb package
-goreleaser release --snapshot --clean
+goreleaser release
 
 # Build the deb package
-./build-apt-repo.sh
+aptly repo add miru-agent ./dist/miru-agent-*.deb
+aptly publish repo -architectures=amd64,arm64 miru-agent
