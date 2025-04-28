@@ -9,7 +9,7 @@
 version: 2
 
 builds:
-  - id: "miru-agent"
+  - id: "agent"
     builder: rust
     binary: "config-agent"
     targets:
@@ -20,7 +20,8 @@ builds:
     flags:
       - --release
       - -p=config-agent
-  - id: "miru-agent-installer"
+
+  - id: "installer"
     builder: rust
     binary: "config-agent-installer"
     targets:
@@ -33,7 +34,7 @@ builds:
       - -p=config-agent-installer
 
 nfpms:
-  - id: miru-agent
+  - id: agent
     package_name: miru-agent
     file_name_template: "{{ .PackageName }}_{{ .Version }}_{{ .Arch }}"
     vendor: "Miru"
@@ -82,16 +83,30 @@ nfpms:
       postremove: "debian/postrm"
 
 archives:
-  - formats: [tar.gz]
-    # this name template makes the OS and Arch compatible with the results of `uname`.
+  - id: agent
+    formats: [tar.gz]
     name_template: >-
-      {{ .ProjectName }}_
+      agent_
       {{- title .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    # use zip for windows archives
+    builds: ["agent"]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+  - id: installer
+    formats: [tar.gz]
+    name_template: >-
+      installer_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    builds: ["installer"]
     format_overrides:
       - goos: windows
         formats: [zip]
