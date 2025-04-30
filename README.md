@@ -10,6 +10,9 @@ For a manual installation (no package manager), you can use curl:
 curl -fsSL https://raw.githubusercontent.com/miruml/agent/main/manual-install.sh | sh
 ```
 
+> [!Note]
+> The script requires `curl`, `tar`, `grep`, and `cut` to be installed and sudo privileges may be required
+
 ### Examine the Installation Script
 
 For a more careful approach, you can download and verify the script first:
@@ -29,16 +32,9 @@ less install.sh
 sh install.sh
 ```
 
-## Using APT
-COMING SOON
+## Verify Installation 
 
-## Supported Platforms
-
-- Ubuntu (x86_64 and ARM64)
-
-## Verification
-
-After installation, verify the installation by running:
+Verify the installation by running:
 
 ```bash
 sudo curl --unix-socket /run/miru/miru.sock http://localhost/v1/test
@@ -50,10 +46,12 @@ You should see something similar to the following
 {"server":"miru-config-agent","status":"ok"}
 ```
 
-## Notes
+## APT Repository Install
+COMING SOON
 
-- The script requires `curl`, `tar`, `grep`, and `cut` to be installed
-- Sudo privileges are required for installation
+## Supported Platforms
+
+- Ubuntu 20.04, 22.04, 24.04 (`x86_64` and `arm64`)
 
 ## Uninstallation
 ```bash
@@ -64,4 +62,3 @@ If you'd like to remove configuration files as well you can run
 ```bash
 sudo apt purge miru-agent
 ```
-
