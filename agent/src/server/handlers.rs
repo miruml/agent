@@ -5,7 +5,7 @@ use crate::errors::MiruError;
 use crate::server::errors::{ServerAuthErr, ServerErr, ServerServiceErr};
 use crate::server::state::ServerState;
 use crate::services::concrete_configs::{
-    read_latest, read_latest::ReadLatestArgs, refresh_latest, refresh_latest::RefreshLatestArgsI,
+    read_latest, read_latest::ReadLatestArgs, refresh_latest, refresh_latest::RefreshLatestArgs,
 };
 use crate::services::config_schemas::{hash, hash::HashSchemaArgsI};
 use crate::trace;
@@ -16,6 +16,7 @@ use openapi_server::models::{HashSchemaSerializedRequest, HashSerializedConfigSc
 
 // external
 use axum::{extract::Query, extract::State, http::StatusCode, response::IntoResponse, Json};
+use serde::Deserialize;
 use serde_json::json;
 use tracing::error;
 
@@ -63,8 +64,14 @@ pub async fn hash_schema(
     }
 }
 
+#[derive(Debug, Deserialize)]
+pub struct ReadLatestQueryArgs {
+    pub config_slug: String,
+    pub config_schema_digest: String,
+}
+
 pub async fn read_latest_concrete_config(
-    Query(query): Query<ReadLatestArgs>,
+    Query(query): Query<ReadLatestQueryArgs>,
     State(state): State<Arc<ServerState>>,
 ) -> impl IntoResponse {
     let service = async move {
@@ -74,8 +81,15 @@ pub async fn read_latest_concrete_config(
                 trace: trace!(),
             })
         })?;
+
+        let args = ReadLatestArgs {
+            client_id: state.client_id.clone(),
+            config_slug: query.config_slug,
+            config_schema_digest: query.config_schema_digest,
+        };
+
         read_latest::read_latest(
-            &query,
+            &args,
             &state.concrete_config_cache,
             &state.http_client,
             &token.token,
@@ -98,15 +112,6 @@ pub async fn read_latest_concrete_config(
     }
 }
 
-impl RefreshLatestArgsI for RefreshLatestConcreteConfigRequest {
-    fn config_slug(&self) -> &str {
-        &self.config_slug
-    }
-    fn config_schema_digest(&self) -> &str {
-        &self.config_schema_digest
-    }
-}
-
 pub async fn refresh_latest_concrete_config(
     State(state): State<Arc<ServerState>>,
     Json(payload): Json<RefreshLatestConcreteConfigRequest>,
@@ -118,8 +123,15 @@ pub async fn refresh_latest_concrete_config(
                 trace: trace!(),
             })
         })?;
+
+        let args = RefreshLatestArgs {
+            client_id: state.client_id.clone(),
+            config_slug: payload.config_slug,
+            config_schema_digest: payload.config_schema_digest,
+        };
+
         refresh_latest::refresh_latest(
-            &payload,
+            &args,
             &state.concrete_config_cache,
             &state.http_client,
             &token.token,

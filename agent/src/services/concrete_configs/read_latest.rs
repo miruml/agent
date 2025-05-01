@@ -14,17 +14,22 @@ use openapi_server::models::BaseConcreteConfig;
 use serde::Deserialize;
 
 pub trait ReadLatestArgsI {
+    fn client_id(&self) -> &str;
     fn config_slug(&self) -> &str;
     fn config_schema_digest(&self) -> &str;
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ReadLatestArgs {
+    pub client_id: String,
     pub config_slug: String,
     pub config_schema_digest: String,
 }
 
 impl ReadLatestArgsI for ReadLatestArgs {
+    fn client_id(&self) -> &str {
+        &self.client_id
+    }
     fn config_slug(&self) -> &str {
         &self.config_slug
     }
@@ -41,7 +46,12 @@ pub async fn read_latest<ArgsT: ReadLatestArgsI, HTTPClientT: ConcreteConfigsExt
 ) -> Result<BaseConcreteConfig, ServiceErr> {
     // read the latest concrete config from the server
     let result = http_client
-        .read_latest_concrete_config(args.config_slug(), args.config_schema_digest(), token)
+        .read_latest_concrete_config(
+            args.client_id(),
+            args.config_slug(),
+            args.config_schema_digest(),
+            token,
+        )
         .await;
 
     // if not a network connection error, return the error (ignore network connection

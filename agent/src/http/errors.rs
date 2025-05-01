@@ -21,7 +21,10 @@ pub struct RequestFailed {
 
 impl MiruError for RequestFailed {
     fn code(&self) -> Code {
-        Code::InternalServerError
+        match &self.error {
+            Some(error) => Code::BackendError(error.error.code.clone()),
+            None => Code::InternalServerError,
+        }
     }
 
     fn http_status(&self) -> HTTPCode {
@@ -33,7 +36,10 @@ impl MiruError for RequestFailed {
     }
 
     fn params(&self) -> Option<serde_json::Value> {
-        None
+        match &self.error {
+            Some(error) => error.error.params.clone(),
+            None => None,
+        }
     }
 }
 
@@ -89,18 +95,21 @@ impl fmt::Display for TimeoutErr {
 
 #[derive(Debug)]
 pub struct CacheErr {
-    pub is_network_connection_error: bool,
     pub msg: String,
+    pub code: Code,
+    pub http_status: HTTPCode,
+    pub is_network_connection_error: bool,
+    pub params: Option<serde_json::Value>,
     pub trace: Box<Trace>,
 }
 
 impl MiruError for CacheErr {
     fn code(&self) -> Code {
-        Code::InternalServerError
+        self.code.clone()
     }
 
     fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
+        self.http_status
     }
 
     fn is_network_connection_error(&self) -> bool {
@@ -108,13 +117,13 @@ impl MiruError for CacheErr {
     }
 
     fn params(&self) -> Option<serde_json::Value> {
-        None
+        self.params.clone()
     }
 }
 
 impl fmt::Display for CacheErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Request returned a cache error: {}", self.msg)
+        write!(f, "HTTP request cache error: {}", self.msg)
     }
 }
 

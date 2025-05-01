@@ -86,6 +86,7 @@ impl ConcreteConfigsExt for MockConcreteConfigsClient {
         _: &str,
         _: &str,
         _: &str,
+        _: &str,
     ) -> Result<Option<BackendConcreteConfig>, HTTPErr> {
         (self.read_latest_result)()
     }

@@ -37,6 +37,7 @@ pub mod errors {
 
         // run the test
         let args = ReadLatestArgs {
+            client_id: "client-id".to_string(),
             config_slug: "config-slug".to_string(),
             config_schema_digest: "config-schema-digest".to_string(),
         };
@@ -71,6 +72,7 @@ pub mod errors {
 
         // run the test
         let args = ReadLatestArgs {
+            client_id: "client-id".to_string(),
             config_slug: "config-slug".to_string(),
             config_schema_digest: "config-schema-digest".to_string(),
         };
@@ -119,6 +121,7 @@ pub mod success {
 
         // run the test
         let args = ReadLatestArgs {
+            client_id: "client-id".to_string(),
             config_slug: config_slug.to_string(),
             config_schema_digest: config_schema_digest.to_string(),
         };
@@ -160,6 +163,7 @@ pub mod success {
 
         // run the test
         let args = ReadLatestArgs {
+            client_id: "client-id".to_string(),
             config_slug: config_slug.to_string(),
             config_schema_digest: config_schema_digest.to_string(),
         };
@@ -184,6 +188,7 @@ pub mod success {
 
         // run the test
         let args = ReadLatestArgs {
+            client_id: "client-id".to_string(),
             config_slug: "config-slug".to_string(),
             config_schema_digest: "config-schema-digest".to_string(),
         };

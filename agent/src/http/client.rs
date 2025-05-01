@@ -211,7 +211,10 @@ impl HTTPClient {
             .await
             .map_err(|e: Arc<HTTPErr>| {
                 HTTPErr::CacheErr(CacheErr {
+                    code: e.code(),
+                    http_status: e.http_status(),
                     is_network_connection_error: e.is_network_connection_error(),
+                    params: e.params(),
                     msg: e.to_string(),
                     trace: trace!(),
                 })

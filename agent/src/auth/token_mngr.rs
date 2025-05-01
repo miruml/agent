@@ -8,6 +8,7 @@ use crate::auth::errors::{
     SendActorMessageErr, SerdeErr, TimestampConversionErr,
 };
 use crate::crypt::{base64, rsa};
+use crate::errors::MiruError;
 use crate::filesys::{cached_file::CachedFile, file::File, path::PathExt};
 use crate::http::auth::ClientAuthExt;
 use crate::storage::token::Token;
@@ -328,7 +329,11 @@ pub async fn run_refresh_loop(
                 info!("Token refreshed successfully");
             }
             Err(e) => {
-                error!("Error refreshing token: {:#?}", e);
+                if e.is_network_connection_error() {
+                    error!("Unable to refresh token due to a network connection error");
+                } else {
+                    error!("Error refreshing token: {:#?}", e);
+                }
             }
         }
 

@@ -8,9 +8,11 @@ use tracing::{error, info, trace, warn};
 
 pub type HTTPCode = StatusCode;
 
+#[derive(Debug, Clone)]
 pub enum Code {
     InternalServerError,
     ResourceNotFound,
+    BackendError(String),
 }
 
 impl Code {
@@ -18,6 +20,7 @@ impl Code {
         match self {
             Self::InternalServerError => "internal_server_error",
             Self::ResourceNotFound => "resource_not_found",
+            Self::BackendError(code) => code,
         }
     }
 }

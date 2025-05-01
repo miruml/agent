@@ -99,7 +99,7 @@ impl MiruError for ServiceHTTPErr {
 
 impl fmt::Display for ServiceHTTPErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "HTTP Error: {}", self.source)
+        write!(f, "service HTTP Error: {}", self.source)
     }
 }
 

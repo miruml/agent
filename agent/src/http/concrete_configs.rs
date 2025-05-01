@@ -11,6 +11,7 @@ use openapi_client::models::RefreshLatestConcreteConfigRequest;
 pub trait ConcreteConfigsExt: Send + Sync {
     async fn read_latest_concrete_config(
         &self,
+        client_id: &str,
         config_slug: &str,
         config_schema_digest: &str,
         token: &str,
@@ -32,14 +33,16 @@ impl HTTPClient {
 impl ConcreteConfigsExt for HTTPClient {
     async fn read_latest_concrete_config(
         &self,
+        client_id: &str,
         config_slug: &str,
         config_schema_digest: &str,
         token: &str,
     ) -> Result<Option<BackendConcreteConfig>, HTTPErr> {
         // build the request
         let url = format!(
-            "{}/latest?config_slug={}&config_schema_digest={}",
+            "{}/latest?client_id={}&config_slug={}&config_schema_digest={}",
             self.concrete_configs_url(),
+            client_id,
             config_slug,
             config_schema_digest
         );
@@ -83,12 +86,13 @@ impl ConcreteConfigsExt for HTTPClient {
 impl ConcreteConfigsExt for Arc<HTTPClient> {
     async fn read_latest_concrete_config(
         &self,
+        client_id: &str,
         config_slug: &str,
         config_schema_digest: &str,
         token: &str,
     ) -> Result<Option<BackendConcreteConfig>, HTTPErr> {
         self.as_ref()
-            .read_latest_concrete_config(config_slug, config_schema_digest, token)
+            .read_latest_concrete_config(client_id, config_slug, config_schema_digest, token)
             .await
     }
 

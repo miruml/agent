@@ -85,11 +85,11 @@ impl MiruError for CryptFileSysErr {
     }
 
     fn is_network_connection_error(&self) -> bool {
-        false
+        self.source.is_network_connection_error()
     }
 
     fn params(&self) -> Option<serde_json::Value> {
-        None
+        self.source.params()
     }
 }
 

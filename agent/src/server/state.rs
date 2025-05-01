@@ -23,6 +23,7 @@ type ClientID = String;
 
 #[derive(Clone, Debug)]
 pub struct ServerState {
+    pub client_id: ClientID,
     pub http_client: Arc<HTTPClient>,
     pub config_schema_digest_cache: Arc<ConfigSchemaDigestCache>,
     pub concrete_config_cache: Arc<ConcreteConfigCache>,
@@ -67,7 +68,7 @@ impl ServerState {
 
         // initialize the token manager
         let (token_mngr, token_mngr_handle) =
-            TokenManager::spawn(client_id, http_client.clone(), token_file, private_key_file)
+            TokenManager::spawn(client_id.clone(), http_client.clone(), token_file, private_key_file)
                 .map_err(|e| {
                     ServerErr::AuthErr(ServerAuthErr {
                         source: Box::new(e),
@@ -78,6 +79,7 @@ impl ServerState {
 
         // initialize the server state
         let server_state = ServerState {
+            client_id,
             http_client,
             config_schema_digest_cache,
             concrete_config_cache,

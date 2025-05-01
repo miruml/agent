@@ -45,19 +45,19 @@ pub struct AuthCryptErr {
 
 impl MiruError for AuthCryptErr {
     fn code(&self) -> Code {
-        Code::InternalServerError
+        self.source.code()
     }
 
     fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
+        self.source.http_status()
     }
 
     fn is_network_connection_error(&self) -> bool {
-        false
+        self.source.is_network_connection_error()
     }
 
     fn params(&self) -> Option<serde_json::Value> {
-        None
+        self.source.params()
     }
 }
 
@@ -75,19 +75,19 @@ pub struct AuthFileSysErr {
 
 impl MiruError for AuthFileSysErr {
     fn code(&self) -> Code {
-        Code::InternalServerError
+        self.source.code()
     }
 
     fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
+        self.source.http_status()
     }
 
     fn is_network_connection_error(&self) -> bool {
-        false
+        self.source.is_network_connection_error()
     }
 
     fn params(&self) -> Option<serde_json::Value> {
-        None
+        self.source.params()
     }
 }
 
@@ -105,19 +105,19 @@ pub struct AuthHTTPErr {
 
 impl MiruError for AuthHTTPErr {
     fn code(&self) -> Code {
-        Code::InternalServerError
+        self.source.code()
     }
 
     fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
+        self.source.http_status()
     }
 
     fn is_network_connection_error(&self) -> bool {
-        false
+        self.source.is_network_connection_error()
     }
 
     fn params(&self) -> Option<serde_json::Value> {
-        None
+        self.source.params()
     }
 }
 

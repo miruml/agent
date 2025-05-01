@@ -7,16 +7,21 @@ use crate::trace;
 use openapi_client::models::RefreshLatestConcreteConfigRequest;
 
 pub trait RefreshLatestArgsI {
+    fn client_id(&self) -> &str;
     fn config_slug(&self) -> &str;
     fn config_schema_digest(&self) -> &str;
 }
 
 pub struct RefreshLatestArgs {
+    pub client_id: String,
     pub config_slug: String,
     pub config_schema_digest: String,
 }
 
 impl RefreshLatestArgsI for RefreshLatestArgs {
+    fn client_id(&self) -> &str {
+        &self.client_id
+    }
     fn config_slug(&self) -> &str {
         &self.config_slug
     }
@@ -31,12 +36,9 @@ pub async fn refresh_latest<ArgsT: RefreshLatestArgsI, HTTPClientT: ConcreteConf
     http_client: &HTTPClientT,
     token: &str,
 ) -> Result<openapi_server::models::BaseConcreteConfig, ServiceErr> {
-    // this should be retrieved from the agent config
-    let client_id = "FIXME";
-
     // read the latest concrete config from the server
     let payload = RefreshLatestConcreteConfigRequest {
-        client_id: client_id.to_string(),
+        client_id: args.client_id().to_string(),
         config_slug: args.config_slug().to_string(),
         config_schema_digest: args.config_schema_digest().to_string(),
     };

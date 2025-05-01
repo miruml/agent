@@ -85,19 +85,19 @@ pub struct ServerAuthErr {
 
 impl MiruError for ServerAuthErr {
     fn code(&self) -> Code {
-        Code::InternalServerError
+        self.source.code()
     }
 
     fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
+        self.source.http_status()
     }
 
     fn is_network_connection_error(&self) -> bool {
-        false
+        self.source.is_network_connection_error()
     }
 
     fn params(&self) -> Option<serde_json::Value> {
-        None
+        self.source.params()
     }
 }
 
@@ -115,19 +115,19 @@ pub struct ServerCryptErr {
 
 impl MiruError for ServerCryptErr {
     fn code(&self) -> Code {
-        Code::InternalServerError
+        self.source.code()
     }
 
     fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
+        self.source.http_status()
     }
 
     fn is_network_connection_error(&self) -> bool {
-        false
+        self.source.is_network_connection_error()
     }
 
     fn params(&self) -> Option<serde_json::Value> {
-        None
+        self.source.params()
     }
 }
 
@@ -145,19 +145,19 @@ pub struct ServerFileSysErr {
 
 impl MiruError for ServerFileSysErr {
     fn code(&self) -> Code {
-        Code::InternalServerError
+        self.source.code()
     }
 
     fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
+        self.source.http_status()
     }
 
     fn is_network_connection_error(&self) -> bool {
-        false
+        self.source.is_network_connection_error()
     }
 
     fn params(&self) -> Option<serde_json::Value> {
-        None
+        self.source.params()
     }
 }
 
@@ -175,19 +175,19 @@ pub struct ServerHTTPErr {
 
 impl MiruError for ServerHTTPErr {
     fn code(&self) -> Code {
-        Code::InternalServerError
+        self.source.code()
     }
 
     fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
+        self.source.http_status()
     }
 
     fn is_network_connection_error(&self) -> bool {
-        false
+        self.source.is_network_connection_error()
     }
 
     fn params(&self) -> Option<serde_json::Value> {
-        None
+        self.source.params()
     }
 }
 
@@ -205,19 +205,19 @@ pub struct ServerStorageErr {
 
 impl MiruError for ServerStorageErr {
     fn code(&self) -> Code {
-        Code::InternalServerError
+        self.source.code()
     }
 
     fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
+        self.source.http_status()
     }
 
     fn is_network_connection_error(&self) -> bool {
-        false
+        self.source.is_network_connection_error()
     }
 
     fn params(&self) -> Option<serde_json::Value> {
-        None
+        self.source.params()
     }
 }
 
@@ -235,19 +235,19 @@ pub struct ServerServiceErr {
 
 impl MiruError for ServerServiceErr {
     fn code(&self) -> Code {
-        Code::InternalServerError
+        self.source.code()
     }
 
     fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
+        self.source.http_status()
     }
 
     fn is_network_connection_error(&self) -> bool {
-        false
+        self.source.is_network_connection_error()
     }
 
     fn params(&self) -> Option<serde_json::Value> {
-        None
+        self.source.params()
     }
 }
 
