@@ -52,10 +52,7 @@ pub mod read_entry_optional {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
         let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
         let key = "1234567890".to_string();
-        let read_entry = cache.read_entry_optional(
-            key.clone(),
-            false
-        ).await.unwrap();
+        let read_entry = cache.read_entry_optional(key.clone(), false).await.unwrap();
         assert_eq!(read_entry, None);
     }
 
@@ -74,10 +71,11 @@ pub mod read_entry_optional {
             .await
             .unwrap();
         let before_read = Utc::now();
-        let read_entry = cache.read_entry_optional(
-            key.clone(),
-            true
-        ).await.unwrap().unwrap();
+        let read_entry = cache
+            .read_entry_optional(key.clone(), true)
+            .await
+            .unwrap()
+            .unwrap();
 
         // check the timestamps
         assert!(read_entry.created_at > before_write);
@@ -108,10 +106,11 @@ pub mod read_entry_optional {
             .write(key.clone(), digests.clone(), false)
             .await
             .unwrap();
-        let read_entry = cache.read_entry_optional(
-            key.clone(),
-            false 
-        ).await.unwrap().unwrap();
+        let read_entry = cache
+            .read_entry_optional(key.clone(), false)
+            .await
+            .unwrap()
+            .unwrap();
 
         // check the timestamps
         assert!(read_entry.created_at > before_write);
@@ -136,10 +135,10 @@ pub mod read_entry {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
         let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
         assert!(matches!(
-            cache.read_entry(
-                "1234567890".to_string(),
-                false
-            ).await.unwrap_err(),
+            cache
+                .read_entry("1234567890".to_string(), false)
+                .await
+                .unwrap_err(),
             StorageErr::CacheElementNotFound { .. }
         ));
     }
@@ -159,10 +158,7 @@ pub mod read_entry {
             .await
             .unwrap();
         let before_read = Utc::now();
-        let read_entry = cache.read_entry(
-            key.clone(),
-            true
-        ).await.unwrap();
+        let read_entry = cache.read_entry(key.clone(), true).await.unwrap();
 
         // check the timestamps
         assert!(read_entry.created_at > before_write);
@@ -193,10 +189,7 @@ pub mod read_entry {
             .write(key.clone(), digests.clone(), false)
             .await
             .unwrap();
-        let read_entry = cache.read_entry(
-            key.clone(),
-            false 
-        ).await.unwrap();
+        let read_entry = cache.read_entry(key.clone(), false).await.unwrap();
 
         // check the timestamps
         assert!(read_entry.created_at > before_write);
@@ -211,7 +204,6 @@ pub mod read_entry {
         };
         assert_eq!(read_entry, expected_entry);
     }
-
 }
 
 pub mod read_optional {
@@ -244,11 +236,8 @@ pub mod read_optional {
         assert_eq!(read_digests, digests);
 
         // check the last accessed time was properly set
-        let after_read= Utc::now();
-        let entry = cache.read_entry(
-            key.clone(),
-            false
-        ).await.unwrap();
+        let after_read = Utc::now();
+        let entry = cache.read_entry(key.clone(), false).await.unwrap();
         assert!(entry.last_accessed > before_read);
         assert!(entry.last_accessed < after_read);
     }
@@ -287,11 +276,8 @@ pub mod read {
         assert_eq!(read_digests, digests);
 
         // check the last accessed time was properly set
-        let after_read= Utc::now();
-        let entry = cache.read_entry(
-            key.clone(),
-            false
-        ).await.unwrap();
+        let after_read = Utc::now();
+        let entry = cache.read_entry(key.clone(), false).await.unwrap();
         assert!(entry.last_accessed > before_read);
         assert!(entry.last_accessed < after_read);
     }

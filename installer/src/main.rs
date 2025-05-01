@@ -6,10 +6,10 @@ use config_agent::filesys::{dir::Dir, path::PathExt};
 use config_agent::http::client::HTTPClient;
 use config_agent::logs::{init, LogOptions};
 use config_agent::storage::layout::StorageLayout;
+use config_agent::utils::{has_version_flag, version_info};
 use config_agent_installer::installer::Installer;
 use config_agent_installer::users::{assert_groupname, assert_username};
 use config_agent_installer::utils;
-use config_agent::utils::{has_version_flag, version_info};
 
 // external crates
 #[allow(unused_imports)]

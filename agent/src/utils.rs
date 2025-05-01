@@ -18,7 +18,8 @@ pub fn time_delta_to_positive_duration(time_delta: chrono::Duration) -> std::tim
 
 pub fn has_version_flag() -> bool {
     let args: Vec<String> = env::args().collect();
-    args.iter().any(|arg| arg == "version" || arg == "--version" || arg == "-v")
+    args.iter()
+        .any(|arg| arg == "version" || arg == "--version" || arg == "-v")
 }
 
 pub fn version_info() -> serde_json::Value {

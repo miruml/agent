@@ -67,14 +67,18 @@ impl ServerState {
         let concrete_config_cache = Arc::new(concrete_config_cache);
 
         // initialize the token manager
-        let (token_mngr, token_mngr_handle) =
-            TokenManager::spawn(client_id.clone(), http_client.clone(), token_file, private_key_file)
-                .map_err(|e| {
-                    ServerErr::AuthErr(ServerAuthErr {
-                        source: Box::new(e),
-                        trace: trace!(),
-                    })
-                })?;
+        let (token_mngr, token_mngr_handle) = TokenManager::spawn(
+            client_id.clone(),
+            http_client.clone(),
+            token_file,
+            private_key_file,
+        )
+        .map_err(|e| {
+            ServerErr::AuthErr(ServerAuthErr {
+                source: Box::new(e),
+                trace: trace!(),
+            })
+        })?;
         let token_mngr = Arc::new(token_mngr);
 
         // initialize the server state

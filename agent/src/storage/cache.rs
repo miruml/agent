@@ -125,9 +125,7 @@ where
         let config_file = self.cache_entry_file(&entry.key);
         config_file
             .write_json(
-                &entry,
-                overwrite, 
-                true, // important that atomic writes are used here
+                &entry, overwrite, true, // important that atomic writes are used here
             )
             .await
             .map_err(|e| {
@@ -141,12 +139,8 @@ where
 
     async fn write(&self, key: K, value: V, overwrite: bool) -> Result<(), StorageErr> {
         // if the entry already exists, keep the original created_at time
-        let (created_at, last_accessed) = match self.read_entry_optional(
-            &key, false
-        ).await? {
-            Some(existing_entry) => {
-                (existing_entry.created_at, Utc::now())
-            }
+        let (created_at, last_accessed) = match self.read_entry_optional(&key, false).await? {
+            Some(existing_entry) => (existing_entry.created_at, Utc::now()),
             None => {
                 let now = Utc::now();
                 (now, now)
@@ -189,9 +183,10 @@ where
         }
 
         info!(
-            "Pruning cache {} from {:?} entries to {:?} entries...", 
+            "Pruning cache {} from {:?} entries to {:?} entries...",
             std::any::type_name::<V>(),
-            size, max_size
+            size,
+            max_size
         );
 
         // prune the invalid entries first
@@ -329,18 +324,25 @@ where
                     }
                     break;
                 }
-                WorkerCommand::ReadEntryOptional { key, update_last_accessed, respond_to } => {
-                    let result = self.cache.read_entry_optional(
-                        &key, update_last_accessed
-                    ).await;
+                WorkerCommand::ReadEntryOptional {
+                    key,
+                    update_last_accessed,
+                    respond_to,
+                } => {
+                    let result = self
+                        .cache
+                        .read_entry_optional(&key, update_last_accessed)
+                        .await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to read optional cache entry: {:?}", e);
                     }
                 }
-                WorkerCommand::ReadEntry { key, update_last_accessed, respond_to } => {
-                    let result = self.cache.read_entry(
-                        &key, update_last_accessed
-                    ).await;
+                WorkerCommand::ReadEntry {
+                    key,
+                    update_last_accessed,
+                    respond_to,
+                } => {
+                    let result = self.cache.read_entry(&key, update_last_accessed).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to read cache entry: {:?}", e);
                     }
@@ -444,7 +446,8 @@ where
             .send(WorkerCommand::ReadEntryOptional {
                 key,
                 update_last_accessed,
-                respond_to: send })
+                respond_to: send,
+            })
             .await
             .map_err(|e| {
                 StorageErr::SendActorMessageErr(SendActorMessageErr {
@@ -460,7 +463,8 @@ where
         })?
     }
 
-    pub async fn read_entry(&self,
+    pub async fn read_entry(
+        &self,
         key: K,
         update_last_accessed: bool,
     ) -> Result<CacheEntry<K, V>, StorageErr> {
@@ -469,7 +473,8 @@ where
             .send(WorkerCommand::ReadEntry {
                 key,
                 update_last_accessed,
-                respond_to: send })
+                respond_to: send,
+            })
             .await
             .map_err(|e| {
                 StorageErr::SendActorMessageErr(SendActorMessageErr {

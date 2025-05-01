@@ -16,7 +16,11 @@ fn main() {
         .expect("Failed to execute git rev-parse")
         .stdout;
     let commit_hash = String::from_utf8(commit_hash).expect("Invalid UTF-8 in git output");
-    println!("cargo:rustc-env={}={}", GIT_COMMIT_HASH_KEY, commit_hash.trim());
+    println!(
+        "cargo:rustc-env={}={}",
+        GIT_COMMIT_HASH_KEY,
+        commit_hash.trim()
+    );
 
     // Get the latest tag
     let release_tag = Command::new("git")
@@ -25,5 +29,9 @@ fn main() {
         .expect("Failed to execute git describe")
         .stdout;
     let release_tag = String::from_utf8(release_tag).expect("Invalid UTF-8 in git output");
-    println!("cargo:rustc-env={}={}", GIT_RELEASE_TAG_KEY, release_tag.trim());
+    println!(
+        "cargo:rustc-env={}={}",
+        GIT_RELEASE_TAG_KEY,
+        release_tag.trim()
+    );
 }

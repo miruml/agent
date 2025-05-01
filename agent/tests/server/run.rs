@@ -6,15 +6,15 @@ use config_agent::filesys::{dir::Dir, file::File, path::PathExt};
 use config_agent::server::run::{run, RunServerOptions};
 use config_agent::storage::{
     agent::Agent,
-    digests::{ConfigSchemaDigests, ConfigSchemaDigestCache},
     concrete_configs::{ConcreteConfig, ConcreteConfigCache, ConcreteConfigCacheKey},
+    digests::{ConfigSchemaDigestCache, ConfigSchemaDigests},
     layout::StorageLayout,
 };
 
 // external crates
 use chrono::Utc;
-use tokio::time::Duration;
 use serde_json::json;
+use tokio::time::Duration;
 
 async fn prepare_valid_server_storage(dir: Dir) {
     let layout = StorageLayout::new(dir);
@@ -150,14 +150,17 @@ async fn prune_config_schema_digest_cache() {
     let cache_dir = layout.config_schema_digest_cache();
     let (cache, _) = ConfigSchemaDigestCache::spawn(cache_dir.clone());
     for i in 0..10 {
-        cache.write(
-            format!("test{}", i),
-            ConfigSchemaDigests {
-                raw: format!("test{}", i),
-                resolved: format!("test{}", i),
-            },
-            false,
-        ).await.unwrap();
+        cache
+            .write(
+                format!("test{}", i),
+                ConfigSchemaDigests {
+                    raw: format!("test{}", i),
+                    resolved: format!("test{}", i),
+                },
+                false,
+            )
+            .await
+            .unwrap();
     }
 
     // run the server
@@ -194,22 +197,25 @@ async fn prune_concrete_config_cache() {
     let cache_dir = layout.concrete_config_cache();
     let (cache, _) = ConcreteConfigCache::spawn(cache_dir.clone());
     for i in 0..10 {
-        cache.write(
-            ConcreteConfigCacheKey {
-                config_slug: format!("test{}", i),
-                config_schema_digest: format!("test{}", i),
-            },
-            ConcreteConfig {
-                id: format!("test{}", i),
-                created_at: Utc::now().to_rfc3339(),
-                client_id: "test".to_string(),
-                config_schema_id: format!("test{}", i),
-                concrete_config: json!({ "test": i }),
-                config_slug: format!("test{}", i),
-                config_schema_digest: format!("test{}", i),
-            },
-            false,
-        ).await.unwrap();
+        cache
+            .write(
+                ConcreteConfigCacheKey {
+                    config_slug: format!("test{}", i),
+                    config_schema_digest: format!("test{}", i),
+                },
+                ConcreteConfig {
+                    id: format!("test{}", i),
+                    created_at: Utc::now().to_rfc3339(),
+                    client_id: "test".to_string(),
+                    config_schema_id: format!("test{}", i),
+                    concrete_config: json!({ "test": i }),
+                    config_slug: format!("test{}", i),
+                    config_schema_digest: format!("test{}", i),
+                },
+                false,
+            )
+            .await
+            .unwrap();
     }
 
     // run the server

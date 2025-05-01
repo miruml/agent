@@ -3,11 +3,7 @@ use std::time::Duration;
 
 // internal crates
 use crate::errors::{
-    DialoguerErr, 
-    InstallerCryptErr,
-    InstallerErr,
-    InstallerFileSysErr,
-    InstallerHTTPErr,
+    DialoguerErr, InstallerCryptErr, InstallerErr, InstallerFileSysErr, InstallerHTTPErr,
     InstallerStorageErr,
 };
 use crate::{utils, utils::Colors};
@@ -44,10 +40,7 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
     }
 
     // walks user through the installation process
-    pub async fn install(
-        &mut self,
-        backend_base_url: &str,
-    ) -> Result<(), InstallerErr> {
+    pub async fn install(&mut self, backend_base_url: &str) -> Result<(), InstallerErr> {
         // setup the storage so that the agent can authenticate its keys and such
         let agent = Agent {
             activated: false,

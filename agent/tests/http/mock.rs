@@ -5,8 +5,8 @@ use config_agent::http::errors::HTTPErr;
 use config_agent::http::prelude::*;
 use openapi_client::models::{
     ActivateClientRequest, BackendConcreteConfig, Client, HashSchemaSerializedRequest,
-    IssueClientTokenRequest, TokenResponse, RefreshLatestConcreteConfigRequest,
-    SchemaDigestResponse,
+    IssueClientTokenRequest, RefreshLatestConcreteConfigRequest, SchemaDigestResponse,
+    TokenResponse,
 };
 
 // external crates
