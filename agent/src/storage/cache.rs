@@ -19,7 +19,7 @@ use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
 use tracing::{error, info};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct CacheEntry<K, V>
 where
     K: ToString + Serialize,
@@ -27,21 +27,8 @@ where
 {
     pub key: K,
     pub value: V,
+    pub created_at: DateTime<Utc>,
     pub last_accessed: DateTime<Utc>,
-}
-
-impl<K, V> CacheEntry<K, V>
-where
-    K: ToString + Serialize + DeserializeOwned,
-    V: Serialize + DeserializeOwned,
-{
-    pub fn new(key: K, value: V) -> Self {
-        Self {
-            key,
-            value,
-            last_accessed: Utc::now(),
-        }
-    }
 }
 
 // ========================== SINGLE-THREADED IMPLEMENTATION ======================== //
@@ -74,13 +61,18 @@ where
         self.dir.file(&filename)
     }
 
-    async fn read_entry_optional(&self, key: &K) -> Result<Option<CacheEntry<K, V>>, StorageErr> {
+    async fn read_entry_optional(
+        &self,
+        key: &K,
+        update_last_accessed: bool,
+    ) -> Result<Option<CacheEntry<K, V>>, StorageErr> {
         let config_file = self.cache_entry_file(key);
         if !config_file.exists() {
             return Ok(None);
         }
 
-        let entry = config_file
+        // read the entry
+        let mut entry = config_file
             .read_json::<CacheEntry<K, V>>()
             .await
             .map_err(|e| {
@@ -89,11 +81,21 @@ where
                     trace: trace!(),
                 })
             })?;
+
+        // update the last accessed time
+        if update_last_accessed {
+            self.update_last_accessed(&mut entry).await?;
+        }
+
         Ok(Some(entry))
     }
 
-    async fn read_entry(&self, key: &K) -> Result<CacheEntry<K, V>, StorageErr> {
-        let result = self.read_entry_optional(key).await?;
+    async fn read_entry(
+        &self,
+        key: &K,
+        update_last_accessed: bool,
+    ) -> Result<CacheEntry<K, V>, StorageErr> {
+        let result = self.read_entry_optional(key, update_last_accessed).await?;
         match result {
             Some(entry) => Ok(entry),
             None => Err(StorageErr::CacheElementNotFound(CacheElementNotFound {
@@ -104,7 +106,7 @@ where
     }
 
     async fn read_optional(&self, key: &K) -> Result<Option<V>, StorageErr> {
-        let entry = self.read_entry_optional(key).await?;
+        let entry = self.read_entry_optional(key, true).await?;
         match entry {
             Some(entry) => Ok(Some(entry.value)),
             None => Ok(None),
@@ -112,17 +114,20 @@ where
     }
 
     async fn read(&self, key: &K) -> Result<V, StorageErr> {
-        Ok(self.read_entry(key).await?.value)
+        Ok(self.read_entry(key, true).await?.value)
     }
 
-    async fn write(&self, key: K, value: V, overwrite: bool) -> Result<(), StorageErr> {
-        let config_file = self.cache_entry_file(&key);
-        // important that atomic writes are used here
-        let entry = CacheEntry::new(key, value);
+    async fn write_entry(
+        &self,
+        entry: &CacheEntry<K, V>,
+        overwrite: bool,
+    ) -> Result<(), StorageErr> {
+        let config_file = self.cache_entry_file(&entry.key);
         config_file
             .write_json(
-                &entry, overwrite, // important that atomic writes are used here
-                true,
+                &entry,
+                overwrite, 
+                true, // important that atomic writes are used here
             )
             .await
             .map_err(|e| {
@@ -131,6 +136,37 @@ where
                     trace: trace!(),
                 })
             })?;
+        Ok(())
+    }
+
+    async fn write(&self, key: K, value: V, overwrite: bool) -> Result<(), StorageErr> {
+        // if the entry already exists, keep the original created_at time
+        let (created_at, last_accessed) = match self.read_entry_optional(
+            &key, false
+        ).await? {
+            Some(existing_entry) => {
+                (existing_entry.created_at, Utc::now())
+            }
+            None => {
+                let now = Utc::now();
+                (now, now)
+            }
+        };
+        let entry = CacheEntry {
+            key,
+            value,
+            created_at,
+            last_accessed,
+        };
+
+        // write the entry
+        self.write_entry(&entry, overwrite).await?;
+        Ok(())
+    }
+
+    async fn update_last_accessed(&self, entry: &mut CacheEntry<K, V>) -> Result<(), StorageErr> {
+        entry.last_accessed = Utc::now();
+        self.write_entry(entry, true).await?;
         Ok(())
     }
 
@@ -224,6 +260,16 @@ where
     K: Send + Sync + ToString + Serialize + DeserializeOwned,
     V: Send + Sync + Serialize + DeserializeOwned,
 {
+    ReadEntryOptional {
+        key: K,
+        update_last_accessed: bool,
+        respond_to: oneshot::Sender<Result<Option<CacheEntry<K, V>>, StorageErr>>,
+    },
+    ReadEntry {
+        key: K,
+        update_last_accessed: bool,
+        respond_to: oneshot::Sender<Result<CacheEntry<K, V>, StorageErr>>,
+    },
     ReadOptional {
         key: K,
         respond_to: oneshot::Sender<Result<Option<V>, StorageErr>>,
@@ -273,6 +319,22 @@ where
                         error!("Actor failed to send shutdown response: {:?}", e);
                     }
                     break;
+                }
+                WorkerCommand::ReadEntryOptional { key, update_last_accessed, respond_to } => {
+                    let result = self.cache.read_entry_optional(
+                        &key, update_last_accessed
+                    ).await;
+                    if let Err(e) = respond_to.send(result) {
+                        error!("Actor failed to read optional cache entry: {:?}", e);
+                    }
+                }
+                WorkerCommand::ReadEntry { key, update_last_accessed, respond_to } => {
+                    let result = self.cache.read_entry(
+                        &key, update_last_accessed
+                    ).await;
+                    if let Err(e) = respond_to.send(result) {
+                        error!("Actor failed to read cache entry: {:?}", e);
+                    }
                 }
                 WorkerCommand::ReadOptional { key, respond_to } => {
                     let result = self.cache.read_optional(&key).await;
@@ -361,6 +423,57 @@ where
         })??;
         info!("{} cache shutdown complete", std::any::type_name::<V>());
         Ok(())
+    }
+
+    pub async fn read_entry_optional(
+        &self,
+        key: K,
+        update_last_accessed: bool,
+    ) -> Result<Option<CacheEntry<K, V>>, StorageErr> {
+        let (send, recv) = oneshot::channel();
+        self.sender
+            .send(WorkerCommand::ReadEntryOptional {
+                key,
+                update_last_accessed,
+                respond_to: send })
+            .await
+            .map_err(|e| {
+                StorageErr::SendActorMessageErr(SendActorMessageErr {
+                    source: Box::new(e),
+                    trace: trace!(),
+                })
+            })?;
+        recv.await.map_err(|e| {
+            StorageErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+                source: Box::new(e),
+                trace: trace!(),
+            })
+        })?
+    }
+
+    pub async fn read_entry(&self,
+        key: K,
+        update_last_accessed: bool,
+    ) -> Result<CacheEntry<K, V>, StorageErr> {
+        let (send, recv) = oneshot::channel();
+        self.sender
+            .send(WorkerCommand::ReadEntry {
+                key,
+                update_last_accessed,
+                respond_to: send })
+            .await
+            .map_err(|e| {
+                StorageErr::SendActorMessageErr(SendActorMessageErr {
+                    source: Box::new(e),
+                    trace: trace!(),
+                })
+            })?;
+        recv.await.map_err(|e| {
+            StorageErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+                source: Box::new(e),
+                trace: trace!(),
+            })
+        })?
     }
 
     pub async fn read_optional(&self, key: K) -> Result<Option<V>, StorageErr> {

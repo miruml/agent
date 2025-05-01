@@ -89,7 +89,7 @@ pub mod send {
         async fn network_connection_error() {
             let http_client = HTTPClient::new("doesntmatter").await;
             let request = http_client
-                .build_get_request("http://localhost:8080", Duration::from_secs(1), None)
+                .build_get_request("http://localhost:5454", Duration::from_secs(1), None)
                 .unwrap();
             let result = http_client.send(request.0, &request.1).await.unwrap_err();
             assert!(result.is_network_connection_error());
@@ -276,7 +276,7 @@ pub mod send_cached {
         async fn network_connection_error() {
             let http_client = HTTPClient::new("doesntmatter").await;
             let request = http_client
-                .build_get_request("http://localhost:8080", Duration::from_secs(1), None)
+                .build_get_request("http://localhost:5454", Duration::from_secs(1), None)
                 .unwrap();
             let result = http_client
                 .send_cached("test".to_string(), request.0, &request.1)

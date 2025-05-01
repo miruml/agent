@@ -4,12 +4,13 @@ use std::path::PathBuf;
 // internal crates
 use config_agent::filesys::{dir::Dir, path::PathExt};
 use config_agent::storage::{
+    cache::CacheEntry,
     digests::{ConfigSchemaDigestCache, ConfigSchemaDigests},
     errors::StorageErr,
-    layout::StorageLayout,
 };
 
 // external crates
+use chrono::Utc;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, trace, warn};
 
@@ -43,6 +44,176 @@ pub mod shutdown {
     }
 }
 
+pub mod read_entry_optional {
+    use super::*;
+
+    #[tokio::test]
+    async fn doesnt_exist() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
+        let key = "1234567890".to_string();
+        let read_entry = cache.read_entry_optional(
+            key.clone(),
+            false
+        ).await.unwrap();
+        assert_eq!(read_entry, None);
+    }
+
+    #[tokio::test]
+    async fn update_last_accessed_false() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
+        let digests = ConfigSchemaDigests {
+            raw: "1234567890".to_string(),
+            resolved: "1234567890".to_string(),
+        };
+        let key = "1234567890".to_string();
+        let before_write = Utc::now();
+        cache
+            .write(key.clone(), digests.clone(), false)
+            .await
+            .unwrap();
+        let before_read = Utc::now();
+        let read_entry = cache.read_entry_optional(
+            key.clone(),
+            true
+        ).await.unwrap().unwrap();
+
+        // check the timestamps
+        assert!(read_entry.created_at > before_write);
+        assert!(read_entry.last_accessed > read_entry.created_at);
+        assert!(read_entry.last_accessed > before_read);
+
+        // check the values
+        let expected_entry = CacheEntry {
+            key,
+            value: digests,
+            created_at: read_entry.created_at,
+            last_accessed: read_entry.last_accessed,
+        };
+        assert_eq!(read_entry, expected_entry);
+    }
+
+    #[tokio::test]
+    async fn update_last_accessed_true() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
+        let digests = ConfigSchemaDigests {
+            raw: "1234567890".to_string(),
+            resolved: "1234567890".to_string(),
+        };
+        let key = "1234567890".to_string();
+        let before_write = Utc::now();
+        cache
+            .write(key.clone(), digests.clone(), false)
+            .await
+            .unwrap();
+        let read_entry = cache.read_entry_optional(
+            key.clone(),
+            false 
+        ).await.unwrap().unwrap();
+
+        // check the timestamps
+        assert!(read_entry.created_at > before_write);
+        assert_eq!(read_entry.last_accessed, read_entry.created_at);
+
+        // check the values
+        let expected_entry = CacheEntry {
+            key,
+            value: digests,
+            created_at: read_entry.created_at,
+            last_accessed: read_entry.last_accessed,
+        };
+        assert_eq!(read_entry, expected_entry);
+    }
+}
+
+pub mod read_entry {
+    use super::*;
+
+    #[tokio::test]
+    async fn doesnt_exist() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
+        assert!(matches!(
+            cache.read_entry(
+                "1234567890".to_string(),
+                false
+            ).await.unwrap_err(),
+            StorageErr::CacheElementNotFound { .. }
+        ));
+    }
+
+    #[tokio::test]
+    async fn update_last_accessed_false() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
+        let digests = ConfigSchemaDigests {
+            raw: "1234567890".to_string(),
+            resolved: "1234567890".to_string(),
+        };
+        let key = "1234567890".to_string();
+        let before_write = Utc::now();
+        cache
+            .write(key.clone(), digests.clone(), false)
+            .await
+            .unwrap();
+        let before_read = Utc::now();
+        let read_entry = cache.read_entry(
+            key.clone(),
+            true
+        ).await.unwrap();
+
+        // check the timestamps
+        assert!(read_entry.created_at > before_write);
+        assert!(read_entry.last_accessed > read_entry.created_at);
+        assert!(read_entry.last_accessed > before_read);
+
+        // check the values
+        let expected_entry = CacheEntry {
+            key,
+            value: digests,
+            created_at: read_entry.created_at,
+            last_accessed: read_entry.last_accessed,
+        };
+        assert_eq!(read_entry, expected_entry);
+    }
+
+    #[tokio::test]
+    async fn update_last_accessed_true() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
+        let digests = ConfigSchemaDigests {
+            raw: "1234567890".to_string(),
+            resolved: "1234567890".to_string(),
+        };
+        let key = "1234567890".to_string();
+        let before_write = Utc::now();
+        cache
+            .write(key.clone(), digests.clone(), false)
+            .await
+            .unwrap();
+        let read_entry = cache.read_entry(
+            key.clone(),
+            false 
+        ).await.unwrap();
+
+        // check the timestamps
+        assert!(read_entry.created_at > before_write);
+        assert_eq!(read_entry.last_accessed, read_entry.created_at);
+
+        // check the values
+        let expected_entry = CacheEntry {
+            key,
+            value: digests,
+            created_at: read_entry.created_at,
+            last_accessed: read_entry.last_accessed,
+        };
+        assert_eq!(read_entry, expected_entry);
+    }
+
+}
+
 pub mod read_optional {
     use super::*;
 
@@ -68,8 +239,18 @@ pub mod read_optional {
             .write(key.clone(), digests.clone(), false)
             .await
             .unwrap();
+        let before_read = Utc::now();
         let read_digests = cache.read_optional(key.clone()).await.unwrap().unwrap();
         assert_eq!(read_digests, digests);
+
+        // check the last accessed time was properly set
+        let after_read= Utc::now();
+        let entry = cache.read_entry(
+            key.clone(),
+            false
+        ).await.unwrap();
+        assert!(entry.last_accessed > before_read);
+        assert!(entry.last_accessed < after_read);
     }
 }
 
@@ -101,8 +282,18 @@ pub mod read {
             .unwrap();
 
         // reading the digests should return the digests
+        let before_read = Utc::now();
         let read_digests = cache.read(key.clone()).await.unwrap();
         assert_eq!(read_digests, digests);
+
+        // check the last accessed time was properly set
+        let after_read= Utc::now();
+        let entry = cache.read_entry(
+            key.clone(),
+            false
+        ).await.unwrap();
+        assert!(entry.last_accessed > before_read);
+        assert!(entry.last_accessed < after_read);
     }
 }
 
@@ -117,6 +308,7 @@ pub mod write {
             raw: "1234567890".to_string(),
             resolved: "1234567890".to_string(),
         };
+        let before_write = Utc::now();
         let key = "1234567890".to_string();
         cache
             .write(key.clone(), digests.clone(), false)
@@ -127,8 +319,12 @@ pub mod write {
         assert!(dir.exists());
 
         // reading the digests should return the digests
-        let read_digests = cache.read(key.clone()).await.unwrap();
-        assert_eq!(read_digests, digests);
+        let read_entry = cache.read_entry(key.clone(), false).await.unwrap();
+        assert_eq!(read_entry.value, digests);
+
+        // check the timestamps
+        assert!(read_entry.created_at > before_write);
+        assert_eq!(read_entry.last_accessed, read_entry.created_at);
     }
 
     #[tokio::test]
@@ -140,6 +336,7 @@ pub mod write {
             resolved: "1234567890".to_string(),
         };
         let key = "1234567890".to_string();
+        let before_write = Utc::now();
         cache
             .write(key.clone(), digests.clone(), true)
             .await
@@ -149,8 +346,12 @@ pub mod write {
         assert!(dir.exists());
 
         // reading the digests should return the digests
-        let read_digests = cache.read(key.clone()).await.unwrap();
-        assert_eq!(read_digests, digests);
+        let read_entry = cache.read_entry(key.clone(), false).await.unwrap();
+        assert_eq!(read_entry.value, digests);
+
+        // check the timestamps
+        assert!(read_entry.created_at > before_write);
+        assert_eq!(read_entry.last_accessed, read_entry.created_at);
     }
 
     #[tokio::test]
@@ -186,6 +387,7 @@ pub mod write {
             resolved: "1234567890".to_string(),
         };
         let key = "1234567890".to_string();
+        let before_creation = Utc::now();
         cache
             .write(key.clone(), digests.clone(), false)
             .await
@@ -198,30 +400,12 @@ pub mod write {
             .unwrap();
 
         // reading the digests should return the digests
-        let read_digests = cache.read(key.clone()).await.unwrap();
-        assert_eq!(read_digests, digests);
-    }
+        let read_entry = cache.read_entry(key.clone(), false).await.unwrap();
+        assert_eq!(read_entry.value, digests);
 
-    #[tokio::test]
-    #[ignore]
-    async fn sandbox() {
-        let layout = StorageLayout::default();
-        let dir = layout.config_schema_digest_cache();
-        let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
-        let raw_digest = "47d47a5be146128845c5c7889707f65cc7356587662221289eb09aacdf05a7ea";
-        let digests = ConfigSchemaDigests {
-            raw: raw_digest.to_string(),
-            resolved: "resolved-digest".to_string(),
-        };
-
-        cache
-            .write(raw_digest.to_string(), digests.clone(), false)
-            .await
-            .unwrap();
-
-        // reading the digests should return the digests
-        let read_digests = cache.read(raw_digest.to_string()).await.unwrap();
-        assert_eq!(read_digests, digests);
+        // check the timestamps
+        assert!(read_entry.created_at > before_creation);
+        assert!(read_entry.last_accessed > read_entry.created_at);
     }
 }
 
