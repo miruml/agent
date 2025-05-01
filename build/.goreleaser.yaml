@@ -52,7 +52,7 @@ nfpms:
     priority: "extra"
     dependencies:
       - systemd
-      - pkgconf
+      - pkg-config | pkgconf # pkgconf is the updated version of pkg-config
       - libc6
 
     contents:
