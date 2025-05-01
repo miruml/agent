@@ -5,7 +5,7 @@ use config_agent::http::errors::HTTPErr;
 use config_agent::http::prelude::*;
 use openapi_client::models::{
     ActivateClientRequest, BackendConcreteConfig, Client, HashSchemaSerializedRequest,
-    IssueClientTokenRequest, IssueClientTokenResponse, RefreshLatestConcreteConfigRequest,
+    IssueClientTokenRequest, TokenResponse, RefreshLatestConcreteConfigRequest,
     SchemaDigestResponse,
 };
 
@@ -15,15 +15,14 @@ use async_trait::async_trait;
 // ================================== AUTH EXT ===================================== //
 pub struct MockAuthClient {
     pub activate_client_result: Box<dyn Fn() -> Result<Client, HTTPErr> + Send + Sync>,
-    pub issue_client_token_result:
-        Box<dyn Fn() -> Result<IssueClientTokenResponse, HTTPErr> + Send + Sync>,
+    pub issue_client_token_result: Box<dyn Fn() -> Result<TokenResponse, HTTPErr> + Send + Sync>,
 }
 
 impl Default for MockAuthClient {
     fn default() -> Self {
         Self {
             activate_client_result: Box::new(|| Ok(Client::default())),
-            issue_client_token_result: Box::new(|| Ok(IssueClientTokenResponse::default())),
+            issue_client_token_result: Box::new(|| Ok(TokenResponse::default())),
         }
     }
 }
@@ -43,7 +42,7 @@ impl ClientAuthExt for MockAuthClient {
         &self,
         _: &str,
         _: &IssueClientTokenRequest,
-    ) -> Result<IssueClientTokenResponse, HTTPErr> {
+    ) -> Result<TokenResponse, HTTPErr> {
         (self.issue_client_token_result)()
     }
 }

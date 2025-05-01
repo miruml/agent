@@ -1,5 +1,8 @@
+// standard crates
+use std::path::PathBuf;
+
 // internal crates
-use config_agent::filesys::dir::Dir;
+use config_agent::filesys::{dir::Dir, file::File};
 use config_agent::server::run::{run, RunServerOptions};
 use config_agent::storage::{agent::Agent, layout::StorageLayout};
 
@@ -47,6 +50,7 @@ async fn max_runtime_reached() {
     let options = RunServerOptions {
         layout: StorageLayout::new(dir),
         max_runtime: Duration::from_millis(100),
+        socket_file: File::new(PathBuf::from("/tmp").join("miru.sock")),
         ..Default::default()
     };
 
@@ -70,6 +74,7 @@ async fn idle_timeout_reached() {
         layout: StorageLayout::new(dir),
         idle_timeout: Duration::from_millis(100),
         idle_timeout_poll_interval: Duration::from_millis(10),
+        socket_file: File::new(PathBuf::from("/tmp").join("miru.sock")),
         ..Default::default()
     };
 
@@ -91,6 +96,7 @@ async fn shutdown_signal_received() {
     prepare_valid_server_storage(dir.clone()).await;
     let options = RunServerOptions {
         layout: StorageLayout::new(dir),
+        socket_file: File::new(PathBuf::from("/tmp").join("miru.sock")),
         ..Default::default()
     };
 

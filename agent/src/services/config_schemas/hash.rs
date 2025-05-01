@@ -12,17 +12,17 @@ use openapi_server::models::HashSerializedConfigSchemaFormat as ServerFormat;
 use tracing::debug;
 
 pub trait HashSchemaArgsI {
-    fn schema(&self) -> &str;
+    fn schema(&self) -> &Vec<u8>;
     fn format(&self) -> &ServerFormat;
 }
 
 pub struct HashSchemaArgs {
-    pub schema: String,
+    pub schema: Vec<u8>,
     pub format: ServerFormat,
 }
 
 impl HashSchemaArgsI for HashSchemaArgs {
-    fn schema(&self) -> &str {
+    fn schema(&self) -> &Vec<u8> {
         &self.schema
     }
 
@@ -38,7 +38,7 @@ pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
     token: &str,
 ) -> Result<String, ServiceErr> {
     // raw digest of the schema (but we need the digest of the resolved schema)
-    let raw_digest = sha256::hash_str(args.schema());
+    let raw_digest = sha256::hash_bytes(args.schema());
     debug!("Schema raw digest: {}", raw_digest);
 
     // check for the raw digest in the storage for the known schema digest
@@ -55,7 +55,7 @@ pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
 
     // if not found, send the hash request to the server
     let hash_request = ClientHashSchemaSerializedRequest {
-        schema: args.schema().to_string(),
+        schema: args.schema().to_vec(),
         format: server_format_to_client_format(args.format()),
     };
     let digest_response = http_client

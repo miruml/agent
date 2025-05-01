@@ -40,7 +40,7 @@ Name | Type | Description  | Required | Notes
 
 ## issue_client_token
 
-> models::IssueClientTokenResponse issue_client_token(client_id, issue_client_token_request)
+> models::TokenResponse issue_client_token(client_id, issue_client_token_request)
 Issue a client token
 
 ### Parameters
@@ -53,7 +53,7 @@ Name | Type | Description  | Required | Notes
 
 ### Return type
 
-[**models::IssueClientTokenResponse**](IssueClientTokenResponse.md)
+[**models::TokenResponse**](TokenResponse.md)
 
 ### Authorization
 

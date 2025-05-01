@@ -2,7 +2,7 @@
 use crate::http::client::HTTPClient;
 use crate::http::errors::HTTPErr;
 use openapi_client::models::{
-    ActivateClientRequest, Client, IssueClientTokenRequest, IssueClientTokenResponse,
+    ActivateClientRequest, Client, IssueClientTokenRequest, TokenResponse,
 };
 
 // external crates
@@ -21,7 +21,7 @@ pub trait ClientAuthExt: Send + Sync {
         &self,
         client_id: &str,
         payload: &IssueClientTokenRequest,
-    ) -> Result<IssueClientTokenResponse, HTTPErr>;
+    ) -> Result<TokenResponse, HTTPErr>;
 }
 
 impl HTTPClient {
@@ -64,7 +64,7 @@ impl ClientAuthExt for HTTPClient {
         &self,
         client_id: &str,
         payload: &IssueClientTokenRequest,
-    ) -> Result<IssueClientTokenResponse, HTTPErr> {
+    ) -> Result<TokenResponse, HTTPErr> {
         let url = format!("{}/issue_token", self.client_url(client_id));
         let (request, context) = self.build_post_request(
             &url,
@@ -78,7 +78,7 @@ impl ClientAuthExt for HTTPClient {
         let text_resp = self.handle_response(http_resp, &context).await?;
 
         // parse the response
-        self.parse_json_response_text::<IssueClientTokenResponse>(text_resp, &context)
+        self.parse_json_response_text::<TokenResponse>(text_resp, &context)
             .await
     }
 }

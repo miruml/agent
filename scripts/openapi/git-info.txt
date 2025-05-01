@@ -1,4 +1,4 @@
 Repository Name: git@github.com:miruml/openapi.git
 Branch Name: configs
-Commit Hash: e2eb9cd5f1977bef9c6b0b17b4e619c41c7d0181
-Commit Message: chore: regen backend-agent
+Commit Hash: c15557e8340b5949b3dbffde22049597d772a778
+Commit Message: fix(config_schemas): use base64 encoding for hashing serialized config schemas

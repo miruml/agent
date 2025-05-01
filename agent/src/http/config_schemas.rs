@@ -33,7 +33,7 @@ impl ConfigSchemasExt for HTTPClient {
         )?;
 
         // send the request (with caching)
-        let key = format!("{}:{}", url, sha256::hash_str(&payload.schema));
+        let key = format!("{}:{}", url, sha256::hash_bytes(&payload.schema));
         let response = self.send_cached(key, request, &context).await?.0;
 
         // parse the response

@@ -48,7 +48,7 @@ pub mod errors {
         })
         .to_string();
         let args = hash::HashSchemaArgs {
-            schema,
+            schema: schema.as_bytes().to_vec(),
             format: HashSerializedConfigSchemaFormat::HASH_SERIALIZED_CONFIG_SCHEMA_FORMAT_JSON,
         };
 
@@ -90,7 +90,7 @@ pub mod success {
         let raw_digest = sha256::hash_str(&schema);
         let resolved_digest = "resolved_digest";
         let args = hash::HashSchemaArgs {
-            schema,
+            schema: schema.as_bytes().to_vec(),
             format: HashSerializedConfigSchemaFormat::HASH_SERIALIZED_CONFIG_SCHEMA_FORMAT_JSON,
         };
 
@@ -150,7 +150,7 @@ pub mod success {
         .to_string();
         let raw_digest = sha256::hash_str(&schema);
         let args = hash::HashSchemaArgs {
-            schema,
+            schema: schema.as_bytes().to_vec(),
             format: HashSerializedConfigSchemaFormat::HASH_SERIALIZED_CONFIG_SCHEMA_FORMAT_JSON,
         };
 

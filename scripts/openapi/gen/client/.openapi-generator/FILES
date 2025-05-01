@@ -22,13 +22,13 @@ docs/HashSchemaSerializedRequest.md
 docs/HashSerializedConfigSchemaFormat.md
 docs/IssueClientClaims.md
 docs/IssueClientTokenRequest.md
-docs/IssueClientTokenResponse.md
 docs/PaginatedList.md
 docs/RefreshLatestConcreteConfigRequest.md
 docs/SchemaDigestResponse.md
 docs/Tag.md
 docs/TagList.md
 docs/TagType.md
+docs/TokenResponse.md
 docs/User.md
 docs/Workspace.md
 git_push.sh
@@ -54,7 +54,6 @@ src/models/hash_schema_serialized_request.rs
 src/models/hash_serialized_config_schema_format.rs
 src/models/issue_client_claims.rs
 src/models/issue_client_token_request.rs
-src/models/issue_client_token_response.rs
 src/models/mod.rs
 src/models/paginated_list.rs
 src/models/refresh_latest_concrete_config_request.rs
@@ -62,5 +61,6 @@ src/models/schema_digest_response.rs
 src/models/tag.rs
 src/models/tag_list.rs
 src/models/tag_type.rs
+src/models/token_response.rs
 src/models/user.rs
 src/models/workspace.rs

@@ -20,7 +20,7 @@ use serde_json::json;
 use tracing::error;
 
 impl HashSchemaArgsI for HashSchemaSerializedRequest {
-    fn schema(&self) -> &str {
+    fn schema(&self) -> &Vec<u8> {
         &self.schema
     }
     fn format(&self) -> &HashSerializedConfigSchemaFormat {

@@ -71,7 +71,7 @@ pub async fn activate_client(configuration: &configuration::Configuration, clien
     }
 }
 
-pub async fn issue_client_token(configuration: &configuration::Configuration, client_id: &str, issue_client_token_request: Option<models::IssueClientTokenRequest>) -> Result<models::IssueClientTokenResponse, Error<IssueClientTokenError>> {
+pub async fn issue_client_token(configuration: &configuration::Configuration, client_id: &str, issue_client_token_request: Option<models::IssueClientTokenRequest>) -> Result<models::TokenResponse, Error<IssueClientTokenError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_client_id = client_id;
     let p_issue_client_token_request = issue_client_token_request;
@@ -102,8 +102,8 @@ pub async fn issue_client_token(configuration: &configuration::Configuration, cl
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::IssueClientTokenResponse`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::IssueClientTokenResponse`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::TokenResponse`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::TokenResponse`")))),
         }
     } else {
         let content = resp.text().await?;

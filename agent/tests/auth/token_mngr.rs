@@ -12,7 +12,7 @@ use config_agent::filesys::{dir::Dir, file::File};
 use config_agent::http::errors::{HTTPErr, MockErr};
 use config_agent::storage::token::Token;
 use config_agent::trace;
-use openapi_client::models::IssueClientTokenResponse;
+use openapi_client::models::TokenResponse;
 
 // external crates
 use chrono::{Duration, Utc};
@@ -169,7 +169,7 @@ pub mod refresh_token {
 
         // prepare the mock http client
         let mut mock_http_client = MockAuthClient::default();
-        let expected = IssueClientTokenResponse {
+        let expected = TokenResponse {
             token: "token".to_string(),
             expires_at: Utc::now().to_rfc3339(),
         };
@@ -242,7 +242,7 @@ pub mod refresh_token {
 
         // prepare the mock http client
         let expires_at = Utc::now() + Duration::days(1);
-        let resp = IssueClientTokenResponse {
+        let resp = TokenResponse {
             token: "token".to_string(),
             expires_at: expires_at.to_rfc3339(),
         };
@@ -287,7 +287,7 @@ pub mod refresh_token {
 
         // prepare the mock http client
         let expires_at = Utc::now() + Duration::days(1);
-        let resp = IssueClientTokenResponse {
+        let resp = TokenResponse {
             token: "token".to_string(),
             expires_at: expires_at.to_rfc3339(),
         };
@@ -335,7 +335,7 @@ async fn create_token_manager(dir: &Dir, token: Option<Token>) -> (TokenManager,
 
     // prepare the mock http client
     let expires_at = Utc::now() + Duration::days(1);
-    let resp = IssueClientTokenResponse {
+    let resp = TokenResponse {
         token: "token".to_string(),
         expires_at: expires_at.to_rfc3339(),
     };

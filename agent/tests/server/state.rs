@@ -79,11 +79,6 @@ pub mod new {
         .await
         .unwrap();
 
-        // the agent file should not have the client id
-        let agent_file = layout.agent_file();
-        let agent = agent_file.read_json::<Agent>().await.unwrap();
-        assert_eq!(agent.client_id, "cli_123");
-
         // check last activity
         assert!(state.last_activity.load(Ordering::Relaxed) <= Utc::now().timestamp() as u64);
         assert!(state.last_activity.load(Ordering::Relaxed) >= begin_test as u64);

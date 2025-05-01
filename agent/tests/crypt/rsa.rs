@@ -66,9 +66,11 @@ pub mod gen_key_pair {
         rsa::gen_key_pair(4096, &private_key_file, &public_key_file, true)
             .await
             .unwrap();
-        public_key_file.delete().await.unwrap();
+        assert!(public_key_file.exists());
 
         // private key file exists
+        private_key_file.delete().await.unwrap();
+        public_key_file.delete().await.unwrap();
         private_key_file
             .write_bytes(&[4, 4], true, false)
             .await
@@ -78,7 +80,6 @@ pub mod gen_key_pair {
             .unwrap_err();
 
         assert!(private_key_file.exists());
-        assert!(public_key_file.exists());
     }
 
     #[tokio::test]

@@ -12,7 +12,7 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct IssueClientTokenResponse {
+pub struct TokenResponse {
     /// The token
     #[serde(rename = "token")]
     pub token: String,
@@ -21,9 +21,9 @@ pub struct IssueClientTokenResponse {
     pub expires_at: String,
 }
 
-impl IssueClientTokenResponse {
-    pub fn new(token: String, expires_at: String) -> IssueClientTokenResponse {
-        IssueClientTokenResponse {
+impl TokenResponse {
+    pub fn new(token: String, expires_at: String) -> TokenResponse {
+        TokenResponse {
             token,
             expires_at,
         }

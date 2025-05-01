@@ -1,4 +1,4 @@
-# IssueClientTokenResponse
+# TokenResponse
 
 ## Properties
 
