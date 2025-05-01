@@ -44,7 +44,10 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
     }
 
     // walks user through the installation process
-    pub async fn install(&mut self) -> Result<(), InstallerErr> {
+    pub async fn install(
+        &mut self,
+        backend_base_url: &str,
+    ) -> Result<(), InstallerErr> {
         // setup the storage so that the agent can authenticate its keys and such
         let agent = Agent {
             activated: false,
@@ -65,7 +68,7 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
         let agent = Agent {
             client_id,
             activated: true,
-            ..Default::default()
+            backend_base_url: backend_base_url.to_string(),
         };
         agent_file
             .write_json(&agent, true, true)

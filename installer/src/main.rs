@@ -59,7 +59,7 @@ async fn install() -> Result<(), Box<dyn std::error::Error>> {
     // create and run the installer
     let http_client = HTTPClient::new(backend_url).await;
     let mut installer = Installer::new(StorageLayout::default(), http_client);
-    installer.install().await?;
+    installer.install(backend_url).await?;
 
     drop(guard);
 

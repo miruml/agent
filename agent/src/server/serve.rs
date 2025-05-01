@@ -50,7 +50,7 @@ pub(crate) async fn serve(
             post(handlers::refresh_latest_concrete_config),
         )
         // ============================ CONFIG SCHEMAS ============================== //
-        .route("/v1/config_schemas/hash", post(handlers::hash_schema))
+        .route("/v1/config_schemas/hash/serialized", post(handlers::hash_schema))
         .layer(
             ServiceBuilder::new()
                 // activity middleware
