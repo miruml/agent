@@ -9,7 +9,11 @@ use std::time::{Duration, SystemTime};
 use crate::auth::token_mngr::run_refresh_loop;
 use crate::filesys::file::File;
 use crate::http::client::HTTPClient;
-use crate::server::errors::{JoinHandleErr, ServerErr, ShutdownMngrDuplicateArgErr};
+use crate::server::errors::{
+    JoinHandleErr,
+    ServerErr,
+    ShutdownMngrDuplicateArgErr,
+};
 use crate::server::serve::serve;
 use crate::server::state::ServerState;
 use crate::storage::layout::StorageLayout;
@@ -28,9 +32,16 @@ pub struct ServerComponents {
 }
 
 pub struct RunServerOptions {
+    // host os
     pub layout: StorageLayout,
     pub backend_base_url: String,
     pub socket_file: File,
+
+    // caches
+    pub config_schema_digest_cache_max_size: usize,
+    pub concrete_config_cache_max_size: usize,
+
+    // timing
     pub token_refresh_expiration_threshold: Duration,
     pub token_refresh_cooldown: Duration,
     pub max_runtime: Duration,
@@ -42,9 +53,16 @@ pub struct RunServerOptions {
 impl Default for RunServerOptions {
     fn default() -> Self {
         Self {
+            // host os
             socket_file: File::new("/run/miru/miru.sock"),
             backend_base_url: "https://configs.api.miruml.com/internal/agent/v1".to_string(),
             layout: StorageLayout::default(),
+
+            // caches
+            config_schema_digest_cache_max_size: 1000,
+            concrete_config_cache_max_size: 1000,
+
+            // timing
             token_refresh_expiration_threshold: Duration::from_secs(15 * 60), // 15 minutes
             token_refresh_cooldown: Duration::from_secs(30),
             max_runtime: Duration::from_secs(60 * 15), // 15 minutes
@@ -96,7 +114,15 @@ pub async fn run(
             options.idle_timeout,
             options.idle_timeout_poll_interval,
         ) => {
-            info!("Idle timeout ({:?}) reached, shutting down...", options.idle_timeout);
+            info!("Idle timeout ({:?}) reached", options.idle_timeout);
+            info!("Pruning filesystem cache...");
+            if let Err(e) = state.config_schema_digest_cache.prune(options.config_schema_digest_cache_max_size).await {
+                error!("Failed to prune config schema digest cache: {}", e);
+            }
+            if let Err(e) = state.concrete_config_cache.prune(options.concrete_config_cache_max_size).await {
+                error!("Failed to prune concrete config cache: {}", e);
+            }
+            info!("Shutting down...");
         }
         _ = await_max_runtime(options.max_runtime) => {
             info!("Max runtime ({:?}) reached, shutting down...", options.max_runtime);

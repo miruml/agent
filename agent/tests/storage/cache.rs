@@ -449,6 +449,13 @@ pub mod prune {
     use super::*;
 
     #[tokio::test]
+    async fn cache_does_not_exist() {
+        let dir = Dir::new(PathBuf::from("does_not_exist"));
+        let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());
+        cache.prune(10).await.unwrap();
+    }
+
+    #[tokio::test]
     async fn empty_cache() {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
         let (cache, _) = ConfigSchemaDigestCache::spawn(dir.clone());

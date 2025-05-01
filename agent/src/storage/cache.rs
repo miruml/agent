@@ -188,6 +188,12 @@ where
             return Ok(());
         }
 
+        info!(
+            "Pruning cache {} from {:?} entries to {:?} entries...", 
+            std::any::type_name::<V>(),
+            size, max_size
+        );
+
         // prune the invalid entries first
         self.prune_invalid_entries().await?;
 
@@ -205,6 +211,9 @@ where
     }
 
     async fn size(&self) -> Result<usize, StorageErr> {
+        if !self.dir.exists() {
+            return Ok(0);
+        }
         let files = self.dir.files().await.map_err(|e| {
             StorageErr::FileSysErr(StorageFileSysErr {
                 source: e,
