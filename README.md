@@ -51,7 +51,17 @@ COMING SOON
 
 ## Supported Platforms
 
-- Ubuntu 20.04, 22.04, 24.04 (`x86_64` and `arm64`)
+The Miru agent has been tested and verified to work on the following operating systems:
+
+- Ubuntu 20.04 LTS
+- Ubuntu 22.04 LTS
+- Ubuntu 24.04 LTS
+- NVIDIA Jetson (JetPack 5.1)
+- NVIDIA Jetson (JetPack 6.1)
+- Raspberry Pi OS (64-bit)
+
+Other Linux distributions and versions should also work, but have not been explicitly tested. 
+If you encounter issues on a different platform, please email ben@miruml.com.
 
 ## Uninstallation
 ```bash
@@ -62,3 +72,4 @@ If you'd like to remove configuration files as well you can run
 ```bash
 sudo apt purge miru-agent
 ```
+
