@@ -1,6 +1,7 @@
 #!/bin/sh
 set -e
 
+
 # Configuration
 BINARY_NAME="installer"
 GITHUB_REPO="miruml/agent"
@@ -115,7 +116,12 @@ tar -xzf "$DOWNLOAD_DIR/${BINARY_NAME}.tar.gz" -C "$DOWNLOAD_DIR" ||
 
 # Execute the installer
 cd "$DOWNLOAD_DIR"
-sudo -u miru ./config-agent-installer
+BACKEND_URL=${1:-""}
+if [ -n "$BACKEND_URL" ]; then
+    sudo -u miru ./config-agent-installer "$BACKEND_URL"
+else
+    sudo -u miru ./config-agent-installer
+fi
 cd -
 
 # Remove the downloaded files

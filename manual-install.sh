@@ -11,4 +11,9 @@ echo ""
 echo ""
 echo "Activating the Miru Agent"
 echo "========================="
-curl -fsSL https://raw.githubusercontent.com/miruml/agent/main/activate.sh | sh
+BACKEND_URL=${1:-""}
+if [ -n "$BACKEND_URL" ]; then
+    curl -fsSL https://raw.githubusercontent.com/miruml/agent/main/activate.sh | sh -s -- "$BACKEND_URL"
+else
+    curl -fsSL https://raw.githubusercontent.com/miruml/agent/main/activate.sh | sh
+fi
