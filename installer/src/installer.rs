@@ -20,7 +20,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use tracing::{debug, error, info, warn};
 
 const LANDING_PAGE_URL: &str = "https://miruml.com";
-const MIRU_AUTH_TOKEN_URL: &str = "https://configs.miruml.com/auth/token";
+const MIRU_CLIENTS_PAGE: &str = "https://configs.miruml.com/clients";
 
 type ClientID = String;
 
@@ -120,7 +120,7 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
             utils::format_url(LANDING_PAGE_URL, "Miru")
         );
 
-        println!("To authenticate the miru agent, you'll need to retrieve the authentication token from {} for the client you want to authenticate as.\n", utils::format_url(MIRU_AUTH_TOKEN_URL, MIRU_AUTH_TOKEN_URL));
+        println!("To authenticate the miru agent, you'll need to retrieve the authentication token from {} for the client you want to authenticate as.\n", utils::format_url(MIRU_CLIENTS_PAGE, MIRU_CLIENTS_PAGE));
 
         // prompt user for their json web token
         let token = Input::with_theme(&utils::input_theme())
