@@ -17,3 +17,5 @@ if [ -n "$BACKEND_URL" ]; then
 else
     curl -fsSL https://raw.githubusercontent.com/miruml/agent/main/activate.sh | sh
 fi
+
+exit 0

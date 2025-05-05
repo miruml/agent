@@ -126,3 +126,5 @@ cd -
 
 # Remove the downloaded files
 rm -rf "$DOWNLOAD_DIR"
+
+exit 0

@@ -115,3 +115,5 @@ sudo dpkg -i "$DOWNLOAD_DIR/${DEB_PKG_NAME}.deb" ||
 
 # Remove the downloaded files
 rm -rf "$DOWNLOAD_DIR"
+
+exit 0
