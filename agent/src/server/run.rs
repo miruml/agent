@@ -51,7 +51,7 @@ impl Default for RunServerOptions {
         Self {
             // host os
             socket_file: File::new("/run/miru/miru.sock"),
-            backend_base_url: "https://configs.api.miruml.com/internal/agent/v1".to_string(),
+            backend_base_url: "https://configs.api.miruml.com/agent/v1".to_string(),
             layout: StorageLayout::default(),
 
             // caches

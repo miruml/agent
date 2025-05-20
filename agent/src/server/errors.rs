@@ -13,13 +13,13 @@ use crate::services::errors::ServiceErr;
 use crate::storage::errors::StorageErr;
 
 #[derive(Debug)]
-pub struct MissingClientIDErr {
+pub struct MissingDeviceIDErr {
     pub agent_file_err: Box<FileSysErr>,
     pub jwt_err: Box<CryptErr>,
     pub trace: Box<Trace>,
 }
 
-impl MiruError for MissingClientIDErr {
+impl MiruError for MissingDeviceIDErr {
     fn code(&self) -> Code {
         Code::InternalServerError
     }
@@ -37,9 +37,9 @@ impl MiruError for MissingClientIDErr {
     }
 }
 
-impl fmt::Display for MissingClientIDErr {
+impl fmt::Display for MissingDeviceIDErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "unable to determine client id from the agent file or the token on file: agent file error: {}, jwt error: {}", self.agent_file_err, self.jwt_err)
+        write!(f, "unable to determine device id from the agent file or the token on file: agent file error: {}, jwt error: {}", self.agent_file_err, self.jwt_err)
     }
 }
 
@@ -415,7 +415,7 @@ impl fmt::Display for TimestampConversionErr {
 #[derive(Debug)]
 pub enum ServerErr {
     // server errors
-    MissingClientIDErr(MissingClientIDErr),
+    MissingDeviceIDErr(MissingDeviceIDErr),
     TimestampConversionErr(TimestampConversionErr),
     ShutdownMngrDuplicateArgErr(ShutdownMngrDuplicateArgErr),
 
@@ -437,7 +437,7 @@ pub enum ServerErr {
 macro_rules! forward_error_method {
     ($self:ident, $method:ident $(, $arg:expr)?) => {
         match $self {
-            Self::MissingClientIDErr(e) => e.$method($($arg)?),
+            Self::MissingDeviceIDErr(e) => e.$method($($arg)?),
             Self::TimestampConversionErr(e) => e.$method($($arg)?),
             Self::ShutdownMngrDuplicateArgErr(e) => e.$method($($arg)?),
             Self::AuthErr(e) => e.$method($($arg)?),

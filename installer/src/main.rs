@@ -52,7 +52,7 @@ async fn install() -> Result<(), Box<dyn std::error::Error>> {
     let guard = init(options)?;
 
     // determine the backend url to use for installation
-    let default_backend_url = "https://configs.api.miruml.com/internal/agent/v1".to_string();
+    let default_backend_url = "https://configs.api.miruml.com/agent/v1".to_string();
     let args: Vec<String> = env::args().collect();
     let backend_url = args.get(1).unwrap_or(&default_backend_url);
 

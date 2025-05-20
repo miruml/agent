@@ -11,7 +11,7 @@ use openapi_client::models::RefreshLatestConfigInstanceRequest;
 pub trait ConfigInstancesExt: Send + Sync {
     async fn read_latest_config_instance(
         &self,
-        client_id: &str,
+        device_id: &str,
         config_slug: &str,
         config_schema_digest: &str,
         token: &str,
@@ -33,16 +33,16 @@ impl HTTPClient {
 impl ConfigInstancesExt for HTTPClient {
     async fn read_latest_config_instance(
         &self,
-        client_id: &str,
+        device_id: &str,
         config_slug: &str,
         config_schema_digest: &str,
         token: &str,
     ) -> Result<Option<BackendConfigInstance>, HTTPErr> {
         // build the request
         let url = format!(
-            "{}/latest?client_id={}&config_slug={}&config_schema_digest={}",
+            "{}/latest?device_id={}&config_slug={}&config_schema_digest={}",
             self.config_instances_url(),
-            client_id,
+            device_id,
             config_slug,
             config_schema_digest
         );
@@ -86,13 +86,13 @@ impl ConfigInstancesExt for HTTPClient {
 impl ConfigInstancesExt for Arc<HTTPClient> {
     async fn read_latest_config_instance(
         &self,
-        client_id: &str,
+        device_id: &str,
         config_slug: &str,
         config_schema_digest: &str,
         token: &str,
     ) -> Result<Option<BackendConfigInstance>, HTTPErr> {
         self.as_ref()
-            .read_latest_config_instance(client_id, config_slug, config_schema_digest, token)
+            .read_latest_config_instance(device_id, config_slug, config_schema_digest, token)
             .await
     }
 

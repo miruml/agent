@@ -32,7 +32,7 @@ pub struct ConfigInstance {
     #[serde(rename = "config_instance_id")]
     pub id: String,
     pub created_at: String,
-    pub client_id: String,
+    pub device_id: String,
     pub config_schema_id: String,
     pub config_instance: serde_json::Value,
 

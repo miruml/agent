@@ -34,7 +34,7 @@ pub mod spawn {
 
         // spawn the token manager
         let result = TokenManager::spawn(
-            "client_id".to_string(),
+            "device_id".to_string(),
             Arc::new(mock_http_client),
             token_file,
             File::new("private_key.pem"),
@@ -59,7 +59,7 @@ pub mod spawn {
         let mock_http_client = MockAuthClient::default();
 
         let result = TokenManager::spawn(
-            "client_id".to_string(),
+            "device_id".to_string(),
             Arc::new(mock_http_client),
             token_file,
             private_key_file,
@@ -83,7 +83,7 @@ pub mod spawn {
         let mock_http_client = MockAuthClient::default();
 
         TokenManager::spawn(
-            "client_id".to_string(),
+            "device_id".to_string(),
             Arc::new(mock_http_client),
             token_file,
             private_key_file,
@@ -110,7 +110,7 @@ pub mod shutdown {
 
         let mock_http_client = MockAuthClient::default();
         let (token_mngr, worker_handle) = TokenManager::spawn(
-            "client_id".to_string(),
+            "device_id".to_string(),
             Arc::new(mock_http_client),
             token_file,
             private_key_file,
@@ -139,7 +139,7 @@ pub mod get_token {
         let mock_http_client = MockAuthClient::default();
 
         let (token_mngr, _) = TokenManager::spawn(
-            "client_id".to_string(),
+            "device_id".to_string(),
             Arc::new(mock_http_client),
             token_file,
             private_key_file,
@@ -173,11 +173,11 @@ pub mod refresh_token {
             token: "token".to_string(),
             expires_at: Utc::now().to_rfc3339(),
         };
-        mock_http_client.issue_client_token_result = Box::new(move || Ok(expected.clone()));
+        mock_http_client.issue_device_token_result = Box::new(move || Ok(expected.clone()));
 
         // spawn the token manager
         let (token_mngr, _) = TokenManager::spawn(
-            "client_id".to_string(),
+            "device_id".to_string(),
             Arc::new(mock_http_client),
             token_file,
             private_key_file,
@@ -204,7 +204,7 @@ pub mod refresh_token {
 
         // prepare the mock http client
         let mock_http_client = MockAuthClient {
-            issue_client_token_result: Box::new(move || {
+            issue_device_token_result: Box::new(move || {
                 Err(HTTPErr::MockErr(MockErr {
                     is_network_connection_error: false,
                     trace: trace!(),
@@ -215,7 +215,7 @@ pub mod refresh_token {
 
         // spawn the token manager
         let (token_mngr, _) = TokenManager::spawn(
-            "client_id".to_string(),
+            "device_id".to_string(),
             Arc::new(mock_http_client),
             token_file,
             private_key_file,
@@ -248,13 +248,13 @@ pub mod refresh_token {
         };
         let resp_clone = resp.clone();
         let mock_http_client = MockAuthClient {
-            issue_client_token_result: Box::new(move || Ok(resp_clone.clone())),
+            issue_device_token_result: Box::new(move || Ok(resp_clone.clone())),
             ..Default::default()
         };
 
         // spawn the token manager
         let (token_mngr, _) = TokenManager::spawn(
-            "client_id".to_string(),
+            "device_id".to_string(),
             Arc::new(mock_http_client),
             token_file,
             private_key_file,
@@ -293,13 +293,13 @@ pub mod refresh_token {
         };
         let resp_clone = resp.clone();
         let mock_http_client = MockAuthClient {
-            issue_client_token_result: Box::new(move || Ok(resp_clone.clone())),
+            issue_device_token_result: Box::new(move || Ok(resp_clone.clone())),
             ..Default::default()
         };
 
         // spawn the token manager
         let (token_mngr, _) = TokenManager::spawn(
-            "client_id".to_string(),
+            "device_id".to_string(),
             Arc::new(mock_http_client),
             cached_token_file,
             private_key_file,
@@ -341,13 +341,13 @@ async fn create_token_manager(dir: &Dir, token: Option<Token>) -> (TokenManager,
     };
     let resp_clone = resp.clone();
     let mock_http_client = MockAuthClient {
-        issue_client_token_result: Box::new(move || Ok(resp_clone.clone())),
+        issue_device_token_result: Box::new(move || Ok(resp_clone.clone())),
         ..Default::default()
     };
 
     // spawn the token manager
     let (token_mngr, worker_handle) = TokenManager::spawn(
-        "client_id".to_string(),
+        "device_id".to_string(),
         Arc::new(mock_http_client),
         cached_token_file,
         private_key_file,

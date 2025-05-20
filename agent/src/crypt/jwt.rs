@@ -5,7 +5,7 @@ use crate::trace;
 // external crates
 use serde::{Deserialize, Serialize};
 
-type ClientID = String;
+type DeviceID = String;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Claims {
@@ -37,13 +37,13 @@ pub fn decode(token: &str) -> Result<Claims, CryptErr> {
     Ok(claims)
 }
 
-pub fn extract_client_id(token: &str) -> Result<ClientID, CryptErr> {
+pub fn extract_device_id(token: &str) -> Result<DeviceID, CryptErr> {
     let claims = decode(token)?;
     Ok(claims.sub)
 }
 
-/// Validate a claim's payload for a Miru JWT and returns the client_id
-pub fn validate_claims(claim: Claims) -> Result<ClientID, CryptErr> {
+/// Validate a claim's payload for a Miru JWT and returns the device_id
+pub fn validate_claims(claim: Claims) -> Result<DeviceID, CryptErr> {
     if claim.iss != "miru" {
         return Err(CryptErr::InvalidJWTErr(InvalidJWTErr {
             msg: "Invalid issuer".to_string(),
@@ -51,7 +51,7 @@ pub fn validate_claims(claim: Claims) -> Result<ClientID, CryptErr> {
         }));
     }
 
-    if claim.aud != "client" {
+    if claim.aud != "device" {
         return Err(CryptErr::InvalidJWTErr(InvalidJWTErr {
             msg: "Invalid audience".to_string(),
             trace: trace!(),

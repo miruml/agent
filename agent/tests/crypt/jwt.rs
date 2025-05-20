@@ -46,7 +46,7 @@ pub mod decode {
         let invalid_payloads = vec![
             json!({
                 // missing the issuer
-                "aud": "client",
+                "aud": "device",
                 "exp": 1721517034,
                 "iat": 1721495434,
                 "sub": "75899aa4-b08a-4047-8526-880b1b832973"
@@ -63,7 +63,7 @@ pub mod decode {
             json!({
                 // missing the subject
                 "iss": "miru",
-                "aud": "client",
+                "aud": "device",
                 "exp": 1721517034,
                 "iat": 1721495434,
             })
@@ -71,7 +71,7 @@ pub mod decode {
             json!({
                 // missing the expiration time
                 "iss": "miru",
-                "aud": "client",
+                "aud": "device",
                 "iat": 1721495434,
                 "sub": "75899aa4-b08a-4047-8526-880b1b832973"
             })
@@ -79,7 +79,7 @@ pub mod decode {
             json!({
                 // missing the issued at time
                 "iss": "miru",
-                "aud": "client",
+                "aud": "device",
                 "exp": 1721517034,
                 "sub": "75899aa4-b08a-4047-8526-880b1b832973"
             })
@@ -101,7 +101,7 @@ pub mod decode {
     fn success() {
         let payload = json!({
             "iss": "miru",
-            "aud": "client",
+            "aud": "device",
             "exp": 1721517034,
             "iat": 1721495434,
             "sub": "75899aa4-b08a-4047-8526-880b1b832973"
@@ -115,7 +115,7 @@ pub mod decode {
         let claims = jwt::decode(&token).unwrap();
         let expected = Claims {
             iss: "miru".to_string(),
-            aud: "client".to_string(),
+            aud: "device".to_string(),
             exp: 1721517034,
             iat: 1721495434,
             sub: "75899aa4-b08a-4047-8526-880b1b832973".to_string(),
@@ -124,7 +124,7 @@ pub mod decode {
     }
 }
 
-pub mod extract_client_id {
+pub mod extract_device_id {
     use super::*;
 
     #[test]
@@ -134,7 +134,7 @@ pub mod extract_client_id {
             "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.{}.UIqAz_V-ZuZLIHUXwLHw-A2CrXBQrpXnJAMlVfmMXYY",
             payload
         );
-        let result = jwt::extract_client_id(&token).unwrap_err();
+        let result = jwt::extract_device_id(&token).unwrap_err();
         println!("Result: {:?}", result);
         assert!(matches!(result, CryptErr::ConvertBytesToStringErr { .. }));
     }
@@ -143,7 +143,7 @@ pub mod extract_client_id {
     fn success() {
         let payload = json!({
             "iss": "miru",
-            "aud": "client",
+            "aud": "device",
             "exp": 1721517034,
             "iat": 1721495434,
             "sub": "75899aa4-b08a-4047-8526-880b1b832973"
@@ -154,8 +154,8 @@ pub mod extract_client_id {
             "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.{}.UIqAz_V-ZuZLIHUXwLHw-A2CrXBQrpXnJAMlVfmMXYY",
             base64::encode_string_url_safe_no_pad(&payload)
         );
-        let client_id = jwt::extract_client_id(&token).unwrap();
-        assert_eq!(client_id, "75899aa4-b08a-4047-8526-880b1b832973");
+        let device_id = jwt::extract_device_id(&token).unwrap();
+        assert_eq!(device_id, "75899aa4-b08a-4047-8526-880b1b832973");
     }
 }
 
@@ -163,13 +163,13 @@ pub mod validate_claims {
     use super::*;
 
     #[test]
-    fn client_claims_invalid() {
+    fn device_claims_invalid() {
         let now = chrono::Utc::now().timestamp();
         let invalid_claims = vec![
             // issuer isn't miru
             Claims {
                 iss: "Uncle Sam".to_string(),
-                aud: "client".to_string(),
+                aud: "device".to_string(),
                 iat: now,
                 exp: now + 1000,
                 sub: "75899aa4-b08a-4047-8526-880b1b832973".to_string(),
@@ -185,7 +185,7 @@ pub mod validate_claims {
             // issued at time is in the future
             Claims {
                 iss: "miru".to_string(),
-                aud: "client".to_string(),
+                aud: "device".to_string(),
                 iat: now + 1000,
                 exp: now + 1000,
                 sub: "75899aa4-b08a-4047-8526-880b1b832973".to_string(),
@@ -193,7 +193,7 @@ pub mod validate_claims {
             // expiration time is in the past
             Claims {
                 iss: "miru".to_string(),
-                aud: "client".to_string(),
+                aud: "device".to_string(),
                 iat: now,
                 exp: now - 1,
                 sub: "75899aa4-b08a-4047-8526-880b1b832973".to_string(),
@@ -207,11 +207,11 @@ pub mod validate_claims {
     }
 
     #[test]
-    fn client_claims_valid() {
+    fn device_claims_valid() {
         let now = chrono::Utc::now().timestamp();
         let claim = Claims {
             iss: "miru".to_string(),
-            aud: "client".to_string(),
+            aud: "device".to_string(),
             iat: now,
             exp: now + 1000,
             sub: "75899aa4-b08a-4047-8526-880b1b832973".to_string(),

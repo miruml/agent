@@ -10,7 +10,7 @@ use crate::auth::errors::{
 use crate::crypt::{base64, rsa};
 use crate::errors::MiruError;
 use crate::filesys::{cached_file::CachedFile, file::File, path::PathExt};
-use crate::http::auth::ClientAuthExt;
+use crate::http::devices::DevicesExt;
 use crate::storage::token::Token;
 use crate::trace;
 use crate::utils::time_delta_to_positive_duration;
@@ -29,22 +29,22 @@ pub type TokenFile = CachedFile<Token>;
 
 #[derive(Serialize)]
 struct IssueTokenClaim {
-    pub client_id: String,
+    pub device_id: String,
     pub nonce: String,
     pub expiration: i64,
 }
 
 // ======================== SINGLE THREADED IMPLEMENTATION ========================= //
-struct SingleThreadTokenManager<HTTPClientT: ClientAuthExt> {
-    client_id: String,
+struct SingleThreadTokenManager<HTTPClientT: DevicesExt> {
+    device_id: String,
     http_client: Arc<HTTPClientT>,
     token_file: CachedFile<Token>,
     private_key_file: File,
 }
 
-impl<HTTPClientT: ClientAuthExt> SingleThreadTokenManager<HTTPClientT> {
+impl<HTTPClientT: DevicesExt> SingleThreadTokenManager<HTTPClientT> {
     fn new(
-        client_id: String,
+        device_id: String,
         http_client: Arc<HTTPClientT>,
         token_file: CachedFile<Token>,
         private_key_file: File,
@@ -62,7 +62,7 @@ impl<HTTPClientT: ClientAuthExt> SingleThreadTokenManager<HTTPClientT> {
             })
         })?;
         Ok(Self {
-            client_id,
+            device_id,
             http_client,
             token_file,
             private_key_file,
@@ -96,7 +96,7 @@ impl<HTTPClientT: ClientAuthExt> SingleThreadTokenManager<HTTPClientT> {
         // send the token request
         let resp = self
             .http_client
-            .issue_client_token(&self.client_id, &payload)
+            .issue_device_token(&self.device_id, &payload)
             .await
             .map_err(|e| {
                 AuthErr::HTTPErr(AuthHTTPErr {
@@ -126,7 +126,7 @@ impl<HTTPClientT: ClientAuthExt> SingleThreadTokenManager<HTTPClientT> {
         let nonce = Uuid::new_v4().to_string();
         let expiration = Utc::now() + Duration::minutes(2);
         let claims = IssueTokenClaim {
-            client_id: self.client_id.to_string(),
+            device_id: self.device_id.to_string(),
             nonce: nonce.clone(),
             expiration: expiration.timestamp(),
         };
@@ -152,7 +152,7 @@ impl<HTTPClientT: ClientAuthExt> SingleThreadTokenManager<HTTPClientT> {
 
         // convert it to the http client format
         let claims = IssueDeviceClaims {
-            device_id: self.client_id.to_string(),
+            device_id: self.device_id.to_string(),
             nonce,
             expiration: expiration.to_rfc3339(),
         };
@@ -177,12 +177,12 @@ enum WorkerCommand {
     },
 }
 
-struct Worker<HTTPClientT: ClientAuthExt> {
+struct Worker<HTTPClientT: DevicesExt> {
     token_mngr: SingleThreadTokenManager<HTTPClientT>,
     receiver: Receiver<WorkerCommand>,
 }
 
-impl<HTTPClientT: ClientAuthExt> Worker<HTTPClientT> {
+impl<HTTPClientT: DevicesExt> Worker<HTTPClientT> {
     async fn run(mut self) {
         while let Some(cmd) = self.receiver.recv().await {
             match cmd {
@@ -213,8 +213,8 @@ pub struct TokenManager {
 }
 
 impl TokenManager {
-    pub fn spawn<HTTPClientT: ClientAuthExt + 'static>(
-        client_id: String,
+    pub fn spawn<HTTPClientT: DevicesExt + 'static>(
+        device_id: String,
         http_client: Arc<HTTPClientT>,
         token_file: CachedFile<Token>,
         private_key_file: File,
@@ -222,7 +222,7 @@ impl TokenManager {
         let (sender, receiver) = mpsc::channel(32);
         let worker = Worker {
             token_mngr: SingleThreadTokenManager::new(
-                client_id,
+                device_id,
                 http_client,
                 token_file,
                 private_key_file,

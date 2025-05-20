@@ -8,7 +8,7 @@ use crate::errors::{
 };
 use crate::{utils, utils::Colors};
 use config_agent::crypt::jwt;
-use config_agent::http::auth::ClientAuthExt;
+use config_agent::http::devices::DevicesExt;
 use config_agent::storage::{agent::Agent, layout::StorageLayout, setup::setup_storage};
 use config_agent::trace;
 use openapi_client::models::ActivateDeviceRequest;
@@ -20,17 +20,17 @@ use indicatif::{ProgressBar, ProgressStyle};
 use tracing::{debug, error, info, warn};
 
 const LANDING_PAGE_URL: &str = "https://miruml.com";
-const MIRU_CLIENTS_PAGE: &str = "https://configs.miruml.com/clients";
+const MIRU_DEVICES_PAGE: &str = "https://configs.miruml.com/devices";
 
-type ClientID = String;
+type DeviceID = String;
 
-pub struct Installer<HTTPClientT: ClientAuthExt> {
+pub struct Installer<HTTPClientT: DevicesExt> {
     layout: StorageLayout,
     http_client: HTTPClientT,
     cur_title: String,
 }
 
-impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
+impl<HTTPClientT: DevicesExt> Installer<HTTPClientT> {
     pub fn new(layout: StorageLayout, http_client: HTTPClientT) -> Self {
         Installer {
             layout,
@@ -54,12 +54,12 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
         })?;
 
         // authenticate the agent
-        let client_id = self.authenticate_agent().await?;
+        let device_id = self.authenticate_agent().await?;
 
-        // update the storage layout to hold the client id and such
+        // update the storage layout to hold the device id and such
         let agent_file = self.layout.agent_file();
         let agent = Agent {
-            client_id,
+            device_id,
             activated: true,
             backend_base_url: backend_base_url.to_string(),
         };
@@ -76,13 +76,13 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
         Ok(())
     }
 
-    pub async fn authenticate_agent(&mut self) -> Result<ClientID, InstallerErr> {
+    pub async fn authenticate_agent(&mut self) -> Result<DeviceID, InstallerErr> {
         loop {
             // grab the jwt token from the user
             let token = self.get_jwt_from_user()?;
 
-            // write the client id to the agent file
-            let client_id = jwt::extract_client_id(&token).map_err(|e| {
+            // write the device id to the agent file
+            let device_id = jwt::extract_device_id(&token).map_err(|e| {
                 InstallerErr::CryptErr(InstallerCryptErr {
                     source: e,
                     trace: trace!(),
@@ -90,11 +90,11 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
             })?;
 
             // authenticate the device with the server
-            let result = self.authenticate_with_server(&client_id, &token).await;
+            let result = self.authenticate_with_server(&device_id, &token).await;
             match result {
                 // successful -> return
                 Ok(_) => {
-                    return Ok(client_id);
+                    return Ok(device_id);
                 }
                 // error -> let the user decide if they want to retry
                 Err(e) => {
@@ -120,7 +120,7 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
             utils::format_url(LANDING_PAGE_URL, "Miru")
         );
 
-        println!("To authenticate the miru agent, you'll need to retrieve the authentication token from {} for the client you want to authenticate as.\n", utils::format_url(MIRU_CLIENTS_PAGE, MIRU_CLIENTS_PAGE));
+        println!("To authenticate the miru agent, you'll need to retrieve the authentication token from {} for the device you want to authenticate as.\n", utils::format_url(MIRU_DEVICES_PAGE, MIRU_DEVICES_PAGE));
 
         // prompt user for their json web token
         let token = Input::with_theme(&utils::input_theme())
@@ -148,7 +148,7 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
 
     pub async fn authenticate_with_server(
         &mut self,
-        client_id: &str,
+        device_id: &str,
         token: &str,
     ) -> Result<(), InstallerErr> {
         utils::print_title(&self.cur_title);
@@ -164,7 +164,7 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
         pb.set_message("Activating Agent with the Miru Cloud...");
         pb.enable_steady_tick(Duration::from_millis(100));
 
-        // activate the client with the server
+        // activate the device with the server
         let public_key_file = self.layout.auth_dir().public_key_file();
         let public_key_pem = public_key_file.read_string().await.map_err(|e| {
             InstallerErr::FileSysErr(InstallerFileSysErr {
@@ -173,9 +173,9 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
             })
         })?;
         let payload = ActivateDeviceRequest { public_key_pem };
-        let client = self
+        let device = self
             .http_client
-            .activate_client(client_id, &payload, token)
+            .activate_device(device_id, &payload, token)
             .await
             .map_err(|e| {
                 InstallerErr::HTTPErr(InstallerHTTPErr {
@@ -186,8 +186,8 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
 
         // complete
         let msg = format!(
-            "Successfully activated the miru agent as the {} client!\n\n",
-            utils::color_text(&client.name, Colors::Green)
+            "Successfully activated the miru agent as the {} device!\n\n",
+            utils::color_text(&device.name, Colors::Green)
         );
         pb.finish_with_message(msg);
 

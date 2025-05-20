@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Agent {
-    pub client_id: String,
+    pub device_id: String,
     pub activated: bool,
     pub backend_base_url: String,
 }
@@ -14,9 +14,9 @@ pub struct Agent {
 impl Default for Agent {
     fn default() -> Self {
         Self {
-            client_id: "placeholder".to_string(),
+            device_id: "placeholder".to_string(),
             activated: false,
-            backend_base_url: "https://configs.api.miruml.com/internal/agent/v1".to_string(),
+            backend_base_url: "https://configs.api.miruml.com/agent/v1".to_string(),
         }
     }
 }

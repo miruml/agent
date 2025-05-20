@@ -1,5 +1,5 @@
 // internal crates
-use config_agent::http::auth::ClientAuthExt;
+use config_agent::http::devices::DevicesExt;
 use config_agent::http::config_schemas::ConfigSchemasExt;
 use config_agent::http::errors::HTTPErr;
 use config_agent::http::prelude::*;
@@ -14,36 +14,36 @@ use async_trait::async_trait;
 
 // ================================== AUTH EXT ===================================== //
 pub struct MockAuthClient {
-    pub activate_client_result: Box<dyn Fn() -> Result<Device, HTTPErr> + Send + Sync>,
-    pub issue_client_token_result: Box<dyn Fn() -> Result<TokenResponse, HTTPErr> + Send + Sync>,
+    pub activate_device_result: Box<dyn Fn() -> Result<Device, HTTPErr> + Send + Sync>,
+    pub issue_device_token_result: Box<dyn Fn() -> Result<TokenResponse, HTTPErr> + Send + Sync>,
 }
 
 impl Default for MockAuthClient {
     fn default() -> Self {
         Self {
-            activate_client_result: Box::new(|| Ok(Device::default())),
-            issue_client_token_result: Box::new(|| Ok(TokenResponse::default())),
+            activate_device_result: Box::new(|| Ok(Device::default())),
+            issue_device_token_result: Box::new(|| Ok(TokenResponse::default())),
         }
     }
 }
 
 #[async_trait]
-impl ClientAuthExt for MockAuthClient {
-    async fn activate_client(
+impl DevicesExt for MockAuthClient {
+    async fn activate_device(
         &self,
         _: &str,
         _: &ActivateDeviceRequest,
         _: &str,
     ) -> Result<Device, HTTPErr> {
-        (self.activate_client_result)()
+        (self.activate_device_result)()
     }
 
-    async fn issue_client_token(
+    async fn issue_device_token(
         &self,
         _: &str,
         _: &IssueDeviceTokenRequest,
     ) -> Result<TokenResponse, HTTPErr> {
-        (self.issue_client_token_result)()
+        (self.issue_device_token_result)()
     }
 }
 

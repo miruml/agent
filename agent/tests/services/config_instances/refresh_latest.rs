@@ -35,7 +35,7 @@ pub mod errors {
 
         // run the test
         let args = RefreshLatestArgs {
-            client_id: "client-id".to_string(),
+            device_id: "device-id".to_string(),
             config_slug: "config-slug".to_string(),
             config_schema_digest: "config-schema-digest".to_string(),
         };
@@ -66,7 +66,7 @@ pub mod success {
 
         // run the test
         let args = RefreshLatestArgs {
-            client_id: "client-id".to_string(),
+            device_id: "device-id".to_string(),
             config_slug: "config-slug".to_string(),
             config_schema_digest: "config-schema-digest".to_string(),
         };

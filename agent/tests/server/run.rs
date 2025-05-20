@@ -206,7 +206,7 @@ async fn prune_config_instance_cache() {
                 ConfigInstance {
                     id: format!("test{}", i),
                     created_at: Utc::now().to_rfc3339(),
-                    client_id: "test".to_string(),
+                    device_id: "test".to_string(),
                     config_schema_id: format!("test{}", i),
                     config_instance: json!({ "test": i }),
                     config_slug: format!("test{}", i),

@@ -7,20 +7,20 @@ use crate::trace;
 use openapi_client::models::RefreshLatestConfigInstanceRequest;
 
 pub trait RefreshLatestArgsI {
-    fn client_id(&self) -> &str;
+    fn device_id(&self) -> &str;
     fn config_slug(&self) -> &str;
     fn config_schema_digest(&self) -> &str;
 }
 
 pub struct RefreshLatestArgs {
-    pub client_id: String,
+    pub device_id: String,
     pub config_slug: String,
     pub config_schema_digest: String,
 }
 
 impl RefreshLatestArgsI for RefreshLatestArgs {
-    fn client_id(&self) -> &str {
-        &self.client_id
+    fn device_id(&self) -> &str {
+        &self.device_id
     }
     fn config_slug(&self) -> &str {
         &self.config_slug
@@ -38,7 +38,7 @@ pub async fn refresh_latest<ArgsT: RefreshLatestArgsI, HTTPClientT: ConfigInstan
 ) -> Result<openapi_server::models::BaseConfigInstance, ServiceErr> {
     // read the latest config instance from the server
     let payload = RefreshLatestConfigInstanceRequest {
-        device_id: args.client_id().to_string(),
+        device_id: args.device_id().to_string(),
         config_slug: args.config_slug().to_string(),
         config_schema_digest: args.config_schema_digest().to_string(),
     };

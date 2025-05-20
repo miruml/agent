@@ -14,21 +14,21 @@ use openapi_server::models::BaseConfigInstance;
 use serde::Deserialize;
 
 pub trait ReadLatestArgsI {
-    fn client_id(&self) -> &str;
+    fn device_id(&self) -> &str;
     fn config_slug(&self) -> &str;
     fn config_schema_digest(&self) -> &str;
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ReadLatestArgs {
-    pub client_id: String,
+    pub device_id: String,
     pub config_slug: String,
     pub config_schema_digest: String,
 }
 
 impl ReadLatestArgsI for ReadLatestArgs {
-    fn client_id(&self) -> &str {
-        &self.client_id
+    fn device_id(&self) -> &str {
+        &self.device_id
     }
     fn config_slug(&self) -> &str {
         &self.config_slug
@@ -47,7 +47,7 @@ pub async fn read_latest<ArgsT: ReadLatestArgsI, HTTPClientT: ConfigInstancesExt
     // read the latest config instance from the server
     let result = http_client
         .read_latest_config_instance(
-            args.client_id(),
+            args.device_id(),
             args.config_slug(),
             args.config_schema_digest(),
             token,

@@ -83,7 +83,7 @@ pub async fn read_latest_config_instance(
         })?;
 
         let args = ReadLatestArgs {
-            client_id: state.client_id.clone(),
+            device_id: state.device_id.clone(),
             config_slug: query.config_slug,
             config_schema_digest: query.config_schema_digest,
         };
@@ -125,7 +125,7 @@ pub async fn refresh_latest_config_instance(
         })?;
 
         let args = RefreshLatestArgs {
-            client_id: state.client_id.clone(),
+            device_id: state.device_id.clone(),
             config_slug: payload.config_slug,
             config_schema_digest: payload.config_schema_digest,
         };

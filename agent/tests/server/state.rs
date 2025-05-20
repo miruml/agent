@@ -36,7 +36,7 @@ pub mod new {
     }
 
     #[tokio::test]
-    async fn fail_missing_client_id() {
+    async fn fail_missing_device_id() {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
         let layout = StorageLayout::new(dir);
         // create a private key file
@@ -48,7 +48,7 @@ pub mod new {
 
         let result =
             ServerState::new(layout, Arc::new(HTTPClient::new("doesntmatter").await)).await;
-        assert!(matches!(result, Err(ServerErr::MissingClientIDErr(_))));
+        assert!(matches!(result, Err(ServerErr::MissingDeviceIDErr(_))));
     }
 
     #[tokio::test]
@@ -64,7 +64,7 @@ pub mod new {
             .await
             .unwrap();
 
-        // create the token file with a token containing a client id
+        // create the token file with a token containing a device id
         let token_file = layout.auth_dir().token_file();
         let token = Token {
                 token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NDU2MzgzMTUsInN1YiI6ImNsaV8xMjMiLCJpc3MiOiJtaXJ1IiwiYXVkIjoiY2xpZW50IiwiZXhwIjoxNzIxNTE3MDM0fQ.4ARFzYZSF_i9PjPZRJtH7HcmE_vv5tuZIpKkniua6BY".to_string(),

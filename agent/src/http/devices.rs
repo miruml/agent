@@ -9,41 +9,41 @@ use openapi_client::models::{
 use async_trait::async_trait;
 
 #[async_trait]
-pub trait ClientAuthExt: Send + Sync {
-    async fn activate_client(
+pub trait DevicesExt: Send + Sync {
+    async fn activate_device(
         &self,
-        client_id: &str,
+        device_id: &str,
         payload: &ActivateDeviceRequest,
         token: &str,
     ) -> Result<Device, HTTPErr>;
 
-    async fn issue_client_token(
+    async fn issue_device_token(
         &self,
-        client_id: &str,
+        device_id: &str,
         payload: &IssueDeviceTokenRequest,
     ) -> Result<TokenResponse, HTTPErr>;
 }
 
 impl HTTPClient {
-    fn clients_url(&self) -> String {
-        format!("{}/clients", self.base_url)
+    fn devices_url(&self) -> String {
+        format!("{}/devices", self.base_url)
     }
 
-    fn client_url(&self, client_id: &str) -> String {
-        format!("{}/{}", self.clients_url(), client_id)
+    fn device_url(&self, device_id: &str) -> String {
+        format!("{}/{}", self.devices_url(), device_id)
     }
 }
 
 #[async_trait]
-impl ClientAuthExt for HTTPClient {
-    async fn activate_client(
+impl DevicesExt for HTTPClient {
+    async fn activate_device(
         &self,
-        client_id: &str,
+        device_id: &str,
         payload: &ActivateDeviceRequest,
         token: &str,
     ) -> Result<Device, HTTPErr> {
         // build the request
-        let url = format!("{}/activate", self.client_url(client_id));
+        let url = format!("{}/activate", self.device_url(device_id));
         let (request, context) = self.build_post_request(
             &url,
             self.marshal_json_payload(payload)?,
@@ -60,12 +60,12 @@ impl ClientAuthExt for HTTPClient {
             .await
     }
 
-    async fn issue_client_token(
+    async fn issue_device_token(
         &self,
-        client_id: &str,
+        device_id: &str,
         payload: &IssueDeviceTokenRequest,
     ) -> Result<TokenResponse, HTTPErr> {
-        let url = format!("{}/issue_token", self.client_url(client_id));
+        let url = format!("{}/issue_token", self.device_url(device_id));
         let (request, context) = self.build_post_request(
             &url,
             self.marshal_json_payload(payload)?,

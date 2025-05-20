@@ -10,7 +10,7 @@ use crate::crypt::jwt;
 use crate::filesys::{cached_file::CachedFile, file::File, path::PathExt};
 use crate::http::client::HTTPClient;
 use crate::server::errors::{
-    MissingClientIDErr, ServerAuthErr, ServerErr, ServerFileSysErr, ServerStorageErr,
+    MissingDeviceIDErr, ServerAuthErr, ServerErr, ServerFileSysErr, ServerStorageErr,
 };
 use crate::storage::agent::Agent;
 use crate::storage::config_instances::ConfigInstanceCache;
@@ -19,11 +19,11 @@ use crate::storage::layout::StorageLayout;
 use crate::storage::token::Token;
 use crate::trace;
 
-type ClientID = String;
+type DeviceID = String;
 
 #[derive(Clone, Debug)]
 pub struct ServerState {
-    pub client_id: ClientID,
+    pub device_id: DeviceID,
     pub http_client: Arc<HTTPClient>,
     pub config_schema_digest_cache: Arc<ConfigSchemaDigestCache>,
     pub config_instance_cache: Arc<ConfigInstanceCache>,
@@ -55,8 +55,8 @@ impl ServerState {
                 })
             })?;
 
-        // get the client id
-        let client_id = Self::init_client_id(&agent_file, &token_file).await?;
+        // get the device id
+        let device_id = Self::init_device_id(&agent_file, &token_file).await?;
 
         // initialize the caches
         let (config_schema_digest_cache, config_schema_digest_cache_handle) =
@@ -68,7 +68,7 @@ impl ServerState {
 
         // initialize the token manager
         let (token_mngr, token_mngr_handle) = TokenManager::spawn(
-            client_id.clone(),
+            device_id.clone(),
             http_client.clone(),
             token_file,
             private_key_file,
@@ -83,7 +83,7 @@ impl ServerState {
 
         // initialize the server state
         let server_state = ServerState {
-            client_id,
+            device_id,
             http_client,
             config_schema_digest_cache,
             config_instance_cache,
@@ -139,24 +139,24 @@ impl ServerState {
         Ok(())
     }
 
-    async fn init_client_id(
+    async fn init_device_id(
         agent_file: &File,
         token_file: &CachedFile<Token>,
-    ) -> Result<ClientID, ServerErr> {
-        // attempt to get the client id from the agent file
+    ) -> Result<DeviceID, ServerErr> {
+        // attempt to get the device id from the agent file
         let agent_file_err = match agent_file.read_json::<Agent>().await {
             Ok(agent) => {
-                return Ok(agent.client_id);
+                return Ok(agent.device_id);
             }
             Err(e) => e,
         };
 
-        // attempt to get the client id from the existing token on file
+        // attempt to get the device id from the existing token on file
         let token = token_file.read();
-        let client_id = match jwt::extract_client_id(&token.token) {
-            Ok(client_id) => client_id,
+        let device_id = match jwt::extract_device_id(&token.token) {
+            Ok(device_id) => device_id,
             Err(e) => {
-                return Err(ServerErr::MissingClientIDErr(MissingClientIDErr {
+                return Err(ServerErr::MissingDeviceIDErr(MissingDeviceIDErr {
                     agent_file_err: Box::new(agent_file_err),
                     jwt_err: Box::new(e),
                     trace: trace!(),
@@ -164,7 +164,7 @@ impl ServerState {
             }
         };
 
-        Ok(client_id)
+        Ok(device_id)
     }
 
     pub fn record_activity(&self) {
