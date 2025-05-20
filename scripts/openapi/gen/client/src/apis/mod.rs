@@ -111,9 +111,9 @@ impl From<&str> for ContentType {
     }
 }
 
-pub mod clients_api;
-pub mod concrete_configs_api;
+pub mod config_instances_api;
 pub mod config_schemas_api;
+pub mod devices_api;
 pub mod errors_api;
 
 pub mod configuration;

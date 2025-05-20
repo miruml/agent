@@ -14,7 +14,7 @@ use crate::http::auth::ClientAuthExt;
 use crate::storage::token::Token;
 use crate::trace;
 use crate::utils::time_delta_to_positive_duration;
-use openapi_client::models::{IssueClientClaims, IssueClientTokenRequest};
+use openapi_client::models::{IssueDeviceClaims, IssueDeviceTokenRequest};
 
 // external crates
 use chrono::{DateTime, Duration, Utc};
@@ -121,7 +121,7 @@ impl<HTTPClientT: ClientAuthExt> SingleThreadTokenManager<HTTPClientT> {
         })
     }
 
-    async fn prepare_issue_token_request(&self) -> Result<IssueClientTokenRequest, AuthErr> {
+    async fn prepare_issue_token_request(&self) -> Result<IssueDeviceTokenRequest, AuthErr> {
         // prepare the claims
         let nonce = Uuid::new_v4().to_string();
         let expiration = Utc::now() + Duration::minutes(2);
@@ -151,13 +151,13 @@ impl<HTTPClientT: ClientAuthExt> SingleThreadTokenManager<HTTPClientT> {
         let signature = base64::encode_bytes_standard(&signature_bytes);
 
         // convert it to the http client format
-        let claims = IssueClientClaims {
-            client_id: self.client_id.to_string(),
+        let claims = IssueDeviceClaims {
+            device_id: self.client_id.to_string(),
             nonce,
             expiration: expiration.to_rfc3339(),
         };
 
-        Ok(IssueClientTokenRequest {
+        Ok(IssueDeviceTokenRequest {
             claims: Box::new(claims),
             signature,
         })

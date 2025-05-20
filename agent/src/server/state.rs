@@ -13,7 +13,7 @@ use crate::server::errors::{
     MissingClientIDErr, ServerAuthErr, ServerErr, ServerFileSysErr, ServerStorageErr,
 };
 use crate::storage::agent::Agent;
-use crate::storage::concrete_configs::ConcreteConfigCache;
+use crate::storage::config_instances::ConcreteConfigCache;
 use crate::storage::digests::ConfigSchemaDigestCache;
 use crate::storage::layout::StorageLayout;
 use crate::storage::token::Token;

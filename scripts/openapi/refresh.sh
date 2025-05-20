@@ -4,15 +4,12 @@ set -e
 this_files_dir=$(pwd)
 openapi_dir=../../../openapi
 openapi_dir=$(realpath $openapi_dir)
-openapi_configs_dir=$openapi_dir/configs
 agent_dir=../../
 agent_dir=$(realpath $agent_dir)
 git_info_file=$agent_dir/scripts/openapi/git-info.txt
 gen_dir=./gen
 
-cd $openapi_configs_dir
-pwd
-make bundle-all
+cd $openapi_dir
 
 # Check for any changes (staged, unstaged, or untracked)
 echo ""

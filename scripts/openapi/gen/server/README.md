@@ -22,24 +22,24 @@ openapi-server = { path = "./openapi-server" }
 
 ## Documentation for API Endpoints
 
-All URIs are relative to *https://configs.dev.api.miruml.com/internal/v1*
+All URIs are relative to *https://configs.dev.api.miruml.com/agent/v1*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
-*ConcreteConfigsApi* | [**get_latest_concrete_config**](docs/ConcreteConfigsApi.md#get_latest_concrete_config) | **GET** /concrete_configs/latest | Get the latest concrete config
-*ConcreteConfigsApi* | [**refresh_latest_concrete_config**](docs/ConcreteConfigsApi.md#refresh_latest_concrete_config) | **POST** /concrete_configs/refresh_latest | Render the latest concrete config for a client
+*ConfigInstancesApi* | [**get_latest_config_instance**](docs/ConfigInstancesApi.md#get_latest_config_instance) | **GET** /config_instances/latest | Get the latest config instance
+*ConfigInstancesApi* | [**refresh_latest_config_instance**](docs/ConfigInstancesApi.md#refresh_latest_config_instance) | **POST** /config_instances/refresh_latest | Render the latest config instance for a device
 *ConfigSchemasApi* | [**hash_config_schema_serialized**](docs/ConfigSchemasApi.md#hash_config_schema_serialized) | **POST** /config_schemas/hash/serialized | Hash a serialized config schema
 *ErrorsApi* | [**get_error**](docs/ErrorsApi.md#get_error) | **GET** /example-error | Get an error
 
 
 ## Documentation For Models
 
- - [BaseConcreteConfig](docs/BaseConcreteConfig.md)
+ - [BaseConfigInstance](docs/BaseConfigInstance.md)
  - [Error](docs/Error.md)
  - [ErrorResponse](docs/ErrorResponse.md)
  - [HashSchemaSerializedRequest](docs/HashSchemaSerializedRequest.md)
  - [HashSerializedConfigSchemaFormat](docs/HashSerializedConfigSchemaFormat.md)
- - [RefreshLatestConcreteConfigRequest](docs/RefreshLatestConcreteConfigRequest.md)
+ - [RefreshLatestConfigInstanceRequest](docs/RefreshLatestConfigInstanceRequest.md)
  - [SchemaDigestResponse](docs/SchemaDigestResponse.md)
 
 

@@ -4,12 +4,12 @@ use std::sync::Arc;
 use crate::errors::MiruError;
 use crate::server::errors::{ServerAuthErr, ServerErr, ServerServiceErr};
 use crate::server::state::ServerState;
-use crate::services::concrete_configs::{
+use crate::services::config_instances::{
     read_latest, read_latest::ReadLatestArgs, refresh_latest, refresh_latest::RefreshLatestArgs,
 };
 use crate::services::config_schemas::{hash, hash::HashSchemaArgsI};
 use crate::trace;
-use openapi_server::models::RefreshLatestConcreteConfigRequest;
+use openapi_server::models::RefreshLatestConfigInstanceRequest;
 use openapi_server::models::SchemaDigestResponse;
 use openapi_server::models::{Error, ErrorResponse};
 use openapi_server::models::{HashSchemaSerializedRequest, HashSerializedConfigSchemaFormat};
@@ -114,7 +114,7 @@ pub async fn read_latest_concrete_config(
 
 pub async fn refresh_latest_concrete_config(
     State(state): State<Arc<ServerState>>,
-    Json(payload): Json<RefreshLatestConcreteConfigRequest>,
+    Json(payload): Json<RefreshLatestConfigInstanceRequest>,
 ) -> impl IntoResponse {
     let service = async move {
         let token = state.token_mngr.get_token().await.map_err(|e| {

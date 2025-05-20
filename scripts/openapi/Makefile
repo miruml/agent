@@ -1,11 +1,11 @@
 # Common variables
 OPENAPI_DIR := ../../../openapi
-OPENAPI_BACKEND_AGENT_DIR := $(OPENAPI_DIR)/configs/backend-agent
-OPENAPI_AGENT_SDK_DIR := $(OPENAPI_DIR)/configs/agent-sdk
+OPENAPI_BACKEND_SERVER_DIR := $(OPENAPI_DIR)/configs/backend-server
+OPENAPI_AGENT_SERVER_DIR := $(OPENAPI_DIR)/configs/agent-server
 
 # Agent API variables
-OPENAPI_CLIENT_FILE := $(OPENAPI_BACKEND_AGENT_DIR)/openapi.gen.yaml
-OPENAPI_SERVER_FILE := $(OPENAPI_AGENT_SDK_DIR)/openapi.gen.yaml
+OPENAPI_CLIENT_FILE := $(OPENAPI_BACKEND_SERVER_DIR)/agent/openapi.gen.yaml
+OPENAPI_SERVER_FILE := $(OPENAPI_AGENT_SERVER_DIR)/sdk/openapi.gen.yaml
 CLIENT_GEN := gen/client
 SERVER_GEN := gen/server
 

@@ -1,4 +1,4 @@
 Repository Name: git@github.com:miruml/openapi.git
-Branch Name: configs
-Commit Hash: c15557e8340b5949b3dbffde22049597d772a778
-Commit Message: fix(config_schemas): use base64 encoding for hashing serialized config schemas
+Branch Name: rename
+Commit Hash: 3fb11eb1949e522e58b0c4c005e548679f7be35d
+Commit Message: refactor: rename the root shared to 'user' and add makefile for user spec

@@ -12,7 +12,7 @@ use tracing::{error, info};
 
 #[tokio::main]
 async fn main() {
-    // print the version and exit if that is all the is requested
+    // print the version and exit if that is all that is requested
     if has_version_flag() {
         println!("{}", version_info());
         return;

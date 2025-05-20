@@ -1,6 +1,6 @@
 pub mod agent;
 pub mod cache;
-pub mod concrete_configs;
+pub mod config_instances;
 pub mod digests;
 pub mod errors;
 pub mod layout;

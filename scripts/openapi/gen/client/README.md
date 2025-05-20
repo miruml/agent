@@ -22,38 +22,38 @@ openapi-client = { path = "./openapi-client" }
 
 ## Documentation for API Endpoints
 
-All URIs are relative to *https://configs.dev.api.miruml.com/internal/v1*
+All URIs are relative to *https://configs.dev.api.miruml.com/agent/v1*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
-*ClientsApi* | [**activate_client**](docs/ClientsApi.md#activate_client) | **POST** /clients/{client_id}/activate | Activate a client
-*ClientsApi* | [**issue_client_token**](docs/ClientsApi.md#issue_client_token) | **POST** /clients/{client_id}/issue_token | Issue a client token
-*ConcreteConfigsApi* | [**get_latest_concrete_config**](docs/ConcreteConfigsApi.md#get_latest_concrete_config) | **GET** /concrete_configs/latest | Get the latest concrete config
-*ConcreteConfigsApi* | [**refresh_latest_concrete_config**](docs/ConcreteConfigsApi.md#refresh_latest_concrete_config) | **POST** /concrete_configs/refresh_latest | Render the latest concrete config for a client
+*ConfigInstancesApi* | [**get_latest_config_instance**](docs/ConfigInstancesApi.md#get_latest_config_instance) | **GET** /config_instances/latest | Get the latest config instance
+*ConfigInstancesApi* | [**refresh_latest_config_instance**](docs/ConfigInstancesApi.md#refresh_latest_config_instance) | **POST** /config_instances/refresh_latest | Render the latest config instance for a device
 *ConfigSchemasApi* | [**hash_config_schema**](docs/ConfigSchemasApi.md#hash_config_schema) | **POST** /config_schemas/hash | Hash a config schema
 *ConfigSchemasApi* | [**hash_config_schema_serialized**](docs/ConfigSchemasApi.md#hash_config_schema_serialized) | **POST** /config_schemas/hash/serialized | Hash a serialized config schema
+*DevicesApi* | [**activate_device**](docs/DevicesApi.md#activate_device) | **POST** /devices/{device_id}/activate | Activate a device
+*DevicesApi* | [**issue_device_token**](docs/DevicesApi.md#issue_device_token) | **POST** /devices/{device_id}/issue_token | Issue a device token
 *ErrorsApi* | [**get_error**](docs/ErrorsApi.md#get_error) | **GET** /example-error | Get an error
 
 
 ## Documentation For Models
 
- - [ActivateClientRequest](docs/ActivateClientRequest.md)
- - [BackendConcreteConfig](docs/BackendConcreteConfig.md)
- - [BaseConcreteConfig](docs/BaseConcreteConfig.md)
+ - [ActivateDeviceRequest](docs/ActivateDeviceRequest.md)
+ - [BackendConfigInstance](docs/BackendConfigInstance.md)
+ - [BaseConfigInstance](docs/BaseConfigInstance.md)
  - [BillingPlan](docs/BillingPlan.md)
- - [Client](docs/Client.md)
- - [ClientTag](docs/ClientTag.md)
- - [ClientTagPaginatedList](docs/ClientTagPaginatedList.md)
- - [ConcreteConfigExpand](docs/ConcreteConfigExpand.md)
+ - [ConfigInstanceExpand](docs/ConfigInstanceExpand.md)
+ - [Device](docs/Device.md)
+ - [DeviceTag](docs/DeviceTag.md)
+ - [DeviceTagPaginatedList](docs/DeviceTagPaginatedList.md)
  - [Error](docs/Error.md)
  - [ErrorResponse](docs/ErrorResponse.md)
  - [HashSchemaRequest](docs/HashSchemaRequest.md)
  - [HashSchemaSerializedRequest](docs/HashSchemaSerializedRequest.md)
  - [HashSerializedConfigSchemaFormat](docs/HashSerializedConfigSchemaFormat.md)
- - [IssueClientClaims](docs/IssueClientClaims.md)
- - [IssueClientTokenRequest](docs/IssueClientTokenRequest.md)
+ - [IssueDeviceClaims](docs/IssueDeviceClaims.md)
+ - [IssueDeviceTokenRequest](docs/IssueDeviceTokenRequest.md)
  - [PaginatedList](docs/PaginatedList.md)
- - [RefreshLatestConcreteConfigRequest](docs/RefreshLatestConcreteConfigRequest.md)
+ - [RefreshLatestConfigInstanceRequest](docs/RefreshLatestConfigInstanceRequest.md)
  - [SchemaDigestResponse](docs/SchemaDigestResponse.md)
  - [Tag](docs/Tag.md)
  - [TagList](docs/TagList.md)

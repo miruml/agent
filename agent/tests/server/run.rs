@@ -6,7 +6,7 @@ use config_agent::filesys::{dir::Dir, file::File, path::PathExt};
 use config_agent::server::run::{run, RunServerOptions};
 use config_agent::storage::{
     agent::Agent,
-    concrete_configs::{ConcreteConfig, ConcreteConfigCache, ConcreteConfigCacheKey},
+    config_instances::{ConcreteConfig, ConcreteConfigCache, ConcreteConfigCacheKey},
     digests::{ConfigSchemaDigestCache, ConfigSchemaDigests},
     layout::StorageLayout,
 };
