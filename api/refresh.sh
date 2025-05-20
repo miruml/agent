@@ -2,11 +2,11 @@
 set -e
 
 this_files_dir=$(pwd)
-openapi_dir=../../../openapi
+openapi_dir=../../openapi
 openapi_dir=$(realpath $openapi_dir)
-agent_dir=../../
+agent_dir=../
 agent_dir=$(realpath $agent_dir)
-git_info_file=$agent_dir/scripts/openapi/git-info.txt
+git_info_file=$agent_dir/api/git-info.txt
 gen_dir=./gen
 
 cd $openapi_dir
