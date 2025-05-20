@@ -2,7 +2,7 @@
 use crate::http::prelude::*;
 use crate::services::config_instances::utils;
 use crate::services::errors::{ServiceErr, ServiceHTTPErr, ServiceStorageErr};
-use crate::storage::config_instances::{ConcreteConfigCache, ConcreteConfigCacheKey};
+use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceCacheKey};
 use crate::trace;
 use openapi_client::models::RefreshLatestConfigInstanceRequest;
 
@@ -32,17 +32,17 @@ impl RefreshLatestArgsI for RefreshLatestArgs {
 
 pub async fn refresh_latest<ArgsT: RefreshLatestArgsI, HTTPClientT: ConfigInstancesExt>(
     args: &ArgsT,
-    cache: &ConcreteConfigCache,
+    cache: &ConfigInstanceCache,
     http_client: &HTTPClientT,
     token: &str,
 ) -> Result<openapi_server::models::BaseConfigInstance, ServiceErr> {
-    // read the latest concrete config from the server
+    // read the latest config instance from the server
     let payload = RefreshLatestConfigInstanceRequest {
         device_id: args.client_id().to_string(),
         config_slug: args.config_slug().to_string(),
         config_schema_digest: args.config_schema_digest().to_string(),
     };
-    let cncr_cfg = http_client
+    let cfg_inst = http_client
         .refresh_latest_config_instance(&payload, token)
         .await
         .map_err(|e| {
@@ -52,18 +52,18 @@ pub async fn refresh_latest<ArgsT: RefreshLatestArgsI, HTTPClientT: ConfigInstan
             })
         })?;
 
-    // update the concrete config in storage
-    let cncr_cfg = utils::convert_cncr_cfg_backend_to_storage(
-        cncr_cfg,
+    // update the config instance in storage
+    let cfg_inst = utils::convert_cfg_inst_backend_to_storage(
+        cfg_inst,
         args.config_slug().to_string(),
         args.config_schema_digest().to_string(),
     );
-    let key = ConcreteConfigCacheKey {
+    let key = ConfigInstanceCacheKey {
         config_slug: args.config_slug().to_string(),
         config_schema_digest: args.config_schema_digest().to_string(),
     };
     cache
-        .write(key, cncr_cfg.clone(), true)
+        .write(key, cfg_inst.clone(), true)
         .await
         .map_err(|e| {
             ServiceErr::StorageErr(ServiceStorageErr {
@@ -72,5 +72,5 @@ pub async fn refresh_latest<ArgsT: RefreshLatestArgsI, HTTPClientT: ConfigInstan
             })
         })?;
 
-    Ok(utils::convert_cncr_cfg_storage_to_sdk(cncr_cfg))
+    Ok(utils::convert_cfg_inst_storage_to_sdk(cfg_inst))
 }

@@ -40,14 +40,14 @@ pub(crate) async fn serve(
     let app = Router::new()
         .route("/v1/test", get(test))
         .route("/v1/version", get(version))
-        // ============================ CONCRETE CONFIGS ============================== //
+        // ============================ CONFIG INSTANCES ============================== //
         .route(
-            "/v1/concrete_configs/latest",
-            get(handlers::read_latest_concrete_config),
+            "/v1/config_instances/latest",
+            get(handlers::read_latest_config_instance),
         )
         .route(
-            "/v1/concrete_configs/refresh_latest",
-            post(handlers::refresh_latest_concrete_config),
+            "/v1/config_instances/refresh_latest",
+            post(handlers::refresh_latest_config_instance),
         )
         // ============================ CONFIG SCHEMAS ============================== //
         .route(

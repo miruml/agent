@@ -11,7 +11,7 @@ use config_agent::crypt::jwt;
 use config_agent::http::auth::ClientAuthExt;
 use config_agent::storage::{agent::Agent, layout::StorageLayout, setup::setup_storage};
 use config_agent::trace;
-use openapi_client::models::ActivateClientRequest;
+use openapi_client::models::ActivateDeviceRequest;
 
 // external crates
 use dialoguer::Input;
@@ -172,7 +172,7 @@ impl<HTTPClientT: ClientAuthExt> Installer<HTTPClientT> {
                 trace: trace!(),
             })
         })?;
-        let payload = ActivateClientRequest { public_key_pem };
+        let payload = ActivateDeviceRequest { public_key_pem };
         let client = self
             .http_client
             .activate_client(client_id, &payload, token)

@@ -35,8 +35,8 @@ impl StorageLayout {
         self.root.subdir("config_schema_digests")
     }
 
-    pub fn concrete_config_cache(&self) -> Dir {
-        self.root.subdir("concrete_configs")
+    pub fn config_instance_cache(&self) -> Dir {
+        self.root.subdir("config_instances")
     }
 }
 

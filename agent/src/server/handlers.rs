@@ -70,7 +70,7 @@ pub struct ReadLatestQueryArgs {
     pub config_schema_digest: String,
 }
 
-pub async fn read_latest_concrete_config(
+pub async fn read_latest_config_instance(
     Query(query): Query<ReadLatestQueryArgs>,
     State(state): State<Arc<ServerState>>,
 ) -> impl IntoResponse {
@@ -90,7 +90,7 @@ pub async fn read_latest_concrete_config(
 
         read_latest::read_latest(
             &args,
-            &state.concrete_config_cache,
+            &state.config_instance_cache,
             &state.http_client,
             &token.token,
         )
@@ -104,15 +104,15 @@ pub async fn read_latest_concrete_config(
     };
 
     match service.await {
-        Ok(concrete_config) => (StatusCode::OK, Json(json!(concrete_config))),
+        Ok(config_instance) => (StatusCode::OK, Json(json!(config_instance))),
         Err(e) => {
-            error!("Error reading latest concrete config: {:?}", e);
+            error!("Error reading latest config instance: {:?}", e);
             (e.http_status(), Json(json!(to_error_response(e))))
         }
     }
 }
 
-pub async fn refresh_latest_concrete_config(
+pub async fn refresh_latest_config_instance(
     State(state): State<Arc<ServerState>>,
     Json(payload): Json<RefreshLatestConfigInstanceRequest>,
 ) -> impl IntoResponse {
@@ -132,7 +132,7 @@ pub async fn refresh_latest_concrete_config(
 
         refresh_latest::refresh_latest(
             &args,
-            &state.concrete_config_cache,
+            &state.config_instance_cache,
             &state.http_client,
             &token.token,
         )
@@ -146,9 +146,9 @@ pub async fn refresh_latest_concrete_config(
     };
 
     match service.await {
-        Ok(concrete_config) => (StatusCode::OK, Json(json!(concrete_config))),
+        Ok(config_instance) => (StatusCode::OK, Json(json!(config_instance))),
         Err(e) => {
-            error!("Error refreshing latest concrete config: {:?}", e);
+            error!("Error refreshing latest config instance: {:?}", e);
             (e.http_status(), Json(json!(to_error_response(e))))
         }
     }

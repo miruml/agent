@@ -3,10 +3,10 @@ use crate::errors::MiruError;
 use crate::http::prelude::*;
 use crate::services::config_instances::utils;
 use crate::services::errors::{
-    LatestConcreteConfigNotFound, ServiceErr, ServiceHTTPErr, ServiceStorageErr,
+    LatestConfigInstanceNotFound, ServiceErr, ServiceHTTPErr, ServiceStorageErr,
 };
 
-use crate::storage::config_instances::{ConcreteConfigCache, ConcreteConfigCacheKey};
+use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceCacheKey};
 use crate::trace;
 use openapi_server::models::BaseConfigInstance;
 
@@ -40,11 +40,11 @@ impl ReadLatestArgsI for ReadLatestArgs {
 
 pub async fn read_latest<ArgsT: ReadLatestArgsI, HTTPClientT: ConfigInstancesExt>(
     args: &ArgsT,
-    cache: &ConcreteConfigCache,
+    cache: &ConfigInstanceCache,
     http_client: &HTTPClientT,
     token: &str,
 ) -> Result<BaseConfigInstance, ServiceErr> {
-    // read the latest concrete config from the server
+    // read the latest config instance from the server
     let result = http_client
         .read_latest_config_instance(
             args.client_id(),
@@ -70,19 +70,19 @@ pub async fn read_latest<ArgsT: ReadLatestArgsI, HTTPClientT: ConfigInstancesExt
         }
     };
 
-    // if successful, update the concrete config in storage and return it
-    let key = ConcreteConfigCacheKey {
+    // if successful, update the config instance in storage and return it
+    let key = ConfigInstanceCacheKey {
         config_slug: args.config_slug().to_string(),
         config_schema_digest: args.config_schema_digest().to_string(),
     };
-    if let Some(concrete_config) = result {
-        let concrete_config = utils::convert_cncr_cfg_backend_to_storage(
-            concrete_config,
+    if let Some(config_instance) = result {
+        let config_instance = utils::convert_cfg_inst_backend_to_storage(
+            config_instance,
             args.config_slug().to_string(),
             args.config_schema_digest().to_string(),
         );
         cache
-            .write(key, concrete_config.clone(), true)
+            .write(key, config_instance.clone(), true)
             .await
             .map_err(|e| {
                 ServiceErr::StorageErr(ServiceStorageErr {
@@ -90,23 +90,23 @@ pub async fn read_latest<ArgsT: ReadLatestArgsI, HTTPClientT: ConfigInstancesExt
                     trace: trace!(),
                 })
             })?;
-        return Ok(utils::convert_cncr_cfg_storage_to_sdk(concrete_config));
+        return Ok(utils::convert_cfg_inst_storage_to_sdk(config_instance));
     }
 
-    // if unsuccessful, attempt to read the latest concrete config from storage
-    let latest_concrete_config = cache.read_optional(key).await.map_err(|e| {
+    // if unsuccessful, attempt to read the latest config instance from storage
+    let latest_config_instance = cache.read_optional(key).await.map_err(|e| {
         ServiceErr::StorageErr(ServiceStorageErr {
             source: e,
             trace: trace!(),
         })
     })?;
 
-    match latest_concrete_config {
-        Some(latest_concrete_config) => Ok(utils::convert_cncr_cfg_storage_to_sdk(
-            latest_concrete_config,
+    match latest_config_instance {
+        Some(latest_config_instance) => Ok(utils::convert_cfg_inst_storage_to_sdk(
+            latest_config_instance,
         )),
-        None => Err(ServiceErr::LatestConcreteConfigNotFound(
-            LatestConcreteConfigNotFound {
+        None => Err(ServiceErr::LatestConfigInstanceNotFound(
+            LatestConfigInstanceNotFound {
                 config_slug: args.config_slug().to_string(),
                 config_schema_digest: args.config_schema_digest().to_string(),
                 trace: trace!(),

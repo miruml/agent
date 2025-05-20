@@ -4,8 +4,8 @@ use config_agent::http::config_schemas::ConfigSchemasExt;
 use config_agent::http::errors::HTTPErr;
 use config_agent::http::prelude::*;
 use openapi_client::models::{
-    ActivateClientRequest, BackendConcreteConfig, Client, HashSchemaSerializedRequest,
-    IssueClientTokenRequest, RefreshLatestConcreteConfigRequest, SchemaDigestResponse,
+    ActivateDeviceRequest, BackendConfigInstance, Device, HashSchemaSerializedRequest,
+    IssueDeviceTokenRequest, RefreshLatestConfigInstanceRequest, SchemaDigestResponse,
     TokenResponse,
 };
 
@@ -14,14 +14,14 @@ use async_trait::async_trait;
 
 // ================================== AUTH EXT ===================================== //
 pub struct MockAuthClient {
-    pub activate_client_result: Box<dyn Fn() -> Result<Client, HTTPErr> + Send + Sync>,
+    pub activate_client_result: Box<dyn Fn() -> Result<Device, HTTPErr> + Send + Sync>,
     pub issue_client_token_result: Box<dyn Fn() -> Result<TokenResponse, HTTPErr> + Send + Sync>,
 }
 
 impl Default for MockAuthClient {
     fn default() -> Self {
         Self {
-            activate_client_result: Box::new(|| Ok(Client::default())),
+            activate_client_result: Box::new(|| Ok(Device::default())),
             issue_client_token_result: Box::new(|| Ok(TokenResponse::default())),
         }
     }
@@ -32,70 +32,70 @@ impl ClientAuthExt for MockAuthClient {
     async fn activate_client(
         &self,
         _: &str,
-        _: &ActivateClientRequest,
+        _: &ActivateDeviceRequest,
         _: &str,
-    ) -> Result<Client, HTTPErr> {
+    ) -> Result<Device, HTTPErr> {
         (self.activate_client_result)()
     }
 
     async fn issue_client_token(
         &self,
         _: &str,
-        _: &IssueClientTokenRequest,
+        _: &IssueDeviceTokenRequest,
     ) -> Result<TokenResponse, HTTPErr> {
         (self.issue_client_token_result)()
     }
 }
 
-// ============================ CONCRETE CONFIGS EXT =============================== //
-pub struct MockConcreteConfigsClient {
+// ============================ CONFIG INSTANCES EXT =============================== //
+pub struct MockConfigInstancesClient {
     pub read_latest_result:
-        Box<dyn Fn() -> Result<Option<BackendConcreteConfig>, HTTPErr> + Send + Sync>,
+        Box<dyn Fn() -> Result<Option<BackendConfigInstance>, HTTPErr> + Send + Sync>,
     pub refresh_latest_result:
-        Box<dyn Fn() -> Result<BackendConcreteConfig, HTTPErr> + Send + Sync>,
+        Box<dyn Fn() -> Result<BackendConfigInstance, HTTPErr> + Send + Sync>,
 }
 
-impl Default for MockConcreteConfigsClient {
+impl Default for MockConfigInstancesClient {
     fn default() -> Self {
         Self {
             read_latest_result: Box::new(|| Ok(None)),
-            refresh_latest_result: Box::new(|| Ok(BackendConcreteConfig::default())),
+            refresh_latest_result: Box::new(|| Ok(BackendConfigInstance::default())),
         }
     }
 }
 
-impl MockConcreteConfigsClient {
+impl MockConfigInstancesClient {
     pub fn set_read_latest<F>(&mut self, read_latest_result: F)
     where
-        F: Fn() -> Result<Option<BackendConcreteConfig>, HTTPErr> + Send + Sync + 'static,
+        F: Fn() -> Result<Option<BackendConfigInstance>, HTTPErr> + Send + Sync + 'static,
     {
         self.read_latest_result = Box::new(read_latest_result);
     }
 
     pub fn set_refresh_latest<F>(&mut self, refresh_latest_result: F)
     where
-        F: Fn() -> Result<BackendConcreteConfig, HTTPErr> + Send + Sync + 'static,
+        F: Fn() -> Result<BackendConfigInstance, HTTPErr> + Send + Sync + 'static,
     {
         self.refresh_latest_result = Box::new(refresh_latest_result);
     }
 }
 
-impl ConcreteConfigsExt for MockConcreteConfigsClient {
-    async fn read_latest_concrete_config(
+impl ConfigInstancesExt for MockConfigInstancesClient {
+    async fn read_latest_config_instance(
         &self,
         _: &str,
         _: &str,
         _: &str,
         _: &str,
-    ) -> Result<Option<BackendConcreteConfig>, HTTPErr> {
+    ) -> Result<Option<BackendConfigInstance>, HTTPErr> {
         (self.read_latest_result)()
     }
 
-    async fn refresh_latest_concrete_config(
+    async fn refresh_latest_config_instance(
         &self,
-        _: &RefreshLatestConcreteConfigRequest,
+        _: &RefreshLatestConfigInstanceRequest,
         _: &str,
-    ) -> Result<BackendConcreteConfig, HTTPErr> {
+    ) -> Result<BackendConfigInstance, HTTPErr> {
         (self.refresh_latest_result)()
     }
 }

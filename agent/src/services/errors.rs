@@ -10,13 +10,13 @@ use crate::storage::errors::StorageErr;
 use serde_json::json;
 
 #[derive(Debug)]
-pub struct LatestConcreteConfigNotFound {
+pub struct LatestConfigInstanceNotFound {
     pub config_slug: String,
     pub config_schema_digest: String,
     pub trace: Box<Trace>,
 }
 
-impl MiruError for LatestConcreteConfigNotFound {
+impl MiruError for LatestConfigInstanceNotFound {
     fn code(&self) -> Code {
         Code::ResourceNotFound
     }
@@ -37,9 +37,9 @@ impl MiruError for LatestConcreteConfigNotFound {
     }
 }
 
-impl fmt::Display for LatestConcreteConfigNotFound {
+impl fmt::Display for LatestConfigInstanceNotFound {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Unable to locate find the latest concrete config for config slug: '{}' and config schema digest: '{}'", self.config_slug, self.config_schema_digest)
+        write!(f, "Unable to locate the latest config instance for config slug: '{}' and config schema digest: '{}'", self.config_slug, self.config_schema_digest)
     }
 }
 
@@ -106,7 +106,7 @@ impl fmt::Display for ServiceHTTPErr {
 #[derive(Debug)]
 pub enum ServiceErr {
     // service errors
-    LatestConcreteConfigNotFound(LatestConcreteConfigNotFound),
+    LatestConfigInstanceNotFound(LatestConfigInstanceNotFound),
 
     // internal crate errors
     StorageErr(ServiceStorageErr),
@@ -116,7 +116,7 @@ pub enum ServiceErr {
 macro_rules! forward_error_method {
     ($self:ident, $method:ident $(, $arg:expr)?) => {
         match $self {
-            Self::LatestConcreteConfigNotFound(e) => e.$method($($arg)?),
+            Self::LatestConfigInstanceNotFound(e) => e.$method($($arg)?),
             Self::StorageErr(e) => e.$method($($arg)?),
             Self::HTTPErr(e) => e.$method($($arg)?),
         }

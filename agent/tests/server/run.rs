@@ -6,7 +6,7 @@ use config_agent::filesys::{dir::Dir, file::File, path::PathExt};
 use config_agent::server::run::{run, RunServerOptions};
 use config_agent::storage::{
     agent::Agent,
-    config_instances::{ConcreteConfig, ConcreteConfigCache, ConcreteConfigCacheKey},
+    config_instances::{ConfigInstance, ConfigInstanceCache, ConfigInstanceCacheKey},
     digests::{ConfigSchemaDigestCache, ConfigSchemaDigests},
     layout::StorageLayout,
 };
@@ -180,13 +180,13 @@ async fn prune_config_schema_digest_cache() {
 }
 
 #[tokio::test]
-async fn prune_concrete_config_cache() {
+async fn prune_config_instance_cache() {
     let dir = Dir::create_temp_dir("testing").await.unwrap();
     let layout = StorageLayout::new(dir.clone());
     prepare_valid_server_storage(dir.clone()).await;
     let options = RunServerOptions {
         layout: layout.clone(),
-        concrete_config_cache_max_size: 1,
+        config_instance_cache_max_size: 1,
         idle_timeout: Duration::from_millis(100),
         idle_timeout_poll_interval: Duration::from_millis(10),
         socket_file: File::new(PathBuf::from("/tmp").join("miru.sock")),
@@ -194,21 +194,21 @@ async fn prune_concrete_config_cache() {
     };
 
     // create some cache entries
-    let cache_dir = layout.concrete_config_cache();
-    let (cache, _) = ConcreteConfigCache::spawn(cache_dir.clone());
+    let cache_dir = layout.config_instance_cache();
+    let (cache, _) = ConfigInstanceCache::spawn(cache_dir.clone());
     for i in 0..10 {
         cache
             .write(
-                ConcreteConfigCacheKey {
+                ConfigInstanceCacheKey {
                     config_slug: format!("test{}", i),
                     config_schema_digest: format!("test{}", i),
                 },
-                ConcreteConfig {
+                ConfigInstance {
                     id: format!("test{}", i),
                     created_at: Utc::now().to_rfc3339(),
                     client_id: "test".to_string(),
                     config_schema_id: format!("test{}", i),
-                    concrete_config: json!({ "test": i }),
+                    config_instance: json!({ "test": i }),
                     config_slug: format!("test{}", i),
                     config_schema_digest: format!("test{}", i),
                 },

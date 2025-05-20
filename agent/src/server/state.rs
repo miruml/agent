@@ -13,7 +13,7 @@ use crate::server::errors::{
     MissingClientIDErr, ServerAuthErr, ServerErr, ServerFileSysErr, ServerStorageErr,
 };
 use crate::storage::agent::Agent;
-use crate::storage::config_instances::ConcreteConfigCache;
+use crate::storage::config_instances::ConfigInstanceCache;
 use crate::storage::digests::ConfigSchemaDigestCache;
 use crate::storage::layout::StorageLayout;
 use crate::storage::token::Token;
@@ -26,7 +26,7 @@ pub struct ServerState {
     pub client_id: ClientID,
     pub http_client: Arc<HTTPClient>,
     pub config_schema_digest_cache: Arc<ConfigSchemaDigestCache>,
-    pub concrete_config_cache: Arc<ConcreteConfigCache>,
+    pub config_instance_cache: Arc<ConfigInstanceCache>,
     pub token_mngr: Arc<TokenManager>,
     pub last_activity: Arc<AtomicU64>,
 }
@@ -62,9 +62,9 @@ impl ServerState {
         let (config_schema_digest_cache, config_schema_digest_cache_handle) =
             ConfigSchemaDigestCache::spawn(layout.config_schema_digest_cache());
         let config_schema_digest_cache = Arc::new(config_schema_digest_cache);
-        let (concrete_config_cache, concrete_config_cache_handle) =
-            ConcreteConfigCache::spawn(layout.concrete_config_cache());
-        let concrete_config_cache = Arc::new(concrete_config_cache);
+        let (config_instance_cache, config_instance_cache_handle) =
+            ConfigInstanceCache::spawn(layout.config_instance_cache());
+        let config_instance_cache = Arc::new(config_instance_cache);
 
         // initialize the token manager
         let (token_mngr, token_mngr_handle) = TokenManager::spawn(
@@ -86,7 +86,7 @@ impl ServerState {
             client_id,
             http_client,
             config_schema_digest_cache,
-            concrete_config_cache,
+            config_instance_cache,
             token_mngr,
             last_activity: Arc::new(AtomicU64::new(
                 SystemTime::now()
@@ -100,7 +100,7 @@ impl ServerState {
         let shutdown_handle = async move {
             let handles = vec![
                 config_schema_digest_cache_handle,
-                concrete_config_cache_handle,
+                config_instance_cache_handle,
                 token_mngr_handle,
             ];
 
@@ -121,7 +121,7 @@ impl ServerState {
                     trace: trace!(),
                 })
             })?;
-        self.concrete_config_cache.shutdown().await.map_err(|e| {
+        self.config_instance_cache.shutdown().await.map_err(|e| {
             ServerErr::StorageErr(ServerStorageErr {
                 source: Box::new(e),
                 trace: trace!(),
