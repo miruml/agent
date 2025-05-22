@@ -30,17 +30,17 @@ pub enum RefreshLatestConfigInstanceError {
 }
 
 
-pub async fn get_latest_config_instance(configuration: &configuration::Configuration, device_id: &str, config_schema_digest: &str, config_slug: &str) -> Result<models::BaseConfigInstance, Error<GetLatestConfigInstanceError>> {
+pub async fn get_latest_config_instance(configuration: &configuration::Configuration, device_id: &str, config_schema_digest: &str, config_type_slug: &str) -> Result<models::BaseConfigInstance, Error<GetLatestConfigInstanceError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_device_id = device_id;
     let p_config_schema_digest = config_schema_digest;
-    let p_config_slug = config_slug;
+    let p_config_type_slug = config_type_slug;
 
     let uri_str = format!("{}/config_instances/latest", configuration.base_path, device_id=crate::apis::urlencode(p_device_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     req_builder = req_builder.query(&[("config_schema_digest", &p_config_schema_digest.to_string())]);
-    req_builder = req_builder.query(&[("config_slug", &p_config_slug.to_string())]);
+    req_builder = req_builder.query(&[("config_type_slug", &p_config_type_slug.to_string())]);
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
     }

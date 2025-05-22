@@ -15,14 +15,14 @@ use serde::Deserialize;
 
 pub trait ReadLatestArgsI {
     fn device_id(&self) -> &str;
-    fn config_slug(&self) -> &str;
+    fn config_type_slug(&self) -> &str;
     fn config_schema_digest(&self) -> &str;
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ReadLatestArgs {
     pub device_id: String,
-    pub config_slug: String,
+    pub config_type_slug: String,
     pub config_schema_digest: String,
 }
 
@@ -30,8 +30,8 @@ impl ReadLatestArgsI for ReadLatestArgs {
     fn device_id(&self) -> &str {
         &self.device_id
     }
-    fn config_slug(&self) -> &str {
-        &self.config_slug
+    fn config_type_slug(&self) -> &str {
+        &self.config_type_slug
     }
     fn config_schema_digest(&self) -> &str {
         &self.config_schema_digest
@@ -48,7 +48,7 @@ pub async fn read_latest<ArgsT: ReadLatestArgsI, HTTPClientT: ConfigInstancesExt
     let result = http_client
         .read_latest_config_instance(
             args.device_id(),
-            args.config_slug(),
+            args.config_type_slug(),
             args.config_schema_digest(),
             token,
         )
@@ -72,13 +72,13 @@ pub async fn read_latest<ArgsT: ReadLatestArgsI, HTTPClientT: ConfigInstancesExt
 
     // if successful, update the config instance in storage and return it
     let key = ConfigInstanceCacheKey {
-        config_slug: args.config_slug().to_string(),
+        config_type_slug: args.config_type_slug().to_string(),
         config_schema_digest: args.config_schema_digest().to_string(),
     };
     if let Some(config_instance) = result {
         let config_instance = utils::convert_cfg_inst_backend_to_storage(
             config_instance,
-            args.config_slug().to_string(),
+            args.config_type_slug().to_string(),
             args.config_schema_digest().to_string(),
         );
         cache
@@ -107,7 +107,7 @@ pub async fn read_latest<ArgsT: ReadLatestArgsI, HTTPClientT: ConfigInstancesExt
         )),
         None => Err(ServiceErr::LatestConfigInstanceNotFound(
             LatestConfigInstanceNotFound {
-                config_slug: args.config_slug().to_string(),
+                config_type_slug: args.config_type_slug().to_string(),
                 config_schema_digest: args.config_schema_digest().to_string(),
                 trace: trace!(),
             },

@@ -8,13 +8,13 @@ use openapi_client::models::RefreshLatestConfigInstanceRequest;
 
 pub trait RefreshLatestArgsI {
     fn device_id(&self) -> &str;
-    fn config_slug(&self) -> &str;
+    fn config_type_slug(&self) -> &str;
     fn config_schema_digest(&self) -> &str;
 }
 
 pub struct RefreshLatestArgs {
     pub device_id: String,
-    pub config_slug: String,
+    pub config_type_slug: String,
     pub config_schema_digest: String,
 }
 
@@ -22,8 +22,8 @@ impl RefreshLatestArgsI for RefreshLatestArgs {
     fn device_id(&self) -> &str {
         &self.device_id
     }
-    fn config_slug(&self) -> &str {
-        &self.config_slug
+    fn config_type_slug(&self) -> &str {
+        &self.config_type_slug
     }
     fn config_schema_digest(&self) -> &str {
         &self.config_schema_digest
@@ -39,7 +39,7 @@ pub async fn refresh_latest<ArgsT: RefreshLatestArgsI, HTTPClientT: ConfigInstan
     // read the latest config instance from the server
     let payload = RefreshLatestConfigInstanceRequest {
         device_id: args.device_id().to_string(),
-        config_slug: args.config_slug().to_string(),
+        config_type_slug: args.config_type_slug().to_string(),
         config_schema_digest: args.config_schema_digest().to_string(),
     };
     let cfg_inst = http_client
@@ -55,11 +55,11 @@ pub async fn refresh_latest<ArgsT: RefreshLatestArgsI, HTTPClientT: ConfigInstan
     // update the config instance in storage
     let cfg_inst = utils::convert_cfg_inst_backend_to_storage(
         cfg_inst,
-        args.config_slug().to_string(),
+        args.config_type_slug().to_string(),
         args.config_schema_digest().to_string(),
     );
     let key = ConfigInstanceCacheKey {
-        config_slug: args.config_slug().to_string(),
+        config_type_slug: args.config_type_slug().to_string(),
         config_schema_digest: args.config_schema_digest().to_string(),
     };
     cache

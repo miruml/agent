@@ -66,13 +66,13 @@ where
         key: &K,
         update_last_accessed: bool,
     ) -> Result<Option<CacheEntry<K, V>>, StorageErr> {
-        let config_file = self.cache_entry_file(key);
-        if !config_file.exists() {
+        let entry_file= self.cache_entry_file(key);
+        if !entry_file.exists() {
             return Ok(None);
         }
 
         // read the entry
-        let mut entry = config_file
+        let mut entry = entry_file
             .read_json::<CacheEntry<K, V>>()
             .await
             .map_err(|e| {
@@ -122,8 +122,8 @@ where
         entry: &CacheEntry<K, V>,
         overwrite: bool,
     ) -> Result<(), StorageErr> {
-        let config_file = self.cache_entry_file(&entry.key);
-        config_file
+        let entry_file = self.cache_entry_file(&entry.key);
+        entry_file
             .write_json(
                 &entry, overwrite, true, // important that atomic writes are used here
             )
@@ -165,8 +165,8 @@ where
     }
 
     async fn delete(&self, key: &K) -> Result<(), StorageErr> {
-        let config_file = self.cache_entry_file(key);
-        config_file.delete().await.map_err(|e| {
+        let entry_file = self.cache_entry_file(key);
+        entry_file.delete().await.map_err(|e| {
             StorageErr::FileSysErr(StorageFileSysErr {
                 source: e,
                 trace: trace!(),

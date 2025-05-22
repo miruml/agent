@@ -30,18 +30,18 @@ pub enum RefreshLatestConfigInstanceError {
 }
 
 
-pub async fn get_latest_config_instance(configuration: &configuration::Configuration, device_id: &str, config_schema_digest: &str, config_slug: &str, expand_left_square_bracket_right_square_bracket: Option<Vec<models::ConfigInstanceExpand>>) -> Result<models::BackendConfigInstance, Error<GetLatestConfigInstanceError>> {
+pub async fn get_latest_config_instance(configuration: &configuration::Configuration, device_id: &str, config_schema_digest: &str, config_type_slug: &str, expand_left_square_bracket_right_square_bracket: Option<Vec<models::ConfigInstanceExpand>>) -> Result<models::BackendConfigInstance, Error<GetLatestConfigInstanceError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_device_id = device_id;
     let p_config_schema_digest = config_schema_digest;
-    let p_config_slug = config_slug;
+    let p_config_type_slug = config_type_slug;
     let p_expand_left_square_bracket_right_square_bracket = expand_left_square_bracket_right_square_bracket;
 
     let uri_str = format!("{}/config_instances/latest", configuration.base_path, device_id=crate::apis::urlencode(p_device_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     req_builder = req_builder.query(&[("config_schema_digest", &p_config_schema_digest.to_string())]);
-    req_builder = req_builder.query(&[("config_slug", &p_config_slug.to_string())]);
+    req_builder = req_builder.query(&[("config_type_slug", &p_config_type_slug.to_string())]);
     if let Some(ref param_value) = p_expand_left_square_bracket_right_square_bracket {
         req_builder = match "multi" {
             "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand[]".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),

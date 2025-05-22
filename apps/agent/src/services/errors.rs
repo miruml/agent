@@ -11,7 +11,7 @@ use serde_json::json;
 
 #[derive(Debug)]
 pub struct LatestConfigInstanceNotFound {
-    pub config_slug: String,
+    pub config_type_slug: String,
     pub config_schema_digest: String,
     pub trace: Box<Trace>,
 }
@@ -31,7 +31,7 @@ impl MiruError for LatestConfigInstanceNotFound {
 
     fn params(&self) -> Option<serde_json::Value> {
         Some(json!({
-            "config_slug": self.config_slug,
+            "config_type_slug": self.config_type_slug,
             "config_schema_digest": self.config_schema_digest,
         }))
     }
@@ -39,7 +39,7 @@ impl MiruError for LatestConfigInstanceNotFound {
 
 impl fmt::Display for LatestConfigInstanceNotFound {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Unable to locate the latest config instance for config slug: '{}' and config schema digest: '{}'", self.config_slug, self.config_schema_digest)
+        write!(f, "Unable to locate the latest config instance for config type slug: '{}' and config schema digest: '{}'", self.config_type_slug, self.config_schema_digest)
     }
 }
 

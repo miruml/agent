@@ -12,7 +12,7 @@ pub trait ConfigInstancesExt: Send + Sync {
     async fn read_latest_config_instance(
         &self,
         device_id: &str,
-        config_slug: &str,
+        config_type_slug: &str,
         config_schema_digest: &str,
         token: &str,
     ) -> Result<Option<BackendConfigInstance>, HTTPErr>;
@@ -34,16 +34,16 @@ impl ConfigInstancesExt for HTTPClient {
     async fn read_latest_config_instance(
         &self,
         device_id: &str,
-        config_slug: &str,
+        config_type_slug: &str,
         config_schema_digest: &str,
         token: &str,
     ) -> Result<Option<BackendConfigInstance>, HTTPErr> {
         // build the request
         let url = format!(
-            "{}/latest?device_id={}&config_slug={}&config_schema_digest={}",
+            "{}/latest?device_id={}&config_type_slug={}&config_schema_digest={}",
             self.config_instances_url(),
             device_id,
-            config_slug,
+            config_type_slug,
             config_schema_digest
         );
         let (request, context) = self.build_get_request(&url, self.default_timeout, Some(token))?;
@@ -65,7 +65,9 @@ impl ConfigInstancesExt for HTTPClient {
         let url = format!("{}/refresh_latest", self.config_instances_url());
         let key = format!(
             "{}:{}:{}",
-            url, payload.config_slug, payload.config_schema_digest,
+            url,
+            payload.config_type_slug,
+            payload.config_schema_digest,
         );
         let (request, context) = self.build_post_request(
             &url,
@@ -87,12 +89,12 @@ impl ConfigInstancesExt for Arc<HTTPClient> {
     async fn read_latest_config_instance(
         &self,
         device_id: &str,
-        config_slug: &str,
+        config_type_slug: &str,
         config_schema_digest: &str,
         token: &str,
     ) -> Result<Option<BackendConfigInstance>, HTTPErr> {
         self.as_ref()
-            .read_latest_config_instance(device_id, config_slug, config_schema_digest, token)
+            .read_latest_config_instance(device_id, config_type_slug, config_schema_digest, token)
             .await
     }
 

@@ -11,7 +11,7 @@ Method | HTTP request | Description
 
 ## get_latest_config_instance
 
-> models::BackendConfigInstance get_latest_config_instance(device_id, config_schema_digest, config_slug, expand_left_square_bracket_right_square_bracket)
+> models::BackendConfigInstance get_latest_config_instance(device_id, config_schema_digest, config_type_slug, expand_left_square_bracket_right_square_bracket)
 Get the latest config instance
 
 ### Parameters
@@ -21,7 +21,7 @@ Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
 **device_id** | **String** | The unique identifier of the device | [required] |
 **config_schema_digest** | **String** | The digest of the config schema | [required] |
-**config_slug** | **String** | The slug of the config | [required] |
+**config_type_slug** | **String** | The slug of the config type | [required] |
 **expand_left_square_bracket_right_square_bracket** | Option<[**Vec<models::ConfigInstanceExpand>**](models::ConfigInstanceExpand.md)> |  |  |
 
 ### Return type

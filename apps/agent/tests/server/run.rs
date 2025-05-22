@@ -200,7 +200,7 @@ async fn prune_config_instance_cache() {
         cache
             .write(
                 ConfigInstanceCacheKey {
-                    config_slug: format!("test{}", i),
+                    config_type_slug: format!("test{}", i),
                     config_schema_digest: format!("test{}", i),
                 },
                 ConfigInstance {
@@ -209,7 +209,7 @@ async fn prune_config_instance_cache() {
                     device_id: "test".to_string(),
                     config_schema_id: format!("test{}", i),
                     config_instance: json!({ "test": i }),
-                    config_slug: format!("test{}", i),
+                    config_type_slug: format!("test{}", i),
                     config_schema_digest: format!("test{}", i),
                 },
                 false,

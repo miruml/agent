@@ -39,7 +39,7 @@ make gen
 
 # client
 gen_client_models_dir=$gen_dir/client/src/models
-client_models_target_dir=$agent_dir/openapi/client/src/models
+client_models_target_dir=$agent_dir/libs/openapi-client/src/models
 
 # replace the target model directories with the generated ones
 rm -rf "${client_models_target_dir:?}"/*
@@ -53,7 +53,7 @@ cp -r "$gen_client_models_dir"/* "$client_models_target_dir"
 
 # server
 gen_server_models_dir=$gen_dir/server/src/models
-server_models_target_dir=$agent_dir/openapi/server/src/models
+server_models_target_dir=$agent_dir/libs/openapi-server/src/models
 
 # replace the target model directories with the generated ones
 rm -rf "${server_models_target_dir:?}"/*

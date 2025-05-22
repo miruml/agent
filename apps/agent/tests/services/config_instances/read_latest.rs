@@ -38,7 +38,7 @@ pub mod errors {
         // run the test
         let args = ReadLatestArgs {
             device_id: "device-id".to_string(),
-            config_slug: "config-slug".to_string(),
+            config_type_slug: "config-type-slug".to_string(),
             config_schema_digest: "config-schema-digest".to_string(),
         };
         let result = read_latest::read_latest(&args, &cache, &http_client, "doesntmatter").await;
@@ -48,7 +48,7 @@ pub mod errors {
             result,
             Err(ServiceErr::LatestConfigInstanceNotFound(
                 LatestConfigInstanceNotFound {
-                    config_slug: _,
+                    config_type_slug: _,
                     config_schema_digest: _,
                     trace: _,
                 }
@@ -73,7 +73,7 @@ pub mod errors {
         // run the test
         let args = ReadLatestArgs {
             device_id: "device-id".to_string(),
-            config_slug: "config-slug".to_string(),
+            config_type_slug: "config-type-slug".to_string(),
             config_schema_digest: "config-schema-digest".to_string(),
         };
         let result = read_latest::read_latest(&args, &cache, &http_client, "doesntmatter")
@@ -94,15 +94,15 @@ pub mod success {
 
         // create the config instance in storage
         let (cache, _) = ConfigInstanceCache::spawn(dir);
-        let config_slug = "config-slug";
+        let config_type_slug = "config-type-slug";
         let config_schema_digest = "config-schema-digest";
         let config_instance = ConfigInstance {
-            config_slug: config_slug.to_string(),
+            config_type_slug: config_type_slug.to_string(),
             config_schema_digest: config_schema_digest.to_string(),
             ..Default::default()
         };
         let key = ConfigInstanceCacheKey {
-            config_slug: config_slug.to_string(),
+            config_type_slug: config_type_slug.to_string(),
             config_schema_digest: config_schema_digest.to_string(),
         };
         cache
@@ -122,7 +122,7 @@ pub mod success {
         // run the test
         let args = ReadLatestArgs {
             device_id: "device-id".to_string(),
-            config_slug: config_slug.to_string(),
+            config_type_slug: config_type_slug.to_string(),
             config_schema_digest: config_schema_digest.to_string(),
         };
         let result = read_latest::read_latest(&args, &cache, &http_client, "doesntmatter")
@@ -141,15 +141,15 @@ pub mod success {
 
         // create the config instance in storage
         let (cache, _) = ConfigInstanceCache::spawn(dir);
-        let config_slug = "config-slug";
+        let config_type_slug = "config-type-slug";
         let config_schema_digest = "config-schema-digest";
         let config_instance = ConfigInstance {
-            config_slug: config_slug.to_string(),
+            config_type_slug: config_type_slug.to_string(),
             config_schema_digest: config_schema_digest.to_string(),
             ..Default::default()
         };
         let key = ConfigInstanceCacheKey {
-            config_slug: config_slug.to_string(),
+            config_type_slug: config_type_slug.to_string(),
             config_schema_digest: config_schema_digest.to_string(),
         };
         cache
@@ -164,7 +164,7 @@ pub mod success {
         // run the test
         let args = ReadLatestArgs {
             device_id: "device-id".to_string(),
-            config_slug: config_slug.to_string(),
+            config_type_slug: config_type_slug.to_string(),
             config_schema_digest: config_schema_digest.to_string(),
         };
         let result = read_latest::read_latest(&args, &cache, &http_client, "doesntmatter")
@@ -189,7 +189,7 @@ pub mod success {
         // run the test
         let args = ReadLatestArgs {
             device_id: "device-id".to_string(),
-            config_slug: "config-slug".to_string(),
+            config_type_slug: "config-type-slug".to_string(),
             config_schema_digest: "config-schema-digest".to_string(),
         };
         let result = read_latest::read_latest(&args, &cache, &http_client, "doesntmatter")
@@ -198,7 +198,7 @@ pub mod success {
 
         let storage_config_instance = utils::convert_cfg_inst_backend_to_storage(
             backend_config_instance,
-            args.config_slug().to_string(),
+            args.config_type_slug().to_string(),
             args.config_schema_digest().to_string(),
         );
         let expected = utils::convert_cfg_inst_storage_to_sdk(storage_config_instance.clone());
@@ -206,7 +206,7 @@ pub mod success {
 
         // cache should have been updated
         let key = ConfigInstanceCacheKey {
-            config_slug: args.config_slug().to_string(),
+            config_type_slug: args.config_type_slug().to_string(),
             config_schema_digest: args.config_schema_digest().to_string(),
         };
         let cached_config_instance = cache.read(key).await.unwrap();

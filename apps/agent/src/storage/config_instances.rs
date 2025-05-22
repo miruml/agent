@@ -13,7 +13,7 @@ pub type ConfigInstanceCache = Cache<ConfigInstanceCacheKey, ConfigInstance>;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct ConfigInstanceCacheKey {
-    pub config_slug: String,
+    pub config_type_slug: String,
     pub config_schema_digest: String,
 }
 
@@ -22,7 +22,7 @@ impl Display for ConfigInstanceCacheKey {
         write!(
             f,
             "{}{}{}",
-            self.config_slug, PATH_DELIMITER, self.config_schema_digest
+            self.config_type_slug, PATH_DELIMITER, self.config_schema_digest
         )
     }
 }
@@ -37,6 +37,6 @@ pub struct ConfigInstance {
     pub config_instance: serde_json::Value,
 
     // agent specific fields
-    pub config_slug: String,
+    pub config_type_slug: String,
     pub config_schema_digest: String,
 }

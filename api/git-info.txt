@@ -1,4 +1,4 @@
 Repository Name: git@github.com:miruml/openapi.git
 Branch Name: rename
-Commit Hash: 3fb11eb1949e522e58b0c4c005e548679f7be35d
-Commit Message: refactor: rename the root shared to 'user' and add makefile for user spec
+Commit Hash: 91c3b0fc8258b1644599fe792a95516654515e4a
+Commit Message: refactor: rename 'config' to 'config type'

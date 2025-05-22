@@ -2,7 +2,7 @@ use crate::storage;
 
 pub fn convert_cfg_inst_backend_to_storage(
     backend_config_instance: openapi_client::models::BackendConfigInstance,
-    config_slug: String,
+    config_type_slug: String,
     config_schema_digest: String,
 ) -> storage::config_instances::ConfigInstance {
     storage::config_instances::ConfigInstance {
@@ -11,7 +11,7 @@ pub fn convert_cfg_inst_backend_to_storage(
         device_id: backend_config_instance.device_id,
         config_schema_id: backend_config_instance.config_schema_id,
         config_instance: backend_config_instance.config_instance.unwrap_or_default(),
-        config_slug,
+        config_type_slug,
         config_schema_digest,
     }
 }

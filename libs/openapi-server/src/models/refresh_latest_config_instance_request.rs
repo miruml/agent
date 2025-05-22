@@ -16,16 +16,16 @@ pub struct RefreshLatestConfigInstanceRequest {
     /// The config schema digest
     #[serde(rename = "config_schema_digest")]
     pub config_schema_digest: String,
-    /// The config slug
-    #[serde(rename = "config_slug")]
-    pub config_slug: String,
+    /// The config type slug
+    #[serde(rename = "config_type_slug")]
+    pub config_type_slug: String,
 }
 
 impl RefreshLatestConfigInstanceRequest {
-    pub fn new(config_schema_digest: String, config_slug: String) -> RefreshLatestConfigInstanceRequest {
+    pub fn new(config_schema_digest: String, config_type_slug: String) -> RefreshLatestConfigInstanceRequest {
         RefreshLatestConfigInstanceRequest {
             config_schema_digest,
-            config_slug,
+            config_type_slug,
         }
     }
 }

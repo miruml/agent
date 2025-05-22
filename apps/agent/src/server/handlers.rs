@@ -66,7 +66,7 @@ pub async fn hash_schema(
 
 #[derive(Debug, Deserialize)]
 pub struct ReadLatestQueryArgs {
-    pub config_slug: String,
+    pub config_type_slug: String,
     pub config_schema_digest: String,
 }
 
@@ -84,7 +84,7 @@ pub async fn read_latest_config_instance(
 
         let args = ReadLatestArgs {
             device_id: state.device_id.clone(),
-            config_slug: query.config_slug,
+            config_type_slug: query.config_type_slug,
             config_schema_digest: query.config_schema_digest,
         };
 
@@ -126,7 +126,7 @@ pub async fn refresh_latest_config_instance(
 
         let args = RefreshLatestArgs {
             device_id: state.device_id.clone(),
-            config_slug: payload.config_slug,
+            config_type_slug: payload.config_type_slug,
             config_schema_digest: payload.config_schema_digest,
         };
 
