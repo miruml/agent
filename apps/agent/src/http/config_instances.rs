@@ -65,9 +65,7 @@ impl ConfigInstancesExt for HTTPClient {
         let url = format!("{}/refresh_latest", self.config_instances_url());
         let key = format!(
             "{}:{}:{}",
-            url,
-            payload.config_type_slug,
-            payload.config_schema_digest,
+            url, payload.config_type_slug, payload.config_schema_digest,
         );
         let (request, context) = self.build_post_request(
             &url,

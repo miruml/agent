@@ -66,7 +66,7 @@ where
         key: &K,
         update_last_accessed: bool,
     ) -> Result<Option<CacheEntry<K, V>>, StorageErr> {
-        let entry_file= self.cache_entry_file(key);
+        let entry_file = self.cache_entry_file(key);
         if !entry_file.exists() {
             return Ok(None);
         }

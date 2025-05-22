@@ -1,6 +1,6 @@
 // internal crates
-use config_agent::http::devices::DevicesExt;
 use config_agent::http::config_schemas::ConfigSchemasExt;
+use config_agent::http::devices::DevicesExt;
 use config_agent::http::errors::HTTPErr;
 use config_agent::http::prelude::*;
 use openapi_client::models::{
