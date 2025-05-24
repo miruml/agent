@@ -1,12 +1,17 @@
-# This is an example .goreleaser.yml file with some sensible defaults.
-# Make sure to check the documentation at https://goreleaser.com
-
-# The lines below are called `modelines`. See `:help modeline`
-# Feel free to remove those if you don't want/need to use them.
-# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# yaml-language-server: $schema=https://goreleaser.com/static/schema-pro.json
 # vim: set ts=2 sw=2 tw=0 fo=cnqoj
 
 version: 2
+pro: true
+
+nightly:
+  version_template: "{{ incminor .Version }}-beta"
+  tag_name: beta
+  publish_release: true
+  keep_single_release: true
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
 
 builds:
   - id: "agent"
@@ -92,7 +97,6 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    builds: ["agent"]
     format_overrides:
       - goos: windows
         formats: [zip]
@@ -106,12 +110,13 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    builds: ["installer"]
     format_overrides:
       - goos: windows
         formats: [zip]
 
 changelog:
+  sort: asc
+  use: git
   groups:
     - title: Features
       regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
@@ -137,20 +142,22 @@ changelog:
       
 
 release:
+  prerelease: auto
   github:
     owner: miruml
     name: agent
   footer: >-
     ## Miru Agent {{.Tag}}
+
+    **Full Changelog**: https://github.com/miruml/agent/compare/{{ .PreviousTag }}...{{ .Tag }}
     
-    New release of Miru Agent. Download the appropriate debian package for your system.
-    
+
     For documentation, visit: https://docs.miruml.com
 
-    ---
 
-    Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
 
 source:
   enabled: false
+
+report_sizes: true
 

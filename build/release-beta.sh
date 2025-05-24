@@ -5,10 +5,14 @@ this_repo_root_dir=$(git rev-parse --show-toplevel)
 this_dir=$this_repo_root_dir/build
 cd "$this_dir"
 
-# shellcheck source=./previous_tag.sh
-. "$this_dir/previous_tag.sh"
+# shellcheck source=git-tags.sh
+. "$this_dir/git-tags.sh"
 previous_tag=$(previous_tag)
 echo "Previous tag: $previous_tag"
 export GORELEASER_PREVIOUS_TAG="$previous_tag"
+# current_tag=$(latest_tag)
+# echo "Current tag: $current_tag"
+# export GORELEASER_CURRENT_TAG="$current_tag"
 
-goreleaser release --snapshot --clean
+rm -rf dist
+goreleaser release --clean --nightly
