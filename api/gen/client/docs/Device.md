@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 **object** | **String** |  | 
 **id** | **String** |  | 
 **name** | **String** |  | 
+**is_activated** | **bool** |  | 
 **created_at** | **String** |  | 
 **updated_at** | **String** |  | 
 **created_by_id** | Option<**String**> |  | 

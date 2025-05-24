@@ -19,6 +19,8 @@ pub struct Device {
     pub id: String,
     #[serde(rename = "name")]
     pub name: String,
+    #[serde(rename = "is_activated")]
+    pub is_activated: bool,
     #[serde(rename = "created_at")]
     pub created_at: String,
     #[serde(rename = "updated_at")]
@@ -36,11 +38,12 @@ pub struct Device {
 }
 
 impl Device {
-    pub fn new(object: Object, id: String, name: String, created_at: String, updated_at: String, created_by_id: Option<String>, updated_by_id: Option<String>, created_by: Option<models::User>, updated_by: Option<models::User>, device_tags: Option<models::DeviceTagPaginatedList>) -> Device {
+    pub fn new(object: Object, id: String, name: String, is_activated: bool, created_at: String, updated_at: String, created_by_id: Option<String>, updated_by_id: Option<String>, created_by: Option<models::User>, updated_by: Option<models::User>, device_tags: Option<models::DeviceTagPaginatedList>) -> Device {
         Device {
             object,
             id,
             name,
+            is_activated,
             created_at,
             updated_at,
             created_by_id,
