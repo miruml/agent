@@ -112,7 +112,29 @@ archives:
         formats: [zip]
 
 changelog:
-  disable: true
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: Bug Fixes
+      regexp: '^.*?bug(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Performance
+      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: Reversions
+      regexp: '^.*?revert(\([[:word:]]+\))??!?:.+$'
+      order: 3
+    - title: Others
+      order: 999
+
+  filters:
+    include:
+      - "^feat"
+      - "^fix"
+      - "^perf"
+      - "^revert"
+      
 
 release:
   github:
