@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+PRERELEASE=${1:-false}
+
 # Configuration
 DEB_PKG_NAME="miru-agent"
 GITHUB_REPO="miruml/agent"
@@ -53,9 +55,15 @@ OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 DEB_ARCH=$(uname -m)
 
 # Get latest version
-log "Fetching latest version..."
-VERSION=$(curl -sL "https://api.github.com/repos/${GITHUB_REPO}/releases/latest" | 
-    grep "tag_name" | cut -d '"' -f 4) || error "Failed to fetch latest version"
+if [ "$PRERELEASE" = true ]; then
+    log "Fetching latest pre-release version..."
+    VERSION=$(curl -sL "https://api.github.com/repos/${GITHUB_REPO}/releases" | 
+        jq -r '.[] | select(.prerelease==true) | .tag_name' | head -n 1) || error "Failed to fetch latest pre-release version"
+else
+    log "Fetching latest stable version..."
+    VERSION=$(curl -sL "https://api.github.com/repos/${GITHUB_REPO}/releases/latest" | 
+        grep "tag_name" | cut -d '"' -f 4) || error "Failed to fetch latest version"
+fi
 
 [ -z "$VERSION" ] && error "Could not determine latest version"
 log "Latest version: ${VERSION}"
