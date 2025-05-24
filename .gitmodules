@@ -1,0 +1,3 @@
+[submodule "api/openapi"]
+	path = api/openapi
+	url = git@github.com:miruml/openapi.git
