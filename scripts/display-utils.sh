@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+### COPIED DISPLAY UTILITIES BEGIN ###
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -13,3 +15,5 @@ debug() { echo "${BLUE}==>${NC} $1"; }
 log() { echo "${GREEN}==>${NC} $1"; }
 warn() { echo "${YELLOW}Warning:${NC} $1"; }
 error() { echo "${RED}Error:${NC} $1"; exit 1; }
+
+### COPIED DISPLAY UTILITIES END ###

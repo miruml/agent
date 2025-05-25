@@ -1,9 +1,24 @@
 #!/bin/sh
 set -e
 
-this_repo_root_dir=$(git rev-parse --show-toplevel)
-# shellcheck source=../display.sh
-. "$this_repo_root_dir/scripts/display.sh"
+### COPIED ARGUMENT UTILITIES BEGIN ###
+
+### COPIED DISPLAY UTILITIES BEGIN ###
+
+# Colors for output
+RED='[0;31m'
+GREEN='[0;32m'
+YELLOW='[1;33m'
+BLUE='[0;34m'
+NC='[0m' # No Color
+
+# Helper functions
+debug() { echo "${BLUE}==>${NC} $1"; }
+log() { echo "${GREEN}==>${NC} $1"; }
+warn() { echo "${YELLOW}Warning:${NC} $1"; }
+error() { echo "${RED}Error:${NC} $1"; exit 1; }
+
+### COPIED DISPLAY UTILITIES END ###
 
 default_value() {
     default_value=${1:-}
@@ -29,13 +44,13 @@ debug_flag() {
 
 # Git branch
 git_branch() {
-    git_branch=$(default_value "main" "$@")
+    branch=$(default_value "main" "$@")
     for arg in "$@"; do
         case $arg in
-        --git-branch=*) git_branch="${arg#*=}";;
+        --git-branch=*) branch="${arg#*=}";;
         esac
     done
-    echo "$git_branch"
+    echo "$branch"
 }
 
 print_git_branch() {
@@ -75,3 +90,5 @@ print_backend_base_url() {
     backend_base_url=$1
     debug "Backend Base URL: '$backend_base_url'"
 }
+
+### COPIED ARGUMENT UTILITIES END ###
