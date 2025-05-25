@@ -1,3 +1,6 @@
+// internal crates
+use crate::logs::LogLevel;
+
 // external crates
 use crate::filesys::{file::File, path::PathExt};
 use crate::storage::errors::{AgentNotActivatedErr, StorageErr, StorageFileSysErr};
@@ -9,6 +12,8 @@ pub struct Agent {
     pub device_id: String,
     pub activated: bool,
     pub backend_base_url: String,
+    #[serde(default)]
+    pub log_level: LogLevel,
 }
 
 impl Default for Agent {
@@ -17,6 +22,7 @@ impl Default for Agent {
             device_id: "placeholder".to_string(),
             activated: false,
             backend_base_url: "https://configs.api.miruml.com/agent/v1".to_string(),
+            log_level: LogLevel::Info,
         }
     }
 }

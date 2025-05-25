@@ -18,12 +18,6 @@ async fn main() {
         return;
     }
 
-    // initialize the logging
-    let result = init(LogOptions::default());
-    if let Err(e) = result {
-        println!("Failed to initialize logging: {}", e);
-    }
-
     // check the agent has been activated
     let layout = StorageLayout::default();
     let agent_file = layout.agent_file();
@@ -41,11 +35,22 @@ async fn main() {
         }
     };
 
+    // initialize the logging
+    let log_options = LogOptions {
+        log_level: agent.log_level,
+        ..Default::default()
+    };
+    let result = init(log_options);
+    if let Err(e) = result {
+        println!("Failed to initialize logging: {}", e);
+    }
+
     // run the server
     let options = RunServerOptions {
         backend_base_url: agent.backend_base_url,
         ..Default::default()
     };
+    info!("Running the server with options: {:?}", options);
     let result = run(options, await_shutdown_signal()).await;
     if let Err(e) = result {
         error!("Failed to run the server: {}", e);

@@ -7,9 +7,12 @@ use std::time::{Duration, SystemTime};
 
 // internal crates
 use crate::auth::token_mngr::run_refresh_loop;
+use crate::auth::token_mngr::TokenManager;
 use crate::filesys::file::File;
 use crate::http::client::HTTPClient;
-use crate::server::errors::{JoinHandleErr, ServerErr, ShutdownMngrDuplicateArgErr};
+use crate::server::errors::{
+    JoinHandleErr, ServerErr, ShutdownMngrDuplicateArgErr, ServerAuthErr,
+};
 use crate::server::serve::serve;
 use crate::server::state::ServerState;
 use crate::storage::layout::StorageLayout;
@@ -27,6 +30,7 @@ pub struct ServerComponents {
     pub server_handle: JoinHandle<Result<(), ServerErr>>,
 }
 
+#[derive(Debug)]
 pub struct RunServerOptions {
     // host os
     pub layout: StorageLayout,
@@ -149,6 +153,9 @@ async fn start_server(
     let token_mngr_for_spawn = state.token_mngr.clone();
     let token_refresh_expiration_threshold = options.token_refresh_expiration_threshold;
     let token_refresh_cooldown = options.token_refresh_cooldown;
+    if let Err(e) = refresh_if_expired(&token_mngr_for_spawn).await {
+        error!("Failed to refresh expired token: {}", e);
+    }
     let token_refresh_handle = tokio::spawn(async move {
         run_refresh_loop(
             token_mngr_for_spawn,
@@ -170,6 +177,24 @@ async fn start_server(
     shutdown_manager.with_server_handle(server_handle)?;
 
     Ok(state)
+}
+
+async fn refresh_if_expired(token_mngr: &TokenManager) -> Result<(), ServerErr> {
+    let token = token_mngr.get_token().await.map_err(|e| {
+        ServerErr::AuthErr(ServerAuthErr {
+            source: Box::new(e),
+            trace: trace!(),
+        })
+    })?;
+    if token.is_expired() {
+        token_mngr.refresh_token().await.map_err(|e| {
+            ServerErr::AuthErr(ServerAuthErr {
+                source: Box::new(e),
+                trace: trace!(),
+            })
+        })?;
+    }
+    Ok(())
 }
 
 async fn await_idle_timeout(

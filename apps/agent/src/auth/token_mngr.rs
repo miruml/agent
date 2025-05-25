@@ -22,7 +22,7 @@ use serde::Serialize;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
-use tracing::{error, info};
+use tracing::{error, info, debug};
 use uuid::Uuid;
 
 pub type TokenFile = CachedFile<Token>;
@@ -193,11 +193,15 @@ impl<HTTPClientT: DevicesExt> Worker<HTTPClientT> {
                     break;
                 }
                 WorkerCommand::GetToken { respond_to } => {
+                    debug!("Worker getting token");
                     let token = self.token_mngr.get_token().await;
+                    debug!("Worker got Token: {:?}", token);
                     respond_to.send(Ok(token)).unwrap();
                 }
                 WorkerCommand::RefreshToken { respond_to } => {
+                    debug!("Worker refreshing token");
                     let result = self.token_mngr.refresh_token().await;
+                    debug!("Worker refreshed Token: {:?}", result);
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to refresh token: {:?}", e);
                     }
@@ -256,6 +260,7 @@ impl TokenManager {
     }
 
     pub async fn get_token(&self) -> Result<Arc<Token>, AuthErr> {
+        debug!("Requesting token from token manager");
         let (send, recv) = oneshot::channel();
         self.sender
             .send(WorkerCommand::GetToken { respond_to: send })
@@ -275,6 +280,7 @@ impl TokenManager {
     }
 
     pub async fn refresh_token(&self) -> Result<(), AuthErr> {
+        debug!("Requesting token refresh from token manager");
         let (send, recv) = oneshot::channel();
         self.sender
             .send(WorkerCommand::RefreshToken { respond_to: send })

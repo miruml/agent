@@ -9,6 +9,7 @@ use crate::errors::{
 use crate::{utils, utils::Colors};
 use config_agent::crypt::jwt;
 use config_agent::http::devices::DevicesExt;
+use config_agent::logs::LogLevel;
 use config_agent::storage::{agent::Agent, layout::StorageLayout, setup::setup_storage};
 use config_agent::trace;
 use openapi_client::models::ActivateDeviceRequest;
@@ -62,6 +63,7 @@ impl<HTTPClientT: DevicesExt> Installer<HTTPClientT> {
             device_id,
             activated: true,
             backend_base_url: backend_base_url.to_string(),
+            log_level: LogLevel::Info,
         };
         agent_file
             .write_json(&agent, true, true)

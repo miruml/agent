@@ -2,6 +2,7 @@
 use crate::crypt::rsa;
 use crate::storage::{
     agent::Agent,
+    token::Token,
     errors::{StorageCryptErr, StorageErr, StorageFileSysErr},
     layout::StorageLayout,
 };
@@ -28,6 +29,20 @@ pub async fn setup_storage(layout: &StorageLayout, agent: &Agent) -> Result<(), 
             trace: trace!(),
         })
     })?;
+
+    // initialize the auth file with invalid authentication so that the agent doesn't
+    // use old authentication by accident
+    let token = Token::default();
+    let auth_file = auth_dir.token_file();
+    auth_file
+        .write_json(&token, true, true)
+        .await
+        .map_err(|e| {
+            StorageErr::FileSysErr(StorageFileSysErr {
+                source: e,
+                trace: trace!(),
+            })
+        })?;
 
     // generate the public and private keys
     let private_key_file = auth_dir.private_key_file();
