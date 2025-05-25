@@ -4,12 +4,6 @@
 version: 2
 pro: true
 
-nightly:
-  version_template: "{{ incminor .Version }}-beta"
-  tag_name: beta
-  publish_release: true
-  keep_single_release: true
-
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
 
@@ -122,7 +116,7 @@ changelog:
       regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
       order: 0
     - title: Bug Fixes
-      regexp: '^.*?bug(\([[:word:]]+\))??!?:.+$'
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
       order: 1
     - title: Performance
       regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
@@ -153,8 +147,6 @@ release:
     
 
     For documentation, visit: https://docs.miruml.com
-
-
 
 source:
   enabled: false
