@@ -18,9 +18,9 @@ PRERELEASE=$(prerelease_flag --default=false "$@")
 if [ "$DEBUG" = true ]; then
     print_prerelease_flag "$PRERELEASE"
 fi
-BACKEND_URL=$(backend_url --default= "" "$@")
+BACKEND_BASE_URL=$(backend_base_url --default="" "$@")
 if [ "$DEBUG" = true ]; then
-    print_backend_url "$BACKEND_URL"
+    print_backend_base_url "$BACKEND_BASE_URL"
 fi
 
 # install the debian package
@@ -33,8 +33,8 @@ echo ""
 echo ""
 echo "Activating the Miru Agent"
 echo "========================="
-if [ -n "$BACKEND_URL" ]; then
-    curl -fsSL https://raw.githubusercontent.com/miruml/agent/"$BRANCH"/scripts/install/activate.sh | sh -s -- --prerelease="$PRERELEASE" --backend-url="$BACKEND_URL"
+if [ -n "$BACKEND_BASE_URL" ]; then
+    curl -fsSL https://raw.githubusercontent.com/miruml/agent/"$BRANCH"/scripts/install/activate.sh | sh -s -- --prerelease="$PRERELEASE" --backend-base-url="$BACKEND_BASE_URL"
 else
     curl -fsSL https://raw.githubusercontent.com/miruml/agent/"$BRANCH"/scripts/install/activate.sh | sh -s -- --prerelease="$PRERELEASE"
 fi

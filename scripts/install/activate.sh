@@ -14,9 +14,9 @@ PRERELEASE=$(prerelease_flag --default=false "$@")
 if [ "$DEBUG" = true ]; then
     print_prerelease_flag "$PRERELEASE"
 fi
-BACKEND_URL=$(backend_url --default= "" "$@")
+BACKEND_BASE_URL=$(backend_base_url --default="" "$@")
 if [ "$DEBUG" = true ]; then
-    print_backend_url "$BACKEND_URL"
+    print_backend_base_url "$BACKEND_BASE_URL"
 fi
 
 # Configuration
@@ -128,8 +128,8 @@ tar -xzf "$DOWNLOAD_DIR/${BINARY_NAME}.tar.gz" -C "$DOWNLOAD_DIR" ||
 
 # Execute the installer
 cd "$DOWNLOAD_DIR"
-if [ -n "$BACKEND_URL" ]; then
-    sudo -u miru ./config-agent-installer "$BACKEND_URL"
+if [ -n "$BACKEND_BASE_URL" ]; then
+    sudo -u miru ./config-agent-installer "$BACKEND_BASE_URL"
 else
     sudo -u miru ./config-agent-installer
 fi

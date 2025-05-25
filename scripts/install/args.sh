@@ -61,17 +61,17 @@ print_prerelease_flag() {
 }
 
 # Backend URL
-backend_url() {
-    backend_url=$(default_value "" "$@")
+backend_base_url() {
+    backend_base_url=$(default_value "" "$@")
     for arg in "$@"; do
         case $arg in
-        --backend-url=*) backend_url="${arg#*=}";;
+        --backend-base-url=*) backend_base_url="${arg#*=}";;
         esac
     done
-    echo "$backend_url"
+    echo "$backend_base_url"
 }
 
-print_backend_url() {
-    backend_url=$1
-    debug "Backend URL: '$backend_url'"
+print_backend_base_url() {
+    backend_base_url=$1
+    debug "Backend Base URL: '$backend_base_url'"
 }
