@@ -1,22 +1,22 @@
 #!/bin/sh
 set -e
 
-PRERELEASE=${1:-false}
+this_repo_root_dir=$(git rev-parse --show-toplevel)
+# shellcheck source=../display.sh
+. "$this_repo_root_dir/scripts/display.sh"
+# shellcheck source=./args.sh
+. "$this_repo_root_dir/scripts/install/args.sh"
+
+# CLI args
+DEBUG=$(debug_flag --default=false "$@")
+PRERELEASE=$(prerelease_flag --default=false "$@")
+if [ "$DEBUG" = true ]; then
+    print_prerelease_flag "$PRERELEASE"
+fi
 
 # Configuration
 DEB_PKG_NAME="miru-agent"
 GITHUB_REPO="miruml/agent"
-
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-# Helper functions
-log() { echo "${GREEN}==>${NC} $1"; }
-warn() { echo "${YELLOW}Warning:${NC} $1"; }
-error() { echo "${RED}Error:${NC} $1"; exit 1; }
 
 # Check if command exists
 command_exists() { 
