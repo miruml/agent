@@ -14,7 +14,7 @@ pub mod setup_storage {
         // token file
         let auth_layout = layout.auth_dir();
         let token_file = auth_layout.token_file();
-        assert!(!token_file.exists());
+        assert!(token_file.exists());
 
         // private key file
         let private_key_file = auth_layout.private_key_file();

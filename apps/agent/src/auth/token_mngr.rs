@@ -22,7 +22,7 @@ use serde::Serialize;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
-use tracing::{error, info, debug};
+use tracing::{debug, error, info};
 use uuid::Uuid;
 
 pub type TokenFile = CachedFile<Token>;

@@ -2,9 +2,9 @@
 use crate::crypt::rsa;
 use crate::storage::{
     agent::Agent,
-    token::Token,
     errors::{StorageCryptErr, StorageErr, StorageFileSysErr},
     layout::StorageLayout,
+    token::Token,
 };
 use crate::trace;
 

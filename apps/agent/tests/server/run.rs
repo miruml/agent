@@ -3,10 +3,15 @@ use std::path::PathBuf;
 
 // internal crates
 use config_agent::filesys::{dir::Dir, file::File, path::PathExt};
+use config_agent::models::config_instance::{
+    ConfigInstance,
+    ConfigInstanceStatus,
+    ConfigInstanceTargetStatus,
+};
 use config_agent::server::run::{run, RunServerOptions};
 use config_agent::storage::{
     agent::Agent,
-    config_instances::{ConfigInstance, ConfigInstanceCache, ConfigInstanceCacheKey},
+    config_instances::{ConfigInstanceCache, ConfigInstanceCacheKey},
     digests::{ConfigSchemaDigestCache, ConfigSchemaDigests},
     layout::StorageLayout,
 };
@@ -205,7 +210,14 @@ async fn prune_config_instance_cache() {
                 },
                 ConfigInstance {
                     id: format!("test{}", i),
+                    target_status: ConfigInstanceTargetStatus::Created,
+                    status: ConfigInstanceStatus::Created,
+                    filepath: None,
+                    patch_id: None,
+                    created_by_id: None,
                     created_at: Utc::now().to_rfc3339(),
+                    updated_by_id: None,
+                    updated_at: Utc::now().to_rfc3339(),
                     device_id: "test".to_string(),
                     config_schema_id: format!("test{}", i),
                     config_instance: json!({ "test": i }),

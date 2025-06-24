@@ -50,9 +50,17 @@ impl DeviceTag {
             created_by_id,
             device_id: None,
             tag_id: None,
-            created_by: created_by.map(Box::new),
+            created_by: if let Some(x) = created_by {
+                Some(Box::new(x))
+            } else {
+                None
+            },
             device: None,
-            tag: tag.map(Box::new),
+            tag: if let Some(x) = tag {
+                Some(Box::new(x))
+            } else {
+                None
+            },
         }
     }
 }

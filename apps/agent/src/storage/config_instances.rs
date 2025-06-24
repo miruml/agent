@@ -2,6 +2,7 @@
 use std::fmt::Display;
 
 // internal crates
+use crate::models::config_instance::ConfigInstance;
 use crate::storage::cache::Cache;
 use crate::utils::PATH_DELIMITER;
 
@@ -25,18 +26,4 @@ impl Display for ConfigInstanceCacheKey {
             self.config_type_slug, PATH_DELIMITER, self.config_schema_digest
         )
     }
-}
-
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct ConfigInstance {
-    #[serde(rename = "config_instance_id")]
-    pub id: String,
-    pub created_at: String,
-    pub device_id: String,
-    pub config_schema_id: String,
-    pub config_instance: serde_json::Value,
-
-    // agent specific fields
-    pub config_type_slug: String,
-    pub config_schema_digest: String,
 }

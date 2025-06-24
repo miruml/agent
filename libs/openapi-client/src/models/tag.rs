@@ -63,9 +63,21 @@ impl Tag {
             created_by_id,
             updated_by_id,
             tag_type_id,
-            created_by: created_by.map(Box::new),
-            updated_by: updated_by.map(Box::new),
-            tag_type: tag_type.map(Box::new),
+            created_by: if let Some(x) = created_by {
+                Some(Box::new(x))
+            } else {
+                None
+            },
+            updated_by: if let Some(x) = updated_by {
+                Some(Box::new(x))
+            } else {
+                None
+            },
+            tag_type: if let Some(x) = tag_type {
+                Some(Box::new(x))
+            } else {
+                None
+            },
             metadata,
         }
     }

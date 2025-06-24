@@ -34,7 +34,10 @@ Class | Method | HTTP request | Description
 
 ## Documentation For Models
 
+ - [AgentSdkConfigInstance](docs/AgentSdkConfigInstance.md)
  - [BaseConfigInstance](docs/BaseConfigInstance.md)
+ - [ConfigInstanceStatus](docs/ConfigInstanceStatus.md)
+ - [ConfigInstanceTargetStatus](docs/ConfigInstanceTargetStatus.md)
  - [Error](docs/Error.md)
  - [ErrorResponse](docs/ErrorResponse.md)
  - [HashSchemaSerializedRequest](docs/HashSchemaSerializedRequest.md)

@@ -1,7 +1,13 @@
 // internal crates
 use crate::http::prelude::*;
-use crate::services::config_instances::utils;
-use crate::services::errors::{ServiceErr, ServiceHTTPErr, ServiceStorageErr};
+use crate::models::config_instance::{
+    convert_cfg_inst_backend_to_storage, convert_cfg_inst_storage_to_sdk,
+};
+use crate::services::errors::{
+    ServiceErr,
+    ServiceHTTPErr,
+    ServiceStorageErr,
+};
 use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceCacheKey};
 use crate::trace;
 use openapi_client::models::RefreshLatestConfigInstanceRequest;
@@ -53,7 +59,7 @@ pub async fn refresh_latest<ArgsT: RefreshLatestArgsI, HTTPClientT: ConfigInstan
         })?;
 
     // update the config instance in storage
-    let cfg_inst = utils::convert_cfg_inst_backend_to_storage(
+    let cfg_inst = convert_cfg_inst_backend_to_storage(
         cfg_inst,
         args.config_type_slug().to_string(),
         args.config_schema_digest().to_string(),
@@ -72,5 +78,5 @@ pub async fn refresh_latest<ArgsT: RefreshLatestArgsI, HTTPClientT: ConfigInstan
             })
         })?;
 
-    Ok(utils::convert_cfg_inst_storage_to_sdk(cfg_inst))
+    Ok(convert_cfg_inst_storage_to_sdk(cfg_inst))
 }

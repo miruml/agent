@@ -1,5 +1,5 @@
 # Common variables
-OPENAPI_DIR := ../../openapi
+OPENAPI_DIR := ./openapi
 OPENAPI_BACKEND_SERVER_DIR := $(OPENAPI_DIR)/configs/backend-server
 OPENAPI_AGENT_SERVER_DIR := $(OPENAPI_DIR)/configs/agent-server
 

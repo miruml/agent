@@ -59,10 +59,22 @@ impl TagType {
             updated_at,
             created_by_id,
             updated_by_id,
-            created_by: created_by.map(Box::new),
-            updated_by: updated_by.map(Box::new),
+            created_by: if let Some(x) = created_by {
+                Some(Box::new(x))
+            } else {
+                None
+            },
+            updated_by: if let Some(x) = updated_by {
+                Some(Box::new(x))
+            } else {
+                None
+            },
             schema,
-            tags: tags.map(Box::new),
+            tags: if let Some(x) = tags {
+                Some(Box::new(x))
+            } else {
+                None
+            },
         }
     }
 }

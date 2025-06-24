@@ -3,7 +3,10 @@
 .travis.yml
 Cargo.toml
 README.md
+docs/AgentSdkConfigInstance.md
 docs/BaseConfigInstance.md
+docs/ConfigInstanceStatus.md
+docs/ConfigInstanceTargetStatus.md
 docs/ConfigInstancesApi.md
 docs/ConfigSchemasApi.md
 docs/Error.md
@@ -20,7 +23,10 @@ src/apis/configuration.rs
 src/apis/errors_api.rs
 src/apis/mod.rs
 src/lib.rs
+src/models/agent_sdk_config_instance.rs
 src/models/base_config_instance.rs
+src/models/config_instance_status.rs
+src/models/config_instance_target_status.rs
 src/models/error.rs
 src/models/error_response.rs
 src/models/hash_schema_serialized_request.rs

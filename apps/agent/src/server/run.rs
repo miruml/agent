@@ -10,9 +10,7 @@ use crate::auth::token_mngr::run_refresh_loop;
 use crate::auth::token_mngr::TokenManager;
 use crate::filesys::file::File;
 use crate::http::client::HTTPClient;
-use crate::server::errors::{
-    JoinHandleErr, ServerErr, ShutdownMngrDuplicateArgErr, ServerAuthErr,
-};
+use crate::server::errors::{JoinHandleErr, ServerAuthErr, ServerErr, ShutdownMngrDuplicateArgErr};
 use crate::server::serve::serve;
 use crate::server::state::ServerState;
 use crate::storage::layout::StorageLayout;

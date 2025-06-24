@@ -1,9 +1,15 @@
 // internal crates
 use crate::errors::MiruError;
 use crate::http::prelude::*;
-use crate::services::config_instances::utils;
+use crate::models::config_instance::{
+    convert_cfg_inst_backend_to_storage,
+    convert_cfg_inst_storage_to_sdk,
+};
 use crate::services::errors::{
-    LatestConfigInstanceNotFound, ServiceErr, ServiceHTTPErr, ServiceStorageErr,
+    LatestConfigInstanceNotFound,
+    ServiceErr,
+    ServiceHTTPErr,
+    ServiceStorageErr,
 };
 
 use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceCacheKey};
@@ -76,7 +82,7 @@ pub async fn read_latest<ArgsT: ReadLatestArgsI, HTTPClientT: ConfigInstancesExt
         config_schema_digest: args.config_schema_digest().to_string(),
     };
     if let Some(config_instance) = result {
-        let config_instance = utils::convert_cfg_inst_backend_to_storage(
+        let config_instance = convert_cfg_inst_backend_to_storage(
             config_instance,
             args.config_type_slug().to_string(),
             args.config_schema_digest().to_string(),
@@ -90,7 +96,7 @@ pub async fn read_latest<ArgsT: ReadLatestArgsI, HTTPClientT: ConfigInstancesExt
                     trace: trace!(),
                 })
             })?;
-        return Ok(utils::convert_cfg_inst_storage_to_sdk(config_instance));
+        return Ok(convert_cfg_inst_storage_to_sdk(config_instance));
     }
 
     // if unsuccessful, attempt to read the latest config instance from storage
@@ -102,9 +108,9 @@ pub async fn read_latest<ArgsT: ReadLatestArgsI, HTTPClientT: ConfigInstancesExt
     })?;
 
     match latest_config_instance {
-        Some(latest_config_instance) => Ok(utils::convert_cfg_inst_storage_to_sdk(
-            latest_config_instance,
-        )),
+        Some(latest_config_instance) => Ok(
+            convert_cfg_inst_storage_to_sdk(latest_config_instance)
+        ),
         None => Err(ServiceErr::LatestConfigInstanceNotFound(
             LatestConfigInstanceNotFound {
                 config_type_slug: args.config_type_slug().to_string(),

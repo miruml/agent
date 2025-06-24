@@ -4,6 +4,7 @@ use std::env;
 // external
 use serde_json::json;
 
+// globals
 pub const PATH_DELIMITER: &str = "__SEP__";
 pub const GIT_RELEASE_TAG_KEY: Option<&str> = option_env!("MIRU_AGENT_GIT_RELEASE_TAG");
 pub const GIT_COMMIT_HASH_KEY: Option<&str> = option_env!("MIRU_AGENT_GIT_COMMIT_HASH");

@@ -4,6 +4,7 @@ pub mod errors;
 pub mod filesys;
 pub mod http;
 pub mod logs;
+pub mod models;
 pub mod server;
 pub mod services;
 pub mod storage;

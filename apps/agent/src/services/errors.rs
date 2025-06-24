@@ -4,6 +4,7 @@ use std::fmt;
 // internal crates
 use crate::errors::{Code, HTTPCode, MiruError, Trace};
 use crate::http::errors::HTTPErr;
+use crate::models::errors::ModelsErr;
 use crate::storage::errors::StorageErr;
 
 // external crates
@@ -40,6 +41,36 @@ impl MiruError for LatestConfigInstanceNotFound {
 impl fmt::Display for LatestConfigInstanceNotFound {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Unable to locate the latest config instance for config type slug: '{}' and config schema digest: '{}'", self.config_type_slug, self.config_schema_digest)
+    }
+}
+
+#[derive(Debug)]
+pub struct ServiceModelsErr {
+    pub source: ModelsErr,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for ServiceModelsErr {
+    fn code(&self) -> Code {
+        self.source.code()
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        self.source.http_status()
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        self.source.is_network_connection_error()
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        self.source.params()
+    }
+}
+
+impl fmt::Display for ServiceModelsErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Models Error: {}", self.source)
     }
 }
 
@@ -109,6 +140,7 @@ pub enum ServiceErr {
     LatestConfigInstanceNotFound(LatestConfigInstanceNotFound),
 
     // internal crate errors
+    ModelsErr(ServiceModelsErr),
     StorageErr(ServiceStorageErr),
     HTTPErr(ServiceHTTPErr),
 }
@@ -117,6 +149,7 @@ macro_rules! forward_error_method {
     ($self:ident, $method:ident $(, $arg:expr)?) => {
         match $self {
             Self::LatestConfigInstanceNotFound(e) => e.$method($($arg)?),
+            Self::ModelsErr(e) => e.$method($($arg)?),
             Self::StorageErr(e) => e.$method($($arg)?),
             Self::HTTPErr(e) => e.$method($($arg)?),
         }

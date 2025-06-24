@@ -1,16 +1,20 @@
 // internal crates
 use config_agent::filesys::dir::Dir;
 use config_agent::http::errors::{HTTPErr, MockErr};
+use config_agent::models::config_instance::{
+    ConfigInstance,
+    convert_cfg_inst_backend_to_storage,
+    convert_cfg_inst_storage_to_sdk,
+};
 use config_agent::services::{
     config_instances::{
         read_latest,
         read_latest::{ReadLatestArgs, ReadLatestArgsI},
-        utils,
     },
     errors::{LatestConfigInstanceNotFound, ServiceErr},
 };
 use config_agent::storage::config_instances::{
-    ConfigInstance, ConfigInstanceCache, ConfigInstanceCacheKey,
+    ConfigInstanceCache, ConfigInstanceCacheKey,
 };
 use config_agent::trace;
 use openapi_client::models::BackendConfigInstance;
@@ -129,7 +133,7 @@ pub mod success {
             .await
             .unwrap();
 
-        let expected = utils::convert_cfg_inst_storage_to_sdk(config_instance);
+        let expected = convert_cfg_inst_storage_to_sdk(config_instance);
         assert_eq!(result, expected);
     }
 
@@ -171,7 +175,7 @@ pub mod success {
             .await
             .unwrap();
 
-        let expected = utils::convert_cfg_inst_storage_to_sdk(config_instance);
+        let expected = convert_cfg_inst_storage_to_sdk(config_instance);
         assert_eq!(result, expected);
     }
 
@@ -196,12 +200,12 @@ pub mod success {
             .await
             .unwrap();
 
-        let storage_config_instance = utils::convert_cfg_inst_backend_to_storage(
+        let storage_config_instance = convert_cfg_inst_backend_to_storage(
             backend_config_instance,
             args.config_type_slug().to_string(),
             args.config_schema_digest().to_string(),
         );
-        let expected = utils::convert_cfg_inst_storage_to_sdk(storage_config_instance.clone());
+        let expected = convert_cfg_inst_storage_to_sdk(storage_config_instance.clone());
         assert_eq!(result, expected);
 
         // cache should have been updated

@@ -19,10 +19,10 @@ pub struct User {
     pub id: String,
     #[serde(rename = "email")]
     pub email: String,
-    #[serde(rename = "first_name", deserialize_with = "Option::deserialize")]
-    pub first_name: Option<String>,
-    #[serde(rename = "last_name", deserialize_with = "Option::deserialize")]
-    pub last_name: Option<String>,
+    #[serde(rename = "first_name")]
+    pub first_name: String,
+    #[serde(rename = "last_name")]
+    pub last_name: String,
     #[serde(rename = "created_at")]
     pub created_at: String,
     #[serde(rename = "updated_at")]
@@ -38,8 +38,8 @@ impl User {
         object: Object,
         id: String,
         email: String,
-        first_name: Option<String>,
-        last_name: Option<String>,
+        first_name: String,
+        last_name: String,
         created_at: String,
         updated_at: String,
         workspace_id: String,
@@ -54,7 +54,11 @@ impl User {
             created_at,
             updated_at,
             workspace_id,
-            workspace: workspace.map(Box::new),
+            workspace: if let Some(x) = workspace {
+                Some(Box::new(x))
+            } else {
+                None
+            },
         }
     }
 }

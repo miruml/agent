@@ -11,7 +11,7 @@ Method | HTTP request | Description
 
 ## get_latest_config_instance
 
-> models::BaseConfigInstance get_latest_config_instance(device_id, config_schema_digest, config_type_slug)
+> models::AgentSdkConfigInstance get_latest_config_instance(device_id, config_schema_digest, config_type_slug)
 Get the latest config instance
 
 ### Parameters
@@ -25,7 +25,7 @@ Name | Type | Description  | Required | Notes
 
 ### Return type
 
-[**models::BaseConfigInstance**](BaseConfigInstance.md)
+[**models::AgentSdkConfigInstance**](AgentSDKConfigInstance.md)
 
 ### Authorization
 
@@ -41,7 +41,7 @@ Name | Type | Description  | Required | Notes
 
 ## refresh_latest_config_instance
 
-> models::BaseConfigInstance refresh_latest_config_instance(refresh_latest_config_instance_request)
+> models::AgentSdkConfigInstance refresh_latest_config_instance(refresh_latest_config_instance_request)
 Render the latest config instance for a device
 
 ### Parameters
@@ -53,7 +53,7 @@ Name | Type | Description  | Required | Notes
 
 ### Return type
 
-[**models::BaseConfigInstance**](BaseConfigInstance.md)
+[**models::AgentSdkConfigInstance**](AgentSDKConfigInstance.md)
 
 ### Authorization
 

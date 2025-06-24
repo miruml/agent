@@ -7,8 +7,8 @@ Name | Type | Description | Notes
 **object** | **String** |  | 
 **id** | **String** |  | 
 **email** | **String** |  | 
-**first_name** | Option<**String**> |  | 
-**last_name** | Option<**String**> |  | 
+**first_name** | **String** |  | 
+**last_name** | **String** |  | 
 **created_at** | **String** |  | 
 **updated_at** | **String** |  | 
 **workspace_id** | **String** |  | 

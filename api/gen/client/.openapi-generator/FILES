@@ -8,6 +8,8 @@ docs/BackendConfigInstance.md
 docs/BaseConfigInstance.md
 docs/BillingPlan.md
 docs/ConfigInstanceExpand.md
+docs/ConfigInstanceStatus.md
+docs/ConfigInstanceTargetStatus.md
 docs/ConfigInstancesApi.md
 docs/ConfigSchemasApi.md
 docs/Device.md
@@ -23,6 +25,9 @@ docs/HashSerializedConfigSchemaFormat.md
 docs/IssueDeviceClaims.md
 docs/IssueDeviceTokenRequest.md
 docs/PaginatedList.md
+docs/Patch.md
+docs/PatchComment.md
+docs/PatchCommentList.md
 docs/RefreshLatestConfigInstanceRequest.md
 docs/SchemaDigestResponse.md
 docs/Tag.md
@@ -44,6 +49,8 @@ src/models/backend_config_instance.rs
 src/models/base_config_instance.rs
 src/models/billing_plan.rs
 src/models/config_instance_expand.rs
+src/models/config_instance_status.rs
+src/models/config_instance_target_status.rs
 src/models/device.rs
 src/models/device_tag.rs
 src/models/device_tag_paginated_list.rs
@@ -56,6 +63,9 @@ src/models/issue_device_claims.rs
 src/models/issue_device_token_request.rs
 src/models/mod.rs
 src/models/paginated_list.rs
+src/models/patch.rs
+src/models/patch_comment.rs
+src/models/patch_comment_list.rs
 src/models/refresh_latest_config_instance_request.rs
 src/models/schema_digest_response.rs
 src/models/tag.rs

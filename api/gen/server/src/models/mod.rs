@@ -1,5 +1,11 @@
+pub mod agent_sdk_config_instance;
+pub use self::agent_sdk_config_instance::AgentSdkConfigInstance;
 pub mod base_config_instance;
 pub use self::base_config_instance::BaseConfigInstance;
+pub mod config_instance_status;
+pub use self::config_instance_status::ConfigInstanceStatus;
+pub mod config_instance_target_status;
+pub use self::config_instance_target_status::ConfigInstanceTargetStatus;
 pub mod error;
 pub use self::error::Error;
 pub mod error_response;

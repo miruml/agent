@@ -60,9 +60,21 @@ impl Device {
             updated_at,
             created_by_id,
             updated_by_id,
-            created_by: created_by.map(Box::new),
-            updated_by: updated_by.map(Box::new),
-            device_tags: device_tags.map(Box::new),
+            created_by: if let Some(x) = created_by {
+                Some(Box::new(x))
+            } else {
+                None
+            },
+            updated_by: if let Some(x) = updated_by {
+                Some(Box::new(x))
+            } else {
+                None
+            },
+            device_tags: if let Some(x) = device_tags {
+                Some(Box::new(x))
+            } else {
+                None
+            },
         }
     }
 }
