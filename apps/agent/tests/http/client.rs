@@ -309,7 +309,11 @@ pub mod handle_response {
         // make a request to a non-existent endpoint
         let http_client = HTTPClient::new("doesntmatter").await;
         let request = http_client
-            .build_get_request("https://example.com/this-page-should-not-exist", Duration::from_secs(1), None)
+            .build_get_request(
+                "https://example.com/this-page-should-not-exist",
+                Duration::from_secs(1),
+                None,
+            )
             .unwrap();
         let resp = http_client.send(request.0, &request.1).await.unwrap();
 

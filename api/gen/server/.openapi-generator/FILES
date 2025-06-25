@@ -5,6 +5,8 @@ Cargo.toml
 README.md
 docs/AgentSdkConfigInstance.md
 docs/BaseConfigInstance.md
+docs/ConfigInstanceActivityStatus.md
+docs/ConfigInstanceErrorStatus.md
 docs/ConfigInstanceStatus.md
 docs/ConfigInstanceTargetStatus.md
 docs/ConfigInstancesApi.md
@@ -25,6 +27,8 @@ src/apis/mod.rs
 src/lib.rs
 src/models/agent_sdk_config_instance.rs
 src/models/base_config_instance.rs
+src/models/config_instance_activity_status.rs
+src/models/config_instance_error_status.rs
 src/models/config_instance_status.rs
 src/models/config_instance_target_status.rs
 src/models/error.rs

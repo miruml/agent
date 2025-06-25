@@ -1,7 +1,9 @@
 pub mod auth;
 pub mod crypt;
+pub mod deploy;
 pub mod errors;
 pub mod filesys;
+pub mod fsm;
 pub mod http;
 pub mod logs;
 pub mod models;

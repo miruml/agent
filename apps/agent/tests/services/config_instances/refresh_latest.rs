@@ -2,8 +2,7 @@
 use config_agent::filesys::dir::Dir;
 use config_agent::http::errors::{HTTPErr, MockErr};
 use config_agent::models::config_instance::{
-    convert_cfg_inst_backend_to_storage,
-    convert_cfg_inst_storage_to_sdk,
+    convert_cfg_inst_backend_to_storage, convert_cfg_inst_storage_to_sdk,
 };
 use config_agent::services::{
     config_instances::{

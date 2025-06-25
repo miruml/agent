@@ -36,6 +36,8 @@ Class | Method | HTTP request | Description
 
  - [AgentSdkConfigInstance](docs/AgentSdkConfigInstance.md)
  - [BaseConfigInstance](docs/BaseConfigInstance.md)
+ - [ConfigInstanceActivityStatus](docs/ConfigInstanceActivityStatus.md)
+ - [ConfigInstanceErrorStatus](docs/ConfigInstanceErrorStatus.md)
  - [ConfigInstanceStatus](docs/ConfigInstanceStatus.md)
  - [ConfigInstanceTargetStatus](docs/ConfigInstanceTargetStatus.md)
  - [Error](docs/Error.md)

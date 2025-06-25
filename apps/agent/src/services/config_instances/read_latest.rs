@@ -2,14 +2,10 @@
 use crate::errors::MiruError;
 use crate::http::prelude::*;
 use crate::models::config_instance::{
-    convert_cfg_inst_backend_to_storage,
-    convert_cfg_inst_storage_to_sdk,
+    convert_cfg_inst_backend_to_storage, convert_cfg_inst_storage_to_sdk,
 };
 use crate::services::errors::{
-    LatestConfigInstanceNotFound,
-    ServiceErr,
-    ServiceHTTPErr,
-    ServiceStorageErr,
+    LatestConfigInstanceNotFound, ServiceErr, ServiceHTTPErr, ServiceStorageErr,
 };
 
 use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceCacheKey};
@@ -108,9 +104,7 @@ pub async fn read_latest<ArgsT: ReadLatestArgsI, HTTPClientT: ConfigInstancesExt
     })?;
 
     match latest_config_instance {
-        Some(latest_config_instance) => Ok(
-            convert_cfg_inst_storage_to_sdk(latest_config_instance)
-        ),
+        Some(latest_config_instance) => Ok(convert_cfg_inst_storage_to_sdk(latest_config_instance)),
         None => Err(ServiceErr::LatestConfigInstanceNotFound(
             LatestConfigInstanceNotFound {
                 config_type_slug: args.config_type_slug().to_string(),

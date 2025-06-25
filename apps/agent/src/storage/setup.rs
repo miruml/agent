@@ -1,7 +1,7 @@
 // internal crates
 use crate::crypt::rsa;
+use crate::models::agent::Agent;
 use crate::storage::{
-    agent::Agent,
     errors::{StorageCryptErr, StorageErr, StorageFileSysErr},
     layout::StorageLayout,
     token::Token,

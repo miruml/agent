@@ -24,6 +24,8 @@ pub enum ConfigInstanceStatus {
     CONFIG_INSTANCE_STATUS_REMOVED,
     #[serde(rename = "failed")]
     CONFIG_INSTANCE_STATUS_FAILED,
+    #[serde(rename = "retrying")]
+    CONFIG_INSTANCE_STATUS_RETRYING,
 
 }
 
@@ -35,6 +37,7 @@ impl std::fmt::Display for ConfigInstanceStatus {
             Self::CONFIG_INSTANCE_STATUS_DEPLOYED => write!(f, "deployed"),
             Self::CONFIG_INSTANCE_STATUS_REMOVED => write!(f, "removed"),
             Self::CONFIG_INSTANCE_STATUS_FAILED => write!(f, "failed"),
+            Self::CONFIG_INSTANCE_STATUS_RETRYING => write!(f, "retrying"),
         }
     }
 }

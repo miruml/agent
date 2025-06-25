@@ -1,9 +1,8 @@
 // internal crates
 use config_agent::filesys::dir::Dir;
-use config_agent::storage::{
-    agent::{assert_activated, Agent},
-    errors::StorageErr,
-};
+use config_agent::models::agent::Agent;
+use config_agent::storage::agent::assert_activated;
+use config_agent::storage::errors::StorageErr;
 
 pub mod assert_activated {
     use super::*;

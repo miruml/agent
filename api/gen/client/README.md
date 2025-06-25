@@ -41,6 +41,8 @@ Class | Method | HTTP request | Description
  - [BackendConfigInstance](docs/BackendConfigInstance.md)
  - [BaseConfigInstance](docs/BaseConfigInstance.md)
  - [BillingPlan](docs/BillingPlan.md)
+ - [ConfigInstanceActivityStatus](docs/ConfigInstanceActivityStatus.md)
+ - [ConfigInstanceErrorStatus](docs/ConfigInstanceErrorStatus.md)
  - [ConfigInstanceExpand](docs/ConfigInstanceExpand.md)
  - [ConfigInstanceStatus](docs/ConfigInstanceStatus.md)
  - [ConfigInstanceTargetStatus](docs/ConfigInstanceTargetStatus.md)

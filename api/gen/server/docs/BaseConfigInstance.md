@@ -8,6 +8,8 @@ Name | Type | Description | Notes
 **id** | **String** |  | 
 **target_status** | [**models::ConfigInstanceTargetStatus**](ConfigInstanceTargetStatus.md) |  | 
 **status** | [**models::ConfigInstanceStatus**](ConfigInstanceStatus.md) |  | 
+**activity_status** | [**models::ConfigInstanceActivityStatus**](ConfigInstanceActivityStatus.md) |  | 
+**error_status** | [**models::ConfigInstanceErrorStatus**](ConfigInstanceErrorStatus.md) |  | 
 **filepath** | Option<**String**> |  | 
 **patch_id** | Option<**String**> |  | 
 **created_by_id** | Option<**String**> |  | 

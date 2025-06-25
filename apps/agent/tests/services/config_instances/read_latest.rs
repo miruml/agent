@@ -2,9 +2,7 @@
 use config_agent::filesys::dir::Dir;
 use config_agent::http::errors::{HTTPErr, MockErr};
 use config_agent::models::config_instance::{
-    ConfigInstance,
-    convert_cfg_inst_backend_to_storage,
-    convert_cfg_inst_storage_to_sdk,
+    convert_cfg_inst_backend_to_storage, convert_cfg_inst_storage_to_sdk, ConfigInstance,
 };
 use config_agent::services::{
     config_instances::{
@@ -13,9 +11,7 @@ use config_agent::services::{
     },
     errors::{LatestConfigInstanceNotFound, ServiceErr},
 };
-use config_agent::storage::config_instances::{
-    ConfigInstanceCache, ConfigInstanceCacheKey,
-};
+use config_agent::storage::config_instances::{ConfigInstanceCache, ConfigInstanceCacheKey};
 use config_agent::trace;
 use openapi_client::models::BackendConfigInstance;
 

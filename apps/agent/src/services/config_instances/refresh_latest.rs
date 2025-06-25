@@ -3,11 +3,7 @@ use crate::http::prelude::*;
 use crate::models::config_instance::{
     convert_cfg_inst_backend_to_storage, convert_cfg_inst_storage_to_sdk,
 };
-use crate::services::errors::{
-    ServiceErr,
-    ServiceHTTPErr,
-    ServiceStorageErr,
-};
+use crate::services::errors::{ServiceErr, ServiceHTTPErr, ServiceStorageErr};
 use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceCacheKey};
 use crate::trace;
 use openapi_client::models::RefreshLatestConfigInstanceRequest;

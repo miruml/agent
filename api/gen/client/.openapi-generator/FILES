@@ -7,6 +7,8 @@ docs/ActivateDeviceRequest.md
 docs/BackendConfigInstance.md
 docs/BaseConfigInstance.md
 docs/BillingPlan.md
+docs/ConfigInstanceActivityStatus.md
+docs/ConfigInstanceErrorStatus.md
 docs/ConfigInstanceExpand.md
 docs/ConfigInstanceStatus.md
 docs/ConfigInstanceTargetStatus.md
@@ -48,6 +50,8 @@ src/models/activate_device_request.rs
 src/models/backend_config_instance.rs
 src/models/base_config_instance.rs
 src/models/billing_plan.rs
+src/models/config_instance_activity_status.rs
+src/models/config_instance_error_status.rs
 src/models/config_instance_expand.rs
 src/models/config_instance_status.rs
 src/models/config_instance_target_status.rs

@@ -9,10 +9,10 @@ use crate::auth::token_mngr::TokenManager;
 use crate::crypt::jwt;
 use crate::filesys::{cached_file::CachedFile, file::File, path::PathExt};
 use crate::http::client::HTTPClient;
+use crate::models::agent::Agent;
 use crate::server::errors::{
     MissingDeviceIDErr, ServerAuthErr, ServerErr, ServerFileSysErr, ServerStorageErr,
 };
-use crate::storage::agent::Agent;
 use crate::storage::config_instances::ConfigInstanceCache;
 use crate::storage::digests::ConfigSchemaDigestCache;
 use crate::storage::layout::StorageLayout;

@@ -1,16 +1,20 @@
+// internal crates
+use crate::deserialize_error;
+
 // external crates
+use chrono::{DateTime, TimeDelta, Utc};
 use serde::Deserialize;
 use serde::Serialize;
+use tracing::error;
+use uuid::Uuid;
 
 // =============================== TARGET STATUS ================================== //
-#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
 pub enum ConfigInstanceTargetStatus {
     #[default]
-    #[serde(rename = "created")]
     Created,
-    #[serde(rename = "deployed")]
     Deployed,
-    #[serde(rename = "removed")]
     Removed,
 }
 
@@ -35,19 +39,16 @@ pub fn convert_target_status_storage_to_sdk(
 }
 
 // ================================== STATUS ======================================= //
-#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
 pub enum ConfigInstanceStatus {
     #[default]
-    #[serde(rename = "created")]
     Created,
-    #[serde(rename = "queued")]
     Queued,
-    #[serde(rename = "deployed")]
     Deployed,
-    #[serde(rename = "removed")]
     Removed,
-    #[serde(rename = "failed")]
     Failed,
+    Retrying,
 }
 
 pub fn convert_status_backend_to_storage(
@@ -68,6 +69,9 @@ pub fn convert_status_backend_to_storage(
         }
         openapi_client::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_FAILED => {
             ConfigInstanceStatus::Failed
+        }
+        openapi_client::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_RETRYING => {
+            ConfigInstanceStatus::Retrying
         }
     }
 }
@@ -91,16 +95,83 @@ pub fn convert_status_storage_to_sdk(
         ConfigInstanceStatus::Failed => {
             openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_FAILED
         }
+        ConfigInstanceStatus::Retrying => {
+            openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_RETRYING
+        }
     }
 }
 
+// ============================== ACTIVITY STATUS ================================== //
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ConfigInstanceActivityStatus {
+    #[default]
+    Created,
+    Queued,
+    Deployed,
+    Removed,
+}
+
+pub fn convert_activity_status_backend_to_storage(
+    activity_status: openapi_client::models::ConfigInstanceActivityStatus,
+) -> ConfigInstanceActivityStatus {
+    match activity_status {
+        openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_CREATED => ConfigInstanceActivityStatus::Created,
+        openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_QUEUED => ConfigInstanceActivityStatus::Queued,
+        openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_DEPLOYED => ConfigInstanceActivityStatus::Deployed,
+        openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_REMOVED => ConfigInstanceActivityStatus::Removed,
+    }
+}
+
+pub fn convert_activity_status_storage_to_sdk(
+    activity_status: ConfigInstanceActivityStatus,
+) -> openapi_server::models::ConfigInstanceActivityStatus {
+    match activity_status {
+        ConfigInstanceActivityStatus::Created => openapi_server::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_CREATED,
+        ConfigInstanceActivityStatus::Queued => openapi_server::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_QUEUED,
+        ConfigInstanceActivityStatus::Deployed => openapi_server::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_DEPLOYED,
+        ConfigInstanceActivityStatus::Removed => openapi_server::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_REMOVED,
+    }
+}
+
+
+// =============================== ERROR STATUS ==================================== //
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+pub enum ConfigInstanceErrorStatus {
+    #[default]
+    None,
+    Failed,
+    Retrying,
+}
+
+pub fn convert_error_status_backend_to_storage(
+    error_status: openapi_client::models::ConfigInstanceErrorStatus,
+) -> ConfigInstanceErrorStatus {
+    match error_status {
+        openapi_client::models::ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_NONE => ConfigInstanceErrorStatus::None,
+        openapi_client::models::ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_FAILED => ConfigInstanceErrorStatus::Failed,
+        openapi_client::models::ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_RETRYING => ConfigInstanceErrorStatus::Retrying,
+    }
+}
+
+pub fn convert_error_status_storage_to_sdk(
+    error_status: ConfigInstanceErrorStatus,
+) -> openapi_server::models::ConfigInstanceErrorStatus {
+    match error_status {
+        ConfigInstanceErrorStatus::None => openapi_server::models::ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_NONE,
+        ConfigInstanceErrorStatus::Failed => openapi_server::models::ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_FAILED,
+        ConfigInstanceErrorStatus::Retrying => openapi_server::models::ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_RETRYING,
+    }
+}
+
+
 // =============================== CONFIG INSTANCE ================================= //
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct ConfigInstance {
-    #[serde(rename = "config_instance_id")]
     pub id: String,
     pub target_status: ConfigInstanceTargetStatus,
-    pub status: ConfigInstanceStatus,
+    pub activity_status: ConfigInstanceActivityStatus,
+    pub error_status: ConfigInstanceErrorStatus,
     pub filepath: Option<String>,
     pub patch_id: Option<String>,
     pub created_by_id: Option<String>,
@@ -109,11 +180,150 @@ pub struct ConfigInstance {
     pub updated_at: String,
     pub device_id: String,
     pub config_schema_id: String,
-    pub config_instance: serde_json::Value,
+    pub instance: serde_json::Value,
 
-    // agent specific fields
+    // cache fields
     pub config_type_slug: String,
     pub config_schema_digest: String,
+
+    // fsm fields
+    pub attempts: u32,
+    pub cooldown_ends_at: DateTime<chrono::Utc>,
+}
+
+impl Default for ConfigInstance {
+    fn default() -> Self {
+        Self {
+            id: format!("unknown-{}", Uuid::new_v4()),
+            target_status: ConfigInstanceTargetStatus::Created,
+            activity_status: ConfigInstanceActivityStatus::Created,
+            error_status: ConfigInstanceErrorStatus::None,
+            filepath: None,
+            patch_id: None,
+            created_by_id: None,
+            created_at: DateTime::<chrono::Utc>::UNIX_EPOCH.to_rfc3339(),
+            updated_by_id: None,
+            updated_at: DateTime::<chrono::Utc>::UNIX_EPOCH.to_rfc3339(),
+            device_id: format!("unknown-{}", Uuid::new_v4()),
+            config_schema_id: format!("unknown-{}", Uuid::new_v4()),
+            instance: serde_json::Value::Null,
+            config_type_slug: "unknown".to_string(),
+            config_schema_digest: format!("unknown-{}", Uuid::new_v4()),
+            attempts: 0,
+            cooldown_ends_at: DateTime::<chrono::Utc>::UNIX_EPOCH,
+        }
+    }
+}
+
+impl ConfigInstance {
+    pub fn status(&self) -> ConfigInstanceStatus {
+        match self.error_status {
+            ConfigInstanceErrorStatus::None => match self.activity_status {
+                ConfigInstanceActivityStatus::Created => ConfigInstanceStatus::Created,
+                ConfigInstanceActivityStatus::Queued => ConfigInstanceStatus::Queued,
+                ConfigInstanceActivityStatus::Deployed => ConfigInstanceStatus::Deployed,
+                ConfigInstanceActivityStatus::Removed => ConfigInstanceStatus::Removed,
+            },
+            ConfigInstanceErrorStatus::Failed => ConfigInstanceStatus::Failed,
+            ConfigInstanceErrorStatus::Retrying => ConfigInstanceStatus::Retrying,
+        }
+    }
+
+    pub fn set_cooldown(&mut self, duration: TimeDelta) {
+        self.cooldown_ends_at = Utc::now() + duration;
+    }
+
+    pub fn clear_cooldown(&mut self) {
+        self.cooldown_ends_at = DateTime::<chrono::Utc>::UNIX_EPOCH;
+    }
+
+    pub fn is_cooling_down(&self) -> bool {
+        self.cooldown_ends_at > Utc::now()
+    }
+}
+
+impl<'de> Deserialize<'de> for ConfigInstance {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        pub struct DeserializeConfigInstance {
+            // required fields
+            id: String,
+            target_status: ConfigInstanceTargetStatus,
+            activity_status: ConfigInstanceActivityStatus,
+            error_status: ConfigInstanceErrorStatus,
+            device_id: String,
+            config_schema_id: String,
+            instance: serde_json::Value,
+            config_type_slug: String,
+            config_schema_digest: String,
+
+            // reasonable default fields
+            created_at: Option<String>,
+            updated_at: Option<String>,
+            attempts: Option<u32>,
+            cooldown_ends_at: Option<DateTime<chrono::Utc>>,
+
+            // optional fields
+            filepath: Option<String>,
+            patch_id: Option<String>,
+            created_by_id: Option<String>,
+            updated_by_id: Option<String>,
+        }
+
+        let result = match DeserializeConfigInstance::deserialize(deserializer) {
+            Ok(instance) => instance,
+            Err(e) => {
+                error!("Error deserializing config instance: {}", e);
+                return Err(e);
+            }
+        };
+
+        let default = ConfigInstance::default();
+
+        let created_at = result.created_at.unwrap_or(deserialize_error!(
+            "config_instance",
+            "created_at",
+            default.created_at
+        ));
+        let updated_at = result.updated_at.unwrap_or(deserialize_error!(
+            "config_instance",
+            "updated_at",
+            default.updated_at
+        ));
+        let attempts = result.attempts.unwrap_or(deserialize_error!(
+            "config_instance",
+            "attempts",
+            default.attempts
+        ));
+        let cooldown_ends_at = result.cooldown_ends_at.unwrap_or(deserialize_error!(
+            "config_instance",
+            "cooldown_ends_at",
+            default.cooldown_ends_at
+        ));
+
+        Ok(ConfigInstance {
+            id: result.id,
+            target_status: result.target_status,
+            activity_status: result.activity_status,
+            error_status: result.error_status,
+            filepath: result.filepath,
+            patch_id: result.patch_id,
+            created_by_id: result.created_by_id,
+            created_at,
+            updated_by_id: result.updated_by_id,
+            updated_at,
+            device_id: result.device_id,
+            config_schema_id: result.config_schema_id,
+            instance: result.instance,
+            config_type_slug: result.config_type_slug,
+            config_schema_digest: result.config_schema_digest,
+            attempts,
+            cooldown_ends_at,
+        })
+    }
 }
 
 pub fn convert_cfg_inst_backend_to_storage(
@@ -121,10 +331,12 @@ pub fn convert_cfg_inst_backend_to_storage(
     config_type_slug: String,
     config_schema_digest: String,
 ) -> ConfigInstance {
+
     ConfigInstance {
         id: backend_instance.id,
         target_status: convert_target_status_backend_to_storage(backend_instance.target_status),
-        status: convert_status_backend_to_storage(backend_instance.status),
+        activity_status: convert_activity_status_backend_to_storage(backend_instance.activity_status),
+        error_status: convert_error_status_backend_to_storage(backend_instance.error_status),
         filepath: backend_instance.filepath,
         patch_id: backend_instance.patch_id,
         created_at: backend_instance.created_at,
@@ -133,20 +345,29 @@ pub fn convert_cfg_inst_backend_to_storage(
         updated_by_id: backend_instance.updated_by_id,
         device_id: backend_instance.device_id,
         config_schema_id: backend_instance.config_schema_id,
-        config_instance: backend_instance.instance.unwrap_or_default(),
+        instance: backend_instance.instance.unwrap_or_default(),
+
+        // cache fields
         config_type_slug,
         config_schema_digest,
+
+        // fsm fields
+        attempts: 0,
+        cooldown_ends_at: DateTime::<chrono::Utc>::UNIX_EPOCH,
     }
 }
 
 pub fn convert_cfg_inst_storage_to_sdk(
     storage_instance: ConfigInstance,
 ) -> openapi_server::models::BaseConfigInstance {
+    let status = convert_status_storage_to_sdk(storage_instance.status());
     openapi_server::models::BaseConfigInstance {
         object: openapi_server::models::base_config_instance::Object::ConfigInstance,
         id: storage_instance.id,
         target_status: convert_target_status_storage_to_sdk(storage_instance.target_status),
-        status: convert_status_storage_to_sdk(storage_instance.status),
+        status,
+        activity_status: convert_activity_status_storage_to_sdk(storage_instance.activity_status),
+        error_status: convert_error_status_storage_to_sdk(storage_instance.error_status),
         filepath: storage_instance.filepath,
         patch_id: storage_instance.patch_id,
         created_by_id: storage_instance.created_by_id,
@@ -155,6 +376,6 @@ pub fn convert_cfg_inst_storage_to_sdk(
         updated_at: storage_instance.updated_at,
         device_id: storage_instance.device_id,
         config_schema_id: storage_instance.config_schema_id,
-        instance: Some(storage_instance.config_instance),
+        instance: Some(storage_instance.instance),
     }
 }

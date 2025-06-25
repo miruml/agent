@@ -6,9 +6,11 @@ use std::sync::Arc;
 use config_agent::filesys::dir::Dir;
 use config_agent::filesys::errors::FileSysErr;
 use config_agent::http::client::HTTPClient;
+use config_agent::models::agent::Agent;
 use config_agent::server::errors::ServerErr;
 use config_agent::server::state::ServerState;
-use config_agent::storage::{agent::Agent, layout::StorageLayout, token::Token};
+use config_agent::storage::layout::StorageLayout;
+use config_agent::storage::token::Token;
 
 // external crates
 use chrono::Utc;
