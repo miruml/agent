@@ -5,10 +5,8 @@ use std::path::PathBuf;
 use config_agent::filesys::{dir::Dir, file::File, path::PathExt};
 use config_agent::models::agent::Agent;
 use config_agent::models::config_instance::{
-    ConfigInstance,
+    ConfigInstance, ConfigInstanceActivityStatus, ConfigInstanceErrorStatus,
     ConfigInstanceTargetStatus,
-    ConfigInstanceActivityStatus,
-    ConfigInstanceErrorStatus,
 };
 use config_agent::server::run::{run, RunServerOptions};
 use config_agent::storage::{

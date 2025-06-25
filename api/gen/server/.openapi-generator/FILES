@@ -3,7 +3,6 @@
 .travis.yml
 Cargo.toml
 README.md
-docs/AgentSdkConfigInstance.md
 docs/BaseConfigInstance.md
 docs/ConfigInstanceActivityStatus.md
 docs/ConfigInstanceErrorStatus.md
@@ -16,7 +15,6 @@ docs/ErrorResponse.md
 docs/ErrorsApi.md
 docs/HashSchemaSerializedRequest.md
 docs/HashSerializedConfigSchemaFormat.md
-docs/RefreshLatestConfigInstanceRequest.md
 docs/SchemaDigestResponse.md
 git_push.sh
 src/apis/config_instances_api.rs
@@ -25,7 +23,6 @@ src/apis/configuration.rs
 src/apis/errors_api.rs
 src/apis/mod.rs
 src/lib.rs
-src/models/agent_sdk_config_instance.rs
 src/models/base_config_instance.rs
 src/models/config_instance_activity_status.rs
 src/models/config_instance_error_status.rs
@@ -36,5 +33,4 @@ src/models/error_response.rs
 src/models/hash_schema_serialized_request.rs
 src/models/hash_serialized_config_schema_format.rs
 src/models/mod.rs
-src/models/refresh_latest_config_instance_request.rs
 src/models/schema_digest_response.rs

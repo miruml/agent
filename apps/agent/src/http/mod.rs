@@ -5,3 +5,4 @@ pub mod config_schemas;
 pub mod devices;
 pub mod errors;
 pub mod prelude;
+pub mod search;

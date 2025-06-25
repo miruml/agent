@@ -15,37 +15,101 @@ use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
 
-/// struct for typed errors of method [`get_latest_config_instance`]
+/// struct for typed errors of method [`create_config_instance`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum GetLatestConfigInstanceError {
+pub enum CreateConfigInstanceError {
     UnknownValue(serde_json::Value),
 }
 
-/// struct for typed errors of method [`refresh_latest_config_instance`]
+/// struct for typed errors of method [`list_config_instances`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum RefreshLatestConfigInstanceError {
+pub enum ListConfigInstancesError {
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`update_config_instance`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum UpdateConfigInstanceError {
     UnknownValue(serde_json::Value),
 }
 
 
-pub async fn get_latest_config_instance(configuration: &configuration::Configuration, device_id: &str, config_schema_digest: &str, config_type_slug: &str, expand_left_square_bracket_right_square_bracket: Option<Vec<models::ConfigInstanceExpand>>) -> Result<models::BackendConfigInstance, Error<GetLatestConfigInstanceError>> {
+pub async fn create_config_instance(configuration: &configuration::Configuration, create_config_instance_request: models::CreateConfigInstanceRequest) -> Result<models::BackendConfigInstance, Error<CreateConfigInstanceError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_device_id = device_id;
-    let p_config_schema_digest = config_schema_digest;
-    let p_config_type_slug = config_type_slug;
-    let p_expand_left_square_bracket_right_square_bracket = expand_left_square_bracket_right_square_bracket;
+    let p_create_config_instance_request = create_config_instance_request;
 
-    let uri_str = format!("{}/config_instances/latest", configuration.base_path, device_id=crate::apis::urlencode(p_device_id));
+    let uri_str = format!("{}/config_instances", configuration.base_path);
+    let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
+
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref token) = configuration.bearer_access_token {
+        req_builder = req_builder.bearer_auth(token.to_owned());
+    };
+    req_builder = req_builder.json(&p_create_config_instance_request);
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::BackendConfigInstance`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::BackendConfigInstance`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<CreateConfigInstanceError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn list_config_instances(configuration: &configuration::Configuration, offset: Option<i32>, limit: Option<i32>, order_by: Option<Vec<models::ConfigInstanceOrderBy>>, expand_left_square_bracket_right_square_bracket: Option<Vec<models::ConfigInstanceExpand>>, search: Option<Vec<models::ConfigInstanceSearch>>) -> Result<models::ConfigInstanceList, Error<ListConfigInstancesError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_offset = offset;
+    let p_limit = limit;
+    let p_order_by = order_by;
+    let p_expand_left_square_bracket_right_square_bracket = expand_left_square_bracket_right_square_bracket;
+    let p_search = search;
+
+    let uri_str = format!("{}/config_instances", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
-    req_builder = req_builder.query(&[("config_schema_digest", &p_config_schema_digest.to_string())]);
-    req_builder = req_builder.query(&[("config_type_slug", &p_config_type_slug.to_string())]);
+    if let Some(ref param_value) = p_offset {
+        req_builder = req_builder.query(&[("offset", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_limit {
+        req_builder = req_builder.query(&[("limit", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_order_by {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("order_by".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("order_by", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
     if let Some(ref param_value) = p_expand_left_square_bracket_right_square_bracket {
         req_builder = match "multi" {
             "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand[]".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
             _ => req_builder.query(&[("expand[]", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_search {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("search".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("search", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
         };
     }
     if let Some(ref user_agent) = configuration.user_agent {
@@ -70,30 +134,38 @@ pub async fn get_latest_config_instance(configuration: &configuration::Configura
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::BackendConfigInstance`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::BackendConfigInstance`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::ConfigInstanceList`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::ConfigInstanceList`")))),
         }
     } else {
         let content = resp.text().await?;
-        let entity: Option<GetLatestConfigInstanceError> = serde_json::from_str(&content).ok();
+        let entity: Option<ListConfigInstancesError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }
 
-pub async fn refresh_latest_config_instance(configuration: &configuration::Configuration, refresh_latest_config_instance_request: Option<models::RefreshLatestConfigInstanceRequest>) -> Result<models::BackendConfigInstance, Error<RefreshLatestConfigInstanceError>> {
+pub async fn update_config_instance(configuration: &configuration::Configuration, config_instance_id: &str, update_config_instance_request: models::UpdateConfigInstanceRequest, expand_left_square_bracket_right_square_bracket: Option<Vec<models::ConfigInstanceExpand>>) -> Result<models::BackendConfigInstance, Error<UpdateConfigInstanceError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_refresh_latest_config_instance_request = refresh_latest_config_instance_request;
+    let p_config_instance_id = config_instance_id;
+    let p_update_config_instance_request = update_config_instance_request;
+    let p_expand_left_square_bracket_right_square_bracket = expand_left_square_bracket_right_square_bracket;
 
-    let uri_str = format!("{}/config_instances/refresh_latest", configuration.base_path);
-    let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
+    let uri_str = format!("{}/config_instances/{config_instance_id}", configuration.base_path, config_instance_id=crate::apis::urlencode(p_config_instance_id));
+    let mut req_builder = configuration.client.request(reqwest::Method::PATCH, &uri_str);
 
+    if let Some(ref param_value) = p_expand_left_square_bracket_right_square_bracket {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand[]".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("expand[]", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
     }
     if let Some(ref token) = configuration.bearer_access_token {
         req_builder = req_builder.bearer_auth(token.to_owned());
     };
-    req_builder = req_builder.json(&p_refresh_latest_config_instance_request);
+    req_builder = req_builder.json(&p_update_config_instance_request);
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -115,7 +187,7 @@ pub async fn refresh_latest_config_instance(configuration: &configuration::Confi
         }
     } else {
         let content = resp.text().await?;
-        let entity: Option<RefreshLatestConfigInstanceError> = serde_json::from_str(&content).ok();
+        let entity: Option<UpdateConfigInstanceError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

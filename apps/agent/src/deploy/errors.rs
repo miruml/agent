@@ -2,14 +2,12 @@
 use std::fmt;
 
 // internal crates
-use crate::models::config_instance::{
-    ConfigInstance,
-    ConfigInstanceActivityStatus,
-    ConfigInstanceErrorStatus,
-    ConfigInstanceTargetStatus,
-};
 use crate::errors::{Code, HTTPCode, MiruError, Trace};
 use crate::filesys::errors::FileSysErr;
+use crate::models::config_instance::{
+    ConfigInstance, ConfigInstanceActivityStatus, ConfigInstanceErrorStatus,
+    ConfigInstanceTargetStatus,
+};
 use crate::storage::errors::StorageErr;
 
 #[derive(Debug)]
@@ -51,7 +49,6 @@ pub struct ConfigInstanceWithMismatchingFilepath {
 }
 
 impl ConfigInstanceWithMismatchingFilepath {
-
     pub fn from_instance(instance: ConfigInstance) -> Self {
         Self {
             id: instance.id,

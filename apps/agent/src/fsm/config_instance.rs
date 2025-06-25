@@ -4,9 +4,7 @@ use std::cmp::min;
 // internal crates
 use crate::errors::MiruError;
 use crate::models::config_instance::{
-    ConfigInstance,
-    ConfigInstanceActivityStatus,
-    ConfigInstanceErrorStatus,
+    ConfigInstance, ConfigInstanceActivityStatus, ConfigInstanceErrorStatus,
     ConfigInstanceTargetStatus,
 };
 
@@ -99,9 +97,7 @@ pub fn remove(instance: &mut ConfigInstance) {
     transition(instance, get_success_options(new_activity_status));
 }
 
-fn get_success_options(
-    new_activity_status: ConfigInstanceActivityStatus,
-) -> TransitionOptions {
+fn get_success_options(new_activity_status: ConfigInstanceActivityStatus) -> TransitionOptions {
     TransitionOptions {
         activity_status: Some(new_activity_status),
         error_status: None,

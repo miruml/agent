@@ -1,12 +1,14 @@
-# RefreshLatestConfigInstanceRequest
+# GitCommitRequest
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**device_id** | **String** | The device id | 
-**config_schema_digest** | **String** | The config schema digest | 
-**config_type_slug** | **String** | The config type slug | 
+**commit_sha** | **String** |  | 
+**commit_message** | **String** |  | 
+**branch** | **String** |  | 
+**origin** | **String** |  | 
+**config_schema_file_path** | **String** |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

@@ -10,6 +10,7 @@ use crate::utils::PATH_DELIMITER;
 use serde::Deserialize;
 use serde::Serialize;
 
+// config instance cache
 pub type ConfigInstanceCache = Cache<ConfigInstanceCacheKey, ConfigInstance>;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]

@@ -26,15 +26,13 @@ All URIs are relative to *https://configs.dev.api.miruml.com/agent/v1*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
-*ConfigInstancesApi* | [**get_latest_config_instance**](docs/ConfigInstancesApi.md#get_latest_config_instance) | **GET** /config_instances/latest | Get the latest config instance
-*ConfigInstancesApi* | [**refresh_latest_config_instance**](docs/ConfigInstancesApi.md#refresh_latest_config_instance) | **POST** /config_instances/refresh_latest | Render the latest config instance for a device
+*ConfigInstancesApi* | [**get_latest_config_instance**](docs/ConfigInstancesApi.md#get_latest_config_instance) | **GET** /config_instances/deployed | Get the latest config instance
 *ConfigSchemasApi* | [**hash_config_schema_serialized**](docs/ConfigSchemasApi.md#hash_config_schema_serialized) | **POST** /config_schemas/hash/serialized | Hash a serialized config schema
 *ErrorsApi* | [**get_error**](docs/ErrorsApi.md#get_error) | **GET** /example-error | Get an error
 
 
 ## Documentation For Models
 
- - [AgentSdkConfigInstance](docs/AgentSdkConfigInstance.md)
  - [BaseConfigInstance](docs/BaseConfigInstance.md)
  - [ConfigInstanceActivityStatus](docs/ConfigInstanceActivityStatus.md)
  - [ConfigInstanceErrorStatus](docs/ConfigInstanceErrorStatus.md)
@@ -44,7 +42,6 @@ Class | Method | HTTP request | Description
  - [ErrorResponse](docs/ErrorResponse.md)
  - [HashSchemaSerializedRequest](docs/HashSchemaSerializedRequest.md)
  - [HashSerializedConfigSchemaFormat](docs/HashSerializedConfigSchemaFormat.md)
- - [RefreshLatestConfigInstanceRequest](docs/RefreshLatestConfigInstanceRequest.md)
  - [SchemaDigestResponse](docs/SchemaDigestResponse.md)
 
 

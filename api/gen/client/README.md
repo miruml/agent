@@ -26,10 +26,13 @@ All URIs are relative to *https://configs.dev.api.miruml.com/agent/v1*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
-*ConfigInstancesApi* | [**get_latest_config_instance**](docs/ConfigInstancesApi.md#get_latest_config_instance) | **GET** /config_instances/latest | Get the latest config instance
-*ConfigInstancesApi* | [**refresh_latest_config_instance**](docs/ConfigInstancesApi.md#refresh_latest_config_instance) | **POST** /config_instances/refresh_latest | Render the latest config instance for a device
+*ConfigInstancesApi* | [**create_config_instance**](docs/ConfigInstancesApi.md#create_config_instance) | **POST** /config_instances | Create a config instance
+*ConfigInstancesApi* | [**list_config_instances**](docs/ConfigInstancesApi.md#list_config_instances) | **GET** /config_instances | List config instances in a workspace
+*ConfigInstancesApi* | [**update_config_instance**](docs/ConfigInstancesApi.md#update_config_instance) | **PATCH** /config_instances/{config_instance_id} | Update a config instance
+*ConfigSchemasApi* | [**create_config_schema**](docs/ConfigSchemasApi.md#create_config_schema) | **POST** /config_schemas | Create a config schema
 *ConfigSchemasApi* | [**hash_config_schema**](docs/ConfigSchemasApi.md#hash_config_schema) | **POST** /config_schemas/hash | Hash a config schema
 *ConfigSchemasApi* | [**hash_config_schema_serialized**](docs/ConfigSchemasApi.md#hash_config_schema_serialized) | **POST** /config_schemas/hash/serialized | Hash a serialized config schema
+*ConfigSchemasApi* | [**list_config_schemas**](docs/ConfigSchemasApi.md#list_config_schemas) | **GET** /config_schemas | List the config schemas for a workspace
 *DevicesApi* | [**activate_device**](docs/DevicesApi.md#activate_device) | **POST** /devices/{device_id}/activate | Activate a device
 *DevicesApi* | [**issue_device_token**](docs/DevicesApi.md#issue_device_token) | **POST** /devices/{device_id}/issue_token | Issue a device token
 *ErrorsApi* | [**get_error**](docs/ErrorsApi.md#get_error) | **GET** /example-error | Get an error
@@ -44,28 +47,49 @@ Class | Method | HTTP request | Description
  - [ConfigInstanceActivityStatus](docs/ConfigInstanceActivityStatus.md)
  - [ConfigInstanceErrorStatus](docs/ConfigInstanceErrorStatus.md)
  - [ConfigInstanceExpand](docs/ConfigInstanceExpand.md)
+ - [ConfigInstanceList](docs/ConfigInstanceList.md)
+ - [ConfigInstanceOrderBy](docs/ConfigInstanceOrderBy.md)
+ - [ConfigInstanceSearch](docs/ConfigInstanceSearch.md)
  - [ConfigInstanceStatus](docs/ConfigInstanceStatus.md)
  - [ConfigInstanceTargetStatus](docs/ConfigInstanceTargetStatus.md)
+ - [ConfigSchema](docs/ConfigSchema.md)
+ - [ConfigSchemaExpand](docs/ConfigSchemaExpand.md)
+ - [ConfigSchemaGitCommit](docs/ConfigSchemaGitCommit.md)
+ - [ConfigSchemaGitCommitList](docs/ConfigSchemaGitCommitList.md)
+ - [ConfigSchemaList](docs/ConfigSchemaList.md)
+ - [ConfigSchemaOrderBy](docs/ConfigSchemaOrderBy.md)
+ - [ConfigSchemaSearch](docs/ConfigSchemaSearch.md)
+ - [ConfigType](docs/ConfigType.md)
+ - [CreateConfigInstanceRequest](docs/CreateConfigInstanceRequest.md)
+ - [CreateConfigSchemaRequest](docs/CreateConfigSchemaRequest.md)
  - [Device](docs/Device.md)
  - [DeviceTag](docs/DeviceTag.md)
  - [DeviceTagPaginatedList](docs/DeviceTagPaginatedList.md)
  - [Error](docs/Error.md)
  - [ErrorResponse](docs/ErrorResponse.md)
+ - [GitCommit](docs/GitCommit.md)
+ - [GitCommitRequest](docs/GitCommitRequest.md)
+ - [GitRepositoryType](docs/GitRepositoryType.md)
  - [HashSchemaRequest](docs/HashSchemaRequest.md)
  - [HashSchemaSerializedRequest](docs/HashSchemaSerializedRequest.md)
  - [HashSerializedConfigSchemaFormat](docs/HashSerializedConfigSchemaFormat.md)
  - [IssueDeviceClaims](docs/IssueDeviceClaims.md)
  - [IssueDeviceTokenRequest](docs/IssueDeviceTokenRequest.md)
+ - [Override](docs/Override.md)
+ - [OverrideKeyValuePair](docs/OverrideKeyValuePair.md)
+ - [OverrideKeyValuePairList](docs/OverrideKeyValuePairList.md)
+ - [OverrideList](docs/OverrideList.md)
  - [PaginatedList](docs/PaginatedList.md)
  - [Patch](docs/Patch.md)
  - [PatchComment](docs/PatchComment.md)
  - [PatchCommentList](docs/PatchCommentList.md)
- - [RefreshLatestConfigInstanceRequest](docs/RefreshLatestConfigInstanceRequest.md)
  - [SchemaDigestResponse](docs/SchemaDigestResponse.md)
  - [Tag](docs/Tag.md)
  - [TagList](docs/TagList.md)
  - [TagType](docs/TagType.md)
+ - [TagTypeField](docs/TagTypeField.md)
  - [TokenResponse](docs/TokenResponse.md)
+ - [UpdateConfigInstanceRequest](docs/UpdateConfigInstanceRequest.md)
  - [User](docs/User.md)
  - [Workspace](docs/Workspace.md)
 

@@ -1,5 +1,3 @@
-pub mod agent_sdk_config_instance;
-pub use self::agent_sdk_config_instance::AgentSdkConfigInstance;
 pub mod base_config_instance;
 pub use self::base_config_instance::BaseConfigInstance;
 pub mod config_instance_activity_status;
@@ -18,7 +16,5 @@ pub mod hash_schema_serialized_request;
 pub use self::hash_schema_serialized_request::HashSchemaSerializedRequest;
 pub mod hash_serialized_config_schema_format;
 pub use self::hash_serialized_config_schema_format::HashSerializedConfigSchemaFormat;
-pub mod refresh_latest_config_instance_request;
-pub use self::refresh_latest_config_instance_request::RefreshLatestConfigInstanceRequest;
 pub mod schema_digest_response;
 pub use self::schema_digest_response::SchemaDigestResponse;

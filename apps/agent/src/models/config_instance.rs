@@ -134,7 +134,6 @@ pub fn convert_activity_status_storage_to_sdk(
     }
 }
 
-
 // =============================== ERROR STATUS ==================================== //
 #[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub enum ConfigInstanceErrorStatus {
@@ -158,12 +157,17 @@ pub fn convert_error_status_storage_to_sdk(
     error_status: ConfigInstanceErrorStatus,
 ) -> openapi_server::models::ConfigInstanceErrorStatus {
     match error_status {
-        ConfigInstanceErrorStatus::None => openapi_server::models::ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_NONE,
-        ConfigInstanceErrorStatus::Failed => openapi_server::models::ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_FAILED,
-        ConfigInstanceErrorStatus::Retrying => openapi_server::models::ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_RETRYING,
+        ConfigInstanceErrorStatus::None => {
+            openapi_server::models::ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_NONE
+        }
+        ConfigInstanceErrorStatus::Failed => {
+            openapi_server::models::ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_FAILED
+        }
+        ConfigInstanceErrorStatus::Retrying => {
+            openapi_server::models::ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_RETRYING
+        }
     }
 }
-
 
 // =============================== CONFIG INSTANCE ================================= //
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -331,11 +335,12 @@ pub fn convert_cfg_inst_backend_to_storage(
     config_type_slug: String,
     config_schema_digest: String,
 ) -> ConfigInstance {
-
     ConfigInstance {
         id: backend_instance.id,
         target_status: convert_target_status_backend_to_storage(backend_instance.target_status),
-        activity_status: convert_activity_status_backend_to_storage(backend_instance.activity_status),
+        activity_status: convert_activity_status_backend_to_storage(
+            backend_instance.activity_status,
+        ),
         error_status: convert_error_status_backend_to_storage(backend_instance.error_status),
         filepath: backend_instance.filepath,
         patch_id: backend_instance.patch_id,
