@@ -42,12 +42,8 @@ pub(crate) async fn serve(
         .route("/v1/version", get(version))
         // ============================ CONFIG INSTANCES ============================== //
         .route(
-            "/v1/config_instances/latest",
-            get(handlers::read_latest_config_instance),
-        )
-        .route(
-            "/v1/config_instances/refresh_latest",
-            post(handlers::refresh_latest_config_instance),
+            "/v1/config_instances/deployed",
+            get(handlers::read_deployed_config_instance),
         )
         // ============================ CONFIG SCHEMAS ============================== //
         .route(

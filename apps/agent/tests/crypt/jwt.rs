@@ -3,7 +3,9 @@ use config_agent::crypt::base64;
 use config_agent::crypt::errors::CryptErr;
 use config_agent::crypt::jwt;
 use config_agent::crypt::jwt::Claims;
+
 // external crates
+use chrono::Utc;
 use serde_json::json;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, trace, warn};
@@ -164,7 +166,7 @@ pub mod validate_claims {
 
     #[test]
     fn device_claims_invalid() {
-        let now = chrono::Utc::now().timestamp();
+        let now = Utc::now().timestamp();
         let invalid_claims = vec![
             // issuer isn't miru
             Claims {
@@ -208,7 +210,7 @@ pub mod validate_claims {
 
     #[test]
     fn device_claims_valid() {
-        let now = chrono::Utc::now().timestamp();
+        let now = Utc::now().timestamp();
         let claim = Claims {
             iss: "miru".to_string(),
             aud: "device".to_string(),

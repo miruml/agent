@@ -2,7 +2,9 @@
 use crate::crypt::base64;
 use crate::crypt::errors::{CryptErr, InvalidJWTErr, InvalidJWTPayloadFormatErr};
 use crate::trace;
+
 // external crates
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
 type DeviceID = String;
@@ -60,14 +62,14 @@ pub fn validate_claims(claim: Claims) -> Result<DeviceID, CryptErr> {
 
     // grant a 15 second tolerance for the issued at time (iat) field
     let iat_tol = 15;
-    if claim.iat > chrono::Utc::now().timestamp() + iat_tol {
+    if claim.iat > Utc::now().timestamp() + iat_tol {
         return Err(CryptErr::InvalidJWTErr(InvalidJWTErr {
             msg: "Issued at time is in the future".to_string(),
             trace: trace!(),
         }));
     }
 
-    if claim.exp < chrono::Utc::now().timestamp() {
+    if claim.exp < Utc::now().timestamp() {
         return Err(CryptErr::InvalidJWTErr(InvalidJWTErr {
             msg: "Expiration time is in the past".to_string(),
             trace: trace!(),

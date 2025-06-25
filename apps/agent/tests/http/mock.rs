@@ -4,9 +4,9 @@ use config_agent::http::devices::DevicesExt;
 use config_agent::http::errors::HTTPErr;
 use config_agent::http::prelude::*;
 use openapi_client::models::{
-    ActivateDeviceRequest, BackendConfigInstance, Device, HashSchemaSerializedRequest,
-    IssueDeviceTokenRequest, RefreshLatestConfigInstanceRequest, SchemaDigestResponse,
-    TokenResponse,
+    ActivateDeviceRequest, ConfigInstanceActivityStatus, ConfigInstanceErrorStatus,
+    ConfigInstanceList, ConfigInstanceTargetStatus, ConfigSchemaList, Device,
+    HashSchemaSerializedRequest, IssueDeviceTokenRequest, SchemaDigestResponse, TokenResponse,
 };
 
 // external crates
@@ -49,66 +49,53 @@ impl DevicesExt for MockAuthClient {
 
 // ============================ CONFIG INSTANCES EXT =============================== //
 pub struct MockConfigInstancesClient {
-    pub read_latest_result:
-        Box<dyn Fn() -> Result<Option<BackendConfigInstance>, HTTPErr> + Send + Sync>,
-    pub refresh_latest_result:
-        Box<dyn Fn() -> Result<BackendConfigInstance, HTTPErr> + Send + Sync>,
+    pub list_config_instances_result:
+        Box<dyn Fn() -> Result<ConfigInstanceList, HTTPErr> + Send + Sync>,
 }
 
 impl Default for MockConfigInstancesClient {
     fn default() -> Self {
         Self {
-            read_latest_result: Box::new(|| Ok(None)),
-            refresh_latest_result: Box::new(|| Ok(BackendConfigInstance::default())),
+            list_config_instances_result: Box::new(|| Ok(ConfigInstanceList::default())),
         }
     }
 }
 
 impl MockConfigInstancesClient {
-    pub fn set_read_latest<F>(&mut self, read_latest_result: F)
+    pub fn set_list_config_instances<F>(&mut self, list_config_instances_result: F)
     where
-        F: Fn() -> Result<Option<BackendConfigInstance>, HTTPErr> + Send + Sync + 'static,
+        F: Fn() -> Result<ConfigInstanceList, HTTPErr> + Send + Sync + 'static,
     {
-        self.read_latest_result = Box::new(read_latest_result);
-    }
-
-    pub fn set_refresh_latest<F>(&mut self, refresh_latest_result: F)
-    where
-        F: Fn() -> Result<BackendConfigInstance, HTTPErr> + Send + Sync + 'static,
-    {
-        self.refresh_latest_result = Box::new(refresh_latest_result);
+        self.list_config_instances_result = Box::new(list_config_instances_result);
     }
 }
 
 impl ConfigInstancesExt for MockConfigInstancesClient {
-    async fn read_latest_config_instance(
+    async fn list_config_instances(
         &self,
+        _: String,
+        _: &[String],
+        _: &[ConfigInstanceTargetStatus],
+        _: &[ConfigInstanceActivityStatus],
+        _: &[ConfigInstanceErrorStatus],
         _: &str,
-        _: &str,
-        _: &str,
-        _: &str,
-    ) -> Result<Option<BackendConfigInstance>, HTTPErr> {
-        (self.read_latest_result)()
-    }
-
-    async fn refresh_latest_config_instance(
-        &self,
-        _: &RefreshLatestConfigInstanceRequest,
-        _: &str,
-    ) -> Result<BackendConfigInstance, HTTPErr> {
-        (self.refresh_latest_result)()
+    ) -> Result<ConfigInstanceList, HTTPErr> {
+        (self.list_config_instances_result)()
     }
 }
 
 // =========================== CONFIG SCHEMAS EXT ================================== //
 pub struct MockConfigSchemasClient {
     pub hash_schema_result: Box<dyn Fn() -> Result<SchemaDigestResponse, HTTPErr> + Send + Sync>,
+    pub list_config_schemas_result:
+        Box<dyn Fn() -> Result<ConfigSchemaList, HTTPErr> + Send + Sync>,
 }
 
 impl Default for MockConfigSchemasClient {
     fn default() -> Self {
         Self {
             hash_schema_result: Box::new(|| Ok(SchemaDigestResponse::default())),
+            list_config_schemas_result: Box::new(|| Ok(ConfigSchemaList::default())),
         }
     }
 }
@@ -120,6 +107,13 @@ impl MockConfigSchemasClient {
     {
         self.hash_schema_result = Box::new(hash_schema_result);
     }
+
+    pub fn set_list_config_schemas<F>(&mut self, list_config_schemas_result: F)
+    where
+        F: Fn() -> Result<ConfigSchemaList, HTTPErr> + Send + Sync + 'static,
+    {
+        self.list_config_schemas_result = Box::new(list_config_schemas_result);
+    }
 }
 
 impl ConfigSchemasExt for MockConfigSchemasClient {
@@ -129,5 +123,14 @@ impl ConfigSchemasExt for MockConfigSchemasClient {
         _: &str,
     ) -> Result<SchemaDigestResponse, HTTPErr> {
         (self.hash_schema_result)()
+    }
+
+    async fn list_config_schemas(
+        &self,
+        _: &[String],
+        _: &[String],
+        _: &str,
+    ) -> Result<ConfigSchemaList, HTTPErr> {
+        (self.list_config_schemas_result)()
     }
 }

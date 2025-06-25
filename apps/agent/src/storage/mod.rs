@@ -1,6 +1,7 @@
 pub mod agent;
 pub mod cache;
 pub mod config_instances;
+pub mod config_schemas;
 pub mod digests;
 pub mod errors;
 pub mod layout;

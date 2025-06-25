@@ -1,3 +1,6 @@
+// standard crates
+use std::sync::Arc;
+
 // internal crates
 use crate::deserialize_error;
 
@@ -170,6 +173,11 @@ pub fn convert_error_status_storage_to_sdk(
 }
 
 // =============================== CONFIG INSTANCE ================================= //
+pub struct ConfigInstanceWithData {
+    pub metadata: ConfigInstance,
+    pub value: Arc<serde_json::Value>,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct ConfigInstance {
     pub id: String,
@@ -184,15 +192,14 @@ pub struct ConfigInstance {
     pub updated_at: String,
     pub device_id: String,
     pub config_schema_id: String,
-    pub instance: serde_json::Value,
 
     // cache fields
-    pub config_type_slug: String,
-    pub config_schema_digest: String,
+    pub config_type_slug: Option<String>,
+    pub config_schema_digest: Option<String>,
 
     // fsm fields
     pub attempts: u32,
-    pub cooldown_ends_at: DateTime<chrono::Utc>,
+    pub cooldown_ends_at: DateTime<Utc>,
 }
 
 impl Default for ConfigInstance {
@@ -205,16 +212,15 @@ impl Default for ConfigInstance {
             filepath: None,
             patch_id: None,
             created_by_id: None,
-            created_at: DateTime::<chrono::Utc>::UNIX_EPOCH.to_rfc3339(),
+            created_at: DateTime::<Utc>::UNIX_EPOCH.to_rfc3339(),
             updated_by_id: None,
-            updated_at: DateTime::<chrono::Utc>::UNIX_EPOCH.to_rfc3339(),
+            updated_at: DateTime::<Utc>::UNIX_EPOCH.to_rfc3339(),
             device_id: format!("unknown-{}", Uuid::new_v4()),
             config_schema_id: format!("unknown-{}", Uuid::new_v4()),
-            instance: serde_json::Value::Null,
-            config_type_slug: "unknown".to_string(),
-            config_schema_digest: format!("unknown-{}", Uuid::new_v4()),
+            config_type_slug: None,
+            config_schema_digest: None,
             attempts: 0,
-            cooldown_ends_at: DateTime::<chrono::Utc>::UNIX_EPOCH,
+            cooldown_ends_at: DateTime::<Utc>::UNIX_EPOCH,
         }
     }
 }
@@ -238,7 +244,7 @@ impl ConfigInstance {
     }
 
     pub fn clear_cooldown(&mut self) {
-        self.cooldown_ends_at = DateTime::<chrono::Utc>::UNIX_EPOCH;
+        self.cooldown_ends_at = DateTime::<Utc>::UNIX_EPOCH;
     }
 
     pub fn is_cooling_down(&self) -> bool {
@@ -260,21 +266,20 @@ impl<'de> Deserialize<'de> for ConfigInstance {
             error_status: ConfigInstanceErrorStatus,
             device_id: String,
             config_schema_id: String,
-            instance: serde_json::Value,
-            config_type_slug: String,
-            config_schema_digest: String,
 
             // reasonable default fields
             created_at: Option<String>,
             updated_at: Option<String>,
             attempts: Option<u32>,
-            cooldown_ends_at: Option<DateTime<chrono::Utc>>,
+            cooldown_ends_at: Option<DateTime<Utc>>,
 
             // optional fields
             filepath: Option<String>,
             patch_id: Option<String>,
             created_by_id: Option<String>,
             updated_by_id: Option<String>,
+            config_type_slug: Option<String>,
+            config_schema_digest: Option<String>,
         }
 
         let result = match DeserializeConfigInstance::deserialize(deserializer) {
@@ -321,7 +326,6 @@ impl<'de> Deserialize<'de> for ConfigInstance {
             updated_at,
             device_id: result.device_id,
             config_schema_id: result.config_schema_id,
-            instance: result.instance,
             config_type_slug: result.config_type_slug,
             config_schema_digest: result.config_schema_digest,
             attempts,
@@ -332,8 +336,8 @@ impl<'de> Deserialize<'de> for ConfigInstance {
 
 pub fn convert_cfg_inst_backend_to_storage(
     backend_instance: openapi_client::models::BackendConfigInstance,
-    config_type_slug: String,
-    config_schema_digest: String,
+    config_type_slug: Option<String>,
+    config_schema_digest: Option<String>,
 ) -> ConfigInstance {
     ConfigInstance {
         id: backend_instance.id,
@@ -350,7 +354,6 @@ pub fn convert_cfg_inst_backend_to_storage(
         updated_by_id: backend_instance.updated_by_id,
         device_id: backend_instance.device_id,
         config_schema_id: backend_instance.config_schema_id,
-        instance: backend_instance.instance.unwrap_or_default(),
 
         // cache fields
         config_type_slug,
@@ -358,29 +361,30 @@ pub fn convert_cfg_inst_backend_to_storage(
 
         // fsm fields
         attempts: 0,
-        cooldown_ends_at: DateTime::<chrono::Utc>::UNIX_EPOCH,
+        cooldown_ends_at: DateTime::<Utc>::UNIX_EPOCH,
     }
 }
 
 pub fn convert_cfg_inst_storage_to_sdk(
-    storage_instance: ConfigInstance,
+    instance: ConfigInstance,
+    instance_data: serde_json::Value,
 ) -> openapi_server::models::BaseConfigInstance {
-    let status = convert_status_storage_to_sdk(storage_instance.status());
+    let status = convert_status_storage_to_sdk(instance.status());
     openapi_server::models::BaseConfigInstance {
         object: openapi_server::models::base_config_instance::Object::ConfigInstance,
-        id: storage_instance.id,
-        target_status: convert_target_status_storage_to_sdk(storage_instance.target_status),
+        id: instance.id,
+        target_status: convert_target_status_storage_to_sdk(instance.target_status),
         status,
-        activity_status: convert_activity_status_storage_to_sdk(storage_instance.activity_status),
-        error_status: convert_error_status_storage_to_sdk(storage_instance.error_status),
-        filepath: storage_instance.filepath,
-        patch_id: storage_instance.patch_id,
-        created_by_id: storage_instance.created_by_id,
-        updated_by_id: storage_instance.updated_by_id,
-        created_at: storage_instance.created_at,
-        updated_at: storage_instance.updated_at,
-        device_id: storage_instance.device_id,
-        config_schema_id: storage_instance.config_schema_id,
-        instance: Some(storage_instance.instance),
+        activity_status: convert_activity_status_storage_to_sdk(instance.activity_status),
+        error_status: convert_error_status_storage_to_sdk(instance.error_status),
+        filepath: instance.filepath,
+        patch_id: instance.patch_id,
+        created_by_id: instance.created_by_id,
+        updated_by_id: instance.updated_by_id,
+        created_at: instance.created_at,
+        updated_at: instance.updated_at,
+        device_id: instance.device_id,
+        config_schema_id: instance.config_schema_id,
+        instance: Some(instance_data),
     }
 }

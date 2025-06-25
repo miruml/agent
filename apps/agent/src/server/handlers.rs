@@ -5,11 +5,11 @@ use crate::errors::MiruError;
 use crate::server::errors::{ServerAuthErr, ServerErr, ServerServiceErr};
 use crate::server::state::ServerState;
 use crate::services::config_instances::{
-    read_latest, read_latest::ReadLatestArgs, refresh_latest, refresh_latest::RefreshLatestArgs,
+    deployed,
+    deployed::ReadDeployedArgs,
 };
 use crate::services::config_schemas::{hash, hash::HashSchemaArgsI};
 use crate::trace;
-use openapi_server::models::RefreshLatestConfigInstanceRequest;
 use openapi_server::models::SchemaDigestResponse;
 use openapi_server::models::{Error, ErrorResponse};
 use openapi_server::models::{HashSchemaSerializedRequest, HashSerializedConfigSchemaFormat};
@@ -65,13 +65,13 @@ pub async fn hash_schema(
 }
 
 #[derive(Debug, Deserialize)]
-pub struct ReadLatestQueryArgs {
+pub struct ReadDeployedQueryArgs {
     pub config_type_slug: String,
     pub config_schema_digest: String,
 }
 
-pub async fn read_latest_config_instance(
-    Query(query): Query<ReadLatestQueryArgs>,
+pub async fn read_deployed_config_instance(
+    Query(query): Query<ReadDeployedQueryArgs>,
     State(state): State<Arc<ServerState>>,
 ) -> impl IntoResponse {
     let service = async move {
@@ -82,13 +82,13 @@ pub async fn read_latest_config_instance(
             })
         })?;
 
-        let args = ReadLatestArgs {
+        let args = ReadDeployedArgs {
             device_id: state.device_id.clone(),
             config_type_slug: query.config_type_slug,
             config_schema_digest: query.config_schema_digest,
         };
 
-        read_latest::read_latest(
+        deployed::read_deployed(
             &args,
             &state.config_instance_cache,
             &state.http_client,
@@ -106,49 +106,7 @@ pub async fn read_latest_config_instance(
     match service.await {
         Ok(config_instance) => (StatusCode::OK, Json(json!(config_instance))),
         Err(e) => {
-            error!("Error reading latest config instance: {:?}", e);
-            (e.http_status(), Json(json!(to_error_response(e))))
-        }
-    }
-}
-
-pub async fn refresh_latest_config_instance(
-    State(state): State<Arc<ServerState>>,
-    Json(payload): Json<RefreshLatestConfigInstanceRequest>,
-) -> impl IntoResponse {
-    let service = async move {
-        let token = state.token_mngr.get_token().await.map_err(|e| {
-            ServerErr::AuthErr(ServerAuthErr {
-                source: Box::new(e),
-                trace: trace!(),
-            })
-        })?;
-
-        let args = RefreshLatestArgs {
-            device_id: state.device_id.clone(),
-            config_type_slug: payload.config_type_slug,
-            config_schema_digest: payload.config_schema_digest,
-        };
-
-        refresh_latest::refresh_latest(
-            &args,
-            &state.config_instance_cache,
-            &state.http_client,
-            &token.token,
-        )
-        .await
-        .map_err(|e| {
-            ServerErr::ServiceErr(ServerServiceErr {
-                source: Box::new(e),
-                trace: trace!(),
-            })
-        })
-    };
-
-    match service.await {
-        Ok(config_instance) => (StatusCode::OK, Json(json!(config_instance))),
-        Err(e) => {
-            error!("Error refreshing latest config instance: {:?}", e);
+            error!("Error reading deployed config instance: {:?}", e);
             (e.http_status(), Json(json!(to_error_response(e))))
         }
     }
