@@ -67,6 +67,37 @@ impl fmt::Display for CacheElementNotFound {
 }
 
 #[derive(Debug)]
+pub struct FoundTooManyCacheElements {
+    pub msg: String,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for FoundTooManyCacheElements {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for FoundTooManyCacheElements {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "found too many cache elements: {}", self.msg)
+    }
+}
+
+
+#[derive(Debug)]
 pub struct StorageCryptErr {
     pub source: CryptErr,
     pub trace: Box<Trace>,
@@ -221,6 +252,7 @@ pub enum StorageErr {
     // storage errors
     AgentNotActivatedErr(AgentNotActivatedErr),
     CacheElementNotFound(CacheElementNotFound),
+    FoundTooManyCacheElements(FoundTooManyCacheElements),
 
     // internal crate errors
     CryptErr(StorageCryptErr),
@@ -239,6 +271,7 @@ macro_rules! forward_error_method {
             Self::CryptErr(e) => e.$method($($arg)?),
             Self::FileSysErr(e) => e.$method($($arg)?),
             Self::CacheElementNotFound(e) => e.$method($($arg)?),
+            Self::FoundTooManyCacheElements(e) => e.$method($($arg)?),
             Self::SendActorMessageErr(e) => e.$method($($arg)?),
             Self::ReceiveActorMessageErr(e) => e.$method($($arg)?),
             Self::JoinHandleErr(e) => e.$method($($arg)?),

@@ -11,77 +11,6 @@ use crate::storage::errors::StorageErr;
 use serde_json::json;
 
 #[derive(Debug)]
-pub struct ConfigSchemaNotFound {
-    pub config_type_slug: String,
-    pub config_schema_digest: String,
-    pub trace: Box<Trace>,
-}
-
-impl MiruError for ConfigSchemaNotFound {
-    fn code(&self) -> Code {
-        Code::ResourceNotFound
-    }
-
-    fn http_status(&self) -> HTTPCode {
-        HTTPCode::NOT_FOUND
-    }
-
-    fn is_network_connection_error(&self) -> bool {
-        false
-    }
-
-    fn params(&self) -> Option<serde_json::Value> {
-        Some(json!({
-            "config_type_slug": self.config_type_slug,
-            "config_schema_digest": self.config_schema_digest,
-        }))
-    }
-}
-
-impl fmt::Display for ConfigSchemaNotFound {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Config schema with config type slug '{}' and digest '{}' not found", self.config_type_slug, self.config_schema_digest)
-    }
-}
-
-#[derive(Debug)]
-pub struct TooManyConfigSchemas {
-    pub config_schema_ids: Vec<String>,
-    pub config_type_slug: String,
-    pub config_schema_digest: String,
-    pub trace: Box<Trace>,
-}
-
-impl MiruError for TooManyConfigSchemas {
-    fn code(&self) -> Code {
-        Code::ResourceNotFound
-    }
-
-    fn http_status(&self) -> HTTPCode {
-        HTTPCode::NOT_FOUND
-    }
-
-    fn is_network_connection_error(&self) -> bool {
-        false
-    }
-
-    fn params(&self) -> Option<serde_json::Value> {
-        Some(json!({
-            "config_schema_ids": self.config_schema_ids,
-            "config_type_slug": self.config_type_slug,
-            "config_schema_digest": self.config_schema_digest,
-        }))
-    }
-}
-
-impl fmt::Display for TooManyConfigSchemas {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Found more than one config schema (ids: {}) with config type slug '{}' and digest '{}'", self.config_schema_ids.join(", "), self.config_type_slug, self.config_schema_digest)
-    }
-}
-
-
-#[derive(Debug)]
 pub struct LatestConfigInstanceNotFound {
     pub config_type_slug: String,
     pub config_schema_digest: String,
@@ -208,8 +137,6 @@ impl fmt::Display for ServiceHTTPErr {
 #[derive(Debug)]
 pub enum ServiceErr {
     // service errors
-    ConfigSchemaNotFound(ConfigSchemaNotFound),
-    TooManyConfigSchemas(TooManyConfigSchemas),
     LatestConfigInstanceNotFound(LatestConfigInstanceNotFound),
 
     // internal crate errors
@@ -221,8 +148,6 @@ pub enum ServiceErr {
 macro_rules! forward_error_method {
     ($self:ident, $method:ident $(, $arg:expr)?) => {
         match $self {
-            Self::ConfigSchemaNotFound(e) => e.$method($($arg)?),
-            Self::TooManyConfigSchemas(e) => e.$method($($arg)?),
             Self::LatestConfigInstanceNotFound(e) => e.$method($($arg)?),
             Self::ModelsErr(e) => e.$method($($arg)?),
             Self::StorageErr(e) => e.$method($($arg)?),

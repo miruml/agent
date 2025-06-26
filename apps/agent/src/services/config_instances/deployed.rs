@@ -1,9 +1,12 @@
 // internal crates
 use crate::http::prelude::*;
 use crate::services::errors::{
-    ConfigSchemaNotFound, ServiceErr, ServiceHTTPErr, TooManyConfigSchemas,
+    ConfigSchemaNotFound, ServiceErr, ServiceHTTPErr, ServiceStorageErr, TooManyConfigSchemas,
 };
 use crate::storage::config_instances::ConfigInstanceCache;
+use crate::storage::config_schemas::{
+    ConfigSchemaCache, config_type_slug_and_schema_digest_filter,
+};
 use crate::trace;
 use openapi_server::models::BaseConfigInstance;
 
@@ -52,20 +55,32 @@ pub async fn read_deployed<ArgsT: ReadDeployedArgsI, HTTPClientT: ConfigSchemasE
     Ok(BaseConfigInstance::default())
 }
 
-async fn get_config_schema_id<HTTPClientT: ConfigSchemasExt>(
+async fn fetch_config_schema_id<HTTPClientT: ConfigSchemasExt>(
     args: &ReadDeployedArgs,
     http_client: &HTTPClientT,
-    // add a cache here
+    cache: &ConfigSchemaCache,
     token: &str,
 ) -> Result<String, ServiceErr> {
 
-    // TODO: implement and check the cache for the config schema using the digest and
-    // config type slug. Do this using a cache implemented index
+    // search the cache for the config schema
+    let digest = args.config_schema_digest().to_string();
+    let config_type_slug = args.config_type_slug().to_string();
+    let cfg_schema_entry = cache.find_one_entry_optional(move |entry| {
+        config_type_slug_and_schema_digest_filter(entry, &config_type_slug, &digest)
+    }).await.map_err(|e| {
+        ServiceErr::StorageErr(ServiceStorageErr {
+            source: e,
+            trace: trace!(),
+        })
+    })?;
+    if let Some(cfg_schema_entry) = cfg_schema_entry {
+        return Ok(cfg_schema_entry.value.id.clone());
+    }
 
-    // read the config schemas by digest and config type
-    let cfg_schemas = http_client.list_config_schemas(
-        &[args.config_schema_digest().to_string()],
-        &[args.config_type_slug().to_string()],
+    // search the backend for the config schema
+    let cfg_schema = http_client.find_one_config_schema(
+        [args.config_schema_digest()],
+        [args.config_type_slug()],
         token,
     ).await.map_err(|e| {
         ServiceErr::HTTPErr(ServiceHTTPErr {
@@ -74,27 +89,5 @@ async fn get_config_schema_id<HTTPClientT: ConfigSchemasExt>(
         })
     })?;
 
-    // read the first config schema from the list
-    let cfg_schema = match cfg_schemas.data.first() {
-        Some(cfg_schema) => cfg_schema,
-        None => {
-            return Err(ServiceErr::ConfigSchemaNotFound(ConfigSchemaNotFound {
-                config_type_slug: args.config_type_slug().to_string(),
-                config_schema_digest: args.config_schema_digest().to_string(),
-                trace: trace!(),
-            }));
-        }
-    };
-
-    // check that there is only one config schema
-    if cfg_schemas.data.len() > 1 {
-        return Err(ServiceErr::TooManyConfigSchemas(TooManyConfigSchemas {
-            config_schema_ids: cfg_schemas.data.iter().map(|c| c.id.clone()).collect(),
-            config_type_slug: args.config_type_slug().to_string(),
-            config_schema_digest: args.config_schema_digest().to_string(),
-            trace: trace!(),
-        }));
-    }
-
-    Ok(cfg_schema.id.clone())
+    Ok(cfg_schema.id)
 }

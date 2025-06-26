@@ -19,6 +19,8 @@ use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
 use tracing::{error, info};
 
+type QueryFilter<K, V> = Box<dyn Fn(&CacheEntry<K, V>) -> bool + Send + Sync>;
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct CacheEntry<K, V>
 where
@@ -256,6 +258,33 @@ where
         try_join_all(futures).await?;
         Ok(())
     }
+
+    async fn find_all_entries<F>(
+        &self,
+        filter: F,
+    ) -> Result<Vec<CacheEntry<K, V>>, StorageErr>
+    where
+        F: Fn(&CacheEntry<K, V>) -> bool + Send + Sync,
+    {
+        let entries = self.entries().await?;
+        let filtered_entries = entries
+            .into_iter()
+            .filter(|entry| filter(entry))
+            .collect();
+        Ok(filtered_entries)
+    }
+
+    async fn find_one_entry_optional<F>(
+        &self,
+        filter: F,
+    ) -> Result<Option<CacheEntry<K, V>>, StorageErr>
+    where
+        F: Fn(&CacheEntry<K, V>) -> bool + Send + Sync,
+    {
+        let entries = self.find_all_entries(filter).await?;
+        Ok(entries.into_iter().next())
+    }
+
 }
 
 // ========================== MULTI-THREADED IMPLEMENTATION ======================== //
@@ -298,6 +327,10 @@ where
     },
     Shutdown {
         respond_to: oneshot::Sender<Result<(), StorageErr>>,
+    },
+    FindOneEntryOptional {
+        filter: QueryFilter<K, V>,
+        respond_to: oneshot::Sender<Result<Option<CacheEntry<K, V>>, StorageErr>>,
     },
 }
 
@@ -383,6 +416,15 @@ where
                     let result = self.cache.prune(max_size).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to prune cache: {:?}", e);
+                    }
+                }
+                WorkerCommand::FindOneEntryOptional {
+                    filter,
+                    respond_to,
+                } => {
+                    let result = self.cache.find_one_entry_optional(filter).await;
+                    if let Err(e) = respond_to.send(result) {
+                        error!("Actor failed to find one cache entry: {:?}", e);
                     }
                 }
             }
@@ -585,6 +627,34 @@ where
         self.sender
             .send(WorkerCommand::Prune {
                 max_size,
+                respond_to: send,
+            })
+            .await
+            .map_err(|e| {
+                StorageErr::SendActorMessageErr(SendActorMessageErr {
+                    source: Box::new(e),
+                    trace: trace!(),
+                })
+            })?;
+        recv.await.map_err(|e| {
+            StorageErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+                source: Box::new(e),
+                trace: trace!(),
+            })
+        })?
+    }
+
+    pub async fn find_one_entry_optional<F>(
+        &self,
+        filter: F,
+    ) -> Result<Option<CacheEntry<K, V>>, StorageErr>
+    where
+        F: Fn(&CacheEntry<K, V>) -> bool + Send + Sync + 'static,
+    {
+        let (send, recv) = oneshot::channel();
+        self.sender
+            .send(WorkerCommand::FindOneEntryOptional {
+                filter: Box::new(filter),
                 respond_to: send,
             })
             .await

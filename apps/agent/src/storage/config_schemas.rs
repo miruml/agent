@@ -1,25 +1,21 @@
-// standard crates
-use std::fmt::Display;
-
 // internal crates
 use crate::models::config_schema::ConfigSchema;
-use crate::storage::cache::Cache;
+use crate::storage::cache::{Cache, CacheEntry};
 
-// external crates
-use serde::Deserialize;
-use serde::Serialize;
+// config schema cache
+pub type ConfigSchemaID = String;
+pub type ConfigSchemaCache = Cache<ConfigSchemaID, ConfigSchema>;
 
-// config instance cache
-pub type ConfigSchemaCache = Cache<ConfigSchemaCacheKey, ConfigSchema>;
-
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-pub struct ConfigSchemaCacheKey {
-    pub config_schema_id: String,
-}
-
-impl Display for ConfigSchemaCacheKey {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.config_schema_id)
-    }
+// queries
+pub fn config_type_slug_and_schema_digest_filter(
+    entry: &CacheEntry<ConfigSchemaID, ConfigSchema>,
+    config_type_slug: &str,
+    config_schema_digest: &str,
+) -> bool {
+    let entry_slug= match &entry.value.config_type_slug {
+        Some(config_type_slug) => config_type_slug,
+        None => return false,
+    };
+    entry.value.digest == config_schema_digest && entry_slug == config_type_slug
 }
 

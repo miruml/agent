@@ -1,5 +1,7 @@
-// external crates
+// standard crates
 use std::fmt;
+use std::fmt::Write;
+
 
 pub enum SearchOperator {
     Equals,
@@ -27,26 +29,42 @@ impl fmt::Display for LogicalOperator {
     }
 }
 
-pub struct SearchClause {
-    pub key: String,
-    pub op: SearchOperator,
-    pub values: Vec<String>,
+pub fn format_search_clause<K, V, I>(
+    key: K,
+    op: SearchOperator,
+    values: I,
+) -> String
+where
+    K: fmt::Display,
+    V: fmt::Display,
+    I: IntoIterator<Item = V>,
+{
+    format!("{}{}{}", key, op, join(values, ","))
 }
 
-impl fmt::Display for SearchClause {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}{}{}", self.key, self.op, self.values.join(","))
+pub fn format_search_group<I>(
+    clauses: I,
+    op: LogicalOperator,
+) -> String
+where
+    I: IntoIterator,
+    I::Item: fmt::Display,
+{
+    format!("{}", join(clauses, &format!(" {} ", op)))
+}
+
+fn join<I, T>(values: I, sep: &str) -> String
+where
+    I: IntoIterator<Item = T>,
+    T: fmt::Display,
+{
+    let mut result = String::new();
+    let mut iter = values.into_iter().peekable();
+    while let Some(v) = iter.next() {
+        write!(&mut result, "{}", v).unwrap();
+        if iter.peek().is_some() {
+            result.push_str(sep);
+        }
     }
-}
-
-pub struct SearchGroup {
-    pub clauses: Vec<SearchClause>,
-    pub op: LogicalOperator,
-}
-
-impl fmt::Display for SearchGroup {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let clause_strings: Vec<String> = self.clauses.iter().map(|c| c.to_string()).collect();
-        write!(f, "{}", clause_strings.join(&format!(" {} ", self.op)))
-    }
+    result
 }

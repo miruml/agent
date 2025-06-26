@@ -1,10 +1,13 @@
 // standard library
+use std::fmt;
 use std::sync::Arc;
 
 // internal crates
 use crate::http::client::HTTPClient;
 use crate::http::errors::HTTPErr;
-use crate::http::search::{LogicalOperator, SearchClause, SearchGroup, SearchOperator};
+use crate::http::search::{
+    LogicalOperator, SearchOperator, format_search_clause, format_search_group,
+};
 use openapi_client::models::{
     ConfigInstanceActivityStatus,
     ConfigInstanceErrorStatus,
@@ -15,15 +18,23 @@ use openapi_client::models::{
 
 #[allow(async_fn_in_trait)]
 pub trait ConfigInstancesExt: Send + Sync {
-    async fn list_config_instances(
+    async fn list_config_instances<
+        S1, S2, S3, S4
+    >(
         &self,
-        device_id: String,
-        config_schema_ids: &[String],
-        target_statuses: &[ConfigInstanceTargetStatus],
-        activity_statuses: &[ConfigInstanceActivityStatus],
-        error_statuses: &[ConfigInstanceErrorStatus],
+        device_id: &str,
+        config_schema_ids: S1,
+        target_statuses: S2,
+        activity_statuses: S3,
+        error_statuses: S4,
         token: &str,
-    ) -> Result<ConfigInstanceList, HTTPErr>;
+    ) -> Result<ConfigInstanceList, HTTPErr>
+    where
+        S1: IntoIterator,
+        S1::Item: fmt::Display,
+        S2: IntoIterator<Item = ConfigInstanceTargetStatus>,
+        S3: IntoIterator<Item = ConfigInstanceActivityStatus>,
+        S4: IntoIterator<Item = ConfigInstanceErrorStatus>;
 }
 
 impl HTTPClient {
@@ -33,55 +44,64 @@ impl HTTPClient {
 }
 
 impl ConfigInstancesExt for HTTPClient {
-    async fn list_config_instances(
+    async fn list_config_instances<
+        S1, S2, S3, S4,
+    >(
         &self,
-        device_id: String,
-        config_schema_ids: &[String],
-        target_statuses: &[ConfigInstanceTargetStatus],
-        activity_statuses: &[ConfigInstanceActivityStatus],
-        error_statuses: &[ConfigInstanceErrorStatus],
+        device_id: &str,
+        config_schema_ids: S1,
+        target_statuses: S2,
+        activity_statuses: S3,
+        error_statuses: S4,
         token: &str,
-    ) -> Result<ConfigInstanceList, HTTPErr> {
-
+    ) -> Result<ConfigInstanceList, HTTPErr>
+    where
+        S1: IntoIterator,
+        S1::Item: fmt::Display,
+        S2: IntoIterator<Item = ConfigInstanceTargetStatus>,
+        S3: IntoIterator<Item = ConfigInstanceActivityStatus>,
+        S4: IntoIterator<Item = ConfigInstanceErrorStatus>,
+    {
         // build the search query
-        let mut clauses: Vec<SearchClause> = Vec::new();
-        clauses.push(SearchClause {
-            key: ConfigInstanceSearch::CONFIG_INSTANCE_SEARCH_DEVICE_ID.to_string(),
-            op: SearchOperator::Equals,
-            values: vec![device_id],
-        });
-        if !config_schema_ids.is_empty() {
-            clauses.push(SearchClause {
-                key: ConfigInstanceSearch::CONFIG_INSTANCE_SEARCH_CONFIG_SCHEMA_ID.to_string(),
-                op: SearchOperator::Equals,
-                values: config_schema_ids.iter().map(|s| s.to_string()).collect(),
-            });
+        let mut clauses: Vec<String> = Vec::new();
+        clauses.push(format_search_clause(
+            ConfigInstanceSearch::CONFIG_INSTANCE_SEARCH_DEVICE_ID,
+            SearchOperator::Equals,
+            [device_id],
+        ));
+        let mut config_schema_ids_iter = config_schema_ids.into_iter().peekable();
+        if config_schema_ids_iter.peek().is_some() {
+            clauses.push(format_search_clause(
+                ConfigInstanceSearch::CONFIG_INSTANCE_SEARCH_CONFIG_SCHEMA_ID,
+                SearchOperator::Equals,
+                config_schema_ids_iter,
+            ));
         }
-        if !target_statuses.is_empty() {
-            clauses.push(SearchClause {
-                key: ConfigInstanceSearch::CONFIG_INSTANCE_SEARCH_TARGET_STATUS.to_string(),
-                op: SearchOperator::Equals,
-                values: target_statuses.iter().map(|s| s.to_string()).collect(),
-            });
+        let mut target_status_iter = target_statuses.into_iter().peekable();
+        if target_status_iter.peek().is_some() {
+            clauses.push(format_search_clause(
+                ConfigInstanceSearch::CONFIG_INSTANCE_SEARCH_TARGET_STATUS,
+                SearchOperator::Equals,
+                target_status_iter,
+            ));
         }
-        if !activity_statuses.is_empty() {
-            clauses.push(SearchClause {
-                key: ConfigInstanceSearch::CONFIG_INSTANCE_SEARCH_ACTIVITY_STATUS.to_string(),
-                op: SearchOperator::Equals,
-                values: activity_statuses.iter().map(|s| s.to_string()).collect(),
-            });
+        let mut activity_statuses_iter = activity_statuses.into_iter().peekable();
+        if activity_statuses_iter.peek().is_some() {
+            clauses.push(format_search_clause(
+                ConfigInstanceSearch::CONFIG_INSTANCE_SEARCH_ACTIVITY_STATUS,
+                SearchOperator::Equals,
+                activity_statuses_iter,
+            ));
         }
-        if !error_statuses.is_empty() {
-            clauses.push(SearchClause {
-                key: ConfigInstanceSearch::CONFIG_INSTANCE_SEARCH_ERROR_STATUS.to_string(),
-                op: SearchOperator::Equals,
-                values: error_statuses.iter().map(|s| s.to_string()).collect(),
-            });
+        let mut error_statuses_iter = error_statuses.into_iter().peekable();
+        if error_statuses_iter.peek().is_some() {
+            clauses.push(format_search_clause(
+                ConfigInstanceSearch::CONFIG_INSTANCE_SEARCH_ERROR_STATUS,
+                SearchOperator::Equals,
+                error_statuses_iter,
+            ));
         }
-        let search_query = SearchGroup {
-            clauses,
-            op: LogicalOperator::And,
-        };
+        let search_query = format_search_group(clauses, LogicalOperator::And);
 
         // build the request
         let url = format!("{}?search={}", self.config_instances_url(), search_query,);
@@ -97,15 +117,24 @@ impl ConfigInstancesExt for HTTPClient {
 }
 
 impl ConfigInstancesExt for Arc<HTTPClient> {
-    async fn list_config_instances(
+    async fn list_config_instances<
+        S1, S2, S3, S4,
+    >(
         &self,
-        device_id: String,
-        config_schema_ids: &[String],
-        target_statuses: &[ConfigInstanceTargetStatus],
-        activity_statuses: &[ConfigInstanceActivityStatus],
-        error_statuses: &[ConfigInstanceErrorStatus],
+        device_id: &str,
+        config_schema_ids: S1,
+        target_statuses: S2,
+        activity_statuses: S3,
+        error_statuses: S4,
         token: &str,
-    ) -> Result<ConfigInstanceList, HTTPErr> {
+    ) -> Result<ConfigInstanceList, HTTPErr>
+    where
+        S1: IntoIterator,
+        S1::Item: fmt::Display,
+        S2: IntoIterator<Item = ConfigInstanceTargetStatus>,
+        S3: IntoIterator<Item = ConfigInstanceActivityStatus>,
+        S4: IntoIterator<Item = ConfigInstanceErrorStatus>,
+    {
         self.as_ref().list_config_instances(
             device_id,
             config_schema_ids,
