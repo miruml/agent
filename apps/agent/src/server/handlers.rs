@@ -42,7 +42,7 @@ pub async fn hash_schema(
         })?;
         hash::hash_schema(
             &payload,
-            &state.config_schema_digest_cache,
+            &state.cfg_sch_digest_cache,
             &state.http_client,
             &token.token,
         )
@@ -90,7 +90,9 @@ pub async fn read_deployed_config_instance(
 
         deployed::read_deployed(
             &args,
-            &state.config_instance_cache,
+            &state.cfg_inst_metadata_cache,
+            &state.cfg_inst_data_cache,
+            &state.cfg_schema_cache,
             &state.http_client,
             &token.token,
         )

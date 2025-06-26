@@ -13,8 +13,9 @@ use crate::models::agent::Agent;
 use crate::server::errors::{
     MissingDeviceIDErr, ServerAuthErr, ServerErr, ServerFileSysErr, ServerStorageErr,
 };
-use crate::storage::config_instances::ConfigInstanceCache;
+use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
 use crate::storage::digests::ConfigSchemaDigestCache;
+use crate::storage::config_schemas::ConfigSchemaCache;
 use crate::storage::layout::StorageLayout;
 use crate::storage::token::Token;
 use crate::trace;
@@ -25,8 +26,10 @@ type DeviceID = String;
 pub struct ServerState {
     pub device_id: DeviceID,
     pub http_client: Arc<HTTPClient>,
-    pub config_schema_digest_cache: Arc<ConfigSchemaDigestCache>,
-    pub config_instance_cache: Arc<ConfigInstanceCache>,
+    pub cfg_sch_digest_cache: Arc<ConfigSchemaDigestCache>,
+    pub cfg_inst_metadata_cache: Arc<ConfigInstanceCache>,
+    pub cfg_inst_data_cache: Arc<ConfigInstanceDataCache>,
+    pub cfg_schema_cache: Arc<ConfigSchemaCache>,
     pub token_mngr: Arc<TokenManager>,
     pub last_activity: Arc<AtomicU64>,
 }
@@ -59,12 +62,18 @@ impl ServerState {
         let device_id = Self::init_device_id(&agent_file, &token_file).await?;
 
         // initialize the caches
-        let (config_schema_digest_cache, config_schema_digest_cache_handle) =
+        let (cfg_sch_digest_cache, cfg_sch_digest_cache_handle) =
             ConfigSchemaDigestCache::spawn(layout.config_schema_digest_cache());
-        let config_schema_digest_cache = Arc::new(config_schema_digest_cache);
-        let (config_instance_cache, config_instance_cache_handle) =
-            ConfigInstanceCache::spawn(layout.config_instance_cache());
-        let config_instance_cache = Arc::new(config_instance_cache);
+        let cfg_sch_digest_cache = Arc::new(cfg_sch_digest_cache);
+        let (cfg_inst_metadata_cache, cfg_inst_metadata_cache_handle) =
+            ConfigInstanceCache::spawn(layout.config_instance_metadata_cache());
+        let cfg_inst_metadata_cache = Arc::new(cfg_inst_metadata_cache);
+        let (cfg_inst_data_cache, cfg_inst_data_cache_handle) =
+            ConfigInstanceDataCache::spawn(layout.config_instance_data_cache());
+        let cfg_inst_data_cache = Arc::new(cfg_inst_data_cache);
+        let (cfg_schema_cache, cfg_schema_cache_handle) =
+            ConfigSchemaCache::spawn(layout.config_schema_cache());
+        let cfg_schema_cache = Arc::new(cfg_schema_cache);
 
         // initialize the token manager
         let (token_mngr, token_mngr_handle) = TokenManager::spawn(
@@ -85,8 +94,10 @@ impl ServerState {
         let server_state = ServerState {
             device_id,
             http_client,
-            config_schema_digest_cache,
-            config_instance_cache,
+            cfg_sch_digest_cache,
+            cfg_inst_metadata_cache,
+            cfg_inst_data_cache,
+            cfg_schema_cache,
             token_mngr,
             last_activity: Arc::new(AtomicU64::new(
                 SystemTime::now()
@@ -99,8 +110,10 @@ impl ServerState {
         // return the shutdown handler
         let shutdown_handle = async move {
             let handles = vec![
-                config_schema_digest_cache_handle,
-                config_instance_cache_handle,
+                cfg_sch_digest_cache_handle,
+                cfg_inst_metadata_cache_handle,
+                cfg_inst_data_cache_handle,
+                cfg_schema_cache_handle,
                 token_mngr_handle,
             ];
 
@@ -112,7 +125,7 @@ impl ServerState {
 
     pub async fn shutdown(&self) -> Result<(), ServerErr> {
         // shutdown the caches
-        self.config_schema_digest_cache
+        self.cfg_sch_digest_cache
             .shutdown()
             .await
             .map_err(|e| {
@@ -121,12 +134,33 @@ impl ServerState {
                     trace: trace!(),
                 })
             })?;
-        self.config_instance_cache.shutdown().await.map_err(|e| {
-            ServerErr::StorageErr(ServerStorageErr {
-                source: Box::new(e),
-                trace: trace!(),
-            })
-        })?;
+        self.cfg_inst_metadata_cache
+            .shutdown()
+            .await
+            .map_err(|e| {
+                ServerErr::StorageErr(ServerStorageErr {
+                    source: Box::new(e),
+                    trace: trace!(),
+                })
+            })?;
+        self.cfg_inst_data_cache
+            .shutdown()
+            .await
+            .map_err(|e| {
+                ServerErr::StorageErr(ServerStorageErr {
+                    source: Box::new(e),
+                    trace: trace!(),
+                })
+            })?;
+        self.cfg_schema_cache
+            .shutdown()
+            .await
+            .map_err(|e| {
+                ServerErr::StorageErr(ServerStorageErr {
+                    source: Box::new(e),
+                    trace: trace!(),
+                })
+            })?;
 
         // shutdown the token manager
         self.token_mngr.shutdown().await.map_err(|e| {

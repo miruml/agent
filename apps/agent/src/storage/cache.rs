@@ -4,7 +4,7 @@ use std::fmt::Debug;
 // internal crates
 use crate::filesys::{dir::Dir, file, file::File, path::PathExt};
 use crate::storage::errors::{
-    CacheElementNotFound, ReceiveActorMessageErr, SendActorMessageErr, StorageErr,
+    CacheElementNotFound, FoundTooManyCacheElements, ReceiveActorMessageErr, SendActorMessageErr, StorageErr,
     StorageFileSysErr,
 };
 use crate::trace;
@@ -276,15 +276,65 @@ where
 
     async fn find_one_entry_optional<F>(
         &self,
+        filter_name: &str,
         filter: F,
     ) -> Result<Option<CacheEntry<K, V>>, StorageErr>
     where
         F: Fn(&CacheEntry<K, V>) -> bool + Send + Sync,
     {
         let entries = self.find_all_entries(filter).await?;
+        if entries.len() > 1 {
+            return Err(StorageErr::FoundTooManyCacheElements(FoundTooManyCacheElements {
+                expected_count: 1,
+                found_keys: entries.into_iter().map(|entry| entry.key.to_string()).collect(),
+                filter_name: filter_name.to_string(),
+                trace: trace!(),
+            }));
+        }
         Ok(entries.into_iter().next())
     }
 
+    async fn find_one_optional<F>(
+        &self,
+        filter_name: &str,
+        filter: F,
+    ) -> Result<Option<V>, StorageErr>
+    where
+        F: Fn(&CacheEntry<K, V>) -> bool + Send + Sync,
+    {
+        let entry = self.find_one_entry_optional(filter_name, filter).await?;
+        Ok(entry.map(|entry| entry.value))
+    }
+
+    async fn find_one_entry<F>(
+        &self,
+        filter_name: &str,
+        filter: F,
+    ) -> Result<CacheEntry<K, V>, StorageErr>
+    where
+        F: Fn(&CacheEntry<K, V>) -> bool + Send + Sync,
+    {
+        let entry = self.find_one_entry_optional(filter_name, filter).await?;
+        match entry {
+            Some(entry) => Ok(entry),
+            None => Err(StorageErr::CacheElementNotFound(CacheElementNotFound {
+                msg: format!("Unable to find cache entry with filter: '{}'", filter_name),
+                trace: trace!(),
+            })),
+        }
+    }
+
+    async fn find_one<F>(
+        &self,
+        filter_name: &str,
+        filter: F,
+    ) -> Result<V, StorageErr>
+    where
+        F: Fn(&CacheEntry<K, V>) -> bool + Send + Sync,
+    {
+        let entry = self.find_one_entry(filter_name, filter).await?;
+        Ok(entry.value)
+    }
 }
 
 // ========================== MULTI-THREADED IMPLEMENTATION ======================== //
@@ -329,8 +379,24 @@ where
         respond_to: oneshot::Sender<Result<(), StorageErr>>,
     },
     FindOneEntryOptional {
+        filter_name: &'static str,
         filter: QueryFilter<K, V>,
         respond_to: oneshot::Sender<Result<Option<CacheEntry<K, V>>, StorageErr>>,
+    },
+    FindOneOptional {
+        filter_name: &'static str,
+        filter: QueryFilter<K, V>,
+        respond_to: oneshot::Sender<Result<Option<V>, StorageErr>>,
+    },
+    FindOneEntry {
+        filter_name: &'static str,
+        filter: QueryFilter<K, V>,
+        respond_to: oneshot::Sender<Result<CacheEntry<K, V>, StorageErr>>,
+    },
+    FindOne {
+        filter_name: &'static str,
+        filter: QueryFilter<K, V>,
+        respond_to: oneshot::Sender<Result<V, StorageErr>>,
     },
 }
 
@@ -419,10 +485,41 @@ where
                     }
                 }
                 WorkerCommand::FindOneEntryOptional {
+                    filter_name,
                     filter,
                     respond_to,
                 } => {
-                    let result = self.cache.find_one_entry_optional(filter).await;
+                    let result = self.cache.find_one_entry_optional(filter_name, filter).await;
+                    if let Err(e) = respond_to.send(result) {
+                        error!("Actor failed to find one cache entry: {:?}", e);
+                    }
+                }
+                WorkerCommand::FindOneOptional {
+                    filter_name,
+                    filter,
+                    respond_to,
+                } => {
+                    let result = self.cache.find_one_optional(filter_name, filter).await;
+                    if let Err(e) = respond_to.send(result) {
+                        error!("Actor failed to find one cache entry: {:?}", e);
+                    }
+                }
+                WorkerCommand::FindOneEntry {
+                    filter_name,
+                    filter,
+                    respond_to,
+                } => {
+                    let result = self.cache.find_one_entry(filter_name, filter).await;
+                    if let Err(e) = respond_to.send(result) {
+                        error!("Actor failed to find one cache entry: {:?}", e);
+                    }
+                }
+                WorkerCommand::FindOne {
+                    filter_name,
+                    filter,
+                    respond_to,
+                } => {
+                    let result = self.cache.find_one(filter_name, filter).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to find one cache entry: {:?}", e);
                     }
@@ -646,6 +743,7 @@ where
 
     pub async fn find_one_entry_optional<F>(
         &self,
+        filter_name: &'static str,
         filter: F,
     ) -> Result<Option<CacheEntry<K, V>>, StorageErr>
     where
@@ -654,6 +752,97 @@ where
         let (send, recv) = oneshot::channel();
         self.sender
             .send(WorkerCommand::FindOneEntryOptional {
+                filter_name,
+                filter: Box::new(filter),
+                respond_to: send,
+            })
+            .await
+            .map_err(|e| {
+                StorageErr::SendActorMessageErr(SendActorMessageErr {
+                    source: Box::new(e),
+                    trace: trace!(),
+                })
+            })?;
+        recv.await.map_err(|e| {
+            StorageErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+                source: Box::new(e),
+                trace: trace!(),
+            })
+        })?
+    }
+
+    pub async fn find_one_optional<F>(
+        &self,
+        filter_name: &'static str,
+        filter: F,
+    ) -> Result<Option<V>, StorageErr>
+    where
+        F: Fn(&CacheEntry<K, V>) -> bool + Send + Sync + 'static,
+    {
+        let (send, recv) = oneshot::channel();
+        self.sender
+            .send(WorkerCommand::FindOneOptional {
+                filter_name,
+                filter: Box::new(filter),
+                respond_to: send,
+            })
+            .await
+            .map_err(|e| {
+                StorageErr::SendActorMessageErr(SendActorMessageErr {
+                    source: Box::new(e),
+                    trace: trace!(),
+                })
+            })?;
+        recv.await.map_err(|e| {
+            StorageErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+                source: Box::new(e),
+                trace: trace!(),
+            })
+        })?
+    }
+
+    pub async fn find_one_entry<F>(
+        &self,
+        filter_name: &'static str,
+        filter: F,
+    ) -> Result<CacheEntry<K, V>, StorageErr>
+    where
+        F: Fn(&CacheEntry<K, V>) -> bool + Send + Sync + 'static,
+    {
+        let (send, recv) = oneshot::channel();
+        self.sender
+            .send(WorkerCommand::FindOneEntry {
+                filter_name,
+                filter: Box::new(filter),
+                respond_to: send,
+            })
+            .await
+            .map_err(|e| {
+                StorageErr::SendActorMessageErr(SendActorMessageErr {
+                    source: Box::new(e),
+                    trace: trace!(),
+                })
+            })?;
+        recv.await.map_err(|e| {
+            StorageErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+                source: Box::new(e),
+                trace: trace!(),
+            })
+        })?
+    }
+
+    pub async fn find_one<F>(
+        &self,
+        filter_name: &'static str,
+        filter: F,
+    ) -> Result<V, StorageErr>
+    where
+        F: Fn(&CacheEntry<K, V>) -> bool + Send + Sync + 'static,
+    {
+        let (send, recv) = oneshot::channel();
+        self.sender
+            .send(WorkerCommand::FindOne {
+                filter_name,
                 filter: Box::new(filter),
                 respond_to: send,
             })

@@ -7,7 +7,7 @@ pub type ConfigSchemaID = String;
 pub type ConfigSchemaCache = Cache<ConfigSchemaID, ConfigSchema>;
 
 // queries
-pub fn config_type_slug_and_schema_digest_filter(
+pub fn filter_by_config_type_slug_and_schema_digest(
     entry: &CacheEntry<ConfigSchemaID, ConfigSchema>,
     config_type_slug: &str,
     config_schema_digest: &str,

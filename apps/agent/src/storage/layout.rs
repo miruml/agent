@@ -35,8 +35,20 @@ impl StorageLayout {
         self.root.subdir("config_schema_digests")
     }
 
-    pub fn config_instance_cache(&self) -> Dir {
+    pub fn config_instance_caches(&self) -> Dir {
         self.root.subdir("config_instances")
+    }
+
+    pub fn config_instance_metadata_cache(&self) -> Dir {
+        self.config_instance_caches().subdir("metadata")
+    }
+
+    pub fn config_instance_data_cache(&self) -> Dir {
+        self.config_instance_caches().subdir("data")
+    }
+
+    pub fn config_schema_cache(&self) -> Dir {
+        self.root.subdir("config_schemas")
     }
 }
 

@@ -38,6 +38,7 @@ pub struct RunServerOptions {
     // caches
     pub config_schema_digest_cache_max_size: usize,
     pub config_instance_cache_max_size: usize,
+    pub config_schema_cache_max_size: usize,
 
     // timing
     pub token_refresh_expiration_threshold: Duration,
@@ -59,6 +60,7 @@ impl Default for RunServerOptions {
             // caches
             config_schema_digest_cache_max_size: 1000,
             config_instance_cache_max_size: 1000,
+            config_schema_cache_max_size: 1000,
 
             // timing
             token_refresh_expiration_threshold: Duration::from_secs(15 * 60), // 15 minutes
@@ -114,11 +116,17 @@ pub async fn run(
         ) => {
             info!("Idle timeout ({:?}) reached", options.idle_timeout);
             info!("Pruning filesystem cache...");
-            if let Err(e) = state.config_schema_digest_cache.prune(options.config_schema_digest_cache_max_size).await {
+            if let Err(e) = state.cfg_sch_digest_cache.prune(options.config_schema_digest_cache_max_size).await {
                 error!("Failed to prune config schema digest cache: {}", e);
             }
-            if let Err(e) = state.config_instance_cache.prune(options.config_instance_cache_max_size).await {
+            if let Err(e) = state.cfg_inst_metadata_cache.prune(options.config_instance_cache_max_size).await {
                 error!("Failed to prune config instance cache: {}", e);
+            }
+            if let Err(e) = state.cfg_inst_data_cache.prune(options.config_instance_cache_max_size).await {
+                error!("Failed to prune config instance data cache: {}", e);
+            }
+            if let Err(e) = state.cfg_schema_cache.prune(options.config_schema_cache_max_size).await {
+                error!("Failed to prune config schema cache: {}", e);
             }
             info!("Shutting down...");
         }

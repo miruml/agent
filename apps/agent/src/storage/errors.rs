@@ -68,7 +68,9 @@ impl fmt::Display for CacheElementNotFound {
 
 #[derive(Debug)]
 pub struct FoundTooManyCacheElements {
-    pub msg: String,
+    pub expected_count: usize,
+    pub found_keys: Vec<String>,
+    pub filter_name: String,
     pub trace: Box<Trace>,
 }
 
@@ -92,7 +94,7 @@ impl MiruError for FoundTooManyCacheElements {
 
 impl fmt::Display for FoundTooManyCacheElements {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "found too many cache elements: {}", self.msg)
+        write!(f, "expected to find {} when filtering by '{}' but found {}: {}", self.expected_count, self.filter_name, self.found_keys.len(), self.found_keys.join(", "))
     }
 }
 
