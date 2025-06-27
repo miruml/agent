@@ -1,6 +1,3 @@
-// standard crates
-use std::sync::Arc;
-
 // internal crates
 use crate::deserialize_error;
 
@@ -173,10 +170,7 @@ pub fn convert_error_status_storage_to_sdk(
 }
 
 // =============================== CONFIG INSTANCE ================================= //
-pub struct ConfigInstanceWithData {
-    pub metadata: ConfigInstance,
-    pub value: Arc<serde_json::Value>,
-}
+pub type ConfigInstanceID = String;
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct ConfigInstance {
@@ -187,9 +181,9 @@ pub struct ConfigInstance {
     pub filepath: Option<String>,
     pub patch_id: Option<String>,
     pub created_by_id: Option<String>,
-    pub created_at: String,
+    pub created_at: DateTime<Utc>,
     pub updated_by_id: Option<String>,
-    pub updated_at: String,
+    pub updated_at: DateTime<Utc>,
     pub device_id: String,
     pub config_schema_id: String,
 
@@ -212,9 +206,9 @@ impl Default for ConfigInstance {
             filepath: None,
             patch_id: None,
             created_by_id: None,
-            created_at: DateTime::<Utc>::UNIX_EPOCH.to_rfc3339(),
+            created_at: DateTime::<Utc>::UNIX_EPOCH,
             updated_by_id: None,
-            updated_at: DateTime::<Utc>::UNIX_EPOCH.to_rfc3339(),
+            updated_at: DateTime::<Utc>::UNIX_EPOCH,
             device_id: format!("unknown-{}", Uuid::new_v4()),
             config_schema_id: format!("unknown-{}", Uuid::new_v4()),
             config_type_slug: None,
@@ -268,8 +262,8 @@ impl<'de> Deserialize<'de> for ConfigInstance {
             config_schema_id: String,
 
             // reasonable default fields
-            created_at: Option<String>,
-            updated_at: Option<String>,
+            created_at: Option<DateTime<Utc>>,
+            updated_at: Option<DateTime<Utc>>,
             attempts: Option<u32>,
             cooldown_ends_at: Option<DateTime<Utc>>,
 
@@ -348,8 +342,18 @@ pub fn convert_cfg_inst_backend_to_storage(
         error_status: convert_error_status_backend_to_storage(backend_instance.error_status),
         filepath: backend_instance.filepath,
         patch_id: backend_instance.patch_id,
-        created_at: backend_instance.created_at,
-        updated_at: backend_instance.updated_at,
+        created_at: backend_instance.created_at.parse::<DateTime<Utc>>().unwrap_or_else(
+            |e| {
+                error!("Error parsing created_at: {}", e);
+                DateTime::<Utc>::UNIX_EPOCH
+            },
+        ),
+        updated_at: backend_instance.updated_at.parse::<DateTime<Utc>>().unwrap_or_else(
+            |e| {
+                error!("Error parsing updated_at: {}", e);
+                DateTime::<Utc>::UNIX_EPOCH
+            },
+        ),
         created_by_id: backend_instance.created_by_id,
         updated_by_id: backend_instance.updated_by_id,
         device_id: backend_instance.device_id,
@@ -381,8 +385,8 @@ pub fn convert_cfg_inst_storage_to_sdk(
         patch_id: instance.patch_id,
         created_by_id: instance.created_by_id,
         updated_by_id: instance.updated_by_id,
-        created_at: instance.created_at,
-        updated_at: instance.updated_at,
+        created_at: instance.created_at.to_rfc3339(),
+        updated_at: instance.updated_at.to_rfc3339(),
         device_id: instance.device_id,
         config_schema_id: instance.config_schema_id,
         instance: Some(instance_data),

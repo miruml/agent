@@ -2,16 +2,47 @@
 use std::fmt;
 
 // internal crates
+use crate::crud::errors::CrudErr;
 use crate::errors::{Code, HTTPCode, MiruError, Trace};
 use crate::filesys::errors::FileSysErr;
-use crate::models::config_instance::{
-    ConfigInstance, ConfigInstanceActivityStatus, ConfigInstanceErrorStatus,
-    ConfigInstanceTargetStatus,
-};
+use crate::models::config_instance::ConfigInstance;
 use crate::storage::errors::StorageErr;
+use crate::fsm::config_instance as fsm;
+
+#[derive(Debug)]
+pub struct InstanceNotDeployableErr {
+    pub instance: ConfigInstance,
+    pub next_action: fsm::NextAction,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for InstanceNotDeployableErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for InstanceNotDeployableErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "cannot deploy config instance '{:?}' since it's next action is: {:?}", self.instance.id, self.next_action)
+    }
+}
 
 #[derive(Debug)]
 pub struct ConflictingDeploymentsErr {
+    pub instances: Vec<ConfigInstance>,
     pub trace: Box<Trace>,
 }
 
@@ -35,59 +66,7 @@ impl MiruError for ConflictingDeploymentsErr {
 
 impl fmt::Display for ConflictingDeploymentsErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "FIXME")
-    }
-}
-
-#[derive(Debug)]
-pub struct ConfigInstanceWithMismatchingFilepath {
-    pub id: String,
-    pub filepath: Option<String>,
-    pub target_status: ConfigInstanceTargetStatus,
-    pub activity_status: ConfigInstanceActivityStatus,
-    pub error_status: ConfigInstanceErrorStatus,
-}
-
-impl ConfigInstanceWithMismatchingFilepath {
-    pub fn from_instance(instance: ConfigInstance) -> Self {
-        Self {
-            id: instance.id,
-            filepath: instance.filepath,
-            target_status: instance.target_status,
-            activity_status: instance.activity_status,
-            error_status: instance.error_status,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct MismatchingFilepathErr {
-    pub old: ConfigInstanceWithMismatchingFilepath,
-    pub new: ConfigInstanceWithMismatchingFilepath,
-    pub trace: Box<Trace>,
-}
-
-impl MiruError for MismatchingFilepathErr {
-    fn code(&self) -> Code {
-        Code::InternalServerError
-    }
-
-    fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
-    }
-
-    fn is_network_connection_error(&self) -> bool {
-        false
-    }
-
-    fn params(&self) -> Option<serde_json::Value> {
-        None
-    }
-}
-
-impl fmt::Display for MismatchingFilepathErr {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Expected old and new config instances to have the same filepath, but got {:?} (instance {:?}) and {:?} (instance {:?})", self.old.filepath, self.old, self.new.filepath, self.new)
+        write!(f, "the following config instances both desire to be deployed: {:?}", self.instances)
     }
 }
 
@@ -122,6 +101,37 @@ impl fmt::Display for DeployFileSysErr {
 }
 
 #[derive(Debug)]
+pub struct DeployCrudErr {
+    pub source: CrudErr,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for DeployCrudErr {
+    fn code(&self) -> Code {
+        self.source.code()
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        self.source.http_status()
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        self.source.is_network_connection_error()
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        self.source.params()
+    }
+}
+
+impl fmt::Display for DeployCrudErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "crud error: {}", self.source)
+    }
+}
+
+
+#[derive(Debug)]
 pub struct DeployStorageErr {
     pub source: StorageErr,
     pub trace: Box<Trace>,
@@ -154,18 +164,22 @@ impl fmt::Display for DeployStorageErr {
 #[derive(Debug)]
 pub enum DeployErr {
     ConflictingDeploymentsErr(ConflictingDeploymentsErr),
-    DeployFileSysErr(DeployFileSysErr),
-    DeployStorageErr(DeployStorageErr),
-    MismatchingFilepathErr(MismatchingFilepathErr),
+    InstanceNotDeployableErr(InstanceNotDeployableErr),
+    CrudErr(DeployCrudErr),
+
+    FileSysErr(DeployFileSysErr),
+    StorageErr(DeployStorageErr),
 }
 
 macro_rules! forward_error_method {
     ($self:ident, $method:ident $(, $arg:expr)?) => {
         match $self {
             DeployErr::ConflictingDeploymentsErr(e) => e.$method($($arg)?),
-            DeployErr::DeployFileSysErr(e) => e.$method($($arg)?),
-            DeployErr::DeployStorageErr(e) => e.$method($($arg)?),
-            DeployErr::MismatchingFilepathErr(e) => e.$method($($arg)?),
+            DeployErr::InstanceNotDeployableErr(e) => e.$method($($arg)?),
+            DeployErr::CrudErr(e) => e.$method($($arg)?),
+
+            DeployErr::FileSysErr(e) => e.$method($($arg)?),
+            DeployErr::StorageErr(e) => e.$method($($arg)?),
         }
     };
 }

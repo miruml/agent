@@ -12,6 +12,7 @@ use crate::models::config_instance::{
 use chrono::{TimeDelta, Utc};
 
 // ================================ NEXT ACTION ==================================== //
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NextAction {
     None,
     Deploy,
@@ -68,7 +69,7 @@ struct TransitionOptions {
     cooldown: Option<TimeDelta>,
 }
 
-fn transition(instance: &mut ConfigInstance, options: TransitionOptions) {
+fn transition(mut instance: ConfigInstance, options: TransitionOptions) -> ConfigInstance {
     if let Some(activity_status) = options.activity_status {
         instance.activity_status = activity_status;
     }
@@ -84,17 +85,19 @@ fn transition(instance: &mut ConfigInstance, options: TransitionOptions) {
     if let Some(cooldown) = options.cooldown {
         instance.set_cooldown(cooldown);
     }
+
+    instance
 }
 
 // ---------------------------- successful transitions ----------------------------= //
-pub fn deploy(instance: &mut ConfigInstance) {
+pub fn deploy(instance: ConfigInstance) -> ConfigInstance {
     let new_activity_status = ConfigInstanceActivityStatus::Deployed;
-    transition(instance, get_success_options(new_activity_status));
+    transition(instance, get_success_options(new_activity_status))
 }
 
-pub fn remove(instance: &mut ConfigInstance) {
+pub fn remove(instance: ConfigInstance) -> ConfigInstance {
     let new_activity_status = ConfigInstanceActivityStatus::Removed;
-    transition(instance, get_success_options(new_activity_status));
+    transition(instance, get_success_options(new_activity_status))
 }
 
 fn get_success_options(new_activity_status: ConfigInstanceActivityStatus) -> TransitionOptions {
@@ -108,9 +111,11 @@ fn get_success_options(new_activity_status: ConfigInstanceActivityStatus) -> Tra
 }
 
 // ----------------------------- error transitions --------------------------------- //
-pub fn error(instance: &mut ConfigInstance, settings: &Settings, e: &impl MiruError) {
-    let options = get_error_options(instance, should_increment_attempts(e), settings);
-    transition(instance, options);
+pub fn error(instance: ConfigInstance, settings: &Settings, e: &impl MiruError) -> ConfigInstance {
+    let options = get_error_options(
+        &instance, should_increment_attempts(e), settings,
+    );
+    transition(instance, options)
 }
 
 fn should_increment_attempts(e: &impl MiruError) -> bool {

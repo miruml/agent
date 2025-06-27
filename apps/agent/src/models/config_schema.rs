@@ -8,6 +8,9 @@ use tracing::error;
 use uuid::Uuid;
 
 // config schema
+pub type ConfigSchemaID = String;
+
+// config schema
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct ConfigSchema {
     pub id: String,

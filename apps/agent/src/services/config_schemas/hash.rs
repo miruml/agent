@@ -1,7 +1,10 @@
 // internal crates
 use crate::crypt::sha256;
+use crate::crud::prelude::*;
 use crate::http::prelude::*;
-use crate::services::errors::{ServiceErr, ServiceHTTPErr, ServiceStorageErr};
+use crate::services::errors::{
+    ServiceErr, ServiceHTTPErr, ServiceCrudErr, ServiceStorageErr,
+};
 use crate::storage::digests::{ConfigSchemaDigestCache, ConfigSchemaDigests};
 use crate::trace;
 use openapi_client::models::{
@@ -43,7 +46,7 @@ pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
 
     // check for the raw digest in the storage for the known schema digest
     let digests = cache.read_optional(raw_digest.clone()).await.map_err(|e| {
-        ServiceErr::StorageErr(ServiceStorageErr {
+        ServiceErr::CrudErr(ServiceCrudErr {
             source: e,
             trace: trace!(),
         })

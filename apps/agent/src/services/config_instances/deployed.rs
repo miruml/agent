@@ -1,17 +1,16 @@
 // internal crates
+use crate::crud::prelude::*;
+use crate::crud::config_instance::matches_config_schema_and_activity_status;
+use crate::crud::config_schema::matches_config_type_slug_and_schema_digest;
 use crate::http::prelude::*;
 use crate::models::config_instance::{
     convert_cfg_inst_storage_to_sdk, ConfigInstanceActivityStatus
 };
 use crate::services::errors::{
-    ServiceErr, ServiceHTTPErr, ServiceStorageErr, DeployedConfigInstanceNotFound
+    ServiceErr, ServiceHTTPErr, ServiceCrudErr, DeployedConfigInstanceNotFound
 };
-use crate::storage::config_instances::{
-    ConfigInstanceCache, ConfigInstanceDataCache, filter_by_config_schema_and_activity_status
-};
-use crate::storage::config_schemas::{
-    ConfigSchemaCache, filter_by_config_type_slug_and_schema_digest,
-};
+use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
+use crate::storage::config_schemas::ConfigSchemaCache;
 use crate::trace;
 use openapi_server::models::BaseConfigInstance;
 
@@ -70,11 +69,11 @@ pub async fn read_deployed<
     // read the config instance metadata from the cache
     let result = instance_cache.find_one_optional(
         "filter by config schema and activity status",
-        move |entry| {
-            filter_by_config_schema_and_activity_status(entry, &config_schema_id, ConfigInstanceActivityStatus::Deployed)
+        move |cfg_inst| {
+            matches_config_schema_and_activity_status(cfg_inst, &config_schema_id, ConfigInstanceActivityStatus::Deployed)
         }
     ).await.map_err(|e| {
-        ServiceErr::StorageErr(ServiceStorageErr {
+        ServiceErr::CrudErr(ServiceCrudErr {
             source: e,
             trace: trace!(),
         })
@@ -96,7 +95,7 @@ pub async fn read_deployed<
     // if we can't find the *data*, there was an internal error somewhere because if
     // the metadata exists, the data should exist too
     let data = instance_data_cache.read(metadata.id.clone()).await.map_err(|e| {
-        ServiceErr::StorageErr(ServiceStorageErr {
+        ServiceErr::CrudErr(ServiceCrudErr {
             source: e,
             trace: trace!(),
         })
@@ -120,10 +119,11 @@ async fn fetch_config_schema_id<
     let config_type_slug = args.config_type_slug().to_string();
     let result = cache.find_one_optional(
         "filter by config type slug and schema digest",
-        move |entry| {
-        filter_by_config_type_slug_and_schema_digest(entry, &config_type_slug, &digest)
-    }).await.map_err(|e| {
-        ServiceErr::StorageErr(ServiceStorageErr {
+        move |cfg_sch| {
+            matches_config_type_slug_and_schema_digest(cfg_sch, &config_type_slug, &digest)
+        }
+    ).await.map_err(|e| {
+        ServiceErr::CrudErr(ServiceCrudErr{
             source: e,
             trace: trace!(),
         })

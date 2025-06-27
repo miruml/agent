@@ -3,6 +3,10 @@ use std::fmt::Debug;
 
 // internal crates
 use crate::filesys::{dir::Dir, file, file::File, path::PathExt};
+use crate::crud::{
+    prelude::*,
+    errors::{CrudErr, CrudStorageErr},
+};
 use crate::storage::errors::{
     CacheElementNotFound, FoundTooManyCacheElements, ReceiveActorMessageErr, SendActorMessageErr, StorageErr,
     StorageFileSysErr,
@@ -19,8 +23,8 @@ use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
 use tracing::{error, info};
 
-type QueryFilter<K, V> = Box<dyn Fn(&CacheEntry<K, V>) -> bool + Send + Sync>;
-
+type QueryEntryFilter<K, V> = Box<dyn Fn(&CacheEntry<K, V>) -> bool + Send + Sync>;
+type QueryValueFilter<V> = Box<dyn Fn(&V) -> bool + Send + Sync>;
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct CacheEntry<K, V>
 where
@@ -274,6 +278,22 @@ where
         Ok(filtered_entries)
     }
 
+    async fn find_all<F>(
+        &self,
+        filter: F,
+    ) -> Result<Vec<V>, StorageErr>
+    where
+        F: Fn(&V) -> bool + Send + Sync,
+    {
+        let entries = self.entries().await?;
+        let filtered_entries = entries
+            .into_iter()
+            .filter(|entry| filter(&entry.value))
+            .map(|entry| entry.value)
+            .collect();
+        Ok(filtered_entries)
+    }
+
     async fn find_one_entry_optional<F>(
         &self,
         filter_name: &str,
@@ -286,7 +306,7 @@ where
         if entries.len() > 1 {
             return Err(StorageErr::FoundTooManyCacheElements(FoundTooManyCacheElements {
                 expected_count: 1,
-                found_keys: entries.into_iter().map(|entry| entry.key.to_string()).collect(),
+                actual_count: entries.len(),
                 filter_name: filter_name.to_string(),
                 trace: trace!(),
             }));
@@ -300,10 +320,18 @@ where
         filter: F,
     ) -> Result<Option<V>, StorageErr>
     where
-        F: Fn(&CacheEntry<K, V>) -> bool + Send + Sync,
+        F: Fn(&V) -> bool + Send + Sync,
     {
-        let entry = self.find_one_entry_optional(filter_name, filter).await?;
-        Ok(entry.map(|entry| entry.value))
+        let entries = self.find_all(filter).await?;
+        if entries.len() > 1 {
+            return Err(StorageErr::FoundTooManyCacheElements(FoundTooManyCacheElements {
+                expected_count: 1,
+                actual_count: entries.len(),
+                filter_name: filter_name.to_string(),
+                trace: trace!(),
+            }));
+        }
+        Ok(entries.into_iter().next())
     }
 
     async fn find_one_entry<F>(
@@ -330,10 +358,16 @@ where
         filter: F,
     ) -> Result<V, StorageErr>
     where
-        F: Fn(&CacheEntry<K, V>) -> bool + Send + Sync,
+        F: Fn(&V) -> bool + Send + Sync,
     {
-        let entry = self.find_one_entry(filter_name, filter).await?;
-        Ok(entry.value)
+        let opt_value = self.find_one_optional(filter_name, filter).await?;
+        match opt_value {
+            Some(value) => Ok(value),
+            None => Err(StorageErr::CacheElementNotFound(CacheElementNotFound {
+                msg: format!("Unable to find cache entry with filter: '{}'", filter_name),
+                trace: trace!(),
+            })),
+        }
     }
 }
 
@@ -378,24 +412,32 @@ where
     Shutdown {
         respond_to: oneshot::Sender<Result<(), StorageErr>>,
     },
+    FindAllEntries {
+        filter: QueryEntryFilter<K, V>,
+        respond_to: oneshot::Sender<Result<Vec<CacheEntry<K, V>>, StorageErr>>,
+    },
+    FindAll {
+        filter: QueryValueFilter<V>,
+        respond_to: oneshot::Sender<Result<Vec<V>, StorageErr>>,
+    },
     FindOneEntryOptional {
         filter_name: &'static str,
-        filter: QueryFilter<K, V>,
+        filter: QueryEntryFilter<K, V>,
         respond_to: oneshot::Sender<Result<Option<CacheEntry<K, V>>, StorageErr>>,
     },
     FindOneOptional {
         filter_name: &'static str,
-        filter: QueryFilter<K, V>,
+        filter: QueryValueFilter<V>,
         respond_to: oneshot::Sender<Result<Option<V>, StorageErr>>,
     },
     FindOneEntry {
         filter_name: &'static str,
-        filter: QueryFilter<K, V>,
+        filter: QueryEntryFilter<K, V>,
         respond_to: oneshot::Sender<Result<CacheEntry<K, V>, StorageErr>>,
     },
     FindOne {
         filter_name: &'static str,
-        filter: QueryFilter<K, V>,
+        filter: QueryValueFilter<V>,
         respond_to: oneshot::Sender<Result<V, StorageErr>>,
     },
 }
@@ -482,6 +524,24 @@ where
                     let result = self.cache.prune(max_size).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to prune cache: {:?}", e);
+                    }
+                }
+                WorkerCommand::FindAllEntries {
+                    filter,
+                    respond_to,
+                } => {
+                    let result = self.cache.find_all_entries(filter).await;
+                    if let Err(e) = respond_to.send(result) {
+                        error!("Actor failed to find all cache entries: {:?}", e);
+                    }
+                }
+                WorkerCommand::FindAll {
+                    filter,
+                    respond_to,
+                } => {
+                    let result = self.cache.find_all(filter).await;
+                    if let Err(e) = respond_to.send(result) {
+                        error!("Actor failed to find all cache entries: {:?}", e);
                     }
                 }
                 WorkerCommand::FindOneEntryOptional {
@@ -629,7 +689,7 @@ where
         })?
     }
 
-    pub async fn read_optional(&self, key: K) -> Result<Option<V>, StorageErr> {
+    async fn read_optional_impl(&self, key: K) -> Result<Option<V>, StorageErr> {
         let (send, recv) = oneshot::channel();
         self.sender
             .send(WorkerCommand::ReadOptional {
@@ -651,7 +711,7 @@ where
         })?
     }
 
-    pub async fn read(&self, key: K) -> Result<V, StorageErr> {
+    async fn read_impl(&self, key: K) -> Result<V, StorageErr> {
         let (send, recv) = oneshot::channel();
         self.sender
             .send(WorkerCommand::Read {
@@ -741,18 +801,16 @@ where
         })?
     }
 
-    pub async fn find_one_entry_optional<F>(
+    pub async fn find_all_entries<F>(
         &self,
-        filter_name: &'static str,
         filter: F,
-    ) -> Result<Option<CacheEntry<K, V>>, StorageErr>
+    ) -> Result<Vec<CacheEntry<K, V>>, StorageErr>
     where
         F: Fn(&CacheEntry<K, V>) -> bool + Send + Sync + 'static,
     {
         let (send, recv) = oneshot::channel();
         self.sender
-            .send(WorkerCommand::FindOneEntryOptional {
-                filter_name,
+            .send(WorkerCommand::FindAllEntries {
                 filter: Box::new(filter),
                 respond_to: send,
             })
@@ -771,17 +829,17 @@ where
         })?
     }
 
-    pub async fn find_one_optional<F>(
+    pub async fn find_one_entry_optional<F>(
         &self,
         filter_name: &'static str,
         filter: F,
-    ) -> Result<Option<V>, StorageErr>
+    ) -> Result<Option<CacheEntry<K, V>>, StorageErr>
     where
         F: Fn(&CacheEntry<K, V>) -> bool + Send + Sync + 'static,
     {
         let (send, recv) = oneshot::channel();
         self.sender
-            .send(WorkerCommand::FindOneOptional {
+            .send(WorkerCommand::FindOneEntryOptional {
                 filter_name,
                 filter: Box::new(filter),
                 respond_to: send,
@@ -831,13 +889,71 @@ where
         })?
     }
 
-    pub async fn find_one<F>(
+    async fn find_all_impl<F>(
+        &self,
+        filter: F,
+    ) -> Result<Vec<V>, StorageErr>
+    where
+        F: Fn(&V) -> bool + Send + Sync + 'static,
+    {
+        let (send, recv) = oneshot::channel();
+        self.sender
+            .send(WorkerCommand::FindAll {
+                filter: Box::new(filter),
+                respond_to: send,
+            })
+            .await
+            .map_err(|e| {
+                StorageErr::SendActorMessageErr(SendActorMessageErr {
+                    source: Box::new(e),
+                    trace: trace!(),
+                })
+            })?;
+        recv.await.map_err(|e| {
+            StorageErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+                source: Box::new(e),
+                trace: trace!(),
+            })
+        })?
+    }
+
+    async fn find_one_optional_impl<F>(
+        &self,
+        filter_name: &'static str,
+        filter: F,
+    ) -> Result<Option<V>, StorageErr>
+    where
+        F: Fn(&V) -> bool + Send + Sync + 'static,
+    {
+        let (send, recv) = oneshot::channel();
+        self.sender
+            .send(WorkerCommand::FindOneOptional {
+                filter_name,
+                filter: Box::new(filter),
+                respond_to: send,
+            })
+            .await
+            .map_err(|e| {
+                StorageErr::SendActorMessageErr(SendActorMessageErr {
+                    source: Box::new(e),
+                    trace: trace!(),
+                })
+            })?;
+        recv.await.map_err(|e| {
+            StorageErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+                source: Box::new(e),
+                trace: trace!(),
+            })
+        })?
+    }
+
+    async fn find_one_impl<F>(
         &self,
         filter_name: &'static str,
         filter: F,
     ) -> Result<V, StorageErr>
     where
-        F: Fn(&CacheEntry<K, V>) -> bool + Send + Sync + 'static,
+        F: Fn(&V) -> bool + Send + Sync + 'static,
     {
         let (send, recv) = oneshot::channel();
         self.sender
@@ -859,5 +975,71 @@ where
                 trace: trace!(),
             })
         })?
+    }
+}
+
+// ----------------------------------- FIND ---------------------------------------- //
+impl<K, V> Find<K, V> for Cache<K, V>
+where
+    K: Debug + Send + Sync + ToString + Serialize + DeserializeOwned + 'static,
+    V: Debug + Send + Sync + Serialize + DeserializeOwned + 'static,
+{
+    async fn find_all<F>(&self, filter: F) -> Result<Vec<V>, CrudErr>
+    where
+        F: Fn(&V) -> bool + Send + Sync + 'static,
+    {
+        self.find_all_impl(filter).await.map_err(|e| CrudErr::StorageErr(CrudStorageErr {
+            source: e,
+            trace: trace!(),
+        }))
+    }
+
+    async fn find_one_optional<F>(
+        &self,
+        filter_name: &'static str,
+        filter: F,
+    ) -> Result<Option<V>, CrudErr>
+    where
+        F: Fn(&V) -> bool + Send + Sync + 'static,
+    {
+        self.find_one_optional_impl(filter_name, filter).await.map_err(|e| CrudErr::StorageErr(CrudStorageErr {
+            source: e,
+            trace: trace!(),
+        }))
+    }
+
+    async fn find_one<F>(
+        &self,
+        filter_name: &'static str,
+        filter: F,
+    ) -> Result<V, CrudErr>
+    where
+        F: Fn(&V) -> bool + Send + Sync + 'static,
+    {
+        self.find_one_impl(filter_name, filter).await.map_err(|e| CrudErr::StorageErr(CrudStorageErr {
+            source: e,
+            trace: trace!(),
+        }))
+    }
+}
+
+// ----------------------------------- READ ---------------------------------------- //
+impl<K, V> Read<K, V> for Cache<K, V>
+where
+    K: Debug + Send + Sync + ToString + Serialize + DeserializeOwned + 'static,
+    V: Debug + Send + Sync + Serialize + DeserializeOwned + 'static,
+{
+    async fn read(&self, key: K) -> Result<V, CrudErr> {
+        self.read_impl(key).await.map_err(|e| CrudErr::StorageErr(CrudStorageErr {
+            source: e,
+            trace: trace!(),
+        }))
+    }
+
+    async fn read_optional(&self, key: K) -> Result<Option<V>, CrudErr> {
+        self.read_optional_impl(key).await.map_err(|e| CrudErr::StorageErr(CrudStorageErr {
+            source: e,
+            trace: trace!(),
+        }))
     }
 }

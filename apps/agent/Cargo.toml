@@ -9,7 +9,7 @@ build = "build.rs"
 [dependencies]
 async-trait = { workspace = true }
 atomicwrites = { workspace = true }
-axum = { workspace = true, features = ["debug-handler"] }
+axum = { workspace = true }
 base64 = { workspace = true }
 chrono = { workspace = true }
 futures = { workspace = true }
