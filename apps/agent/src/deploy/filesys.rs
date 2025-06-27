@@ -5,9 +5,9 @@ use crate::deploy::errors::{
     DeployFileSysErr,
     DeployCrudErr,
 };
+use crate::deploy::fsm;
 use crate::deploy::observer::{Observer, on_update};
 use crate::filesys::dir::Dir;
-use crate::fsm::config_instance as fsm;
 use crate::models::config_instance::{
     ConfigInstance,
     ConfigInstanceID,

@@ -4,5 +4,7 @@ pub mod config_instances;
 pub mod config_schemas;
 pub mod devices;
 pub mod errors;
+pub mod expand;
+pub mod pagination;
 pub mod prelude;
 pub mod search;

@@ -19,7 +19,7 @@ pub enum ConfigInstanceTargetStatus {
 }
 
 pub fn convert_target_status_backend_to_storage(
-    target_status: openapi_client::models::ConfigInstanceTargetStatus,
+    target_status: &openapi_client::models::ConfigInstanceTargetStatus,
 ) -> ConfigInstanceTargetStatus {
     match target_status {
         openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_CREATED => ConfigInstanceTargetStatus::Created,
@@ -29,7 +29,7 @@ pub fn convert_target_status_backend_to_storage(
 }
 
 pub fn convert_target_status_storage_to_sdk(
-    target_status: ConfigInstanceTargetStatus,
+    target_status: &ConfigInstanceTargetStatus,
 ) -> openapi_server::models::ConfigInstanceTargetStatus {
     match target_status {
         ConfigInstanceTargetStatus::Created => openapi_server::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_CREATED,
@@ -52,7 +52,7 @@ pub enum ConfigInstanceStatus {
 }
 
 pub fn convert_status_backend_to_storage(
-    status: openapi_client::models::ConfigInstanceStatus,
+    status: &openapi_client::models::ConfigInstanceStatus,
 ) -> ConfigInstanceStatus {
     match status {
         openapi_client::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_CREATED => {
@@ -77,7 +77,7 @@ pub fn convert_status_backend_to_storage(
 }
 
 pub fn convert_status_storage_to_sdk(
-    status: ConfigInstanceStatus,
+    status: &ConfigInstanceStatus,
 ) -> openapi_server::models::ConfigInstanceStatus {
     match status {
         ConfigInstanceStatus::Created => {
@@ -113,7 +113,7 @@ pub enum ConfigInstanceActivityStatus {
 }
 
 pub fn convert_activity_status_backend_to_storage(
-    activity_status: openapi_client::models::ConfigInstanceActivityStatus,
+    activity_status: &openapi_client::models::ConfigInstanceActivityStatus,
 ) -> ConfigInstanceActivityStatus {
     match activity_status {
         openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_CREATED => ConfigInstanceActivityStatus::Created,
@@ -124,7 +124,7 @@ pub fn convert_activity_status_backend_to_storage(
 }
 
 pub fn convert_activity_status_storage_to_sdk(
-    activity_status: ConfigInstanceActivityStatus,
+    activity_status: &ConfigInstanceActivityStatus,
 ) -> openapi_server::models::ConfigInstanceActivityStatus {
     match activity_status {
         ConfigInstanceActivityStatus::Created => openapi_server::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_CREATED,
@@ -144,7 +144,7 @@ pub enum ConfigInstanceErrorStatus {
 }
 
 pub fn convert_error_status_backend_to_storage(
-    error_status: openapi_client::models::ConfigInstanceErrorStatus,
+    error_status: &openapi_client::models::ConfigInstanceErrorStatus,
 ) -> ConfigInstanceErrorStatus {
     match error_status {
         openapi_client::models::ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_NONE => ConfigInstanceErrorStatus::None,
@@ -154,7 +154,7 @@ pub fn convert_error_status_backend_to_storage(
 }
 
 pub fn convert_error_status_storage_to_sdk(
-    error_status: ConfigInstanceErrorStatus,
+    error_status: &ConfigInstanceErrorStatus,
 ) -> openapi_server::models::ConfigInstanceErrorStatus {
     match error_status {
         ConfigInstanceErrorStatus::None => {
@@ -335,11 +335,11 @@ pub fn convert_cfg_inst_backend_to_storage(
 ) -> ConfigInstance {
     ConfigInstance {
         id: backend_instance.id,
-        target_status: convert_target_status_backend_to_storage(backend_instance.target_status),
+        target_status: convert_target_status_backend_to_storage(&backend_instance.target_status),
         activity_status: convert_activity_status_backend_to_storage(
-            backend_instance.activity_status,
+            &backend_instance.activity_status,
         ),
-        error_status: convert_error_status_backend_to_storage(backend_instance.error_status),
+        error_status: convert_error_status_backend_to_storage(&backend_instance.error_status),
         filepath: backend_instance.filepath,
         patch_id: backend_instance.patch_id,
         created_at: backend_instance.created_at.parse::<DateTime<Utc>>().unwrap_or_else(
@@ -373,14 +373,14 @@ pub fn convert_cfg_inst_storage_to_sdk(
     instance: ConfigInstance,
     instance_data: serde_json::Value,
 ) -> openapi_server::models::BaseConfigInstance {
-    let status = convert_status_storage_to_sdk(instance.status());
+    let status = convert_status_storage_to_sdk(&instance.status());
     openapi_server::models::BaseConfigInstance {
         object: openapi_server::models::base_config_instance::Object::ConfigInstance,
         id: instance.id,
-        target_status: convert_target_status_storage_to_sdk(instance.target_status),
+        target_status: convert_target_status_storage_to_sdk(&instance.target_status),
         status,
-        activity_status: convert_activity_status_storage_to_sdk(instance.activity_status),
-        error_status: convert_error_status_storage_to_sdk(instance.error_status),
+        activity_status: convert_activity_status_storage_to_sdk(&instance.activity_status),
+        error_status: convert_error_status_storage_to_sdk(&instance.error_status),
         filepath: instance.filepath,
         patch_id: instance.patch_id,
         created_by_id: instance.created_by_id,

@@ -95,10 +95,9 @@ impl fmt::Display for TimeoutErr {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ConfigSchemaNotFound {
-    pub config_schema_digests: Vec<String>,
-    pub config_type_slugs: Vec<String>,
+    pub query_params: String,
     pub trace: Box<Trace>,
 }
 
@@ -117,15 +116,14 @@ impl MiruError for ConfigSchemaNotFound {
 
     fn params(&self) -> Option<serde_json::Value> {
         Some(json!({
-            "config_type_slugs": self.config_type_slugs,
-            "config_schema_digests": self.config_schema_digests,
+            "query_params": self.query_params,
         }))
     }
 }
 
 impl fmt::Display for ConfigSchemaNotFound {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Unable to find config schema with config type slugs {:?} and config schema digests {:?}", self.config_type_slugs, self.config_schema_digests)
+        write!(f, "Unable to find config schema with query params {:?}", self.query_params)
     }
 }
 
@@ -133,8 +131,7 @@ impl fmt::Display for ConfigSchemaNotFound {
 pub struct TooManyConfigSchemas {
     pub expected_count: usize,
     pub found_config_schema_ids: Vec<String>,
-    pub config_schema_digests: Vec<String>,
-    pub config_type_slugs: Vec<String>,
+    pub query_params: String,
     pub trace: Box<Trace>,
 }
 
@@ -155,15 +152,14 @@ impl MiruError for TooManyConfigSchemas {
         Some(json!({
             "expected_count": self.expected_count,
             "found_config_schema_ids": self.found_config_schema_ids,
-            "config_type_slugs": self.config_type_slugs,
-            "config_schema_digests": self.config_schema_digests,
+            "query_params": self.query_params,
         }))
     }
 }
 
 impl fmt::Display for TooManyConfigSchemas {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Expected to find {} config schemas with config type slugs {:?} and config schema digests {:?}, but found {} config schemas: {:?}", self.expected_count, self.config_type_slugs, self.config_schema_digests, self.found_config_schema_ids.len(), self.found_config_schema_ids)
+        write!(f, "Expected to find {} config schemas with query params {:?}, but found {} config schemas: {:?}", self.expected_count, self.query_params, self.found_config_schema_ids.len(), self.found_config_schema_ids)
     }
 }
 

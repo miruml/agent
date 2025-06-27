@@ -3,6 +3,10 @@ use crate::crud::prelude::*;
 use crate::crud::config_instance::matches_config_schema_and_activity_status;
 use crate::crud::config_schema::matches_config_type_slug_and_schema_digest;
 use crate::http::prelude::*;
+use crate::http::{
+    config_schemas::{ConfigSchemaFilters, DigestFilter, ConfigTypeSlugFilter},
+    search::SearchOperator,
+};
 use crate::models::config_instance::{
     convert_cfg_inst_storage_to_sdk, ConfigInstanceActivityStatus
 };
@@ -133,9 +137,20 @@ async fn fetch_config_schema_id<
     }
 
     // search the backend for the config schema
+    let filters = ConfigSchemaFilters {
+        digests: Some(DigestFilter {
+            not: false,
+            op: SearchOperator::Equals,
+            val: vec![args.config_schema_digest().to_string()],
+        }),
+        config_type_slugs: Some(ConfigTypeSlugFilter {
+            not: false,
+            op: SearchOperator::Equals,
+            val: vec![args.config_type_slug().to_string()],
+        }),
+    };
     let cfg_schema = http_client.find_one_config_schema(
-        [args.config_schema_digest()],
-        [args.config_type_slug()],
+        filters,
         token,
     ).await.map_err(|e| {
         ServiceErr::HTTPErr(ServiceHTTPErr {

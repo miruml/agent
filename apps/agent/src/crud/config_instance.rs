@@ -1,5 +1,4 @@
 // internal crates
-use crate::fsm::config_instance as fsm;
 use crate::models::config_instance::{
     ConfigInstance,
     ConfigInstanceActivityStatus,
@@ -25,12 +24,3 @@ pub fn matches_filepath_and_activity_status(
     filepath == instance_filepath && status == instance.activity_status
 }
 
-pub fn matches_config_schema_and_next_action(
-    instance: &ConfigInstance,
-    config_schema_id: &str,
-    next_action: fsm::NextAction,
-    use_cooldown: bool,
-) -> bool {
-    instance.config_schema_id == config_schema_id &&
-    fsm::next_action(&instance, use_cooldown) == next_action
-}

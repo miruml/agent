@@ -5,6 +5,7 @@ use std::sync::Arc;
 use crate::crypt::sha256;
 use crate::http::client::HTTPClient;
 use crate::http::errors::HTTPErr;
+use crate::http::pagination::Pagination;
 use crate::http::search::{
     LogicalOperator, SearchOperator, format_search_clause, format_search_group,
 };
@@ -13,6 +14,7 @@ use openapi_client::models::{
     hash_schema_serialized_request::HashSchemaSerializedRequest, ConfigSchema, ConfigSchemaList,
     ConfigSchemaSearch, SchemaDigestResponse,
 };
+use serde::Serialize;
 use crate::trace;
 
 #[allow(async_fn_in_trait)]
@@ -23,27 +25,17 @@ pub trait ConfigSchemasExt: Send + Sync {
         token: &str,
     ) -> Result<SchemaDigestResponse, HTTPErr>;
 
-    async fn list_config_schemas<'a, D, S>(
+    async fn list_config_schemas(
         &self,
-        digests: D,
-        config_type_slugs: S,
+        query_params: &str,
         token: &str,
-    ) -> Result<ConfigSchemaList, HTTPErr>
-    where
-        D: IntoIterator<Item = &'a str>,
-        S: IntoIterator<Item = &'a str>,
-    ;
+    ) -> Result<ConfigSchemaList, HTTPErr>;
 
-    async fn find_one_config_schema<'a, D, S>(
+    async fn find_one_config_schema(
         &self,
-        digests: D,
-        config_type_slugs: S,
+        filters: ConfigSchemaFilters,
         token: &str,
-    ) -> Result<ConfigSchema, HTTPErr>
-    where
-        D: IntoIterator<Item = &'a str> + Clone,
-        S: IntoIterator<Item = &'a str> + Clone,
-    ;
+    ) -> Result<ConfigSchema, HTTPErr>;
 }
 
 impl HTTPClient {
@@ -76,18 +68,20 @@ impl ConfigSchemasExt for HTTPClient {
             .await
     }
 
-    async fn find_one_config_schema<'a, D, S>(
+    async fn find_one_config_schema(
         &self,
-        digests: D,
-        config_type_slugs: S,
+        filters: ConfigSchemaFilters,
         token: &str,
-    ) -> Result<ConfigSchema, HTTPErr>
-    where
-        D: IntoIterator<Item = &'a str> + Clone,
-        S: IntoIterator<Item = &'a str> + Clone,
-    {
+    ) -> Result<ConfigSchema, HTTPErr> {
+        let search_query = build_search_query(filters.clone());
+        let pagination = Pagination {
+            limit: 1, offset: 0,
+        };
+        let query_params = build_query_params(search_query, &pagination);
+
         let cfg_schemas = self.list_config_schemas(
-            digests.clone(), config_type_slugs.clone(), token,
+            &query_params,
+            token,
         ).await?;
 
         // check that there is only one config schema
@@ -96,8 +90,7 @@ impl ConfigSchemasExt for HTTPClient {
             return Err(HTTPErr::TooManyConfigSchemas(TooManyConfigSchemas {
                 expected_count: 1,
                 found_config_schema_ids: ids,
-                config_type_slugs: config_type_slugs.into_iter().map(|s| s.to_string()).collect(),
-                config_schema_digests: digests.into_iter().map(|d| d.to_string()).collect(),
+                query_params,
                 trace: trace!(),
             }));
         }
@@ -105,51 +98,19 @@ impl ConfigSchemasExt for HTTPClient {
         match cfg_schemas.data.first() {
             Some(config_schema) => Ok(config_schema.clone()),
             None => Err(HTTPErr::ConfigSchemaNotFound(ConfigSchemaNotFound {
-                config_type_slugs: config_type_slugs.into_iter().map(|s| s.to_string()).collect(),
-                config_schema_digests: digests.into_iter().map(|d| d.to_string()).collect(),
+                query_params,
                 trace: trace!(),
             })),
         }
     }
 
-    async fn list_config_schemas<'a, D, S>(
+    async fn list_config_schemas(
         &self,
-        digests: D,
-        config_type_slugs: S,
+        query_params: &str,
         token: &str,
-    ) -> Result<ConfigSchemaList, HTTPErr>
-    where
-        D: IntoIterator<Item = &'a str>,
-        S: IntoIterator<Item = &'a str>,
-    {
-        // build the search query
-        let mut clauses: Vec<String> = Vec::new();
-        let mut digests_iter = digests.into_iter().peekable();
-        if digests_iter.peek().is_some() {
-            clauses.push(format_search_clause(
-                ConfigSchemaSearch::CONFIG_SCHEMA_SEARCH_DIGEST,
-                SearchOperator::Equals,
-                digests_iter,
-            ));
-        }
-        let mut config_type_slugs_iter = config_type_slugs.into_iter().peekable();
-        if config_type_slugs_iter.peek().is_some() {
-            clauses.push(format_search_clause(
-                ConfigSchemaSearch::CONFIG_SCHEMA_SEARCH_CONFIG_TYPE_SLUG,
-                SearchOperator::Equals,
-                config_type_slugs_iter,
-            ));
-        }
-
-        let query = if clauses.is_empty() {
-            "".to_string()
-        } else {
-            let search_query = format_search_group(clauses, LogicalOperator::And);
-            format!("?search={}", search_query)
-        };
-
+    ) -> Result<ConfigSchemaList, HTTPErr> {
         // build the request
-        let url = format!("{}{}", self.config_schemas_url(), query);
+        let url = format!("{}{}", self.config_schemas_url(), query_params);
         let (request, context) = self.build_get_request(&url, self.default_timeout, Some(token))?;
 
         // send the request (with caching)
@@ -170,29 +131,89 @@ impl ConfigSchemasExt for Arc<HTTPClient> {
         self.as_ref().hash_schema(payload, token).await
     }
 
-    async fn list_config_schemas<'a, D, S>(
+    async fn list_config_schemas(
         &self,
-        digests: D,
-        config_type_slugs: S,
+        query_params: &str,
         token: &str,
-    ) -> Result<ConfigSchemaList, HTTPErr>
-    where
-        D: IntoIterator<Item = &'a str>,
-        S: IntoIterator<Item = &'a str>,
-    {
-        self.as_ref().list_config_schemas(digests, config_type_slugs, token).await
+    ) -> Result<ConfigSchemaList, HTTPErr> {
+        self.as_ref().list_config_schemas(query_params, token).await
     }
 
-    async fn find_one_config_schema<'a, D, S>(
+    async fn find_one_config_schema(
         &self,
-        digests: D,
-        config_type_slugs: S,
+        filters: ConfigSchemaFilters,
         token: &str,
-    ) -> Result<ConfigSchema, HTTPErr>
-    where
-        D: IntoIterator<Item = &'a str> + Clone,
-        S: IntoIterator<Item = &'a str> + Clone,
-    {
-        self.as_ref().find_one_config_schema(digests, config_type_slugs, token).await
+    ) -> Result<ConfigSchema, HTTPErr> {
+        self.as_ref().find_one_config_schema(filters, token).await
     }
+}
+
+// ================================ QUERY PARAMS ================================ //
+fn build_query_params(
+    search_query: Option<String>,
+    pagination: &Pagination,
+) -> String {
+    let query = format!(
+        "?limit={}&offset={}",
+        pagination.limit,
+        pagination.offset,
+    );
+    if let Some(search_query) = search_query {
+        format!("{}&search={}", query, search_query)
+    } else {
+        query
+    }
+}
+
+// ================================ SEARCH FILTERS ================================ //
+#[derive(Debug, Clone, Serialize)]
+pub struct ConfigSchemaFilters {
+    pub digests: Option<DigestFilter>,
+    pub config_type_slugs: Option<ConfigTypeSlugFilter>,
+}
+
+impl ConfigSchemaFilters {
+    pub fn has_filters(&self) -> bool {
+        self.digests.is_some() || self.config_type_slugs.is_some()
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct DigestFilter {
+    pub not: bool,
+    pub op: SearchOperator,
+    pub val: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ConfigTypeSlugFilter {
+    pub not: bool,
+    pub op: SearchOperator,
+    pub val: Vec<String>,
+}
+
+fn build_search_query(filters: ConfigSchemaFilters) -> Option<String> {
+    if !filters.has_filters() {
+        return None;
+    }
+
+    // build the search query
+    let mut clauses: Vec<String> = Vec::new();
+    if let Some(digests) = filters.digests {
+        clauses.push(format_search_clause(
+            ConfigSchemaSearch::CONFIG_SCHEMA_SEARCH_DIGEST,
+            SearchOperator::Equals,
+            digests.val,
+            digests.not,
+        ));
+    }
+    if let Some(config_type_slugs) = filters.config_type_slugs {
+        clauses.push(format_search_clause(
+            ConfigSchemaSearch::CONFIG_SCHEMA_SEARCH_CONFIG_TYPE_SLUG,
+            SearchOperator::Equals,
+            config_type_slugs.val,
+            config_type_slugs.not,
+        ));
+    }
+    Some(format_search_group(clauses, LogicalOperator::And))
 }

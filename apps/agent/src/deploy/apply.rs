@@ -5,16 +5,15 @@ use std::collections::HashMap;
 use crate::crud::config_instance::{
     matches_config_schema_and_activity_status,
     matches_filepath_and_activity_status,
-    matches_config_schema_and_next_action,
 };
 use crate::crud::prelude::{Find, Read};
 use crate::deploy::errors::{
     DeployErr, DeployCrudErr, ConflictingDeploymentsErr, InstanceNotDeployableErr,
 };
 use crate::deploy::filesys;
+use crate::deploy::fsm;
 use crate::deploy::observer::Observer;
 use crate::filesys::dir::Dir;
-use crate::fsm::config_instance as fsm;
 use crate::models::config_instance::{
     ConfigInstanceID,
     ConfigInstance,
@@ -322,4 +321,14 @@ where
             trace: trace!(),
         })
     })
+}
+
+pub fn matches_config_schema_and_next_action(
+    instance: &ConfigInstance,
+    config_schema_id: &str,
+    next_action: fsm::NextAction,
+    use_cooldown: bool,
+) -> bool {
+    instance.config_schema_id == config_schema_id &&
+    fsm::next_action(&instance, use_cooldown) == next_action
 }

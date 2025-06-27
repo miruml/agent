@@ -2,7 +2,10 @@
 use std::fmt;
 use std::fmt::Write;
 
+// external crates
+use serde::Serialize;
 
+#[derive(Debug, Clone, Serialize)]
 pub enum SearchOperator {
     Equals,
     Contains,
@@ -33,13 +36,18 @@ pub fn format_search_clause<K, V, I>(
     key: K,
     op: SearchOperator,
     values: I,
+    not: bool,
 ) -> String
 where
     K: fmt::Display,
     V: fmt::Display,
     I: IntoIterator<Item = V>,
 {
-    format!("{}{}{}", key, op, join(values, ","))
+    if not {
+        format!("-{}{}{}", key, op, join(values, ","))
+    } else {
+        format!("{}{}{}", key, op, join(values, ","))
+    }
 }
 
 pub fn format_search_group<I>(

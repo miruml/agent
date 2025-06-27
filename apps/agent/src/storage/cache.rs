@@ -1,5 +1,7 @@
 // standard library
 use std::fmt::Debug;
+use std::hash::Hash;
+use std::cmp::Eq;
 
 // internal crates
 use crate::filesys::{dir::Dir, file, file::File, path::PathExt};
@@ -40,7 +42,7 @@ where
 // ========================== SINGLE-THREADED IMPLEMENTATION ======================== //
 pub struct SingleThreadCache<K, V>
 where
-    K: Debug + ToString,
+    K: Debug + ToString + Serialize + DeserializeOwned + Eq + Hash,
     V: Debug + Serialize + DeserializeOwned,
 {
     dir: Dir,
@@ -50,7 +52,7 @@ where
 
 impl<K, V> SingleThreadCache<K, V>
 where
-    K: Debug + ToString + Serialize + DeserializeOwned,
+    K: Debug + ToString + Serialize + DeserializeOwned + Eq + Hash,
     V: Debug + Serialize + DeserializeOwned,
 {
     pub fn new(dir: Dir) -> Self {
@@ -444,7 +446,7 @@ where
 
 struct Worker<K, V>
 where
-    K: Debug + ToString + Send + Sync + Serialize + DeserializeOwned,
+    K: Debug + ToString + Send + Sync + Serialize + DeserializeOwned + Eq + Hash,
     V: Debug + Send + Sync + Serialize + DeserializeOwned,
 {
     cache: SingleThreadCache<K, V>,
@@ -453,7 +455,7 @@ where
 
 impl<K, V> Worker<K, V>
 where
-    K: Debug + ToString + Send + Sync + Serialize + DeserializeOwned,
+    K: Debug + ToString + Send + Sync + Serialize + DeserializeOwned + Eq + Hash,
     V: Debug + Send + Sync + Serialize + DeserializeOwned,
 {
     async fn run(mut self) {
@@ -592,7 +594,7 @@ where
 #[derive(Debug)]
 pub struct Cache<K, V>
 where
-    K: Send + Sync + ToString + Serialize + DeserializeOwned + 'static,
+    K: Send + Sync + ToString + Serialize + DeserializeOwned + Eq + Hash + 'static,
     V: Debug + Send + Sync + Serialize + DeserializeOwned + 'static,
 {
     sender: Sender<WorkerCommand<K, V>>,
@@ -600,7 +602,7 @@ where
 
 impl<K, V> Cache<K, V>
 where
-    K: Debug + Send + Sync + ToString + Serialize + DeserializeOwned + 'static,
+    K: Debug + Send + Sync + ToString + Serialize + DeserializeOwned + Eq + Hash + 'static,
     V: Debug + Send + Sync + Serialize + DeserializeOwned + 'static,
 {
     pub fn spawn(dir: Dir) -> (Self, JoinHandle<()>) {
@@ -981,7 +983,7 @@ where
 // ----------------------------------- FIND ---------------------------------------- //
 impl<K, V> Find<K, V> for Cache<K, V>
 where
-    K: Debug + Send + Sync + ToString + Serialize + DeserializeOwned + 'static,
+    K: Debug + Send + Sync + ToString + Serialize + DeserializeOwned + Eq + Hash + 'static,
     V: Debug + Send + Sync + Serialize + DeserializeOwned + 'static,
 {
     async fn find_all<F>(&self, filter: F) -> Result<Vec<V>, CrudErr>
@@ -1026,7 +1028,7 @@ where
 // ----------------------------------- READ ---------------------------------------- //
 impl<K, V> Read<K, V> for Cache<K, V>
 where
-    K: Debug + Send + Sync + ToString + Serialize + DeserializeOwned + 'static,
+    K: Debug + Send + Sync + ToString + Serialize + DeserializeOwned + Eq + Hash + 'static,
     V: Debug + Send + Sync + Serialize + DeserializeOwned + 'static,
 {
     async fn read(&self, key: K) -> Result<V, CrudErr> {

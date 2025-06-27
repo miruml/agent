@@ -3,11 +3,11 @@ use std::fmt;
 
 // internal crates
 use crate::crud::errors::CrudErr;
+use crate::deploy::fsm;
 use crate::errors::{Code, HTTPCode, MiruError, Trace};
 use crate::filesys::errors::FileSysErr;
 use crate::models::config_instance::ConfigInstance;
 use crate::storage::errors::StorageErr;
-use crate::fsm::config_instance as fsm;
 
 #[derive(Debug)]
 pub struct InstanceNotDeployableErr {
