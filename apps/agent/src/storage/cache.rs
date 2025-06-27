@@ -27,6 +27,8 @@ use tracing::{error, info};
 
 type QueryEntryFilter<K, V> = Box<dyn Fn(&CacheEntry<K, V>) -> bool + Send + Sync>;
 type QueryValueFilter<V> = Box<dyn Fn(&V) -> bool + Send + Sync>;
+type IsDirty<K, V> = Box<dyn Fn(Option<&CacheEntry<K, V>>, &V) -> bool + Send + Sync>;
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct CacheEntry<K, V>
 where
@@ -35,6 +37,7 @@ where
 {
     pub key: K,
     pub value: V,
+    pub is_dirty: bool,
     pub created_at: DateTime<Utc>,
     pub last_accessed: DateTime<Utc>,
 }
@@ -130,10 +133,12 @@ where
         entry: &CacheEntry<K, V>,
         overwrite: bool,
     ) -> Result<(), StorageErr> {
+        // important that atomic writes are used here
+        let atomic = true;
         let entry_file = self.cache_entry_file(&entry.key);
         entry_file
             .write_json(
-                &entry, overwrite, true, // important that atomic writes are used here
+                &entry, overwrite, atomic, 
             )
             .await
             .map_err(|e| {
@@ -145,13 +150,26 @@ where
         Ok(())
     }
 
-    async fn write(&self, key: K, value: V, overwrite: bool) -> Result<(), StorageErr> {
+    async fn write<F>(
+        &self,
+        key: K,
+        value: V,
+        is_dirty: F,
+        overwrite: bool,
+    ) -> Result<(), StorageErr>
+    where
+        F: Fn(Option<&CacheEntry<K, V>>, &V) -> bool,
+    {
         // if the entry already exists, keep the original created_at time
-        let (created_at, last_accessed) = match self.read_entry_optional(&key, false).await? {
-            Some(existing_entry) => (existing_entry.created_at, Utc::now()),
+        let (created_at, last_accessed, is_dirty) = match self.read_entry_optional(&key, false).await? {
+            Some(existing_entry) => (
+                existing_entry.created_at,
+                Utc::now(),
+                is_dirty(Some(&existing_entry), &value),
+            ),
             None => {
                 let now = Utc::now();
-                (now, now)
+                (now, now, is_dirty(None, &value))
             }
         };
         let entry = CacheEntry {
@@ -159,6 +177,7 @@ where
             value,
             created_at,
             last_accessed,
+            is_dirty,
         };
 
         // write the entry
@@ -270,7 +289,7 @@ where
         filter: F,
     ) -> Result<Vec<CacheEntry<K, V>>, StorageErr>
     where
-        F: Fn(&CacheEntry<K, V>) -> bool + Send + Sync,
+        F: Fn(&CacheEntry<K, V>) -> bool,
     {
         let entries = self.entries().await?;
         let filtered_entries = entries
@@ -285,7 +304,7 @@ where
         filter: F,
     ) -> Result<Vec<V>, StorageErr>
     where
-        F: Fn(&V) -> bool + Send + Sync,
+        F: Fn(&V) -> bool,
     {
         let entries = self.entries().await?;
         let filtered_entries = entries
@@ -302,7 +321,7 @@ where
         filter: F,
     ) -> Result<Option<CacheEntry<K, V>>, StorageErr>
     where
-        F: Fn(&CacheEntry<K, V>) -> bool + Send + Sync,
+        F: Fn(&CacheEntry<K, V>) -> bool,
     {
         let entries = self.find_all_entries(filter).await?;
         if entries.len() > 1 {
@@ -322,7 +341,7 @@ where
         filter: F,
     ) -> Result<Option<V>, StorageErr>
     where
-        F: Fn(&V) -> bool + Send + Sync,
+        F: Fn(&V) -> bool,
     {
         let entries = self.find_all(filter).await?;
         if entries.len() > 1 {
@@ -342,7 +361,7 @@ where
         filter: F,
     ) -> Result<CacheEntry<K, V>, StorageErr>
     where
-        F: Fn(&CacheEntry<K, V>) -> bool + Send + Sync,
+        F: Fn(&CacheEntry<K, V>) -> bool,
     {
         let entry = self.find_one_entry_optional(filter_name, filter).await?;
         match entry {
@@ -360,7 +379,7 @@ where
         filter: F,
     ) -> Result<V, StorageErr>
     where
-        F: Fn(&V) -> bool + Send + Sync,
+        F: Fn(&V) -> bool,
     {
         let opt_value = self.find_one_optional(filter_name, filter).await?;
         match opt_value {
@@ -400,6 +419,7 @@ where
     Write {
         key: K,
         value: V,
+        is_dirty: IsDirty<K, V>,
         overwrite: bool,
         respond_to: oneshot::Sender<Result<(), StorageErr>>,
     },
@@ -505,10 +525,11 @@ where
                 WorkerCommand::Write {
                     key,
                     value,
+                    is_dirty,
                     overwrite,
                     respond_to,
                 } => {
-                    let result = self.cache.write(key, value, overwrite).await;
+                    let result = self.cache.write(key, value, is_dirty, overwrite).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to write cache entry: {:?}", e);
                     }
@@ -735,12 +756,22 @@ where
         })?
     }
 
-    pub async fn write(&self, key: K, value: V, overwrite: bool) -> Result<(), StorageErr> {
+    pub async fn write<F>(
+        &self,
+        key: K,
+        value: V,
+        is_dirty: F,
+        overwrite: bool,
+    ) -> Result<(), StorageErr>
+    where
+        F: Fn(Option<&CacheEntry<K, V>>, &V) -> bool + Send + Sync + 'static,
+    {
         let (send, recv) = oneshot::channel();
         self.sender
             .send(WorkerCommand::Write {
                 key,
                 value,
+                is_dirty: Box::new(is_dirty),
                 overwrite,
                 respond_to: send,
             })
@@ -1044,4 +1075,21 @@ where
             trace: trace!(),
         }))
     }
+}
+
+
+pub fn is_dirty_true<K, V>(_old: Option<&CacheEntry<K, V>>, _new: &V) -> bool
+where
+    K: Debug + Send + Sync + ToString + Serialize + DeserializeOwned + Eq + Hash + 'static,
+    V: Debug + Send + Sync + Serialize + DeserializeOwned + 'static,
+{
+    true
+}
+
+pub fn is_dirty_false<K, V>(_old: Option<&CacheEntry<K, V>>, _new: &V) -> bool
+where
+    K: Debug + Send + Sync + ToString + Serialize + DeserializeOwned + Eq + Hash + 'static,
+    V: Debug + Send + Sync + Serialize + DeserializeOwned + 'static,
+{
+    false
 }

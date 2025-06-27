@@ -17,6 +17,7 @@ use openapi_client::models::{
     ConfigInstanceList,
     ConfigInstanceSearch,
     ConfigInstanceTargetStatus,
+    UpdateConfigInstanceRequest,
 };
 
 #[allow(async_fn_in_trait)]
@@ -37,11 +38,22 @@ pub trait ConfigInstancesExt: Send + Sync {
         I: IntoIterator,
         I::Item: fmt::Display,
     ;
+
+    async fn update_config_instance(
+        &self,
+        config_instance_id: &str,
+        updates: &UpdateConfigInstanceRequest,
+        token: &str,
+    ) -> Result<BackendConfigInstance, HTTPErr>;
 }
 
 impl HTTPClient {
     fn config_instances_url(&self) -> String {
         format!("{}/config_instances", self.base_url)
+    }
+
+    fn config_instance_url(&self, config_instance_id: &str) -> String {
+        format!("{}/{}", self.config_instances_url(), config_instance_id)
     }
 }
 
@@ -99,6 +111,29 @@ impl ConfigInstancesExt for HTTPClient {
         }
         Ok(config_instances)
     }
+
+    async fn update_config_instance(
+        &self,
+        config_instance_id: &str,
+        updates: &UpdateConfigInstanceRequest,
+        token: &str,
+    ) -> Result<BackendConfigInstance, HTTPErr> {
+
+        // build the request
+        let (request, context) = self.build_patch_request(
+            &self.config_instance_url(config_instance_id),
+            self.marshal_json_payload(updates)?,
+            self.default_timeout,
+            Some(token),
+        )?;
+
+        // send the request (no caching)
+        let http_resp = self.send(request, &context).await?;
+        let text_resp = self.handle_response(http_resp, &context).await?;
+
+        // parse the response
+        self.parse_json_response_text::<BackendConfigInstance>(text_resp, &context).await
+    }
 }
 
 impl ConfigInstancesExt for Arc<HTTPClient> {
@@ -125,6 +160,20 @@ impl ConfigInstancesExt for Arc<HTTPClient> {
         I::Item: fmt::Display,
     {
         self.as_ref().list_all_config_instances(filters, expansions, token).await
+    }
+
+    async fn update_config_instance(
+        &self,
+        config_instance_id: &str,
+        updates: &UpdateConfigInstanceRequest,
+        token: &str,
+    ) -> Result<BackendConfigInstance, HTTPErr> {
+        self.as_ref().update_config_instance(
+            config_instance_id,
+            updates,
+            token,
+        )
+        .await
     }
 }
 

@@ -28,6 +28,16 @@ pub fn convert_target_status_backend_to_storage(
     }
 }
 
+pub fn convert_target_status_storage_to_backend(
+    target_status: &ConfigInstanceTargetStatus,
+) -> openapi_client::models::ConfigInstanceTargetStatus {
+    match target_status {
+        ConfigInstanceTargetStatus::Created => openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_CREATED,
+        ConfigInstanceTargetStatus::Deployed => openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_DEPLOYED,
+        ConfigInstanceTargetStatus::Removed => openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_REMOVED,
+    }
+}
+
 pub fn convert_target_status_storage_to_sdk(
     target_status: &ConfigInstanceTargetStatus,
 ) -> openapi_server::models::ConfigInstanceTargetStatus {
@@ -123,6 +133,17 @@ pub fn convert_activity_status_backend_to_storage(
     }
 }
 
+pub fn convert_activity_status_storage_to_backend(
+    activity_status: &ConfigInstanceActivityStatus,
+) -> openapi_client::models::ConfigInstanceActivityStatus {
+    match activity_status {
+        ConfigInstanceActivityStatus::Created => openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_CREATED,
+        ConfigInstanceActivityStatus::Queued => openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_QUEUED,
+        ConfigInstanceActivityStatus::Deployed => openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_DEPLOYED,
+        ConfigInstanceActivityStatus::Removed => openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_REMOVED,
+    }
+}
+
 pub fn convert_activity_status_storage_to_sdk(
     activity_status: &ConfigInstanceActivityStatus,
 ) -> openapi_server::models::ConfigInstanceActivityStatus {
@@ -150,6 +171,22 @@ pub fn convert_error_status_backend_to_storage(
         openapi_client::models::ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_NONE => ConfigInstanceErrorStatus::None,
         openapi_client::models::ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_FAILED => ConfigInstanceErrorStatus::Failed,
         openapi_client::models::ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_RETRYING => ConfigInstanceErrorStatus::Retrying,
+    }
+}
+
+pub fn convert_error_status_storage_to_backend(
+    error_status: &ConfigInstanceErrorStatus,
+) -> openapi_client::models::ConfigInstanceErrorStatus {
+    match error_status {
+        ConfigInstanceErrorStatus::None => {
+            openapi_client::models::ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_NONE
+        }
+        ConfigInstanceErrorStatus::Failed => {
+            openapi_client::models::ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_FAILED
+        }
+        ConfigInstanceErrorStatus::Retrying => {
+            openapi_client::models::ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_RETRYING
+        }
     }
 }
 

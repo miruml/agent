@@ -5,6 +5,7 @@ use crate::http::prelude::*;
 use crate::services::errors::{
     ServiceErr, ServiceHTTPErr, ServiceCrudErr, ServiceStorageErr,
 };
+use crate::storage::cache::is_dirty_false;
 use crate::storage::digests::{ConfigSchemaDigestCache, ConfigSchemaDigests};
 use crate::trace;
 use openapi_client::models::{
@@ -77,12 +78,13 @@ pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
         raw: raw_digest.clone(),
         resolved: resolved_digest.clone(),
     };
+    let overwrite = true;
     cache
         .write(
-            raw_digest, digests,
-            // this overwrite shouldn't ever occur since we check the storage first but no
-            // reason to throw an error
-            true,
+            raw_digest,
+            digests,
+            is_dirty_false,
+            overwrite,
         )
         .await
         .map_err(|e| {

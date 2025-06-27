@@ -171,6 +171,16 @@ impl HTTPClient {
         self.build_request(reqwest::Method::POST, url, Some(body), timeout, token)
     }
 
+    pub fn build_patch_request(
+        &self,
+        url: &str,
+        body: String,
+        timeout: Duration,
+        token: Option<&str>,
+    ) -> Result<(reqwest::Request, RequestContext), HTTPErr> {
+        self.build_request(reqwest::Method::PATCH, url, Some(body), timeout, token)
+    }
+
     pub async fn send(
         &self,
         request: reqwest::Request,

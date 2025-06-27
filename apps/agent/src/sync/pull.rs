@@ -13,6 +13,7 @@ use crate::models::config_instance::{
     convert_cfg_inst_backend_to_storage,
     convert_target_status_backend_to_storage,
 };
+use crate::storage::cache::is_dirty_false;
 use crate::storage::config_instances::{
     ConfigInstanceCache,
     ConfigInstanceDataCache,
@@ -183,7 +184,10 @@ pub async fn add_unknown_instances_to_storage(
         };
         unknown_inst.instance = None;
 
-        if let Err(e) = cfg_inst_data_cache.write(unknown_inst.id.clone(), instance_data, true).await {
+        let overwrite = true;
+        if let Err(e) = cfg_inst_data_cache.write(
+            unknown_inst.id.clone(), instance_data, is_dirty_false, overwrite,
+        ).await {
             error!("Failed to write instance data to cache for instance '{}': {}", unknown_inst.id, e);
             continue;
         }
@@ -192,7 +196,10 @@ pub async fn add_unknown_instances_to_storage(
         let storage_inst = convert_cfg_inst_backend_to_storage(
             unknown_inst, None, None,
         );
-        if let Err(e) = cfg_inst_cache.write(unknown_inst_id.clone(), storage_inst, true).await {
+        let overwrite = true;
+        if let Err(e) = cfg_inst_cache.write(
+            unknown_inst_id.clone(), storage_inst, is_dirty_false, overwrite,
+        ).await {
             error!("Failed to write instance to cache for instance '{}': {}", unknown_inst_id, e);
             continue;
         }
@@ -207,7 +214,10 @@ pub async fn update_target_status_instances(
 
     for instance in update_target_status {
         let instance_id = instance.id.clone();
-        if let Err(e) = cfg_inst_cache.write(instance_id.clone(), instance, true).await {
+        let overwrite = true;
+        if let Err(e) = cfg_inst_cache.write(
+            instance_id.clone(), instance, is_dirty_false, overwrite,
+        ).await {
             error!("Failed to write instance to cache for instance '{}': {}", instance_id, e);
             continue;
         }
