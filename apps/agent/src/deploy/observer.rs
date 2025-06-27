@@ -1,9 +1,6 @@
 // internal crates
-use crate::deploy::errors::{DeployErr, DeployStorageErr};
+use crate::deploy::errors::DeployErr;
 use crate::models::config_instance::ConfigInstance;
-use crate::storage::config_instances::ConfigInstanceCacheEntry;
-use crate::storage::config_instances::ConfigInstanceCache;
-use crate::trace;
 
 // external crates
 use async_trait::async_trait;
@@ -21,36 +18,4 @@ pub async fn on_update(
         observer.on_update(config_instance).await?
     }
     Ok(())
-}
-
-pub struct StorageObserver<'a> {
-    pub cfg_inst_cache: &'a ConfigInstanceCache,
-}
-
-#[async_trait]
-impl<'a> Observer for StorageObserver<'a> {
-    async fn on_update(&mut self, config_instance: &ConfigInstance) -> Result<(), DeployErr> {
-        let overwrite = true;
-        self.cfg_inst_cache.write(
-            config_instance.id.clone(),
-            config_instance.clone(),
-            is_dirty,
-            overwrite,
-        ).await.map_err(|e| {
-            DeployErr::StorageErr(DeployStorageErr {
-                source: e,
-                trace: trace!(),
-            })
-        })
-    }
-}
-
-fn is_dirty(old: Option<&ConfigInstanceCacheEntry>, new: &ConfigInstance) -> bool {
-    let old = match old {
-        Some(old) => old,
-        None => return true,
-    };
-    old.is_dirty ||
-    old.value.activity_status != new.activity_status || 
-    old.value.error_status != new.error_status
 }

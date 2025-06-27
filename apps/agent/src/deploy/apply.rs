@@ -78,14 +78,14 @@ where
 
         // update the config instances to apply
         for removal in instance_results.removed.into_iter() {
-            if reapply(&removal) {
+            if fsm::is_action_required(&removal) {
                 cfg_insts_to_apply.insert(removal.id.clone(), removal);
             } else {
                 applied_cfg_insts.insert(removal.id.clone(), removal);
             }
         }
         for deployment in instance_results.deployed.into_iter() {
-            if reapply(&deployment) {
+            if fsm::is_action_required(&deployment) {
                 cfg_insts_to_apply.insert(deployment.id.clone(), deployment);
             } else {
                 applied_cfg_insts.insert(deployment.id.clone(), deployment);
@@ -96,14 +96,7 @@ where
     Ok(applied_cfg_insts)
 }
 
-fn reapply(cfg_inst: &ConfigInstance) -> bool {
-    match fsm::next_action(cfg_inst, true) {
-        fsm::NextAction::None => false,
-        fsm::NextAction::Deploy => true,
-        fsm::NextAction::Remove => true,
-        fsm::NextAction::Wait(_) => false,
-    }
-}
+
 
 async fn apply_deployment<R1,R2>(
     cfg_inst: ConfigInstance,

@@ -3,6 +3,7 @@ use std::fmt;
 
 // internal crates
 use crate::crud::errors::CrudErr;
+use crate::deploy::errors::DeployErr;
 use crate::errors::{Code, HTTPCode, MiruError, Trace};
 use crate::http::errors::HTTPErr;
 use crate::storage::errors::StorageErr;
@@ -34,6 +35,36 @@ impl MiruError for SyncCrudErr {
 impl fmt::Display for SyncCrudErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Crud error: {}", self.source)
+    }
+}
+
+#[derive(Debug)]
+pub struct SyncDeployErr {
+    pub source: DeployErr,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for SyncDeployErr {
+    fn code(&self) -> Code {
+        self.source.code()
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        self.source.http_status()
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        self.source.is_network_connection_error()
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        self.source.params()
+    }
+}
+
+impl fmt::Display for SyncDeployErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Deploy error: {}", self.source)
     }
 }
 
@@ -131,6 +162,7 @@ impl fmt::Display for ConfigInstanceDataNotFoundErr {
 #[derive(Debug)]
 pub enum SyncErr {
     CrudErr(SyncCrudErr),
+    DeployErr(SyncDeployErr),
     HTTPClientErr(SyncHTTPClientErr),
     StorageErr(SyncStorageErr),
 
@@ -141,6 +173,7 @@ macro_rules! forward_error_method {
     ($self:ident, $method:ident $(, $arg:expr)?) => {
         match $self {
             SyncErr::CrudErr(e) => e.$method($($arg)?),
+            SyncErr::DeployErr(e) => e.$method($($arg)?),
             SyncErr::HTTPClientErr(e) => e.$method($($arg)?),
             SyncErr::StorageErr(e) => e.$method($($arg)?),
 
@@ -153,6 +186,7 @@ impl fmt::Display for SyncErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             SyncErr::CrudErr(e) => e.fmt(f),
+            SyncErr::DeployErr(e) => e.fmt(f),
             SyncErr::HTTPClientErr(e) => e.fmt(f),
             SyncErr::StorageErr(e) => e.fmt(f),
 

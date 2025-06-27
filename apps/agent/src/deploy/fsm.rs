@@ -54,6 +54,15 @@ pub fn next_action(instance: &ConfigInstance, use_cooldown: bool) -> NextAction 
     }
 }
 
+pub fn is_action_required(cfg_inst: &ConfigInstance) -> bool {
+    match next_action(cfg_inst, true) {
+        NextAction::None => false,
+        NextAction::Deploy => true,
+        NextAction::Remove => true,
+        NextAction::Wait(_) => false,
+    }
+}
+
 pub struct Settings {
     max_attempts: u32,
     exp_backoff_base_secs: u32,
