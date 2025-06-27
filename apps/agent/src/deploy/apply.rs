@@ -126,8 +126,8 @@ where
                 cfg_inst,
                 all_cfg_insts,
                 all_cfg_insts_data,
-                &deployment_dir,
-                &fsm_settings,
+                deployment_dir,
+                fsm_settings,
                 observers,
             ).await
         }
@@ -181,8 +181,8 @@ where
         conflicts,
         vec![cfg_inst],
         all_cfg_insts_data,
-        &deployment_dir,
-        &fsm_settings,
+        deployment_dir,
+        fsm_settings,
         observers,
     ).await;
     let instance_results = InstanceResults {
@@ -233,8 +233,8 @@ where
         vec![cfg_inst],
         replacements,
         all_cfg_insts_data,
-        &deployment_dir,
-        &fsm_settings,
+        deployment_dir,
+        fsm_settings,
         observers,
     ).await;
     let instance_results = InstanceResults {
@@ -274,8 +274,8 @@ where
                 Some(filepath) => filepath,
                 None => return false,
             };
-            return matches_filepath_and_activity_status(
-                cfg_inst, &filepath, ConfigInstanceActivityStatus::Deployed,
+            matches_filepath_and_activity_status(
+                cfg_inst, filepath, ConfigInstanceActivityStatus::Deployed,
             )
         },
     ).await.map_err(|e| {
@@ -330,5 +330,5 @@ pub fn matches_config_schema_and_next_action(
     use_cooldown: bool,
 ) -> bool {
     instance.config_schema_id == config_schema_id &&
-    fsm::next_action(&instance, use_cooldown) == next_action
+    fsm::next_action(instance, use_cooldown) == next_action
 }

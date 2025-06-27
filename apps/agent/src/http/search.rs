@@ -58,7 +58,7 @@ where
     I: IntoIterator,
     I::Item: fmt::Display,
 {
-    format!("{}", join(clauses, &format!(" {} ", op)))
+    join(clauses, &format!(" {} ", op))
 }
 
 fn join<I, T>(values: I, sep: &str) -> String

@@ -12,7 +12,7 @@ where
         None
     } else {
         let mut query = String::new();
-        while let Some(expansion) = iter.next() {
+        for expansion in iter {
             query.push_str(&format!("expand[]={}", expansion));
         }
         Some(query)

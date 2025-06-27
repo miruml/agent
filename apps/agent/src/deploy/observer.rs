@@ -17,9 +17,7 @@ pub async fn on_update(
     config_instance: &ConfigInstance,
 ) -> Result<(), DeployErr> {
     for observer in observers.iter_mut() {
-        if let Err(e) = observer.on_update(config_instance).await {
-            return Err(e);
-        }
+        observer.on_update(config_instance).await?
     }
     Ok(())
 }

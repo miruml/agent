@@ -1,11 +1,13 @@
 // internal crates
 use crate::crud::errors::CrudErr;
 
+#[allow(async_fn_in_trait)]
 pub trait Read<K, V> {
     async fn read(&self, key: K) -> Result<V, CrudErr>;
     async fn read_optional(&self, key: K) -> Result<Option<V>, CrudErr>;
 }
 
+#[allow(async_fn_in_trait)]
 pub trait Find<K, V> {
     async fn find_all<F>(&self, filter: F) -> Result<Vec<V>, CrudErr>
     where
