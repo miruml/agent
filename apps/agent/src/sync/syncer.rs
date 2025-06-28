@@ -6,7 +6,7 @@ use crate::auth::token_mngr::TokenManager;
 use crate::crud::prelude::*;
 use crate::deploy::{
     apply::apply_deployments,
-    errors::{DeployErr, DeployStorageErr},
+    errors::{DeployErr, DeployCacheErr},
     fsm,
     observer::Observer,
 };
@@ -53,7 +53,7 @@ impl<'a> Observer for StorageObserver<'a> {
             is_dirty,
             overwrite,
         ).await.map_err(|e| {
-            DeployErr::StorageErr(DeployStorageErr {
+            DeployErr::CacheErr(DeployCacheErr {
                 source: e,
                 trace: trace!(),
             })
@@ -128,7 +128,7 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
         ).await?;
 
         // read the config instances which need to be applied
-        let cfg_insts_to_apply = cfg_inst_cache.find_all(
+        let cfg_insts_to_apply = cfg_inst_cache.find_where(
             |instance| { fsm::is_action_required(instance) }
         ).await.map_err(|e| SyncErr::CrudErr(SyncCrudErr {
             source: e,

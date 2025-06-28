@@ -11,7 +11,7 @@ use crate::filesys::{cached_file::CachedFile, file::File, path::PathExt};
 use crate::http::client::HTTPClient;
 use crate::models::agent::Agent;
 use crate::server::errors::{
-    MissingDeviceIDErr, ServerAuthErr, ServerErr, ServerFileSysErr, ServerStorageErr,
+    MissingDeviceIDErr, ServerAuthErr, ServerErr, ServerFileSysErr, ServerCacheErr,
 };
 use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
 use crate::storage::digests::ConfigSchemaDigestCache;
@@ -63,17 +63,41 @@ impl ServerState {
 
         // initialize the caches
         let (cfg_sch_digest_cache, cfg_sch_digest_cache_handle) =
-            ConfigSchemaDigestCache::spawn(layout.config_schema_digest_cache());
+            ConfigSchemaDigestCache::spawn(layout.config_schema_digest_cache(), 64)
+                .await
+                .map_err(|e| {
+                    ServerErr::CacheErr(ServerCacheErr {
+                        source: Box::new(e),
+                        trace: trace!(),
+                    })
+                })?;
         let cfg_sch_digest_cache = Arc::new(cfg_sch_digest_cache);
-        let (cfg_inst_metadata_cache, cfg_inst_metadata_cache_handle) =
-            ConfigInstanceCache::spawn(layout.config_instance_metadata_cache());
-        let cfg_inst_metadata_cache = Arc::new(cfg_inst_metadata_cache);
-        let (cfg_inst_data_cache, cfg_inst_data_cache_handle) =
-            ConfigInstanceDataCache::spawn(layout.config_instance_data_cache());
-        let cfg_inst_data_cache = Arc::new(cfg_inst_data_cache);
+
         let (cfg_schema_cache, cfg_schema_cache_handle) =
-            ConfigSchemaCache::spawn(layout.config_schema_cache());
+            ConfigSchemaCache::spawn(layout.config_schema_cache(), 64)
+                .await
+                .map_err(|e| {
+                    ServerErr::CacheErr(ServerCacheErr {
+                        source: Box::new(e),
+                        trace: trace!(),
+                    })
+                })?;
         let cfg_schema_cache = Arc::new(cfg_schema_cache);
+
+        let (cfg_inst_metadata_cache, cfg_inst_metadata_cache_handle) =
+            ConfigInstanceCache::spawn(layout.config_instance_metadata_cache(), 100)
+                .await
+                .map_err(|e| {
+                    ServerErr::CacheErr(ServerCacheErr {
+                        source: Box::new(e),
+                        trace: trace!(),
+                    })
+                })?;
+        let cfg_inst_metadata_cache = Arc::new(cfg_inst_metadata_cache);
+
+        let (cfg_inst_data_cache, cfg_inst_data_cache_handle) =
+            ConfigInstanceDataCache::spawn(layout.config_instance_data_cache(), 64);
+        let cfg_inst_data_cache = Arc::new(cfg_inst_data_cache);
 
         // initialize the token manager
         let (token_mngr, token_mngr_handle) = TokenManager::spawn(
@@ -129,7 +153,7 @@ impl ServerState {
             .shutdown()
             .await
             .map_err(|e| {
-                ServerErr::StorageErr(ServerStorageErr {
+                ServerErr::CacheErr(ServerCacheErr {
                     source: Box::new(e),
                     trace: trace!(),
                 })
@@ -138,7 +162,7 @@ impl ServerState {
             .shutdown()
             .await
             .map_err(|e| {
-                ServerErr::StorageErr(ServerStorageErr {
+                ServerErr::CacheErr(ServerCacheErr {
                     source: Box::new(e),
                     trace: trace!(),
                 })
@@ -147,7 +171,7 @@ impl ServerState {
             .shutdown()
             .await
             .map_err(|e| {
-                ServerErr::StorageErr(ServerStorageErr {
+                ServerErr::CacheErr(ServerCacheErr {
                     source: Box::new(e),
                     trace: trace!(),
                 })
@@ -156,7 +180,7 @@ impl ServerState {
             .shutdown()
             .await
             .map_err(|e| {
-                ServerErr::StorageErr(ServerStorageErr {
+                ServerErr::CacheErr(ServerCacheErr {
                     source: Box::new(e),
                     trace: trace!(),
                 })

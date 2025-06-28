@@ -1,11 +1,11 @@
+use crate::cache::entry::is_dirty_false;
 use crate::http::config_instances::ConfigInstancesExt;
 use crate::models::config_instance::{
     ActivityStatus,
     ErrorStatus,
 };
 use crate::storage::config_instances::ConfigInstanceCache;
-use crate::storage::cache::is_dirty_false;
-use crate::sync::errors::{SyncStorageErr, SyncErr};
+use crate::sync::errors::{SyncCacheErr, SyncErr};
 use crate::trace;
 use openapi_client::models::UpdateConfigInstanceRequest;
 
@@ -19,9 +19,9 @@ pub async fn push_config_instances<HTTPClientT: ConfigInstancesExt>(
 ) -> Result<(), SyncErr> {
 
     // get all unsynced instances
-    let unsynced_entries = cfg_inst_cache.find_all_entries(
+    let unsynced_entries = cfg_inst_cache.find_entries_where(
         |entry| { entry.is_dirty }
-    ).await.map_err(|e| SyncErr::StorageErr(SyncStorageErr {
+    ).await.map_err(|e| SyncErr::CacheErr(SyncCacheErr {
         source: e,
         trace: trace!(),
     }))?;
@@ -53,7 +53,7 @@ pub async fn push_config_instances<HTTPClientT: ConfigInstancesExt>(
             inst,
             is_dirty_false,
             true,
-        ).await.map_err(|e| SyncErr::StorageErr(SyncStorageErr {
+        ).await.map_err(|e| SyncErr::CacheErr(SyncCacheErr {
             source: e,
             trace: trace!(),
         })) {

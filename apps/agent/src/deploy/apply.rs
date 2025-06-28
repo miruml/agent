@@ -251,7 +251,7 @@ where
 
     let opt_filepath= cfg_inst.filepath.clone();
     let cfg_sch_id = cfg_inst.config_schema_id.clone();
-    let conflicts = all_cfg_insts.find_all(
+    let conflicts = all_cfg_insts.find_where(
         move |cfg_inst| {
             // is deployed and has same config schema 
             if matches_config_schema_and_activity_status(

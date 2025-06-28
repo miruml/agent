@@ -2,6 +2,7 @@
 use std::fmt;
 
 // internal crates
+use crate::cache::errors::CacheErr;
 use crate::crud::errors::CrudErr;
 use crate::deploy::fsm;
 use crate::errors::{Code, HTTPCode, MiruError, Trace};
@@ -101,6 +102,36 @@ impl fmt::Display for DeployFileSysErr {
 }
 
 #[derive(Debug)]
+pub struct DeployCacheErr {
+    pub source: CacheErr,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for DeployCacheErr {
+    fn code(&self) -> Code {
+        self.source.code()
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        self.source.http_status()
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        self.source.is_network_connection_error()
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        self.source.params()
+    }
+}
+
+impl fmt::Display for DeployCacheErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "cache error: {}", self.source)
+    }
+}
+
+#[derive(Debug)]
 pub struct DeployCrudErr {
     pub source: CrudErr,
     pub trace: Box<Trace>,
@@ -165,8 +196,9 @@ impl fmt::Display for DeployStorageErr {
 pub enum DeployErr {
     ConflictingDeploymentsErr(ConflictingDeploymentsErr),
     InstanceNotDeployableErr(InstanceNotDeployableErr),
-    CrudErr(DeployCrudErr),
 
+    CacheErr(DeployCacheErr),
+    CrudErr(DeployCrudErr),
     FileSysErr(DeployFileSysErr),
     StorageErr(DeployStorageErr),
 }
@@ -176,8 +208,9 @@ macro_rules! forward_error_method {
         match $self {
             DeployErr::ConflictingDeploymentsErr(e) => e.$method($($arg)?),
             DeployErr::InstanceNotDeployableErr(e) => e.$method($($arg)?),
-            DeployErr::CrudErr(e) => e.$method($($arg)?),
 
+            DeployErr::CacheErr(e) => e.$method($($arg)?),
+            DeployErr::CrudErr(e) => e.$method($($arg)?),
             DeployErr::FileSysErr(e) => e.$method($($arg)?),
             DeployErr::StorageErr(e) => e.$method($($arg)?),
         }

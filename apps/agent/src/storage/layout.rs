@@ -31,25 +31,35 @@ impl StorageLayout {
         self.root.file("agent.json")
     }
 
-    pub fn config_schema_digest_cache(&self) -> Dir {
-        self.root.subdir("config_schema_digests")
+    pub fn caches_dir(&self) -> Dir {
+        self.root.subdir("cache")
+    }
+
+    pub fn config_schema_caches(&self) -> Dir {
+        self.caches_dir().subdir("config_schemas")
+    }
+
+    pub fn config_schema_digest_cache(&self) -> File {
+        self.config_schema_caches().file("digests.json")
+    }
+
+    pub fn config_schema_cache(&self) -> File {
+        self.config_schema_caches().file("metadata.json")
     }
 
     pub fn config_instance_caches(&self) -> Dir {
-        self.root.subdir("config_instances")
+        self.caches_dir().subdir("config_instances")
     }
 
-    pub fn config_instance_metadata_cache(&self) -> Dir {
-        self.config_instance_caches().subdir("metadata")
+    pub fn config_instance_metadata_cache(&self) -> File {
+        self.config_instance_caches().file("metadata.json")
     }
 
     pub fn config_instance_data_cache(&self) -> Dir {
-        self.config_instance_caches().subdir("data")
+        self.config_instance_caches().subdir("instances")
     }
 
-    pub fn config_schema_cache(&self) -> Dir {
-        self.root.subdir("config_schemas")
-    }
+
 }
 
 impl Default for StorageLayout {

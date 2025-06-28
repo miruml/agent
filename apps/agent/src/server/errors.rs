@@ -3,6 +3,7 @@ use std::fmt;
 
 // internal crates
 use crate::auth::errors::AuthErr;
+use crate::cache::errors::CacheErr;
 use crate::crypt::errors::CryptErr;
 use crate::errors::MiruError;
 use crate::errors::{Code, HTTPCode, Trace};
@@ -11,6 +12,37 @@ use crate::filesys::file::File;
 use crate::http::errors::HTTPErr;
 use crate::services::errors::ServiceErr;
 use crate::storage::errors::StorageErr;
+
+#[derive(Debug)]
+pub struct ServerCacheErr {
+    pub source: Box<CacheErr>,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for ServerCacheErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for ServerCacheErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "server cache error: {}", self.source)
+    }
+}
+
 
 #[derive(Debug)]
 pub struct MissingDeviceIDErr {
@@ -421,6 +453,7 @@ pub enum ServerErr {
 
     // internal crate errors
     AuthErr(ServerAuthErr),
+    CacheErr(ServerCacheErr),
     CryptErr(ServerCryptErr),
     FileSysErr(ServerFileSysErr),
     HTTPErr(ServerHTTPErr),
@@ -450,6 +483,7 @@ macro_rules! forward_error_method {
             Self::RunAxumServerErr(e) => e.$method($($arg)?),
             Self::SendShutdownSignalErr(e) => e.$method($($arg)?),
             Self::JoinHandleErr(e) => e.$method($($arg)?),
+            Self::CacheErr(e) => e.$method($($arg)?),
         }
     };
 }

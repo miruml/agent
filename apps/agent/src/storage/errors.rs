@@ -37,69 +37,6 @@ impl fmt::Display for AgentNotActivatedErr {
 }
 
 #[derive(Debug)]
-pub struct CacheElementNotFound {
-    pub msg: String,
-    pub trace: Box<Trace>,
-}
-
-impl MiruError for CacheElementNotFound {
-    fn code(&self) -> Code {
-        Code::InternalServerError
-    }
-
-    fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
-    }
-
-    fn is_network_connection_error(&self) -> bool {
-        false
-    }
-
-    fn params(&self) -> Option<serde_json::Value> {
-        None
-    }
-}
-
-impl fmt::Display for CacheElementNotFound {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "unable to find cache element: {}", self.msg)
-    }
-}
-
-#[derive(Debug)]
-pub struct FoundTooManyCacheElements {
-    pub expected_count: usize,
-    pub actual_count: usize,
-    pub filter_name: String,
-    pub trace: Box<Trace>,
-}
-
-impl MiruError for FoundTooManyCacheElements {
-    fn code(&self) -> Code {
-        Code::InternalServerError
-    }
-
-    fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
-    }
-
-    fn is_network_connection_error(&self) -> bool {
-        false
-    }
-
-    fn params(&self) -> Option<serde_json::Value> {
-        None
-    }
-}
-
-impl fmt::Display for FoundTooManyCacheElements {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "expected to find {} elements when filtering by '{}' but found {}", self.expected_count, self.filter_name, self.actual_count)
-    }
-}
-
-
-#[derive(Debug)]
 pub struct StorageCryptErr {
     pub source: CryptErr,
     pub trace: Box<Trace>,
@@ -159,65 +96,6 @@ impl fmt::Display for StorageFileSysErr {
     }
 }
 
-#[derive(Debug)]
-pub struct SendActorMessageErr {
-    pub source: Box<dyn std::error::Error + Send + Sync>,
-    pub trace: Box<Trace>,
-}
-
-impl MiruError for SendActorMessageErr {
-    fn code(&self) -> Code {
-        Code::InternalServerError
-    }
-
-    fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
-    }
-
-    fn is_network_connection_error(&self) -> bool {
-        false
-    }
-
-    fn params(&self) -> Option<serde_json::Value> {
-        None
-    }
-}
-
-impl fmt::Display for SendActorMessageErr {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "failed to send actor message: {}", self.source)
-    }
-}
-
-#[derive(Debug)]
-pub struct ReceiveActorMessageErr {
-    pub source: Box<dyn std::error::Error + Send + Sync>,
-    pub trace: Box<Trace>,
-}
-
-impl MiruError for ReceiveActorMessageErr {
-    fn code(&self) -> Code {
-        Code::InternalServerError
-    }
-
-    fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
-    }
-
-    fn is_network_connection_error(&self) -> bool {
-        false
-    }
-
-    fn params(&self) -> Option<serde_json::Value> {
-        None
-    }
-}
-
-impl fmt::Display for ReceiveActorMessageErr {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "failed to receive actor message: {}", self.source)
-    }
-}
 
 #[derive(Debug)]
 pub struct JoinHandleErr {
@@ -253,16 +131,12 @@ impl fmt::Display for JoinHandleErr {
 pub enum StorageErr {
     // storage errors
     AgentNotActivatedErr(AgentNotActivatedErr),
-    CacheElementNotFound(CacheElementNotFound),
-    FoundTooManyCacheElements(FoundTooManyCacheElements),
 
     // internal crate errors
     CryptErr(StorageCryptErr),
     FileSysErr(StorageFileSysErr),
 
     // external crate errors
-    SendActorMessageErr(SendActorMessageErr),
-    ReceiveActorMessageErr(ReceiveActorMessageErr),
     JoinHandleErr(JoinHandleErr),
 }
 
@@ -272,10 +146,6 @@ macro_rules! forward_error_method {
             Self::AgentNotActivatedErr(e) => e.$method($($arg)?),
             Self::CryptErr(e) => e.$method($($arg)?),
             Self::FileSysErr(e) => e.$method($($arg)?),
-            Self::CacheElementNotFound(e) => e.$method($($arg)?),
-            Self::FoundTooManyCacheElements(e) => e.$method($($arg)?),
-            Self::SendActorMessageErr(e) => e.$method($($arg)?),
-            Self::ReceiveActorMessageErr(e) => e.$method($($arg)?),
             Self::JoinHandleErr(e) => e.$method($($arg)?),
         }
     };

@@ -9,7 +9,7 @@ pub trait Read<K, V> {
 
 #[allow(async_fn_in_trait)]
 pub trait Find<K, V> {
-    async fn find_all<F>(&self, filter: F) -> Result<Vec<V>, CrudErr>
+    async fn find_where<F>(&self, filter: F) -> Result<Vec<V>, CrudErr>
     where
         F: Fn(&V) -> bool + Send + Sync + 'static;
 

@@ -1,11 +1,11 @@
 // internal crates
+use crate::cache::entry::is_dirty_false;
 use crate::crypt::sha256;
 use crate::crud::prelude::*;
 use crate::http::prelude::*;
 use crate::services::errors::{
-    ServiceErr, ServiceHTTPErr, ServiceCrudErr, ServiceStorageErr,
+    ServiceErr, ServiceHTTPErr, ServiceCrudErr, ServiceCacheErr,
 };
-use crate::storage::cache::is_dirty_false;
 use crate::storage::digests::{ConfigSchemaDigestCache, ConfigSchemaDigests};
 use crate::trace;
 use openapi_client::models::{
@@ -88,7 +88,7 @@ pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
         )
         .await
         .map_err(|e| {
-            ServiceErr::StorageErr(ServiceStorageErr {
+            ServiceErr::CacheErr(ServiceCacheErr {
                 source: e,
                 trace: trace!(),
             })

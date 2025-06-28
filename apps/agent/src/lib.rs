@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod cache;
 pub mod crypt;
 pub mod crud;
 pub mod deploy;

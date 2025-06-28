@@ -3,6 +3,7 @@ use std::fmt;
 
 // internal crates
 use crate::auth::errors::AuthErr;
+use crate::cache::errors::CacheErr;
 use crate::crud::errors::CrudErr;
 use crate::deploy::errors::DeployErr;
 use crate::errors::{Code, HTTPCode, MiruError, Trace};
@@ -36,6 +37,36 @@ impl MiruError for SyncAuthErr {
 impl fmt::Display for SyncAuthErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Auth error: {}", self.source)
+    }
+}
+
+#[derive(Debug)]
+pub struct SyncCacheErr {
+    pub source: CacheErr,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for SyncCacheErr {
+    fn code(&self) -> Code {
+        self.source.code()
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        self.source.http_status()
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        self.source.is_network_connection_error()
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        self.source.params()
+    }
+}
+
+impl fmt::Display for SyncCacheErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Cache error: {}", self.source)
     }
 }
 
@@ -189,12 +220,13 @@ impl fmt::Display for ConfigInstanceDataNotFoundErr {
     }
 }
 
-pub type SendActorMessageErr = crate::storage::errors::SendActorMessageErr;
-pub type ReceiveActorMessageErr = crate::storage::errors::ReceiveActorMessageErr;
+pub type SendActorMessageErr = crate::cache::errors::SendActorMessageErr;
+pub type ReceiveActorMessageErr = crate::cache::errors::ReceiveActorMessageErr;
 
 #[derive(Debug)]
 pub enum SyncErr {
     AuthErr(SyncAuthErr),
+    CacheErr(SyncCacheErr),
     CrudErr(SyncCrudErr),
     DeployErr(SyncDeployErr),
     HTTPClientErr(SyncHTTPClientErr),
@@ -209,6 +241,7 @@ macro_rules! forward_error_method {
     ($self:ident, $method:ident $(, $arg:expr)?) => {
         match $self {
             SyncErr::AuthErr(e) => e.$method($($arg)?),
+            SyncErr::CacheErr(e) => e.$method($($arg)?),
             SyncErr::CrudErr(e) => e.$method($($arg)?),
             SyncErr::DeployErr(e) => e.$method($($arg)?),
             SyncErr::HTTPClientErr(e) => e.$method($($arg)?),
@@ -223,17 +256,7 @@ macro_rules! forward_error_method {
 
 impl fmt::Display for SyncErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            SyncErr::AuthErr(e) => e.fmt(f),
-            SyncErr::CrudErr(e) => e.fmt(f),
-            SyncErr::DeployErr(e) => e.fmt(f),
-            SyncErr::HTTPClientErr(e) => e.fmt(f),
-            SyncErr::StorageErr(e) => e.fmt(f),
-            SyncErr::SendActorMessageErr(e) => e.fmt(f),
-            SyncErr::ReceiveActorMessageErr(e) => e.fmt(f),
-
-            SyncErr::ConfigInstanceDataNotFound(e) => e.fmt(f),
-        }
+        forward_error_method!(self, fmt, f)
     }
 }
 

@@ -2,6 +2,7 @@
 use std::fmt;
 
 // internal crates
+use crate::cache::errors::CacheErr;
 use crate::crud::errors::CrudErr;
 use crate::errors::{Code, HTTPCode, MiruError, Trace};
 use crate::http::errors::HTTPErr;
@@ -72,6 +73,36 @@ impl MiruError for ServiceModelsErr {
 impl fmt::Display for ServiceModelsErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Models Error: {}", self.source)
+    }
+}
+
+#[derive(Debug)]
+pub struct ServiceCacheErr {
+    pub source: CacheErr,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for ServiceCacheErr {
+    fn code(&self) -> Code {
+        self.source.code()
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        self.source.http_status()
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        self.source.is_network_connection_error()
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        self.source.params()
+    }
+}
+
+impl fmt::Display for ServiceCacheErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Cache Error: {}", self.source)
     }
 }
 
@@ -171,6 +202,7 @@ pub enum ServiceErr {
     DeployedConfigInstanceNotFound(DeployedConfigInstanceNotFound),
 
     // internal crate errors
+    CacheErr(ServiceCacheErr),
     CrudErr(ServiceCrudErr),
     ModelsErr(ServiceModelsErr),
     StorageErr(ServiceStorageErr),
@@ -181,6 +213,8 @@ macro_rules! forward_error_method {
     ($self:ident, $method:ident $(, $arg:expr)?) => {
         match $self {
             Self::DeployedConfigInstanceNotFound(e) => e.$method($($arg)?),
+
+            Self::CacheErr(e) => e.$method($($arg)?),
             Self::CrudErr(e) => e.$method($($arg)?),
             Self::ModelsErr(e) => e.$method($($arg)?),
             Self::StorageErr(e) => e.$method($($arg)?),

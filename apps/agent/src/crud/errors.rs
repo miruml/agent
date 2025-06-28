@@ -3,6 +3,7 @@ use std::fmt;
 
 // internal crates
 use crate::errors::{Code, HTTPCode, MiruError, Trace};
+use crate::cache::errors::CacheErr;
 use crate::storage::errors::StorageErr;
 
 // external crates
@@ -38,16 +39,47 @@ impl fmt::Display for CrudStorageErr {
     }
 }
 
+#[derive(Debug)]
+pub struct CrudCacheErr {
+    pub source: CacheErr,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for CrudCacheErr {
+    fn code(&self) -> Code {
+        self.source.code()
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        self.source.http_status()
+    }
+    
+    fn is_network_connection_error(&self) -> bool {
+        self.source.is_network_connection_error()
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        self.source.params()
+    }
+}
+
+impl fmt::Display for CrudCacheErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.source)
+    }
+}
 
 #[derive(Debug)]
 pub enum CrudErr {
     StorageErr(CrudStorageErr),
+    CacheErr(CrudCacheErr),
 }
 
 macro_rules! forward_error_method {
     ($self:ident, $method:ident $(, $arg:expr)?) => {
         match $self {
             CrudErr::StorageErr(e) => e.$method($($arg)?),
+            CrudErr::CacheErr(e) => e.$method($($arg)?),
         }
     };
 }

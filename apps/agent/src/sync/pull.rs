@@ -1,3 +1,4 @@
+use crate::cache::entry::is_dirty_false;
 use crate::crud::prelude::*;
 use crate::http::{
     config_instances::{
@@ -12,7 +13,6 @@ use crate::models::config_instance::{
     ConfigInstance,
     TargetStatus,
 };
-use crate::storage::cache::is_dirty_false;
 use crate::storage::config_instances::{
     ConfigInstanceCache,
     ConfigInstanceDataCache,
