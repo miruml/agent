@@ -13,7 +13,7 @@ use crate::filesys::{cached_file::CachedFile, file::File, path::PathExt};
 use crate::http::devices::DevicesExt;
 use crate::storage::token::Token;
 use crate::trace;
-use crate::utils::time_delta_to_positive_duration;
+use crate::utils::time_delta_to_duration;
 use openapi_client::models::{IssueDeviceClaims, IssueDeviceTokenRequest};
 
 // external crates
@@ -383,7 +383,7 @@ pub async fn determine_refresh_loop_sleep_duration(
             let duration_until_expiration = expiration - Utc::now();
 
             // attempt to refresh token when expiration is within the threshold
-            let sleep_duration = time_delta_to_positive_duration(duration_until_expiration);
+            let sleep_duration = time_delta_to_duration(duration_until_expiration);
             if sleep_duration <= expiration_threshold + cooldown {
                 cooldown
             } else {

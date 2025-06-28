@@ -9,7 +9,7 @@ use tracing::{debug, error, info, trace, warn};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::{fmt, EnvFilter};
 
-#[derive(Clone, Debug, Default, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, Default, Serialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum LogLevel {
     Trace,
@@ -18,6 +18,18 @@ pub enum LogLevel {
     Info,
     Warn,
     Error,
+}
+
+impl LogLevel {
+    pub fn variants() -> Vec<LogLevel> {
+        vec![
+            LogLevel::Trace,
+            LogLevel::Debug,
+            LogLevel::Info,
+            LogLevel::Warn,
+            LogLevel::Error,
+        ]
+    }
 }
 
 impl<'de> Deserialize<'de> for LogLevel {
