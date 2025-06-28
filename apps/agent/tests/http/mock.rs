@@ -1,12 +1,15 @@
+// standard crates
+use std::fmt;
+
 // internal crates
-use config_agent::http::config_schemas::ConfigSchemasExt;
+use config_agent::http::config_instances::{ConfigInstanceFilters, ConfigInstancesExt};
+use config_agent::http::config_schemas::{ConfigSchemaFilters, ConfigSchemasExt};
 use config_agent::http::devices::DevicesExt;
 use config_agent::http::errors::HTTPErr;
-use config_agent::http::prelude::*;
 use openapi_client::models::{
-    ActivateDeviceRequest, ConfigInstanceActivityStatus, ConfigInstanceErrorStatus,
-    ConfigInstanceList, ConfigInstanceTargetStatus, ConfigSchemaList, Device,
-    HashSchemaSerializedRequest, IssueDeviceTokenRequest, SchemaDigestResponse, TokenResponse,
+    ActivateDeviceRequest, BackendConfigInstance, ConfigInstanceList, ConfigSchema,
+    ConfigSchemaList, Device, HashSchemaSerializedRequest, IssueDeviceTokenRequest,
+    SchemaDigestResponse, TokenResponse, UpdateConfigInstanceRequest,
 };
 
 // external crates
@@ -51,12 +54,18 @@ impl DevicesExt for MockAuthClient {
 pub struct MockConfigInstancesClient {
     pub list_config_instances_result:
         Box<dyn Fn() -> Result<ConfigInstanceList, HTTPErr> + Send + Sync>,
+    pub list_all_config_instances_result:
+        Box<dyn Fn() -> Result<Vec<BackendConfigInstance>, HTTPErr> + Send + Sync>,
+    pub update_config_instance_result:
+        Box<dyn Fn() -> Result<BackendConfigInstance, HTTPErr> + Send + Sync>,
 }
 
 impl Default for MockConfigInstancesClient {
     fn default() -> Self {
         Self {
             list_config_instances_result: Box::new(|| Ok(ConfigInstanceList::default())),
+            list_all_config_instances_result: Box::new(|| Ok(vec![])),
+            update_config_instance_result: Box::new(|| Ok(BackendConfigInstance::default())),
         }
     }
 }
@@ -70,17 +79,36 @@ impl MockConfigInstancesClient {
     }
 }
 
+#[async_trait]
 impl ConfigInstancesExt for MockConfigInstancesClient {
     async fn list_config_instances(
         &self,
-        _: String,
-        _: &[String],
-        _: &[ConfigInstanceTargetStatus],
-        _: &[ConfigInstanceActivityStatus],
-        _: &[ConfigInstanceErrorStatus],
+        _: &str,
         _: &str,
     ) -> Result<ConfigInstanceList, HTTPErr> {
         (self.list_config_instances_result)()
+    }
+
+    async fn list_all_config_instances<I>(
+        &self,
+        _: ConfigInstanceFilters,
+        _: I,
+        _: &str,
+    ) -> Result<Vec<BackendConfigInstance>, HTTPErr>
+    where
+        I: IntoIterator + Send,
+        I::Item: fmt::Display,
+    {
+        (self.list_all_config_instances_result)()
+    }
+
+    async fn update_config_instance(
+        &self,
+        _: &str,
+        _: &UpdateConfigInstanceRequest,
+        _: &str,
+    ) -> Result<BackendConfigInstance, HTTPErr> {
+        (self.update_config_instance_result)()
     }
 }
 
@@ -89,6 +117,8 @@ pub struct MockConfigSchemasClient {
     pub hash_schema_result: Box<dyn Fn() -> Result<SchemaDigestResponse, HTTPErr> + Send + Sync>,
     pub list_config_schemas_result:
         Box<dyn Fn() -> Result<ConfigSchemaList, HTTPErr> + Send + Sync>,
+    pub find_one_config_schema_result:
+        Box<dyn Fn() -> Result<ConfigSchema, HTTPErr> + Send + Sync>,
 }
 
 impl Default for MockConfigSchemasClient {
@@ -96,6 +126,7 @@ impl Default for MockConfigSchemasClient {
         Self {
             hash_schema_result: Box::new(|| Ok(SchemaDigestResponse::default())),
             list_config_schemas_result: Box::new(|| Ok(ConfigSchemaList::default())),
+            find_one_config_schema_result: Box::new(|| Ok(ConfigSchema::default())),
         }
     }
 }
@@ -114,8 +145,16 @@ impl MockConfigSchemasClient {
     {
         self.list_config_schemas_result = Box::new(list_config_schemas_result);
     }
+
+    pub fn set_find_one_config_schema<F>(&mut self, find_one_config_schema_result: F)
+    where
+        F: Fn() -> Result<ConfigSchema, HTTPErr> + Send + Sync + 'static,
+    {
+        self.find_one_config_schema_result = Box::new(find_one_config_schema_result);
+    }
 }
 
+#[async_trait]
 impl ConfigSchemasExt for MockConfigSchemasClient {
     async fn hash_schema(
         &self,
@@ -127,10 +166,17 @@ impl ConfigSchemasExt for MockConfigSchemasClient {
 
     async fn list_config_schemas(
         &self,
-        _: &[String],
-        _: &[String],
+        _: &str,
         _: &str,
     ) -> Result<ConfigSchemaList, HTTPErr> {
         (self.list_config_schemas_result)()
+    }
+
+    async fn find_one_config_schema(
+        &self,
+        _: ConfigSchemaFilters,
+        _: &str,
+    ) -> Result<ConfigSchema, HTTPErr> {
+        (self.find_one_config_schema_result)()
     }
 }
