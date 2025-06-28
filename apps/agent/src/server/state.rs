@@ -24,7 +24,7 @@ type DeviceID = String;
 
 #[derive(Clone, Debug)]
 pub struct ServerState {
-    pub device_id: DeviceID,
+    pub device_id: String,
     pub http_client: Arc<HTTPClient>,
     pub cfg_sch_digest_cache: Arc<ConfigSchemaDigestCache>,
     pub cfg_inst_metadata_cache: Arc<ConfigInstanceCache>,

@@ -6,7 +6,7 @@ use crate::models::config_instance::ConfigInstance;
 use async_trait::async_trait;
 
 #[async_trait]
-pub trait Observer {
+pub trait Observer: Send {
     async fn on_update(&mut self, config_instance: &ConfigInstance) -> Result<(), DeployErr>;
 }
 

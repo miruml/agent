@@ -35,6 +35,10 @@ pub struct RequestContext {
     pub timeout: Duration,
 }
 
+unsafe impl Send for RequestContext {}
+unsafe impl Sync for RequestContext {}
+
+// RequestContext is safe to send between threads since all fields are Send + Sync
 impl fmt::Display for RequestContext {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(

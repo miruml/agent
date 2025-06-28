@@ -20,7 +20,10 @@ use openapi_client::models::{
     UpdateConfigInstanceRequest,
 };
 
-#[allow(async_fn_in_trait)]
+// external crates
+use async_trait::async_trait;
+
+#[async_trait]
 pub trait ConfigInstancesExt: Send + Sync {
     async fn list_config_instances(
         &self,
@@ -35,7 +38,7 @@ pub trait ConfigInstancesExt: Send + Sync {
         token: &str,
     ) -> Result<Vec<BackendConfigInstance>, HTTPErr>
     where
-        I: IntoIterator,
+        I: IntoIterator + Send,
         I::Item: fmt::Display,
     ;
 
@@ -57,6 +60,7 @@ impl HTTPClient {
     }
 }
 
+#[async_trait]
 impl ConfigInstancesExt for HTTPClient {
     async fn list_config_instances(
         &self,
@@ -88,7 +92,7 @@ impl ConfigInstancesExt for HTTPClient {
         token: &str,
     ) -> Result<Vec<BackendConfigInstance>, HTTPErr>
     where
-        I: IntoIterator,
+        I: IntoIterator + Send,
         I::Item: fmt::Display,
     {
         let search_query = format!("search={}", build_search_query(filters));
@@ -136,6 +140,7 @@ impl ConfigInstancesExt for HTTPClient {
     }
 }
 
+#[async_trait]
 impl ConfigInstancesExt for Arc<HTTPClient> {
     async fn list_config_instances(
         &self,
@@ -156,7 +161,7 @@ impl ConfigInstancesExt for Arc<HTTPClient> {
         token: &str,
     ) -> Result<Vec<BackendConfigInstance>, HTTPErr>
     where
-        I: IntoIterator,
+        I: IntoIterator + Send,
         I::Item: fmt::Display,
     {
         self.as_ref().list_all_config_instances(filters, expansions, token).await
