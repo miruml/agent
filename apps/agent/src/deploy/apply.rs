@@ -17,8 +17,8 @@ use crate::filesys::dir::Dir;
 use crate::models::config_instance::{
     ConfigInstanceID,
     ConfigInstance,
-    ConfigInstanceActivityStatus,
-    ConfigInstanceTargetStatus,
+    ActivityStatus,
+    TargetStatus,
 };
 use crate::trace;
 
@@ -257,7 +257,7 @@ where
             if matches_config_schema_and_activity_status(
                 cfg_inst,
                 &cfg_sch_id,
-                ConfigInstanceActivityStatus::Deployed,
+                ActivityStatus::Deployed,
             ) {
                 return true;
             }
@@ -268,7 +268,7 @@ where
                 None => return false,
             };
             matches_filepath_and_activity_status(
-                cfg_inst, filepath, ConfigInstanceActivityStatus::Deployed,
+                cfg_inst, filepath, ActivityStatus::Deployed,
             )
         },
     ).await.map_err(|e| {
@@ -280,7 +280,7 @@ where
 
     // validate that all conflicts do not desire to be deployed
     for conflict in conflicts.iter() {
-        if conflict.target_status == ConfigInstanceTargetStatus::Deployed {
+        if conflict.target_status == TargetStatus::Deployed {
             return Err(DeployErr::ConflictingDeploymentsErr(ConflictingDeploymentsErr {
                 instances: vec![cfg_inst.clone(), conflict.clone()],
                 trace: trace!(),

@@ -8,7 +8,8 @@ use crate::http::{
     search::SearchOperator,
 };
 use crate::models::config_instance::{
-    convert_cfg_inst_storage_to_sdk, ConfigInstanceActivityStatus
+    ActivityStatus,
+    ConfigInstance,
 };
 use crate::services::errors::{
     ServiceErr, ServiceHTTPErr, ServiceCrudErr, DeployedConfigInstanceNotFound
@@ -74,7 +75,7 @@ pub async fn read_deployed<
     let result = instance_cache.find_one_optional(
         "filter by config schema and activity status",
         move |cfg_inst| {
-            matches_config_schema_and_activity_status(cfg_inst, &config_schema_id, ConfigInstanceActivityStatus::Deployed)
+            matches_config_schema_and_activity_status(cfg_inst, &config_schema_id, ActivityStatus::Deployed)
         }
     ).await.map_err(|e| {
         ServiceErr::CrudErr(ServiceCrudErr {
@@ -105,7 +106,7 @@ pub async fn read_deployed<
         })
     })?;
 
-    Ok(convert_cfg_inst_storage_to_sdk(metadata, data))
+    Ok(ConfigInstance::to_sdk(metadata, data))
 }
 
 async fn fetch_config_schema_id<

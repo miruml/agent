@@ -1,7 +1,7 @@
 use crate::http::config_instances::ConfigInstancesExt;
 use crate::models::config_instance::{
-    convert_activity_status_storage_to_backend,
-    convert_error_status_storage_to_backend,
+    ActivityStatus,
+    ErrorStatus,
 };
 use crate::storage::config_instances::ConfigInstanceCache;
 use crate::storage::cache::is_dirty_false;
@@ -32,8 +32,8 @@ pub async fn push_config_instances<HTTPClientT: ConfigInstancesExt>(
         let inst = entry.value;
 
         // define the updates
-        let activity_status = convert_activity_status_storage_to_backend(&inst.activity_status);
-        let error_status = convert_error_status_storage_to_backend(&inst.error_status);
+        let activity_status = ActivityStatus::to_backend(&inst.activity_status);
+        let error_status = ErrorStatus::to_backend(&inst.error_status);
         let updates = UpdateConfigInstanceRequest {
             activity_status: Some(activity_status),
             error_status: Some(error_status),

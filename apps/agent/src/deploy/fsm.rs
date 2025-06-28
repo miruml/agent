@@ -4,8 +4,7 @@ use std::cmp::min;
 // internal crates
 use crate::errors::MiruError;
 use crate::models::config_instance::{
-    ConfigInstance, ConfigInstanceActivityStatus, ConfigInstanceErrorStatus,
-    ConfigInstanceTargetStatus,
+    ConfigInstance, ActivityStatus, ErrorStatus, TargetStatus,
 };
 
 // external crates
@@ -22,34 +21,34 @@ pub enum NextAction {
 
 pub fn next_action(instance: &ConfigInstance, use_cooldown: bool) -> NextAction {
     // check for cooldown
-    if use_cooldown && instance.is_cooling_down() {
+    if use_cooldown && instance.is_in_cooldown() {
         return NextAction::Wait(instance.cooldown_ends_at.signed_duration_since(Utc::now()));
     }
 
     // do nothing if the status is failed
-    if instance.error_status == ConfigInstanceErrorStatus::Failed {
+    if instance.error_status == ErrorStatus::Failed {
         return NextAction::None;
     }
 
     // determine the next action
     match instance.target_status {
-        ConfigInstanceTargetStatus::Created => match instance.activity_status {
-            ConfigInstanceActivityStatus::Created => NextAction::None,
-            ConfigInstanceActivityStatus::Queued => NextAction::None,
-            ConfigInstanceActivityStatus::Deployed => NextAction::Remove,
-            ConfigInstanceActivityStatus::Removed => NextAction::None,
+        TargetStatus::Created => match instance.activity_status {
+            ActivityStatus::Created => NextAction::None,
+            ActivityStatus::Queued => NextAction::None,
+            ActivityStatus::Deployed => NextAction::Remove,
+            ActivityStatus::Removed => NextAction::None,
         },
-        ConfigInstanceTargetStatus::Deployed => match instance.activity_status {
-            ConfigInstanceActivityStatus::Created => NextAction::Deploy,
-            ConfigInstanceActivityStatus::Queued => NextAction::Deploy,
-            ConfigInstanceActivityStatus::Deployed => NextAction::None,
-            ConfigInstanceActivityStatus::Removed => NextAction::Deploy,
+        TargetStatus::Deployed => match instance.activity_status {
+            ActivityStatus::Created => NextAction::Deploy,
+            ActivityStatus::Queued => NextAction::Deploy,
+            ActivityStatus::Deployed => NextAction::None,
+            ActivityStatus::Removed => NextAction::Deploy,
         },
-        ConfigInstanceTargetStatus::Removed => match instance.activity_status {
-            ConfigInstanceActivityStatus::Created => NextAction::Remove,
-            ConfigInstanceActivityStatus::Queued => NextAction::Remove,
-            ConfigInstanceActivityStatus::Deployed => NextAction::Remove,
-            ConfigInstanceActivityStatus::Removed => NextAction::None,
+        TargetStatus::Removed => match instance.activity_status {
+            ActivityStatus::Created => NextAction::Remove,
+            ActivityStatus::Queued => NextAction::Remove,
+            ActivityStatus::Deployed => NextAction::Remove,
+            ActivityStatus::Removed => NextAction::None,
         },
     }
 }
@@ -72,8 +71,8 @@ pub struct Settings {
 // ================================== TRANSITIONS ================================== //
 #[derive(Debug)]
 struct TransitionOptions {
-    activity_status: Option<ConfigInstanceActivityStatus>,
-    error_status: Option<ConfigInstanceErrorStatus>,
+    activity_status: Option<ActivityStatus>,
+    error_status: Option<ErrorStatus>,
     attempts: Option<u32>,
     cooldown: Option<TimeDelta>,
 }
@@ -100,16 +99,16 @@ fn transition(mut instance: ConfigInstance, options: TransitionOptions) -> Confi
 
 // ---------------------------- successful transitions ----------------------------= //
 pub fn deploy(instance: ConfigInstance) -> ConfigInstance {
-    let new_activity_status = ConfigInstanceActivityStatus::Deployed;
+    let new_activity_status = ActivityStatus::Deployed;
     transition(instance, get_success_options(new_activity_status))
 }
 
 pub fn remove(instance: ConfigInstance) -> ConfigInstance {
-    let new_activity_status = ConfigInstanceActivityStatus::Removed;
+    let new_activity_status = ActivityStatus::Removed;
     transition(instance, get_success_options(new_activity_status))
 }
 
-fn get_success_options(new_activity_status: ConfigInstanceActivityStatus) -> TransitionOptions {
+fn get_success_options(new_activity_status: ActivityStatus) -> TransitionOptions {
     TransitionOptions {
         activity_status: Some(new_activity_status),
         error_status: None,
@@ -144,9 +143,9 @@ fn get_error_options(
     };
 
     // determine the new status
-    let mut new_error_status = Some(ConfigInstanceErrorStatus::Retrying);
+    let mut new_error_status = Some(ErrorStatus::Retrying);
     if attempts >= settings.max_attempts {
-        new_error_status = Some(ConfigInstanceErrorStatus::Failed);
+        new_error_status = Some(ErrorStatus::Failed);
     }
 
     // determine the cooldown

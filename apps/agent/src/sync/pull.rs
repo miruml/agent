@@ -10,8 +10,7 @@ use crate::http::{
 };
 use crate::models::config_instance::{
     ConfigInstance,
-    convert_cfg_inst_backend_to_storage,
-    convert_target_status_backend_to_storage,
+    TargetStatus,
 };
 use crate::storage::cache::is_dirty_false;
 use crate::storage::config_instances::{
@@ -128,8 +127,8 @@ pub async fn categorize_instances(
         };
 
         // check if the target status matches
-        if storage_inst.target_status != convert_target_status_backend_to_storage(&server_inst.target_status) {
-            storage_inst.target_status = convert_target_status_backend_to_storage(&server_inst.target_status);
+        if storage_inst.target_status != TargetStatus::from_backend(&server_inst.target_status) {
+            storage_inst.target_status = TargetStatus::from_backend(&server_inst.target_status);
             categorized.update_target_status.push(storage_inst);
         } else {
             categorized.other.push(server_inst);
@@ -193,9 +192,7 @@ pub async fn add_unknown_instances_to_storage(
         }
 
         let unknown_inst_id = unknown_inst.id.clone();
-        let storage_inst = convert_cfg_inst_backend_to_storage(
-            unknown_inst, None, None,
-        );
+        let storage_inst = ConfigInstance::from_backend(unknown_inst);
         let overwrite = true;
         if let Err(e) = cfg_inst_cache.write(
             unknown_inst_id.clone(), storage_inst, is_dirty_false, overwrite,
