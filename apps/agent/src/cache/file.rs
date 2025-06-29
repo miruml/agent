@@ -42,6 +42,27 @@ where
     K: CacheKey,
     V: CacheValue,
 {
+    pub async fn new(file: File) -> Result<Self, CacheErr> {
+        if !file.exists() {
+            let empty_cache: HashMap<K, CacheEntry<K, V>> = HashMap::new();
+            file.write_json(
+                &empty_cache,
+                true,
+                true,
+            ).await.map_err(|e| {
+                CacheErr::FileSysErr(CacheFileSysErr {
+                    source: e,
+                    trace: trace!(),
+                })
+            })?;
+        }
+
+        Ok(Self {
+            file,
+            _phantom: std::marker::PhantomData,
+            _phantom2: std::marker::PhantomData,
+        })
+    }
 
     async fn read_cache(&self) -> Result<HashMap<K, CacheEntry<K, V>>, CacheErr> {
         self.file.read_json::<HashMap<K, CacheEntry<K, V>>>()
@@ -142,28 +163,9 @@ where
         buffer_size: usize,
     ) -> Result<(Self, JoinHandle<()>), CacheErr> {
 
-        // if the file doesn't exist, create it
-        if !file.exists() {
-            let empty_cache: HashMap<K, CacheEntry<K, V>> = HashMap::new();
-            file.write_json(
-                &empty_cache,
-                true,
-                true,
-            ).await.map_err(|e| {
-                CacheErr::FileSysErr(CacheFileSysErr {
-                    source: e,
-                    trace: trace!(),
-                })
-            })?;
-        }
-
         let (sender, receiver) = mpsc::channel::<WorkerCommand<K, V>>(buffer_size);
         let worker = Worker {
-            cache: SingleThreadFileCache { 
-                file,
-                _phantom: std::marker::PhantomData,
-                _phantom2: std::marker::PhantomData,
-            },
+            cache: SingleThreadFileCache::new(file).await?,
             receiver,
         };
         let worker_handle = tokio::spawn(worker.run());

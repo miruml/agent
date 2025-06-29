@@ -33,11 +33,11 @@ where
     K: CacheKey,
     V: CacheValue,
 {
+
 // -------------------------------- CUSTOM METHODS --------------------------------- //
     async fn read_entry_impl(&self, key: &K) -> Result<Option<CacheEntry<K, V>>, CacheErr>;
 
-    async fn write_entry_impl(
-        &mut self,
+    async fn write_entry_impl(&mut self,
         entry: &CacheEntry<K, V>,
         overwrite: bool,
     ) -> Result<(), CacheErr>;
@@ -69,7 +69,8 @@ where
 
         // update the last accessed time
         if update_last_accessed {
-            self.update_last_accessed(&mut entry).await?;
+            entry.last_accessed = Utc::now();
+            self.write_entry(&entry, true).await?;
         }
 
         Ok(Some(entry))
@@ -143,12 +144,6 @@ where
 
         // write the entry
         self.write_entry(&entry, overwrite).await?;
-        Ok(())
-    }
-
-    async fn update_last_accessed(&mut self, entry: &mut CacheEntry<K, V>) -> Result<(), CacheErr> {
-        entry.last_accessed = Utc::now();
-        self.write_entry(entry, true).await?;
         Ok(())
     }
 

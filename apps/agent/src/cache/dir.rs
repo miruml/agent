@@ -43,6 +43,20 @@ where
     K: CacheKey,
     V: CacheValue,
 {
+    pub async fn new(dir: Dir) -> Result<Self, CacheErr> {
+        dir.create_if_absent().await.map_err(|e| {
+            CacheErr::FileSysErr(CacheFileSysErr {
+                source: e,
+                trace: trace!(),
+            })
+        })?;
+
+        Ok(Self {
+            dir,
+            _phantom: std::marker::PhantomData,
+            _phantom2: std::marker::PhantomData,
+        })
+    }
 
     fn cache_entry_file(&self, key: &K) -> File {
         let mut filename = format!("{}.json", key.to_string());
@@ -185,20 +199,16 @@ where
     K: ConcurrentCacheKey,
     V: ConcurrentCacheValue,
 {
-    pub fn spawn(
+    pub async fn spawn(
         dir: Dir,
         buffer_size: usize,
-    ) -> (Self, JoinHandle<()>) {
+    ) -> Result<(Self, JoinHandle<()>), CacheErr> {
         let (sender, receiver) = mpsc::channel::<WorkerCommand<K, V>>(buffer_size);
         let worker = Worker {
-            cache: SingleThreadDirCache { 
-                dir,
-                _phantom: std::marker::PhantomData,
-                _phantom2: std::marker::PhantomData,
-            },
+            cache: SingleThreadDirCache::new(dir).await?,
             receiver,
         };
         let worker_handle = tokio::spawn(worker.run());
-        (Self::new(sender), worker_handle)
+        Ok((Self::new(sender), worker_handle))
     }
 }

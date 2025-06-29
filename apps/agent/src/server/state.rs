@@ -96,7 +96,14 @@ impl ServerState {
         let cfg_inst_metadata_cache = Arc::new(cfg_inst_metadata_cache);
 
         let (cfg_inst_data_cache, cfg_inst_data_cache_handle) =
-            ConfigInstanceDataCache::spawn(layout.config_instance_data_cache(), 64);
+            ConfigInstanceDataCache::spawn(layout.config_instance_data_cache(), 64)
+                .await
+                .map_err(|e| {
+                    ServerErr::CacheErr(ServerCacheErr {
+                        source: Box::new(e),
+                        trace: trace!(),
+                    })
+                })?;
         let cfg_inst_data_cache = Arc::new(cfg_inst_data_cache);
 
         // initialize the token manager
