@@ -78,14 +78,14 @@ where
 
         // update the config instances to apply
         for removal in instance_results.removed.into_iter() {
-            if fsm::is_action_required(&removal) {
+            if fsm::is_action_required(fsm::next_action(&removal, true)) {
                 cfg_insts_to_apply.insert(removal.id.clone(), removal);
             } else {
                 applied_cfg_insts.insert(removal.id.clone(), removal);
             }
         }
         for deployment in instance_results.deployed.into_iter() {
-            if fsm::is_action_required(&deployment) {
+            if fsm::is_action_required(fsm::next_action(&deployment, true)) {
                 cfg_insts_to_apply.insert(deployment.id.clone(), deployment);
             } else {
                 applied_cfg_insts.insert(deployment.id.clone(), deployment);

@@ -129,7 +129,7 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
 
         // read the config instances which need to be applied
         let cfg_insts_to_apply = cfg_inst_cache.find_where(
-            |instance| { fsm::is_action_required(instance) }
+            |instance| { fsm::is_action_required(fsm::next_action(instance, true)) }
         ).await.map_err(|e| SyncErr::CrudErr(SyncCrudErr {
             source: e,
             trace: trace!(),

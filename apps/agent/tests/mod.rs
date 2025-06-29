@@ -2,6 +2,7 @@ pub mod auth;
 pub mod cache;
 pub mod crud;
 pub mod crypt;
+pub mod deploy;
 pub mod filesys;
 pub mod http;
 pub mod logs;

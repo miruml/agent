@@ -20,14 +20,14 @@ pub enum NextAction {
 }
 
 pub fn next_action(instance: &ConfigInstance, use_cooldown: bool) -> NextAction {
-    // check for cooldown
-    if use_cooldown && instance.is_in_cooldown() {
-        return NextAction::Wait(instance.cooldown_ends_at.signed_duration_since(Utc::now()));
-    }
-
     // do nothing if the status is failed
     if instance.error_status == ErrorStatus::Failed {
         return NextAction::None;
+    }
+
+    // check for cooldown
+    if use_cooldown && instance.is_in_cooldown() {
+        return NextAction::Wait(instance.cooldown_ends_at.signed_duration_since(Utc::now()));
     }
 
     // determine the next action
@@ -53,8 +53,8 @@ pub fn next_action(instance: &ConfigInstance, use_cooldown: bool) -> NextAction 
     }
 }
 
-pub fn is_action_required(cfg_inst: &ConfigInstance) -> bool {
-    match next_action(cfg_inst, true) {
+pub fn is_action_required(action: NextAction) -> bool {
+    match action {
         NextAction::None => false,
         NextAction::Deploy => true,
         NextAction::Remove => true,
@@ -150,6 +150,7 @@ fn get_error_options(
 
     // determine the cooldown
     let cooldown = calc_exp_backoff(
+        2,
         settings.exp_backoff_base_secs,
         attempts,
         settings.max_cooldown_secs,
@@ -163,6 +164,11 @@ fn get_error_options(
     }
 }
 
-pub fn calc_exp_backoff(base: u32, exp: u32, max: u32) -> u32 {
-    min(2u32.saturating_pow(exp).saturating_mul(base), max)
+pub fn calc_exp_backoff(
+    k: u32,
+    base: u32,
+    exp: u32,
+    max: u32,
+) -> u32 {
+    min(k.saturating_mul(base.saturating_pow(exp)), max)
 }
