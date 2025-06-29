@@ -143,8 +143,11 @@ impl Dir {
 
     /// Create a new Dir instance using a relative path from the current directory
     pub fn subdir<T: Into<PathBuf>>(&self, rel_path: T) -> Dir {
+        let rel_path = rel_path.into();
+        let rel_path_stripped = rel_path.strip_prefix(std::path::MAIN_SEPARATOR.to_string())
+            .unwrap_or(&rel_path);
         let mut new_dir = self.path.clone();
-        new_dir = new_dir.join(rel_path.into());
+        new_dir = new_dir.join(rel_path_stripped);
         Dir::new(new_dir)
     }
 
@@ -196,7 +199,11 @@ impl Dir {
 
     /// Create a new File instance using a filename appended to this directory
     pub fn file(&self, file_name: &str) -> File {
-        let file_path = self.path.join(file_name);
+        use std::path::Path;
+        let file_name_path = Path::new(file_name);
+        let file_name_stripped = file_name_path.strip_prefix(std::path::MAIN_SEPARATOR.to_string())
+            .unwrap_or(file_name_path);
+        let file_path = self.path.join(file_name_stripped);
         File::new(file_path)
     }
 

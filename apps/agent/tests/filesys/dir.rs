@@ -259,6 +259,21 @@ mod subdir {
     }
 
     #[test]
+    fn nested_subdir_leading_slash() {
+        let base_path = PathBuf::from("base").join("path");
+        let base_dir = Dir::new(base_path);
+        let nested_path = PathBuf::from("root").join("subdir");
+        let nested = base_dir.subdir(nested_path);
+
+        let expected_path = PathBuf::from("base")
+            .join("path")
+            .join("root")
+            .join("subdir");
+        assert_eq!(nested.path(), &expected_path);
+        assert_eq!(nested.name().unwrap(), "subdir");
+    }
+
+    #[test]
     fn nested_subdirs() {
         let base_path = PathBuf::from("base").join("path");
         let base_dir = Dir::new(base_path);
@@ -388,6 +403,14 @@ mod create_if_absent {
 
 mod file {
     use super::*;
+
+    #[test]
+    fn filename_with_leading_slash() {
+        let dir_path = PathBuf::from("tmp").join("test_dir");
+        let dir = Dir::new(dir_path.clone());
+        let file = dir.file("/root/test.txt");
+        assert_eq!(file.path(), &dir_path.join("root").join("test.txt"));
+    }
 
     #[test]
     fn abs_dir() {
