@@ -7,6 +7,7 @@ pub mod filesys;
 pub mod http;
 pub mod logs;
 pub mod models;
+pub mod mock;
 // pub mod server;
 // pub mod services;
 pub mod storage;

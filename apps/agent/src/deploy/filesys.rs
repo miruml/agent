@@ -11,6 +11,7 @@ use crate::filesys::dir::Dir;
 use crate::models::config_instance::{
     ConfigInstance,
     ConfigInstanceID,
+    TargetStatus,
 };
 use crate::trace;
 
@@ -124,7 +125,13 @@ where
         }
         Err(e) => {
             error!("Error deploying config instance '{}': {:?}", instance.id, e);
-            instance = fsm::error(instance, settings, &e);
+            let increment_attempts = instance.target_status == TargetStatus::Deployed;
+            instance = fsm::error(
+                instance,
+                settings,
+                &e,
+                increment_attempts,
+            );
             if let Err(e) = on_update(observers, &instance).await {
                 return (instance, Err(e));
             }
@@ -214,7 +221,13 @@ async fn remove(
                 "Error removing config instance '{}': {:?}",
                 instance.id, e
             );
-            instance = fsm::error(instance, settings, &e);
+            let increment_attempts = instance.target_status == TargetStatus::Removed;
+            instance = fsm::error(
+                instance,
+                settings,
+                &e,
+                increment_attempts,
+            );
             if let Err(e) = on_update(observers, &instance).await {
                 return (instance, Err(e));
             }

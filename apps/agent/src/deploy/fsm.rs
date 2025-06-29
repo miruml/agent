@@ -63,9 +63,9 @@ pub fn is_action_required(action: NextAction) -> bool {
 }
 
 pub struct Settings {
-    max_attempts: u32,
-    exp_backoff_base_secs: u32,
-    max_cooldown_secs: u32,
+    pub max_attempts: u32,
+    pub exp_backoff_base_secs: u32,
+    pub max_cooldown_secs: u32,
 }
 
 // ================================== TRANSITIONS ================================== //
@@ -100,29 +100,90 @@ fn transition(mut instance: ConfigInstance, options: TransitionOptions) -> Confi
 // ---------------------------- successful transitions ----------------------------= //
 pub fn deploy(instance: ConfigInstance) -> ConfigInstance {
     let new_activity_status = ActivityStatus::Deployed;
-    transition(instance, get_success_options(new_activity_status))
+    let options = get_success_options(&instance, new_activity_status);
+    transition(instance, options)
 }
 
 pub fn remove(instance: ConfigInstance) -> ConfigInstance {
     let new_activity_status = ActivityStatus::Removed;
-    transition(instance, get_success_options(new_activity_status))
+    let options = get_success_options(&instance, new_activity_status);
+    transition(instance, options)
 }
 
-fn get_success_options(new_activity_status: ActivityStatus) -> TransitionOptions {
+fn get_success_options(
+    instance: &ConfigInstance,
+    new_activity_status: ActivityStatus,
+) -> TransitionOptions {
     TransitionOptions {
         activity_status: Some(new_activity_status),
-        error_status: None,
+        error_status: get_success_error_status(instance, new_activity_status),
         // reset attempts and cooldown
         attempts: Some(0),
         cooldown: Some(TimeDelta::zero()),
     }
 }
 
+fn get_success_error_status(
+    instance: &ConfigInstance,
+    new_activity_status: ActivityStatus,
+) -> Option<ErrorStatus> {
+    // the error status only needs to be updated if it is currently retrying. If is 
+    // failed then it can never exit failed and if it is None then it is already correct
+    if instance.error_status != ErrorStatus::Retrying {
+        return None;
+    }
+
+    // check if the new activity status matches the instance's target status
+    let recovered = match instance.target_status {
+        TargetStatus::Created => {
+            // the created status is a bit interesting in that we're satisfied with the
+            // instance being in the queued or removed state if it's target status is
+            // created. Thus it recovers as long as it is not deployed.
+            match new_activity_status {
+                ActivityStatus::Created => true,
+                ActivityStatus::Queued => true,
+                ActivityStatus::Deployed => false,
+                ActivityStatus::Removed => true,
+            }
+        }
+        TargetStatus::Deployed => {
+            match new_activity_status {
+                ActivityStatus::Created => false,
+                ActivityStatus::Queued => false,
+                ActivityStatus::Deployed => true,
+                ActivityStatus::Removed => false,
+            }
+        }
+        TargetStatus::Removed => {
+            match new_activity_status {
+                ActivityStatus::Created => false,
+                ActivityStatus::Queued => false,
+                ActivityStatus::Deployed => false,
+                ActivityStatus::Removed => true,
+            }
+        }
+    };
+
+    if recovered {
+        Some(ErrorStatus::None)
+    } else {
+        None
+    }
+}
+
 // ----------------------------- error transitions --------------------------------- //
-pub fn error(instance: ConfigInstance, settings: &Settings, e: &impl MiruError) -> ConfigInstance {
+pub fn error(
+    instance: ConfigInstance,
+    settings: &Settings,
+    e: &impl MiruError,
+    increment_attempts: bool,
+) -> ConfigInstance {
     let options = get_error_options(
-        &instance, should_increment_attempts(e), settings,
+        &instance,
+        increment_attempts && should_increment_attempts(e),
+        settings,
     );
+    println!("options: {:?}", options);
     transition(instance, options)
 }
 
@@ -144,7 +205,9 @@ fn get_error_options(
 
     // determine the new status
     let mut new_error_status = Some(ErrorStatus::Retrying);
-    if attempts >= settings.max_attempts {
+    println!("attempts: {}", attempts);
+    println!("max_attempts: {}", settings.max_attempts);
+    if attempts >= settings.max_attempts || instance.error_status == ErrorStatus::Failed {
         new_error_status = Some(ErrorStatus::Failed);
     }
 
