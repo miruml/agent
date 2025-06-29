@@ -1,34 +1,36 @@
 // standard library
 use std::collections::HashMap;
-use std::cmp::Eq;
 use std::fmt::Debug;
-use std::hash::Hash;
 
 // internal crates
 use crate::cache::{
-    single_thread::SingleThreadCache,
-    concurrent::{ConcurrentCache, Worker, WorkerCommand},
+    concurrent::{
+        ConcurrentCache,
+        Worker,
+        WorkerCommand,
+        ConcurrentCacheKey,
+        ConcurrentCacheValue,
+    },
     entry::CacheEntry,
     errors::{
         CacheErr,
         CacheFileSysErr,
         CannotOverwriteCacheElement,
     },
+    single_thread::{SingleThreadCache, CacheKey, CacheValue},
 };
 use crate::filesys::{file::File, path::PathExt};
 use crate::trace;
 
 // external crates
-use serde::de::DeserializeOwned;
-use serde::Serialize;
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
 
 #[derive(Debug)]
 pub struct SingleThreadFileCache<K, V>
 where
-    K: Debug + Clone + ToString + Serialize + DeserializeOwned + Eq + Hash,
-    V: Debug + Clone + Serialize + DeserializeOwned,
+    K: CacheKey,
+    V: CacheValue,
 {
     file: File,
     _phantom: std::marker::PhantomData<K>,
@@ -37,8 +39,8 @@ where
 
 impl<K, V> SingleThreadFileCache<K, V>
 where
-    K: Debug + Clone + ToString + Serialize + DeserializeOwned + Eq + Hash,
-    V: Debug + Clone + Serialize + DeserializeOwned,
+    K: CacheKey,
+    V: CacheValue,
 {
 
     async fn read_cache(&self) -> Result<HashMap<K, CacheEntry<K, V>>, CacheErr> {
@@ -70,8 +72,8 @@ where
 
 impl<K, V> SingleThreadCache<K, V> for SingleThreadFileCache<K, V>
 where
-    K: Debug + Clone + ToString + Serialize + DeserializeOwned + Eq + Hash,
-    V: Debug + Clone + Serialize + DeserializeOwned,
+    K: CacheKey,
+    V: CacheValue,
 {
     async fn read_entry_impl(&self, key: &K) -> Result<Option<CacheEntry<K, V>>, CacheErr> {
         let cache = self.read_cache().await?;
@@ -132,8 +134,8 @@ pub type FileCache<K, V> = ConcurrentCache<SingleThreadFileCache<K, V>, K, V>;
 
 impl<K, V> FileCache<K, V>
 where
-    K: Debug + Clone + Send + Sync + ToString + Serialize + DeserializeOwned + Eq + Hash + 'static,
-    V: Debug + Clone + Send + Sync + Serialize + DeserializeOwned + 'static,
+    K: ConcurrentCacheKey,
+    V: ConcurrentCacheValue,
 {
     pub async fn spawn(
         file: File,

@@ -1,13 +1,11 @@
 // standard library
 use std::fmt::Debug;
-use std::hash::Hash;
-use std::cmp::Eq;
 
 // internal crates
 use crate::cache::{
     entry::CacheEntry,
     errors::{CacheErr, ReceiveActorMessageErr, SendActorMessageErr},
-    single_thread::SingleThreadCache,
+    single_thread::{SingleThreadCache, CacheKey, CacheValue},
 };
 use crate::crud::{
     prelude::*,
@@ -22,6 +20,14 @@ use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
 use tracing::{error, info};
 
+pub trait ConcurrentCacheKey: CacheKey + Send + Sync + 'static {}
+
+impl<K> ConcurrentCacheKey for K where K: CacheKey + Send + Sync + 'static {}
+
+pub trait ConcurrentCacheValue: CacheValue + Send + Sync + 'static {}
+
+impl<V> ConcurrentCacheValue for V where V: CacheValue + Send + Sync + 'static {}
+
 // ============================== WORKER COMMANDS ================================== //
 type QueryEntryFilter<K, V> = Box<dyn Fn(&CacheEntry<K, V>) -> bool + Send + Sync>;
 type QueryValueFilter<V> = Box<dyn Fn(&V) -> bool + Send + Sync>;
@@ -32,6 +38,9 @@ where
     K: Clone + Send + Sync + ToString + Serialize + DeserializeOwned,
     V: Clone + Send + Sync + Serialize + DeserializeOwned,
 {
+    Shutdown {
+        respond_to: oneshot::Sender<Result<(), CacheErr>>,
+    },
     ReadEntryOptional {
         key: K,
         update_last_accessed: bool,
@@ -63,9 +72,6 @@ where
     },
     Prune {
         max_size: usize,
-        respond_to: oneshot::Sender<Result<(), CacheErr>>,
-    },
-    Shutdown {
         respond_to: oneshot::Sender<Result<(), CacheErr>>,
     },
     FindEntriesWhere {
@@ -102,8 +108,8 @@ where
 pub struct Worker<SingleThreadCacheT, K, V>
 where
     SingleThreadCacheT: SingleThreadCache<K, V>,
-    K: Debug + Clone + ToString + Send + Sync + Serialize + DeserializeOwned + Eq + Hash,
-    V: Debug + Clone + Send + Sync + Serialize + DeserializeOwned,
+    K: ConcurrentCacheKey,
+    V: ConcurrentCacheValue,
 {
     pub cache: SingleThreadCacheT,
     pub receiver: Receiver<WorkerCommand<K, V>>,
@@ -112,8 +118,8 @@ where
 impl<SingleThreadCacheT, K, V> Worker<SingleThreadCacheT, K, V>
 where
     SingleThreadCacheT: SingleThreadCache<K, V>,
-    K: Debug + Clone + ToString + Send + Sync + Serialize + DeserializeOwned + Eq + Hash,
-    V: Debug + Clone + Send + Sync + Serialize + DeserializeOwned,
+    K: ConcurrentCacheKey,
+    V: ConcurrentCacheValue,
 {
     pub async fn run(mut self) {
         while let Some(cmd) = self.receiver.recv().await {
@@ -254,8 +260,8 @@ where
 pub struct ConcurrentCache<SingleThreadCacheT, K, V>
 where
     SingleThreadCacheT: SingleThreadCache<K, V>,
-    K: Debug + Clone + Send + Sync + ToString + Serialize + DeserializeOwned + Eq + Hash + 'static,
-    V: Debug + Clone + Send + Sync + Serialize + DeserializeOwned + 'static,
+    K: ConcurrentCacheKey,
+    V: ConcurrentCacheValue,
 {
     sender: Sender<WorkerCommand<K, V>>,
     _phantom: std::marker::PhantomData<SingleThreadCacheT>,
@@ -264,8 +270,8 @@ where
 impl<SingleThreadCacheT, K, V> ConcurrentCache<SingleThreadCacheT, K, V>
 where
     SingleThreadCacheT: SingleThreadCache<K, V>,
-    K: Debug + Clone + Send + Sync + ToString + Serialize + DeserializeOwned + Eq + Hash + 'static,
-    V: Debug + Clone + Send + Sync + Serialize + DeserializeOwned + 'static,
+    K: ConcurrentCacheKey,
+    V: ConcurrentCacheValue,
 {
     pub fn new(sender: Sender<WorkerCommand<K, V>>) -> Self {
         Self { sender, _phantom: std::marker::PhantomData }
@@ -275,8 +281,8 @@ where
 impl<SingleThreadCacheT, K, V> ConcurrentCache<SingleThreadCacheT, K, V>
 where
     SingleThreadCacheT: SingleThreadCache<K, V>,
-    K: Debug + Clone + Send + Sync + ToString + Serialize + DeserializeOwned + Eq + Hash + 'static,
-    V: Debug + Clone + Send + Sync + Serialize + DeserializeOwned + 'static,
+    K: ConcurrentCacheKey,
+    V: ConcurrentCacheValue,
 {
     pub async fn shutdown(&self) -> Result<(), CacheErr> {
         info!("Shutting down {} cache...", std::any::type_name::<V>());
@@ -657,8 +663,8 @@ where
 impl<SingleThreadCacheT, K, V> Find<K, V> for ConcurrentCache<SingleThreadCacheT, K, V>
 where
     SingleThreadCacheT: SingleThreadCache<K, V>,
-    K: Debug + Clone + Send + Sync + ToString + Serialize + DeserializeOwned + Eq + Hash + 'static,
-    V: Debug + Clone + Send + Sync + Serialize + DeserializeOwned + 'static,
+    K: ConcurrentCacheKey,
+    V: ConcurrentCacheValue,
 {
     async fn find_where<F>(&self, filter: F) -> Result<Vec<V>, CrudErr>
     where
@@ -703,8 +709,8 @@ where
 impl<SingleThreadCacheT, K, V> Read<K, V> for ConcurrentCache<SingleThreadCacheT, K, V>
 where
     SingleThreadCacheT: SingleThreadCache<K, V>,
-    K: Debug + Clone + Send + Sync + ToString + Serialize + DeserializeOwned + Eq + Hash + 'static,
-    V: Debug + Clone + Send + Sync + Serialize + DeserializeOwned + 'static,
+    K: ConcurrentCacheKey,
+    V: ConcurrentCacheValue,
 {
     async fn read(&self, key: K) -> Result<V, CrudErr> {
         self.read_impl(key).await.map_err(|e| CrudErr::CacheErr(CrudCacheErr {

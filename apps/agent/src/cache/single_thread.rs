@@ -1,28 +1,37 @@
 // standard library
-use std::cmp::Eq;
 use std::fmt::Debug;
-use std::hash::Hash;
 use std::collections::HashMap;
+use std::hash::Hash;
 
 // internal crates
-use crate::cache::entry::CacheEntry;
-use crate::cache::errors::{
-    CacheElementNotFound, FoundTooManyCacheElements, CacheErr,
+use crate::cache::{
+    entry::CacheEntry,
+    errors::{
+        CacheElementNotFound, FoundTooManyCacheElements, CacheErr,
+    },
 };
 use crate::trace;
 
 // external crates
 use chrono::Utc;
-use serde::de::DeserializeOwned;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 use tracing::info;
 
+
+pub trait CacheKey: Debug + Clone + ToString + Serialize + DeserializeOwned + Eq + Hash {}
+
+impl<K> CacheKey for K where K: Debug + Clone + ToString + Serialize + DeserializeOwned + Eq + Hash {}
+
+pub trait CacheValue: Debug + Clone + Serialize + DeserializeOwned {}
+
+impl<V> CacheValue for V where V: Debug + Clone + Serialize + DeserializeOwned {}
 
 #[allow(async_fn_in_trait)]
 pub trait SingleThreadCache<K, V>
 where
-    K: Debug + ToString + Serialize + DeserializeOwned + Eq + Hash,
-    V: Debug + Clone + Serialize + DeserializeOwned 
+    K: CacheKey,
+    V: CacheValue,
 {
 // -------------------------------- CUSTOM METHODS --------------------------------- //
     async fn read_entry_impl(&self, key: &K) -> Result<Option<CacheEntry<K, V>>, CacheErr>;

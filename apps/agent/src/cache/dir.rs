@@ -1,17 +1,22 @@
 // standard library
 use std::collections::HashMap;
-use std::cmp::Eq;
 use std::fmt::Debug;
-use std::hash::Hash;
 
 // internal crates
 use crate::cache::{
-    single_thread::SingleThreadCache,
-    concurrent::{ConcurrentCache, Worker, WorkerCommand},
+    concurrent::{
+        ConcurrentCache,
+        Worker,
+        WorkerCommand,
+        ConcurrentCacheKey,
+        ConcurrentCacheValue,
+    },
+    single_thread::{SingleThreadCache, CacheKey, CacheValue},
     entry::CacheEntry,
     errors::{
         CacheErr,
         CacheFileSysErr,
+        CannotOverwriteCacheElement,
     },
 };
 use crate::filesys::{dir::Dir, file, file::File, path::PathExt};
@@ -19,16 +24,14 @@ use crate::trace;
 
 // external crates
 use futures::future::try_join_all;
-use serde::de::DeserializeOwned;
-use serde::Serialize;
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
 
 #[derive(Debug)]
 pub struct SingleThreadDirCache<K, V>
 where
-    K: Debug + Clone + ToString + Serialize + DeserializeOwned + Eq + Hash,
-    V: Debug + Clone + Serialize + DeserializeOwned,
+    K: CacheKey,
+    V: CacheValue,
 {
     dir: Dir,
     _phantom: std::marker::PhantomData<K>,
@@ -37,8 +40,8 @@ where
 
 impl<K, V> SingleThreadDirCache<K, V>
 where
-    K: Debug + Clone + ToString + Serialize + DeserializeOwned + Eq + Hash,
-    V: Debug + Clone + Serialize + DeserializeOwned,
+    K: CacheKey,
+    V: CacheValue,
 {
 
     fn cache_entry_file(&self, key: &K) -> File {
@@ -50,8 +53,8 @@ where
 
 impl<K, V> SingleThreadCache<K, V> for SingleThreadDirCache<K, V>
 where
-    K: Debug + Clone + ToString + Serialize + DeserializeOwned + Eq + Hash,
-    V: Debug + Clone + Serialize + DeserializeOwned,
+    K: CacheKey,
+    V: CacheValue,
 {
     async fn read_entry_impl(&self, key: &K) -> Result<Option<CacheEntry<K, V>>, CacheErr> {
         let entry_file = self.cache_entry_file(key);
@@ -75,6 +78,13 @@ where
     async fn write_entry_impl(&mut self, entry: &CacheEntry<K, V>, overwrite: bool) -> Result<(), CacheErr> {
         let atomic = true;
         let entry_file = self.cache_entry_file(&entry.key);
+        if !overwrite && entry_file.exists() {
+            return Err(CacheErr::CannotOverwriteCacheElement(CannotOverwriteCacheElement {
+                key: entry.key.to_string(),
+                trace: trace!(),
+            }));
+        }
+
         entry_file
             .write_json(
                 &entry, overwrite, atomic, 
@@ -172,8 +182,8 @@ pub type DirCache<K, V> = ConcurrentCache<SingleThreadDirCache<K, V>, K, V>;
 
 impl<K, V> DirCache<K, V>
 where
-    K: Debug + Clone + Send + Sync + ToString + Serialize + DeserializeOwned + Eq + Hash + 'static,
-    V: Debug + Clone + Send + Sync + Serialize + DeserializeOwned + 'static,
+    K: ConcurrentCacheKey,
+    V: ConcurrentCacheValue,
 {
     pub fn spawn(
         dir: Dir,

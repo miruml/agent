@@ -154,7 +154,7 @@ impl MiruError for SendActorMessageErr {
 
 impl fmt::Display for SendActorMessageErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "failed to send actor message: {}", self.source)
+        write!(f, "failed to send actor message: {:?}", self.source)
     }
 }
 
