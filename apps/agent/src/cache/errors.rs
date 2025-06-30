@@ -190,12 +190,12 @@ impl fmt::Display for ReceiveActorMessageErr {
 
 #[derive(Debug)]
 pub enum CacheErr {
-    CacheElementNotFound(CacheElementNotFound),
-    CannotOverwriteCacheElement(CannotOverwriteCacheElement),
-    FileSysErr(CacheFileSysErr),
-    FoundTooManyCacheElements(FoundTooManyCacheElements),
-    SendActorMessageErr(SendActorMessageErr),
-    ReceiveActorMessageErr(ReceiveActorMessageErr),
+    CacheElementNotFound(Box<CacheElementNotFound>),
+    CannotOverwriteCacheElement(Box<CannotOverwriteCacheElement>),
+    FileSysErr(Box<CacheFileSysErr>),
+    FoundTooManyCacheElements(Box<FoundTooManyCacheElements>),
+    SendActorMessageErr(Box<SendActorMessageErr>),
+    ReceiveActorMessageErr(Box<ReceiveActorMessageErr>),
 }
 
 macro_rules! forward_error_method {

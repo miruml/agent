@@ -15,19 +15,19 @@ pub async fn setup_storage(layout: &StorageLayout, agent: &Agent) -> Result<(), 
         .write_json(&agent, true, true)
         .await
         .map_err(|e| {
-            StorageErr::FileSysErr(StorageFileSysErr {
+            StorageErr::FileSysErr(Box::new(StorageFileSysErr {
                 source: e,
                 trace: trace!(),
-            })
+            }))
         })?;
 
     // create the auth directory
     let auth_dir = layout.auth_dir();
     auth_dir.root.create_if_absent().await.map_err(|e| {
-        StorageErr::FileSysErr(StorageFileSysErr {
+        StorageErr::FileSysErr(Box::new(StorageFileSysErr {
             source: e,
             trace: trace!(),
-        })
+        }))
     })?;
 
     // initialize the auth file with invalid authentication so that the agent doesn't
@@ -38,10 +38,10 @@ pub async fn setup_storage(layout: &StorageLayout, agent: &Agent) -> Result<(), 
         .write_json(&token, true, true)
         .await
         .map_err(|e| {
-            StorageErr::FileSysErr(StorageFileSysErr {
+            StorageErr::FileSysErr(Box::new(StorageFileSysErr {
                 source: e,
                 trace: trace!(),
-            })
+            }))
         })?;
 
     // generate the public and private keys
@@ -50,10 +50,10 @@ pub async fn setup_storage(layout: &StorageLayout, agent: &Agent) -> Result<(), 
     rsa::gen_key_pair(4096, &private_key_file, &public_key_file, true)
         .await
         .map_err(|e| {
-            StorageErr::CryptErr(StorageCryptErr {
+            StorageErr::CryptErr(Box::new(StorageCryptErr {
                 source: e,
                 trace: trace!(),
-            })
+            }))
         })?;
 
     Ok(())

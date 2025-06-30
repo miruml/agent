@@ -187,17 +187,17 @@ async fn start_server(
 
 async fn refresh_if_expired(token_mngr: &TokenManager) -> Result<(), ServerErr> {
     let token = token_mngr.get_token().await.map_err(|e| {
-        ServerErr::AuthErr(ServerAuthErr {
-            source: Box::new(e),
+        ServerErr::AuthErr(Box::new(ServerAuthErr {
+            source: e,
             trace: trace!(),
-        })
+        }))
     })?;
     if token.is_expired() {
         token_mngr.refresh_token().await.map_err(|e| {
-            ServerErr::AuthErr(ServerAuthErr {
-                source: Box::new(e),
+            ServerErr::AuthErr(Box::new(ServerAuthErr {
+                source: e,
                 trace: trace!(),
-            })
+            }))
         })?;
     }
     Ok(())
@@ -267,10 +267,10 @@ impl ShutdownManager {
     ) -> Result<(), ServerErr> {
         if self.state_params.is_some() {
             return Err(ServerErr::ShutdownMngrDuplicateArgErr(
-                ShutdownMngrDuplicateArgErr {
-                    arg_name: Box::new("state".to_string()),
+                Box::new(ShutdownMngrDuplicateArgErr {
+                    arg_name: "state".to_string(),
                     trace: trace!(),
-                },
+                }),
             ));
         }
         self.state_params = Some(StateShutdownParams {
@@ -286,10 +286,10 @@ impl ShutdownManager {
     ) -> Result<(), ServerErr> {
         if self.token_refresh_handle.is_some() {
             return Err(ServerErr::ShutdownMngrDuplicateArgErr(
-                ShutdownMngrDuplicateArgErr {
-                    arg_name: Box::new("token_refresh_handle".to_string()),
+                Box::new(ShutdownMngrDuplicateArgErr {
+                    arg_name: "token_refresh_handle".to_string(),
                     trace: trace!(),
-                },
+                }),
             ));
         }
         self.token_refresh_handle = Some(token_refresh_handle);
@@ -302,10 +302,10 @@ impl ShutdownManager {
     ) -> Result<(), ServerErr> {
         if self.server_handle.is_some() {
             return Err(ServerErr::ShutdownMngrDuplicateArgErr(
-                ShutdownMngrDuplicateArgErr {
-                    arg_name: Box::new("server_handle".to_string()),
+                Box::new(ShutdownMngrDuplicateArgErr {
+                    arg_name: "server_handle".to_string(),
                     trace: trace!(),
-                },
+                }),
             ));
         }
         self.server_handle = Some(server_handle);
@@ -336,10 +336,10 @@ impl ShutdownManager {
         // 1. refresh
         if let Some(token_refresh_handle) = self.token_refresh_handle.take() {
             token_refresh_handle.await.map_err(|e| {
-                ServerErr::JoinHandleErr(JoinHandleErr {
+                ServerErr::JoinHandleErr(Box::new(JoinHandleErr {
                     source: Box::new(e),
                     trace: trace!(),
-                })
+                }))
             })?;
         } else {
             info!("Token refresh handle not found, skipping token refresh shutdown...");
@@ -348,10 +348,10 @@ impl ShutdownManager {
         // 2. server
         if let Some(server_handle) = self.server_handle.take() {
             server_handle.await.map_err(|e| {
-                ServerErr::JoinHandleErr(JoinHandleErr {
+                ServerErr::JoinHandleErr(Box::new(JoinHandleErr {
                     source: Box::new(e),
                     trace: trace!(),
-                })
+                }))
             })??;
         } else {
             info!("Server handle not found, skipping server shutdown...");

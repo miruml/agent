@@ -15,7 +15,7 @@ use crate::storage::errors::StorageErr;
 
 #[derive(Debug)]
 pub struct ServerCacheErr {
-    pub source: Box<CacheErr>,
+    pub source: CacheErr,
     pub trace: Box<Trace>,
 }
 
@@ -46,8 +46,8 @@ impl fmt::Display for ServerCacheErr {
 
 #[derive(Debug)]
 pub struct MissingDeviceIDErr {
-    pub agent_file_err: Box<FileSysErr>,
-    pub jwt_err: Box<CryptErr>,
+    pub agent_file_err: FileSysErr,
+    pub jwt_err: CryptErr,
     pub trace: Box<Trace>,
 }
 
@@ -77,7 +77,7 @@ impl fmt::Display for MissingDeviceIDErr {
 
 #[derive(Debug)]
 pub struct ShutdownMngrDuplicateArgErr {
-    pub arg_name: Box<String>,
+    pub arg_name: String,
     pub trace: Box<Trace>,
 }
 
@@ -111,7 +111,7 @@ impl fmt::Display for ShutdownMngrDuplicateArgErr {
 
 #[derive(Debug)]
 pub struct ServerAuthErr {
-    pub source: Box<AuthErr>,
+    pub source: AuthErr,
     pub trace: Box<Trace>,
 }
 
@@ -141,7 +141,7 @@ impl fmt::Display for ServerAuthErr {
 
 #[derive(Debug)]
 pub struct ServerCryptErr {
-    pub source: Box<CryptErr>,
+    pub source: CryptErr,
     pub trace: Box<Trace>,
 }
 
@@ -171,7 +171,7 @@ impl fmt::Display for ServerCryptErr {
 
 #[derive(Debug)]
 pub struct ServerFileSysErr {
-    pub source: Box<FileSysErr>,
+    pub source: FileSysErr,
     pub trace: Box<Trace>,
 }
 
@@ -201,7 +201,7 @@ impl fmt::Display for ServerFileSysErr {
 
 #[derive(Debug)]
 pub struct ServerHTTPErr {
-    pub source: Box<HTTPErr>,
+    pub source: HTTPErr,
     pub trace: Box<Trace>,
 }
 
@@ -231,7 +231,7 @@ impl fmt::Display for ServerHTTPErr {
 
 #[derive(Debug)]
 pub struct ServerStorageErr {
-    pub source: Box<StorageErr>,
+    pub source: StorageErr,
     pub trace: Box<Trace>,
 }
 
@@ -261,7 +261,7 @@ impl fmt::Display for ServerStorageErr {
 
 #[derive(Debug)]
 pub struct ServerServiceErr {
-    pub source: Box<ServiceErr>,
+    pub source: ServiceErr,
     pub trace: Box<Trace>,
 }
 
@@ -292,7 +292,7 @@ impl fmt::Display for ServerServiceErr {
 #[derive(Debug)]
 pub struct BindUnixSocketErr {
     pub socket_file: File,
-    pub source: Box<std::io::Error>,
+    pub source: std::io::Error,
     pub trace: Box<Trace>,
 }
 
@@ -326,7 +326,7 @@ impl fmt::Display for BindUnixSocketErr {
 
 #[derive(Debug)]
 pub struct RunAxumServerErr {
-    pub source: Box<std::io::Error>,
+    pub source: std::io::Error,
     pub trace: Box<Trace>,
 }
 
@@ -386,7 +386,7 @@ impl fmt::Display for JoinHandleErr {
 
 #[derive(Debug)]
 pub struct SendShutdownSignalErr {
-    pub service: Box<String>,
+    pub service: String,
     pub trace: Box<Trace>,
 }
 
@@ -416,7 +416,7 @@ impl fmt::Display for SendShutdownSignalErr {
 
 #[derive(Debug)]
 pub struct TimestampConversionErr {
-    pub msg: Box<String>,
+    pub msg: String,
     pub trace: Box<Trace>,
 }
 
@@ -447,24 +447,24 @@ impl fmt::Display for TimestampConversionErr {
 #[derive(Debug)]
 pub enum ServerErr {
     // server errors
-    MissingDeviceIDErr(MissingDeviceIDErr),
-    TimestampConversionErr(TimestampConversionErr),
-    ShutdownMngrDuplicateArgErr(ShutdownMngrDuplicateArgErr),
+    MissingDeviceIDErr(Box<MissingDeviceIDErr>),
+    TimestampConversionErr(Box<TimestampConversionErr>),
+    ShutdownMngrDuplicateArgErr(Box<ShutdownMngrDuplicateArgErr>),
 
     // internal crate errors
-    AuthErr(ServerAuthErr),
-    CacheErr(ServerCacheErr),
-    CryptErr(ServerCryptErr),
-    FileSysErr(ServerFileSysErr),
-    HTTPErr(ServerHTTPErr),
-    StorageErr(ServerStorageErr),
-    ServiceErr(ServerServiceErr),
+    AuthErr(Box<ServerAuthErr>),
+    CacheErr(Box<ServerCacheErr>),
+    CryptErr(Box<ServerCryptErr>),
+    FileSysErr(Box<ServerFileSysErr>),
+    HTTPErr(Box<ServerHTTPErr>),
+    StorageErr(Box<ServerStorageErr>),
+    ServiceErr(Box<ServerServiceErr>),
 
     // external crate errors
-    BindUnixSocketErr(BindUnixSocketErr),
-    RunAxumServerErr(RunAxumServerErr),
-    SendShutdownSignalErr(SendShutdownSignalErr),
-    JoinHandleErr(JoinHandleErr),
+    BindUnixSocketErr(Box<BindUnixSocketErr>),
+    RunAxumServerErr(Box<RunAxumServerErr>),
+    SendShutdownSignalErr(Box<SendShutdownSignalErr>),
+    JoinHandleErr(Box<JoinHandleErr>),
 }
 
 macro_rules! forward_error_method {

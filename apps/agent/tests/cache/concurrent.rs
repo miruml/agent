@@ -6,7 +6,7 @@ use config_agent::cache::{
     single_thread::SingleThreadCache,
 };
 use config_agent::crud::prelude::*;
-use config_agent::crud::errors::{CrudErr, CrudCacheErr};
+use config_agent::crud::errors::CrudErr;
 
 // external crates
 use chrono::Utc;
@@ -541,10 +541,8 @@ pub mod read {
                 .read("1234567890".to_string())
                 .await
                 .unwrap_err(),
-            CrudErr::CacheErr(CrudCacheErr{
-                source: CacheErr::CacheElementNotFound { .. },
-                ..
-            })
+            CrudErr::CacheErr(ref e)
+                if matches!(e.source, CacheErr::CacheElementNotFound { .. })
         ));
     }
 
@@ -734,14 +732,11 @@ pub mod delete {
 
         // should not throw an error since it exists
         cache.delete(key.clone()).await.unwrap();
-
-        // the cache should not exist now
+        let error = cache.read(key.clone()).await.unwrap_err();
         assert!(matches!(
-            cache.read(key.clone()).await.unwrap_err(),
-            CrudErr::CacheErr(CrudCacheErr{
-                source: CacheErr::CacheElementNotFound { .. },
-                ..
-            })
+            error,
+            CrudErr::CacheErr(ref e)
+                if matches!(e.source, CacheErr::CacheElementNotFound { .. })
         ));
     }
 }
@@ -960,10 +955,11 @@ pub mod find_one_optional {
 
         // multiple entries found
         let err = cache.find_one_optional("not value5", |value| value != "value5").await.unwrap_err();
-        assert!(matches!(err, CrudErr::CacheErr(CrudCacheErr{
-            source: CacheErr::FoundTooManyCacheElements { .. },
-            ..
-        })));
+        assert!(matches!(
+            err,
+            CrudErr::CacheErr(ref e)
+                if matches!(e.source, CacheErr::FoundTooManyCacheElements{ .. })
+        ));
     }
 }
 
@@ -1023,10 +1019,7 @@ pub mod find_one {
 
         // no entries found
         let error = cache.find_one("value10", |value| value == "value10").await.unwrap_err();
-        assert!(matches!(error, CrudErr::CacheErr(CrudCacheErr{
-            source: CacheErr::CacheElementNotFound { .. },
-            ..
-        })));
+        assert!(matches!(error, CrudErr::CacheErr(ref e) if matches!(e.source, CacheErr::CacheElementNotFound { .. })));
 
         // one entry found
         let found = cache.find_one("value5", |value| value == "value5").await.unwrap();
@@ -1034,10 +1027,7 @@ pub mod find_one {
 
         // multiple entries found
         let err = cache.find_one("not value5", |value| value != "value5").await.unwrap_err();
-        assert!(matches!(err, CrudErr::CacheErr(CrudCacheErr{
-            source: CacheErr::FoundTooManyCacheElements { .. },
-            ..
-        })));
+        assert!(matches!(err, CrudErr::CacheErr(ref e) if matches!(e.source, CacheErr::FoundTooManyCacheElements{ .. })));
     }
 }
 

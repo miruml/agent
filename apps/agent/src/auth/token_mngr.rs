@@ -53,16 +53,16 @@ impl<HTTPClientT: DevicesExt> SingleThreadTokenManager<HTTPClientT> {
         private_key_file: File,
     ) -> Result<Self, AuthErr> {
         token_file.file.assert_exists().map_err(|e| {
-            AuthErr::FileSysErr(AuthFileSysErr {
+            AuthErr::FileSysErr(Box::new(AuthFileSysErr {
                 source: e,
                 trace: trace!(),
-            })
+            }))
         })?;
         private_key_file.assert_exists().map_err(|e| {
-            AuthErr::FileSysErr(AuthFileSysErr {
+            AuthErr::FileSysErr(Box::new(AuthFileSysErr {
                 source: e,
                 trace: trace!(),
-            })
+            }))
         })?;
         Ok(Self {
             device_id,
@@ -83,10 +83,10 @@ impl<HTTPClientT: DevicesExt> SingleThreadTokenManager<HTTPClientT> {
 
         // update the token file
         self.token_file.write(token).await.map_err(|e| {
-            AuthErr::FileSysErr(AuthFileSysErr {
+            AuthErr::FileSysErr(Box::new(AuthFileSysErr {
                 source: e,
                 trace: trace!(),
-            })
+            }))
         })?;
 
         Ok(())
@@ -102,21 +102,21 @@ impl<HTTPClientT: DevicesExt> SingleThreadTokenManager<HTTPClientT> {
             .issue_device_token(&self.device_id, &payload)
             .await
             .map_err(|e| {
-                AuthErr::HTTPErr(AuthHTTPErr {
+                AuthErr::HTTPErr(Box::new(AuthHTTPErr {
                     source: e,
                     trace: trace!(),
-                })
+                }))
             })?;
 
         // format the response
         let expires_at = resp.expires_at.parse::<DateTime<Utc>>().map_err(|e| {
-            AuthErr::TimestampConversionErr(TimestampConversionErr {
+            AuthErr::TimestampConversionErr(Box::new(TimestampConversionErr {
                 msg: format!(
                     "failed to parse date time '{}' from string: {}",
                     resp.expires_at, e
                 ),
                 trace: trace!(),
-            })
+            }))
         })?;
         Ok(Token {
             token: resp.token,
@@ -136,20 +136,20 @@ impl<HTTPClientT: DevicesExt> SingleThreadTokenManager<HTTPClientT> {
 
         // serialize the claims into a JSON byte vector
         let claims_bytes = serde_json::to_vec(&claims).map_err(|e| {
-            AuthErr::SerdeErr(SerdeErr {
+            AuthErr::SerdeErr(Box::new(SerdeErr {
                 source: e,
                 trace: trace!(),
-            })
+            }))
         })?;
 
         // sign the claims
         let signature_bytes = rsa::sign(&self.private_key_file, &claims_bytes)
             .await
             .map_err(|e| {
-                AuthErr::CryptErr(AuthCryptErr {
+                AuthErr::CryptErr(Box::new(AuthCryptErr {
                     source: e,
                     trace: trace!(),
-                })
+                }))
             })?;
         let signature = base64::encode_bytes_standard(&signature_bytes);
 
@@ -262,16 +262,16 @@ impl TokenManager {
             .send(WorkerCommand::Shutdown { respond_to: send })
             .await
             .map_err(|e| {
-                AuthErr::SendActorMessageErr(SendActorMessageErr {
+                AuthErr::SendActorMessageErr(Box::new(SendActorMessageErr {
                     source: Box::new(e),
                     trace: trace!(),
-                })
+                }))
             })?;
         recv.await.map_err(|e| {
-            AuthErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+            AuthErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })??;
         info!("Token manager shutdown complete");
         Ok(())
@@ -284,16 +284,16 @@ impl TokenManager {
             .send(WorkerCommand::GetToken { respond_to: send })
             .await
             .map_err(|e| {
-                AuthErr::SendActorMessageErr(SendActorMessageErr {
+                AuthErr::SendActorMessageErr(Box::new(SendActorMessageErr {
                     source: Box::new(e),
                     trace: trace!(),
-                })
+                }))
             })?;
         recv.await.map_err(|e| {
-            AuthErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+            AuthErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?
     }
 
@@ -304,16 +304,16 @@ impl TokenManager {
             .send(WorkerCommand::RefreshToken { respond_to: send })
             .await
             .map_err(|e| {
-                AuthErr::SendActorMessageErr(SendActorMessageErr {
+                AuthErr::SendActorMessageErr(Box::new(SendActorMessageErr {
                     source: Box::new(e),
                     trace: trace!(),
-                })
+                }))
             })?;
         recv.await.map_err(|e| {
-            AuthErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+            AuthErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?
     }
 }

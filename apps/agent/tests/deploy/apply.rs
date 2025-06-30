@@ -8,7 +8,7 @@ use config_agent::cache::{
 };
 use config_agent::deploy::{
     apply::{apply, find_instances_to_replace, find_replacement, is_dirty},
-    errors::{DeployErr, ConflictingDeploymentsErr},
+    errors::DeployErr,
     fsm::Settings,
     fsm,
 };
@@ -697,9 +697,7 @@ pub mod find_instances_to_replace_func {
         let error= find_instances_to_replace(
             &instance, &cache,
         ).await.unwrap_err();
-        assert!(matches!(error, DeployErr::ConflictingDeploymentsErr(
-            ConflictingDeploymentsErr { .. }
-        )));
+        assert!(matches!(error, DeployErr::ConflictingDeploymentsErr(_)));
     }
 
 }

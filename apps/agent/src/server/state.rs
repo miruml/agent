@@ -43,19 +43,19 @@ impl ServerState {
         let auth_dir = layout.auth_dir();
         let private_key_file = auth_dir.private_key_file();
         private_key_file.assert_exists().map_err(|e| {
-            ServerErr::FileSysErr(ServerFileSysErr {
-                source: Box::new(e),
+            ServerErr::FileSysErr(Box::new(ServerFileSysErr {
+                source: e,
                 trace: trace!(),
-            })
+            }))
         })?;
         let agent_file = layout.agent_file();
         let token_file = CachedFile::new_with_default(auth_dir.token_file(), Token::default())
             .await
             .map_err(|e| {
-                ServerErr::FileSysErr(ServerFileSysErr {
-                    source: Box::new(e),
+                ServerErr::FileSysErr(Box::new(ServerFileSysErr {
+                    source: e,
                     trace: trace!(),
-                })
+                }))
             })?;
 
         // get the device id
@@ -66,10 +66,10 @@ impl ServerState {
             ConfigSchemaDigestCache::spawn(layout.config_schema_digest_cache(), 64)
                 .await
                 .map_err(|e| {
-                    ServerErr::CacheErr(ServerCacheErr {
-                        source: Box::new(e),
+                    ServerErr::CacheErr(Box::new(ServerCacheErr {
+                        source: e,
                         trace: trace!(),
-                    })
+                    }))
                 })?;
         let cfg_sch_digest_cache = Arc::new(cfg_sch_digest_cache);
 
@@ -77,10 +77,10 @@ impl ServerState {
             ConfigSchemaCache::spawn(layout.config_schema_cache(), 64)
                 .await
                 .map_err(|e| {
-                    ServerErr::CacheErr(ServerCacheErr {
-                        source: Box::new(e),
+                    ServerErr::CacheErr(Box::new(ServerCacheErr {
+                        source: e,
                         trace: trace!(),
-                    })
+                    }))
                 })?;
         let cfg_schema_cache = Arc::new(cfg_schema_cache);
 
@@ -88,10 +88,10 @@ impl ServerState {
             ConfigInstanceCache::spawn(layout.config_instance_metadata_cache(), 100)
                 .await
                 .map_err(|e| {
-                    ServerErr::CacheErr(ServerCacheErr {
-                        source: Box::new(e),
+                    ServerErr::CacheErr(Box::new(ServerCacheErr {
+                        source: e,
                         trace: trace!(),
-                    })
+                    }))
                 })?;
         let cfg_inst_metadata_cache = Arc::new(cfg_inst_metadata_cache);
 
@@ -99,10 +99,10 @@ impl ServerState {
             ConfigInstanceDataCache::spawn(layout.config_instance_data_cache(), 64)
                 .await
                 .map_err(|e| {
-                    ServerErr::CacheErr(ServerCacheErr {
-                        source: Box::new(e),
+                    ServerErr::CacheErr(Box::new(ServerCacheErr {
+                        source: e,
                         trace: trace!(),
-                    })
+                    }))
                 })?;
         let cfg_inst_data_cache = Arc::new(cfg_inst_data_cache);
 
@@ -115,10 +115,10 @@ impl ServerState {
             private_key_file,
         )
         .map_err(|e| {
-            ServerErr::AuthErr(ServerAuthErr {
-                source: Box::new(e),
+            ServerErr::AuthErr(Box::new(ServerAuthErr {
+                source: e,
                 trace: trace!(),
-            })
+            }))
         })?;
         let token_mngr = Arc::new(token_mngr);
 
@@ -161,45 +161,45 @@ impl ServerState {
             .shutdown()
             .await
             .map_err(|e| {
-                ServerErr::CacheErr(ServerCacheErr {
-                    source: Box::new(e),
+                ServerErr::CacheErr(Box::new(ServerCacheErr {
+                    source: e,
                     trace: trace!(),
-                })
+                }))
             })?;
         self.cfg_inst_metadata_cache
             .shutdown()
             .await
             .map_err(|e| {
-                ServerErr::CacheErr(ServerCacheErr {
-                    source: Box::new(e),
+                ServerErr::CacheErr(Box::new(ServerCacheErr {
+                    source: e,
                     trace: trace!(),
-                })
+                }))
             })?;
         self.cfg_inst_data_cache
             .shutdown()
             .await
             .map_err(|e| {
-                ServerErr::CacheErr(ServerCacheErr {
-                    source: Box::new(e),
+                ServerErr::CacheErr(Box::new(ServerCacheErr {
+                    source: e,
                     trace: trace!(),
-                })
+                }))
             })?;
         self.cfg_schema_cache
             .shutdown()
             .await
             .map_err(|e| {
-                ServerErr::CacheErr(ServerCacheErr {
-                    source: Box::new(e),
+                ServerErr::CacheErr(Box::new(ServerCacheErr {
+                    source: e,
                     trace: trace!(),
-                })
+                }))
             })?;
 
         // shutdown the token manager
         self.token_mngr.shutdown().await.map_err(|e| {
-            ServerErr::AuthErr(ServerAuthErr {
-                source: Box::new(e),
+            ServerErr::AuthErr(Box::new(ServerAuthErr {
+                source: e,
                 trace: trace!(),
-            })
+            }))
         })?;
 
         Ok(())
@@ -222,11 +222,11 @@ impl ServerState {
         let device_id = match jwt::extract_device_id(&token.token) {
             Ok(device_id) => device_id,
             Err(e) => {
-                return Err(ServerErr::MissingDeviceIDErr(MissingDeviceIDErr {
-                    agent_file_err: Box::new(agent_file_err),
-                    jwt_err: Box::new(e),
+                return Err(ServerErr::MissingDeviceIDErr(Box::new(MissingDeviceIDErr {
+                    agent_file_err,
+                    jwt_err: e,
                     trace: trace!(),
-                }));
+                })));
             }
         };
 

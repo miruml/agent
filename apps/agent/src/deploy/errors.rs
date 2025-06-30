@@ -194,13 +194,13 @@ impl fmt::Display for DeployStorageErr {
 
 #[derive(Debug)]
 pub enum DeployErr {
-    ConflictingDeploymentsErr(ConflictingDeploymentsErr),
-    InstanceNotDeployableErr(InstanceNotDeployableErr),
+    ConflictingDeploymentsErr(Box<ConflictingDeploymentsErr>),
+    InstanceNotDeployableErr(Box<InstanceNotDeployableErr>),
 
-    CacheErr(DeployCacheErr),
-    CrudErr(DeployCrudErr),
-    FileSysErr(DeployFileSysErr),
-    StorageErr(DeployStorageErr),
+    CacheErr(Box<DeployCacheErr>),
+    CrudErr(Box<DeployCrudErr>),
+    FileSysErr(Box<DeployFileSysErr>),
+    StorageErr(Box<DeployStorageErr>),
 }
 
 macro_rules! forward_error_method {

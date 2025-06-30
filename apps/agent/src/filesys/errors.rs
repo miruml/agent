@@ -8,7 +8,7 @@ use crate::filesys::{dir::Dir, file::File};
 
 #[derive(Debug)]
 pub struct UnknownHomeDirErr {
-    pub source: std::env::VarError,
+    pub source: Box<std::env::VarError>,
     pub trace: Box<Trace>,
 }
 
@@ -308,7 +308,7 @@ impl fmt::Display for UnknownParentDirForFileErr {
 #[derive(Debug)]
 pub struct ReadDirErr {
     pub dir: Dir,
-    pub source: std::io::Error,
+    pub source: Box<std::io::Error>,
     pub trace: Box<Trace>,
 }
 
@@ -339,7 +339,7 @@ impl fmt::Display for ReadDirErr {
 #[derive(Debug)]
 pub struct AtomicWriteFileErr {
     pub file: File,
-    pub source: std::io::Error,
+    pub source: Box<std::io::Error>,
     pub trace: Box<Trace>,
 }
 
@@ -369,7 +369,7 @@ impl fmt::Display for AtomicWriteFileErr {
 
 #[derive(Debug)]
 pub struct ConvertUTF8Err {
-    pub source: std::str::Utf8Error,
+    pub source: Box<std::str::Utf8Error>,
     pub trace: Box<Trace>,
 }
 
@@ -399,7 +399,7 @@ impl fmt::Display for ConvertUTF8Err {
 
 #[derive(Debug)]
 pub struct CopyFileErr {
-    pub source: std::io::Error,
+    pub source: Box<std::io::Error>,
     pub src_file: File,
     pub dest_file: File,
     pub trace: Box<Trace>,
@@ -435,7 +435,7 @@ impl fmt::Display for CopyFileErr {
 
 #[derive(Debug)]
 pub struct CreateDirErr {
-    pub source: std::io::Error,
+    pub source: Box<std::io::Error>,
     pub dir: Dir,
     pub trace: Box<Trace>,
 }
@@ -470,7 +470,7 @@ impl fmt::Display for CreateDirErr {
 
 #[derive(Debug)]
 pub struct CreateSymlinkErr {
-    pub source: std::io::Error,
+    pub source: Box<std::io::Error>,
     pub file: File,
     pub link: File,
     pub trace: Box<Trace>,
@@ -506,7 +506,7 @@ impl fmt::Display for CreateSymlinkErr {
 
 #[derive(Debug)]
 pub struct CreateTmpDirErr {
-    pub source: std::io::Error,
+    pub source: Box<std::io::Error>,
     pub trace: Box<Trace>,
 }
 
@@ -536,7 +536,7 @@ impl fmt::Display for CreateTmpDirErr {
 
 #[derive(Debug)]
 pub struct DeleteDirErr {
-    pub source: std::io::Error,
+    pub source: Box<std::io::Error>,
     pub dir: Dir,
     pub trace: Box<Trace>,
 }
@@ -571,7 +571,7 @@ impl fmt::Display for DeleteDirErr {
 
 #[derive(Debug)]
 pub struct DeleteFileErr {
-    pub source: std::io::Error,
+    pub source: Box<std::io::Error>,
     pub file: File,
     pub trace: Box<Trace>,
 }
@@ -603,7 +603,7 @@ impl fmt::Display for DeleteFileErr {
 #[derive(Debug)]
 pub struct FileMetadataErr {
     pub file: File,
-    pub source: std::io::Error,
+    pub source: Box<std::io::Error>,
     pub trace: Box<Trace>,
 }
 
@@ -637,7 +637,7 @@ impl fmt::Display for FileMetadataErr {
 
 #[derive(Debug)]
 pub struct MoveFileErr {
-    pub source: std::io::Error,
+    pub source: Box<std::io::Error>,
     pub src_file: File,
     pub dest_file: File,
     pub trace: Box<Trace>,
@@ -673,7 +673,7 @@ impl fmt::Display for MoveFileErr {
 
 #[derive(Debug)]
 pub struct OpenFileErr {
-    pub source: std::io::Error,
+    pub source: Box<std::io::Error>,
     pub file: File,
     pub trace: Box<Trace>,
 }
@@ -704,7 +704,7 @@ impl fmt::Display for OpenFileErr {
 
 #[derive(Debug)]
 pub struct ParseJSONErr {
-    pub source: serde_json::Error,
+    pub source: Box<serde_json::Error>,
     pub file: File,
     pub trace: Box<Trace>,
 }
@@ -739,7 +739,7 @@ impl fmt::Display for ParseJSONErr {
 
 #[derive(Debug)]
 pub struct ReadFileErr {
-    pub source: std::io::Error,
+    pub source: Box<std::io::Error>,
     pub file: File,
     pub trace: Box<Trace>,
 }
@@ -770,7 +770,7 @@ impl fmt::Display for ReadFileErr {
 
 #[derive(Debug)]
 pub struct UnknownCurrentDirErr {
-    pub source: std::io::Error,
+    pub source: Box<std::io::Error>,
     pub trace: Box<Trace>,
 }
 
@@ -800,7 +800,7 @@ impl fmt::Display for UnknownCurrentDirErr {
 
 #[derive(Debug)]
 pub struct WriteFileErr {
-    pub source: std::io::Error,
+    pub source: Box<std::io::Error>,
     pub file: File,
     pub trace: Box<Trace>,
 }

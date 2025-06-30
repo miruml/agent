@@ -46,10 +46,10 @@ pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
 
     // check for the raw digest in the storage for the known schema digest
     let digests = cache.read_optional(raw_digest.clone()).await.map_err(|e| {
-        ServiceErr::CrudErr(ServiceCrudErr {
+        ServiceErr::CrudErr(Box::new(ServiceCrudErr {
             source: e,
             trace: trace!(),
-        })
+        }))
     })?;
 
     if let Some(digests) = digests {
@@ -65,10 +65,10 @@ pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
         .hash_schema(&hash_request, token)
         .await
         .map_err(|e| {
-            ServiceErr::HTTPErr(ServiceHTTPErr {
+            ServiceErr::HTTPErr(Box::new(ServiceHTTPErr {
                 source: e,
                 trace: trace!(),
-            })
+            }))
         })?;
 
     // save the hash to the storage module
@@ -87,10 +87,10 @@ pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
         )
         .await
         .map_err(|e| {
-            ServiceErr::CacheErr(ServiceCacheErr {
+            ServiceErr::CacheErr(Box::new(ServiceCacheErr {
                 source: e,
                 trace: trace!(),
-            })
+            }))
         })?;
 
     // return the hash

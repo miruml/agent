@@ -50,10 +50,10 @@ where
                 true,
                 true,
             ).await.map_err(|e| {
-                CacheErr::FileSysErr(CacheFileSysErr {
+                CacheErr::FileSysErr(Box::new(CacheFileSysErr {
                     source: e,
                     trace: trace!(),
-                })
+                }))
             })?;
         }
 
@@ -68,10 +68,10 @@ where
         self.file.read_json::<HashMap<K, CacheEntry<K, V>>>()
             .await
             .map_err(|e| {
-                CacheErr::FileSysErr(CacheFileSysErr {
+                CacheErr::FileSysErr(Box::new(CacheFileSysErr {
                     source: e,
                     trace: trace!(),
-                })
+                }))
             })
     }
 
@@ -83,10 +83,10 @@ where
         )
         .await
         .map_err(|e| {
-                CacheErr::FileSysErr(CacheFileSysErr {
+                CacheErr::FileSysErr(Box::new(CacheFileSysErr {
                     source: e,
                     trace: trace!(),
-                })
+                }))
             })
     }
 }
@@ -104,10 +104,10 @@ where
     async fn write_entry_impl(&mut self, entry: &CacheEntry<K, V>, overwrite: bool) -> Result<(), CacheErr> {
         let mut cache = self.read_cache().await?;
         if !overwrite && cache.contains_key(&entry.key) {
-            return Err(CacheErr::CannotOverwriteCacheElement(CannotOverwriteCacheElement {
+            return Err(CacheErr::CannotOverwriteCacheElement(Box::new(CannotOverwriteCacheElement {
                 key: entry.key.to_string(),
                 trace: trace!(),
-            }));
+            })));
         }
         cache.insert(entry.key.clone(), entry.clone());
         self.write_cache(&cache).await?;

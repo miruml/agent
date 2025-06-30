@@ -465,25 +465,25 @@ impl fmt::Display for MockErr {
 #[derive(Debug)]
 pub enum HTTPErr {
     // HTTP errors
-    RequestFailed(RequestFailed),
-    TimeoutErr(TimeoutErr),
-    CacheErr(CacheErr),
+    RequestFailed(Box<RequestFailed>),
+    TimeoutErr(Box<TimeoutErr>),
+    CacheErr(Box<CacheErr>),
 
     // config schema errors
-    ConfigSchemaNotFound(ConfigSchemaNotFound),
-    TooManyConfigSchemas(TooManyConfigSchemas),
+    ConfigSchemaNotFound(Box<ConfigSchemaNotFound>),
+    TooManyConfigSchemas(Box<TooManyConfigSchemas>),
 
     // external crate errors
-    ConnectionErr(ConnectionErr),
-    DecodeRespBodyErr(DecodeRespBodyErr),
-    InvalidHeaderValueErr(InvalidHeaderValueErr),
-    MarshalJSONErr(MarshalJSONErr),
-    UnmarshalJSONErr(UnmarshalJSONErr),
-    ReqwestErr(ReqwestErr),
-    BuildReqwestErr(BuildReqwestErr),
+    ConnectionErr(Box<ConnectionErr>),
+    DecodeRespBodyErr(Box<DecodeRespBodyErr>),
+    InvalidHeaderValueErr(Box<InvalidHeaderValueErr>),
+    MarshalJSONErr(Box<MarshalJSONErr>),
+    UnmarshalJSONErr(Box<UnmarshalJSONErr>),
+    ReqwestErr(Box<ReqwestErr>),
+    BuildReqwestErr(Box<BuildReqwestErr>),
 
     // mock errors (not for production use)
-    MockErr(MockErr),
+    MockErr(Box<MockErr>),
 }
 
 impl HTTPErr {
@@ -548,28 +548,28 @@ pub fn reqwest_err_to_http_client_err(
     trace: Box<Trace>,
 ) -> HTTPErr {
     if e.is_connect() {
-        HTTPErr::ConnectionErr(ConnectionErr {
+        HTTPErr::ConnectionErr(Box::new(ConnectionErr {
             request: context.clone(),
             source: e,
             trace,
-        })
+        }))
     } else if e.is_decode() {
-        HTTPErr::DecodeRespBodyErr(DecodeRespBodyErr {
+        HTTPErr::DecodeRespBodyErr(Box::new(DecodeRespBodyErr {
             request: context.clone(),
             source: e,
             trace,
-        })
+        }))
     } else if e.is_timeout() {
-        HTTPErr::TimeoutErr(TimeoutErr {
+        HTTPErr::TimeoutErr(Box::new(TimeoutErr {
             msg: e.to_string(),
             request: context.clone(),
             trace,
-        })
+        }))
     } else {
-        HTTPErr::ReqwestErr(ReqwestErr {
+        HTTPErr::ReqwestErr(Box::new(ReqwestErr {
             request: context.clone(),
             source: e,
             trace,
-        })
+        }))
     }
 }

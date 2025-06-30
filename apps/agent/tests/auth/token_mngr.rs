@@ -241,10 +241,10 @@ pub mod refresh_token {
         // prepare the mock http client
         let mock_http_client = MockAuthClient {
             issue_device_token_result: Box::new(move || {
-                Err(HTTPErr::MockErr(MockErr {
+                Err(HTTPErr::MockErr(Box::new(MockErr {
                     is_network_connection_error: false,
                     trace: trace!(),
-                }))
+                })))
             }),
             ..Default::default()
         };

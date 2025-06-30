@@ -87,20 +87,20 @@ impl ConfigSchemasExt for HTTPClient {
         // check that there is only one config schema
         if cfg_schemas.data.len() > 1 {
             let ids = cfg_schemas.data.iter().map(|c| c.id.clone()).collect();
-            return Err(HTTPErr::TooManyConfigSchemas(TooManyConfigSchemas {
+            return Err(HTTPErr::TooManyConfigSchemas(Box::new(TooManyConfigSchemas {
                 expected_count: 1,
                 found_config_schema_ids: ids,
                 query_params,
                 trace: trace!(),
-            }));
+            })));
         }
 
         match cfg_schemas.data.first() {
             Some(config_schema) => Ok(config_schema.clone()),
-            None => Err(HTTPErr::ConfigSchemaNotFound(ConfigSchemaNotFound {
+            None => Err(HTTPErr::ConfigSchemaNotFound(Box::new(ConfigSchemaNotFound {
                 query_params,
                 trace: trace!(),
-            })),
+            }))),
         }
     }
 

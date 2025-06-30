@@ -45,10 +45,10 @@ where
 {
     pub async fn new(dir: Dir) -> Result<Self, CacheErr> {
         dir.create_if_absent().await.map_err(|e| {
-            CacheErr::FileSysErr(CacheFileSysErr {
+            CacheErr::FileSysErr(Box::new(CacheFileSysErr {
                 source: e,
                 trace: trace!(),
-            })
+            }))
         })?;
 
         Ok(Self {
@@ -80,10 +80,10 @@ where
             .read_json::<CacheEntry<K, V>>()
             .await
             .map_err(|e| {
-                CacheErr::FileSysErr(CacheFileSysErr {
+                CacheErr::FileSysErr(Box::new(CacheFileSysErr {
                     source: e,
                     trace: trace!(),
-                })
+                }))
             })?;
 
         Ok(Some(entry))
@@ -93,10 +93,10 @@ where
         let atomic = true;
         let entry_file = self.cache_entry_file(&entry.key);
         if !overwrite && entry_file.exists() {
-            return Err(CacheErr::CannotOverwriteCacheElement(CannotOverwriteCacheElement {
+            return Err(CacheErr::CannotOverwriteCacheElement(Box::new(CannotOverwriteCacheElement {
                 key: entry.key.to_string(),
                 trace: trace!(),
-            }));
+            })));
         }
 
         entry_file
@@ -105,10 +105,10 @@ where
             )
             .await
             .map_err(|e| {
-                CacheErr::FileSysErr(CacheFileSysErr {
+                CacheErr::FileSysErr(Box::new(CacheFileSysErr {
                     source: e,
                     trace: trace!(),
-                })
+                }))
             })?;
         Ok(())
     }
@@ -116,10 +116,10 @@ where
     async fn delete_entry_impl(&mut self, key: &K) -> Result<(), CacheErr> {
         let entry_file = self.cache_entry_file(key);
         entry_file.delete().await.map_err(|e| {
-            CacheErr::FileSysErr(CacheFileSysErr {
+            CacheErr::FileSysErr(Box::new(CacheFileSysErr {
                 source: e,
                 trace: trace!(),
-            })
+            }))
         })?;
         Ok(())
     }
@@ -129,29 +129,29 @@ where
             return Ok(0);
         }
         let files = self.dir.files().await.map_err(|e| {
-            CacheErr::FileSysErr(CacheFileSysErr {
+            CacheErr::FileSysErr(Box::new(CacheFileSysErr {
                 source: e,
                 trace: trace!(),
-            })
+            }))
         })?;
         Ok(files.len())
     }
 
     async fn prune_invalid_entries(&self) -> Result<(), CacheErr> {
         let files = self.dir.files().await.map_err(|e| {
-            CacheErr::FileSysErr(CacheFileSysErr {
+            CacheErr::FileSysErr(Box::new(CacheFileSysErr {
                 source: e,
                 trace: trace!(),
-            })
+            }))
         })?;
         let futures = files.into_iter().map(|file| async move {
             match file.read_json::<CacheEntry<K, V>>().await {
                 Ok(_) => Ok(()),
                 Err(_) => file.delete().await.map_err(|e| {
-                    CacheErr::FileSysErr(CacheFileSysErr {
+                    CacheErr::FileSysErr(Box::new(CacheFileSysErr {
                         source: e,
                         trace: trace!(),
-                    })
+                    }))
                 }),
             }
         });
@@ -161,10 +161,10 @@ where
 
     async fn entries(&self) -> Result<Vec<CacheEntry<K, V>>, CacheErr> {
         let files = self.dir.files().await.map_err(|e| {
-            CacheErr::FileSysErr(CacheFileSysErr {
+            CacheErr::FileSysErr(Box::new(CacheFileSysErr {
                 source: e,
                 trace: trace!(),
-            })
+            }))
         })?;
         let futures = files.into_iter().map(|file| async move {
             match file.read_json::<CacheEntry<K, V>>().await {

@@ -77,10 +77,10 @@ pub async fn read_deployed<
             matches_config_schema_and_activity_status(cfg_inst, &config_schema_id, ActivityStatus::Deployed)
         }
     ).await.map_err(|e| {
-        ServiceErr::CrudErr(ServiceCrudErr {
+        ServiceErr::CrudErr(Box::new(ServiceCrudErr {
             source: e,
             trace: trace!(),
-        })
+        }))
     })?;
 
     // if we can't find the *metadata*, the deployed config instance doesn't exist or
@@ -88,21 +88,21 @@ pub async fn read_deployed<
     let metadata = match result {
         Some(metadata) => metadata,
         None => {
-            return Err(ServiceErr::DeployedConfigInstanceNotFound(DeployedConfigInstanceNotFound {
+            return Err(ServiceErr::DeployedConfigInstanceNotFound(Box::new(DeployedConfigInstanceNotFound {
                 config_type_slug: args.config_type_slug().to_string(),
                 config_schema_digest: args.config_schema_digest().to_string(),
                 trace: trace!(),
-            }));
+            })));
         }
     };
 
     // if we can't find the *data*, there was an internal error somewhere because if
     // the metadata exists, the data should exist too
     let data = instance_data_cache.read(metadata.id.clone()).await.map_err(|e| {
-        ServiceErr::CrudErr(ServiceCrudErr {
+        ServiceErr::CrudErr(Box::new(ServiceCrudErr {
             source: e,
             trace: trace!(),
-        })
+        }))
     })?;
 
     Ok(ConfigInstance::to_sdk(metadata, data))
@@ -127,10 +127,10 @@ async fn fetch_config_schema_id<
             matches_config_type_slug_and_schema_digest(cfg_sch, &config_type_slug, &digest)
         }
     ).await.map_err(|e| {
-        ServiceErr::CrudErr(ServiceCrudErr{
+        ServiceErr::CrudErr(Box::new(ServiceCrudErr{
             source: e,
             trace: trace!(),
-        })
+        }))
     })?;
     if let Some(cfg_schema) = result {
         return Ok(cfg_schema.id.clone());
@@ -153,10 +153,10 @@ async fn fetch_config_schema_id<
         filters,
         token,
     ).await.map_err(|e| {
-        ServiceErr::HTTPErr(ServiceHTTPErr {
+        ServiceErr::HTTPErr(Box::new(ServiceHTTPErr {
             source: e,
             trace: trace!(),
-        })
+        }))
     })?;
 
     Ok(cfg_schema.id)

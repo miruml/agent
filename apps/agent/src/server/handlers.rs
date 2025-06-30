@@ -35,10 +35,10 @@ pub async fn hash_schema(
 ) -> impl IntoResponse {
     let service = async move {
         let token = state.token_mngr.get_token().await.map_err(|e| {
-            ServerErr::AuthErr(ServerAuthErr {
-                source: Box::new(e),
+            ServerErr::AuthErr(Box::new(ServerAuthErr {
+                source: e,
                 trace: trace!(),
-            })
+            }))
         })?;
         hash::hash_schema(
             &payload,
@@ -48,10 +48,10 @@ pub async fn hash_schema(
         )
         .await
         .map_err(|e| {
-            ServerErr::ServiceErr(ServerServiceErr {
-                source: Box::new(e),
+            ServerErr::ServiceErr(Box::new(ServerServiceErr {
+                source: e,
                 trace: trace!(),
-            })
+            }))
         })
     };
 
@@ -76,10 +76,10 @@ pub async fn read_deployed_config_instance(
 ) -> impl IntoResponse {
     let service = async move {
         let token = state.token_mngr.get_token().await.map_err(|e| {
-            ServerErr::AuthErr(ServerAuthErr {
-                source: Box::new(e),
+            ServerErr::AuthErr(Box::new(ServerAuthErr {
+                source: e,
                 trace: trace!(),
-            })
+            }))
         })?;
 
         let args = ReadDeployedArgs {
@@ -98,10 +98,10 @@ pub async fn read_deployed_config_instance(
         )
         .await
         .map_err(|e| {
-            ServerErr::ServiceErr(ServerServiceErr {
-                source: Box::new(e),
+            ServerErr::ServiceErr(Box::new(ServerServiceErr {
+                source: e,
                 trace: trace!(),
-            })
+            }))
         })
     };
 

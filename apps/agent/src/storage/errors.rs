@@ -130,14 +130,14 @@ impl fmt::Display for JoinHandleErr {
 #[derive(Debug)]
 pub enum StorageErr {
     // storage errors
-    AgentNotActivatedErr(AgentNotActivatedErr),
+    AgentNotActivatedErr(Box<AgentNotActivatedErr>),
 
     // internal crate errors
-    CryptErr(StorageCryptErr),
-    FileSysErr(StorageFileSysErr),
+    CryptErr(Box<StorageCryptErr>),
+    FileSysErr(Box<StorageFileSysErr>),
 
     // external crate errors
-    JoinHandleErr(JoinHandleErr),
+    JoinHandleErr(Box<JoinHandleErr>),
 }
 
 macro_rules! forward_error_method {

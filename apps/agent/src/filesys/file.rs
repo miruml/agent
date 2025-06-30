@@ -98,7 +98,7 @@ impl File {
         // read file
         let mut file = TokioFile::open(self.to_string()).await.map_err(|e| {
             FileSysErr::OpenFileErr(OpenFileErr {
-                source: e,
+                source: Box::new(e),
                 file: self.clone(),
                 trace: trace!(),
             })
@@ -106,7 +106,7 @@ impl File {
         let mut buf = Vec::new();
         file.read_to_end(&mut buf).await.map_err(|e| {
             FileSysErr::ReadFileErr(ReadFileErr {
-                source: e,
+                source: Box::new(e),
                 file: self.clone(),
                 trace: trace!(),
             })
@@ -119,7 +119,7 @@ impl File {
 
         let mut file = TokioFile::open(self.to_string()).await.map_err(|e| {
             FileSysErr::OpenFileErr(OpenFileErr {
-                source: e,
+                source: Box::new(e),
                 file: self.clone(),
                 trace: trace!(),
             })
@@ -136,7 +136,7 @@ impl File {
             .await
             .map_err(|e| {
                 FileSysErr::ReadFileErr(ReadFileErr {
-                    source: e,
+                    source: Box::new(e),
                     file: self.clone(),
                     trace: trace!(),
                 })
@@ -150,7 +150,7 @@ impl File {
         let bytes = self.read_bytes().await?;
         let str_ = std::str::from_utf8(&bytes).map_err(|e| {
             FileSysErr::ConvertUTF8Err(ConvertUTF8Err {
-                source: e,
+                source: Box::new(e),
                 trace: trace!(),
             })
         })?;
@@ -165,7 +165,7 @@ impl File {
         let bytes = self.read_bytes().await?;
         let obj: T = serde_json::from_slice(&bytes).map_err(|e| {
             FileSysErr::ParseJSONErr(ParseJSONErr {
-                source: e,
+                source: Box::new(e),
                 file: self.clone(),
                 trace: trace!(),
             })
@@ -203,7 +203,7 @@ impl File {
             let af = AtomicFile::new(self.to_string(), AllowOverwrite);
             af.write(|f| f.write_all(buf)).map_err(|e| {
                 FileSysErr::AtomicWriteFileErr(AtomicWriteFileErr {
-                    source: e.into(),
+                    source: Box::new(e.into()),
                     file: self.clone(),
                     trace: trace!(),
                 })
@@ -211,14 +211,14 @@ impl File {
         } else {
             let mut file = TokioFile::create(self.to_string()).await.map_err(|e| {
                 FileSysErr::OpenFileErr(OpenFileErr {
-                    source: e,
+                    source: Box::new(e),
                     file: self.clone(),
                     trace: trace!(),
                 })
             })?;
             file.write_all(buf).await.map_err(|e| {
                 FileSysErr::WriteFileErr(WriteFileErr {
-                    source: e,
+                    source: Box::new(e),
                     file: self.clone(),
                     trace: trace!(),
                 })
@@ -247,7 +247,7 @@ impl File {
         // Convert to JSON bytes first
         let json_bytes = serde_json::to_vec(obj).map_err(|e| {
             FileSysErr::ParseJSONErr(ParseJSONErr {
-                source: e,
+                source: Box::new(e),
                 file: self.clone(),
                 trace: trace!(),
             })
@@ -265,7 +265,7 @@ impl File {
             .await
             .map_err(|e| {
                 FileSysErr::DeleteFileErr(DeleteFileErr {
-                    source: e,
+                    source: Box::new(e),
                     file: self.clone(),
                     trace: trace!(),
                 })
@@ -296,7 +296,7 @@ impl File {
             .await
             .map_err(|e| {
                 FileSysErr::MoveFileErr(MoveFileErr {
-                    source: e,
+                    source: Box::new(e),
                     src_file: self.clone(),
                     dest_file: new_file.clone(),
                     trace: trace!(),
@@ -315,7 +315,7 @@ impl File {
             .await
             .map_err(|e| {
                 FileSysErr::WriteFileErr(WriteFileErr {
-                    source: e,
+                    source: Box::new(e),
                     file: self.clone(),
                     trace: trace!(),
                 })
@@ -334,7 +334,7 @@ impl File {
             .await
             .map_err(|e| {
                 FileSysErr::CreateSymlinkErr(CreateSymlinkErr {
-                    source: e,
+                    source: Box::new(e),
                     file: self.clone(),
                     link: link.clone(),
                     trace: trace!(),
@@ -348,7 +348,7 @@ impl File {
         tokio::fs::metadata(self.to_string()).await.map_err(|e| {
             FileSysErr::FileMetadataErr(FileMetadataErr {
                 file: self.clone(),
-                source: e,
+                source: Box::new(e),
                 trace: trace!(),
             })
         })

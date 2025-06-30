@@ -84,10 +84,10 @@ where
         let result = self.read_entry_optional(key, update_last_accessed).await?;
         match result {
             Some(entry) => Ok(entry),
-            None => Err(CacheErr::CacheElementNotFound(CacheElementNotFound {
+            None => Err(CacheErr::CacheElementNotFound(Box::new(CacheElementNotFound {
                 msg: format!("Unable to find cache entry with key: '{}'", key.to_string()),
                 trace: trace!(),
-            })),
+            }))),
         }
     }
 
@@ -220,12 +220,12 @@ where
     {
         let entries = self.find_entries_where(filter).await?;
         if entries.len() > 1 {
-            return Err(CacheErr::FoundTooManyCacheElements(FoundTooManyCacheElements {
+            return Err(CacheErr::FoundTooManyCacheElements(Box::new(FoundTooManyCacheElements {
                 expected_count: 1,
                 actual_count: entries.len(),
                 filter_name: filter_name.to_string(),
                 trace: trace!(),
-            }));
+            })));
         }
         Ok(entries.into_iter().next())
     }
@@ -240,12 +240,12 @@ where
     {
         let entries = self.find_where(filter).await?;
         if entries.len() > 1 {
-            return Err(CacheErr::FoundTooManyCacheElements(FoundTooManyCacheElements {
+            return Err(CacheErr::FoundTooManyCacheElements(Box::new(FoundTooManyCacheElements {
                 expected_count: 1,
                 actual_count: entries.len(),
                 filter_name: filter_name.to_string(),
                 trace: trace!(),
-            }));
+            })));
         }
         Ok(entries.into_iter().next())
     }
@@ -261,10 +261,10 @@ where
         let entry = self.find_one_entry_optional(filter_name, filter).await?;
         match entry {
             Some(entry) => Ok(entry),
-            None => Err(CacheErr::CacheElementNotFound(CacheElementNotFound {
+            None => Err(CacheErr::CacheElementNotFound(Box::new(CacheElementNotFound {
                 msg: format!("Unable to find cache entry with filter: '{}'", filter_name),
                 trace: trace!(),
-            })),
+            }))),
         }
     }
 
@@ -279,10 +279,10 @@ where
         let opt_value = self.find_one_optional(filter_name, filter).await?;
         match opt_value {
             Some(value) => Ok(value),
-            None => Err(CacheErr::CacheElementNotFound(CacheElementNotFound {
+            None => Err(CacheErr::CacheElementNotFound(Box::new(CacheElementNotFound {
                 msg: format!("Unable to find cache entry with filter: '{}'", filter_name),
                 trace: trace!(),
-            })),
+            }))),
         }
     }
 

@@ -71,8 +71,8 @@ impl fmt::Display for CrudCacheErr {
 
 #[derive(Debug)]
 pub enum CrudErr {
-    StorageErr(CrudStorageErr),
-    CacheErr(CrudCacheErr),
+    StorageErr(Box<CrudStorageErr>),
+    CacheErr(Box<CrudCacheErr>),
 }
 
 macro_rules! forward_error_method {

@@ -58,10 +58,10 @@ impl<'a> Observer for StorageObserver<'a> {
             is_dirty,
             overwrite,
         ).await.map_err(|e| {
-            DeployErr::CacheErr(DeployCacheErr {
+            DeployErr::CacheErr(Box::new(DeployCacheErr {
                 source: e,
                 trace: trace!(),
-            })
+            }))
         })
     }
 }
@@ -191,11 +191,11 @@ where
 {
     if fsm::next_action(&cfg_inst, true) != fsm::NextAction::Deploy {
         let next_action = fsm::next_action(&cfg_inst, true);
-        return (DeployResults::empty(), Err(DeployErr::InstanceNotDeployableErr(InstanceNotDeployableErr {
+        return (DeployResults::empty(), Err(DeployErr::InstanceNotDeployableErr(Box::new(InstanceNotDeployableErr {
             instance: cfg_inst,
             next_action,
             trace: trace!(),
-        })));
+        }))));
     }
 
     // find the conflicts to remove
@@ -234,11 +234,11 @@ where
 {
     if fsm::next_action(&cfg_inst, true) != fsm::NextAction::Remove {
         let next_action = fsm::next_action(&cfg_inst, true);
-        return (DeployResults::empty(), Err(DeployErr::InstanceNotDeployableErr(InstanceNotDeployableErr {
+        return (DeployResults::empty(), Err(DeployErr::InstanceNotDeployableErr(Box::new(InstanceNotDeployableErr {
             instance: cfg_inst,
             next_action,
             trace: trace!(),
-        })));
+        }))));
     }
 
     // find the replacements to deploy
@@ -309,19 +309,19 @@ where
             )
         },
     ).await.map_err(|e| {
-        DeployErr::CrudErr(DeployCrudErr {
+        DeployErr::CrudErr(Box::new(DeployCrudErr {
             source: e,
             trace: trace!(),
-        })
+        }))
     })?;
 
     // validate that all conflicts do not desire to be deployed
     for conflict in conflicts.iter() {
         if conflict.target_status == TargetStatus::Deployed {
-            return Err(DeployErr::ConflictingDeploymentsErr(ConflictingDeploymentsErr {
+            return Err(DeployErr::ConflictingDeploymentsErr(Box::new(ConflictingDeploymentsErr {
                 instances: vec![cfg_inst.clone(), conflict.clone()],
                 trace: trace!(),
-            }));
+            })));
         }
     }
 
@@ -346,10 +346,10 @@ where
             )
         },
     ).await.map_err(|e| {
-        DeployErr::CrudErr(DeployCrudErr {
+        DeployErr::CrudErr(Box::new(DeployCrudErr {
             source: e,
             trace: trace!(),
-        })
+        }))
     })
 }
 

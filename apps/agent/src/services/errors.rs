@@ -199,14 +199,14 @@ impl fmt::Display for ServiceHTTPErr {
 #[derive(Debug)]
 pub enum ServiceErr {
     // service errors
-    DeployedConfigInstanceNotFound(DeployedConfigInstanceNotFound),
+    DeployedConfigInstanceNotFound(Box<DeployedConfigInstanceNotFound>),
 
     // internal crate errors
-    CacheErr(ServiceCacheErr),
-    CrudErr(ServiceCrudErr),
-    ModelsErr(ServiceModelsErr),
-    StorageErr(ServiceStorageErr),
-    HTTPErr(ServiceHTTPErr),
+    CacheErr(Box<ServiceCacheErr>),
+    CrudErr(Box<ServiceCrudErr>),
+    ModelsErr(Box<ServiceModelsErr>),
+    StorageErr(Box<ServiceStorageErr>),
+    HTTPErr(Box<ServiceHTTPErr>),
 }
 
 macro_rules! forward_error_method {

@@ -220,17 +220,17 @@ impl fmt::Display for ReceiveActorMessageErr {
 #[derive(Debug)]
 pub enum AuthErr {
     // auth errors
-    TimestampConversionErr(TimestampConversionErr),
+    TimestampConversionErr(Box<TimestampConversionErr>),
 
     // internal crate errors
-    CryptErr(AuthCryptErr),
-    FileSysErr(AuthFileSysErr),
-    HTTPErr(AuthHTTPErr),
+    CryptErr(Box<AuthCryptErr>),
+    FileSysErr(Box<AuthFileSysErr>),
+    HTTPErr(Box<AuthHTTPErr>),
 
     // external crate errors
-    SerdeErr(SerdeErr),
-    SendActorMessageErr(SendActorMessageErr),
-    ReceiveActorMessageErr(ReceiveActorMessageErr),
+    SerdeErr(Box<SerdeErr>),
+    SendActorMessageErr(Box<SendActorMessageErr>),
+    ReceiveActorMessageErr(Box<ReceiveActorMessageErr>),
 }
 
 macro_rules! forward_error_method {

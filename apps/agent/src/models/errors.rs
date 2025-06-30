@@ -36,7 +36,7 @@ impl fmt::Display for DateTimeParseErr {
 
 #[derive(Debug)]
 pub enum ModelsErr {
-    DateTimeParseErr(DateTimeParseErr),
+    DateTimeParseErr(Box<DateTimeParseErr>),
 }
 
 macro_rules! forward_error_method {

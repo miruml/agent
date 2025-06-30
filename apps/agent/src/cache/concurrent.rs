@@ -309,16 +309,16 @@ where
             .send(WorkerCommand::Shutdown { respond_to: send })
             .await
             .map_err(|e| {
-                CacheErr::SendActorMessageErr(SendActorMessageErr {
+                CacheErr::SendActorMessageErr(Box::new(SendActorMessageErr {
                     source: Box::new(e),
                     trace: trace!(),
-                })
+                }))
             })?;
         recv.await.map_err(|e| {
-            CacheErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+            CacheErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })??;
         info!("{} cache shutdown complete", std::any::type_name::<V>());
         Ok(())
@@ -338,16 +338,16 @@ where
             })
             .await
             .map_err(|e| {
-                CacheErr::SendActorMessageErr(SendActorMessageErr {
+                CacheErr::SendActorMessageErr(Box::new(SendActorMessageErr {
                     source: Box::new(e),
                     trace: trace!(),
-                })
+                }))
             })?;
         recv.await.map_err(|e| {
-            CacheErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+            CacheErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?
     }
 
@@ -365,16 +365,16 @@ where
             })
             .await
             .map_err(|e| {
-                CacheErr::SendActorMessageErr(SendActorMessageErr {
+                CacheErr::SendActorMessageErr(Box::new(SendActorMessageErr {
                     source: Box::new(e),
                     trace: trace!(),
-                })
+                }))
             })?;
         recv.await.map_err(|e| {
-            CacheErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+            CacheErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?
     }
 
@@ -387,16 +387,16 @@ where
             })
             .await
             .map_err(|e| {
-                CacheErr::SendActorMessageErr(SendActorMessageErr {
+                CacheErr::SendActorMessageErr(Box::new(SendActorMessageErr {
                     source: Box::new(e),
                     trace: trace!(),
-                })
+                }))
             })?;
         recv.await.map_err(|e| {
-            CacheErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+            CacheErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?
     }
 
@@ -409,16 +409,16 @@ where
             })
             .await
             .map_err(|e| {
-                CacheErr::SendActorMessageErr(SendActorMessageErr {
+                CacheErr::SendActorMessageErr(Box::new(SendActorMessageErr {
                     source: Box::new(e),
                     trace: trace!(),
-                })
+                }))
             })?;
         recv.await.map_err(|e| {
-            CacheErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+            CacheErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?
     }
 
@@ -443,16 +443,16 @@ where
             })
             .await
             .map_err(|e| {
-                CacheErr::SendActorMessageErr(SendActorMessageErr {
+                CacheErr::SendActorMessageErr(Box::new(SendActorMessageErr {
                     source: Box::new(e),
                     trace: trace!(),
-                })
+                }))
             })?;
         recv.await.map_err(|e| {
-            CacheErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+            CacheErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?
     }
 
@@ -465,16 +465,16 @@ where
             })
             .await
             .map_err(|e| {
-                CacheErr::SendActorMessageErr(SendActorMessageErr {
+                CacheErr::SendActorMessageErr(Box::new(SendActorMessageErr {
                     source: Box::new(e),
                     trace: trace!(),
-                })
+                }))
             })?;
         recv.await.map_err(|e| {
-            CacheErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+            CacheErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?
     }
 
@@ -487,16 +487,16 @@ where
             })
             .await
             .map_err(|e| {
-                CacheErr::SendActorMessageErr(SendActorMessageErr {
+                CacheErr::SendActorMessageErr(Box::new(SendActorMessageErr {
                     source: Box::new(e),
                     trace: trace!(),
-                })
+                }))
             })?;
         recv.await.map_err(|e| {
-            CacheErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+            CacheErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?
     }
 
@@ -506,16 +506,16 @@ where
             .send(WorkerCommand::Size { respond_to: send })
             .await
             .map_err(|e| {
-                CacheErr::SendActorMessageErr(SendActorMessageErr {
+                CacheErr::SendActorMessageErr(Box::new(SendActorMessageErr {
                     source: Box::new(e),
                     trace: trace!(),
-                })
+                }))
             })?;
         recv.await.map_err(|e| {
-            CacheErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+            CacheErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?
     }
     
@@ -534,16 +534,16 @@ where
             })
             .await
             .map_err(|e| {
-                CacheErr::SendActorMessageErr(SendActorMessageErr {
+                CacheErr::SendActorMessageErr(Box::new(SendActorMessageErr {
                     source: Box::new(e),
                     trace: trace!(),
-                })
+                }))
             })?;
         recv.await.map_err(|e| {
-            CacheErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+            CacheErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?
     }
 
@@ -564,16 +564,16 @@ where
             })
             .await
             .map_err(|e| {
-                CacheErr::SendActorMessageErr(SendActorMessageErr {
+                CacheErr::SendActorMessageErr(Box::new(SendActorMessageErr {
                     source: Box::new(e),
                     trace: trace!(),
-                })
+                }))
             })?;
         recv.await.map_err(|e| {
-            CacheErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+            CacheErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?
     }
 
@@ -594,16 +594,16 @@ where
             })
             .await
             .map_err(|e| {
-                CacheErr::SendActorMessageErr(SendActorMessageErr {
+                CacheErr::SendActorMessageErr(Box::new(SendActorMessageErr {
                     source: Box::new(e),
                     trace: trace!(),
-                })
+                }))
             })?;
         recv.await.map_err(|e| {
-            CacheErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+            CacheErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?
     }
 
@@ -622,16 +622,16 @@ where
             })
             .await
             .map_err(|e| {
-                CacheErr::SendActorMessageErr(SendActorMessageErr {
+                CacheErr::SendActorMessageErr(Box::new(SendActorMessageErr {
                     source: Box::new(e),
                     trace: trace!(),
-                })
+                }))
             })?;
         recv.await.map_err(|e| {
-            CacheErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+            CacheErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?
     }
 
@@ -652,16 +652,16 @@ where
             })
             .await
             .map_err(|e| {
-                CacheErr::SendActorMessageErr(SendActorMessageErr {
+                CacheErr::SendActorMessageErr(Box::new(SendActorMessageErr {
                     source: Box::new(e),
                     trace: trace!(),
-                })
+                }))
             })?;
         recv.await.map_err(|e| {
-            CacheErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+            CacheErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?
     }
 
@@ -682,16 +682,16 @@ where
             })
             .await
             .map_err(|e| {
-                CacheErr::SendActorMessageErr(SendActorMessageErr {
+                CacheErr::SendActorMessageErr(Box::new(SendActorMessageErr {
                     source: Box::new(e),
                     trace: trace!(),
-                })
+                }))
             })?;
         recv.await.map_err(|e| {
-            CacheErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+            CacheErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?
     }
 
@@ -701,16 +701,16 @@ where
             .send(WorkerCommand::GetDirtyEntries { respond_to: send })
             .await
             .map_err(|e| {
-                CacheErr::SendActorMessageErr(SendActorMessageErr {
+                CacheErr::SendActorMessageErr(Box::new(SendActorMessageErr {
                     source: Box::new(e),
                     trace: trace!(),
-                })
+                }))
             })?;
         recv.await.map_err(|e| {
-            CacheErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+            CacheErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?
     }
 }
@@ -726,10 +726,10 @@ where
     where
         F: Fn(&V) -> bool + Send + Sync + 'static,
     {
-        self.find_where_impl(filter).await.map_err(|e| CrudErr::CacheErr(CrudCacheErr {
+        self.find_where_impl(filter).await.map_err(|e| CrudErr::CacheErr(Box::new(CrudCacheErr {
             source: e,
             trace: trace!(),
-        }))
+        })))
     }
 
     async fn find_one_optional<F>(
@@ -740,10 +740,10 @@ where
     where
         F: Fn(&V) -> bool + Send + Sync + 'static,
     {
-        self.find_one_optional_impl(filter_name, filter).await.map_err(|e| CrudErr::CacheErr(CrudCacheErr {
+        self.find_one_optional_impl(filter_name, filter).await.map_err(|e| CrudErr::CacheErr(Box::new(CrudCacheErr {
             source: e,
             trace: trace!(),
-        }))
+        })))
     }
 
     async fn find_one<F>(
@@ -754,10 +754,10 @@ where
     where
         F: Fn(&V) -> bool + Send + Sync + 'static,
     {
-        self.find_one_impl(filter_name, filter).await.map_err(|e| CrudErr::CacheErr(CrudCacheErr {
+        self.find_one_impl(filter_name, filter).await.map_err(|e| CrudErr::CacheErr(Box::new(CrudCacheErr {
             source: e,
             trace: trace!(),
-        }))
+        })))
     }
 }
 
@@ -769,16 +769,16 @@ where
     V: ConcurrentCacheValue,
 {
     async fn read(&self, key: K) -> Result<V, CrudErr> {
-        self.read_impl(key).await.map_err(|e| CrudErr::CacheErr(CrudCacheErr {
+        self.read_impl(key).await.map_err(|e| CrudErr::CacheErr(Box::new(CrudCacheErr {
             source: e,
             trace: trace!(),
-        }))
+        })))
     }
 
     async fn read_optional(&self, key: K) -> Result<Option<V>, CrudErr> {
-        self.read_optional_impl(key).await.map_err(|e| CrudErr::CacheErr(CrudCacheErr {
+        self.read_optional_impl(key).await.map_err(|e| CrudErr::CacheErr(Box::new(CrudCacheErr {
             source: e,
             trace: trace!(),
-        }))
+        })))
     }
 }

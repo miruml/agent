@@ -342,21 +342,21 @@ impl fmt::Display for VerifyDataErr {
 #[derive(Debug)]
 pub enum CryptErr {
     // crate errors
-    InvalidJWTErr(InvalidJWTErr),
-    InvalidJWTPayloadErr(InvalidJWTPayloadFormatErr),
+    InvalidJWTErr(Box<InvalidJWTErr>),
+    InvalidJWTPayloadErr(Box<InvalidJWTPayloadFormatErr>),
 
     // internal crate errors
-    FileSysErr(CryptFileSysErr),
+    FileSysErr(Box<CryptFileSysErr>),
 
     // external crate errors
-    Base64DecodeErr(Base64DecodeErr),
-    ConvertBytesToStringErr(ConvertBytesToStringErr),
-    ConvertPrivateKeyToPEMErr(ConvertPrivateKeyToPEMErr),
-    GenerateRSAKeyPairErr(GenerateRSAKeyPairErr),
-    ReadKeyErr(ReadKeyErr),
-    RSAToPKeyErr(RSAToPKeyErr),
-    SignDataErr(SignDataErr),
-    VerifyDataErr(VerifyDataErr),
+    Base64DecodeErr(Box<Base64DecodeErr>),
+    ConvertBytesToStringErr(Box<ConvertBytesToStringErr>),
+    ConvertPrivateKeyToPEMErr(Box<ConvertPrivateKeyToPEMErr>),
+    GenerateRSAKeyPairErr(Box<GenerateRSAKeyPairErr>),
+    ReadKeyErr(Box<ReadKeyErr>),
+    RSAToPKeyErr(Box<RSAToPKeyErr>),
+    SignDataErr(Box<SignDataErr>),
+    VerifyDataErr(Box<VerifyDataErr>),
 }
 
 macro_rules! forward_error_method {

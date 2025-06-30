@@ -83,10 +83,10 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
 
         self.last_synced_at = Utc::now();
 
-        let token = self.token_mngr.get_token().await.map_err(|e| SyncErr::AuthErr(SyncAuthErr {
+        let token = self.token_mngr.get_token().await.map_err(|e| SyncErr::AuthErr(Box::new(SyncAuthErr {
             source: e,
             trace: trace!(),
-        }))?;
+        })))?;
 
         // pull config instances from server
         let result =  pull_config_instances(
@@ -108,10 +108,10 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
         // read the config instances which need to be applied
         let cfg_insts_to_apply = cfg_inst_cache.find_where(
             |instance| { fsm::is_action_required(fsm::next_action(instance, true)) }
-        ).await.map_err(|e| SyncErr::CrudErr(SyncCrudErr {
+        ).await.map_err(|e| SyncErr::CrudErr(Box::new(SyncCrudErr {
             source: e,
             trace: trace!(),
-        }))?;
+        })))?;
         let cfg_insts_to_apply = cfg_insts_to_apply.into_iter().map(|instance| (instance.id.clone(), instance)).collect();
 
         // apply deployments
@@ -121,10 +121,10 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
             cfg_inst_data_cache,
             &self.deployment_dir,
             &self.fsm_settings,
-        ).await.map_err(|e| SyncErr::DeployErr(SyncDeployErr {
+        ).await.map_err(|e| SyncErr::DeployErr(Box::new(SyncDeployErr {
             source: e,
             trace: trace!(),
-        }))?;
+        })))?;
 
         // push config instances to server
         let result = push_config_instances(
@@ -239,16 +239,16 @@ impl Syncer {
     pub async fn shutdown(&self) -> Result<(), SyncErr> {
         let (send, recv) = oneshot::channel();
         self.sender.send(WorkerCommand::Shutdown { respond_to: send }).await.map_err(|e| {
-            SyncErr::SendActorMessageErr(SendActorMessageErr {
+            SyncErr::SendActorMessageErr(Box::new(SendActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?;
         recv.await.map_err(|e| {
-            SyncErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+            SyncErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })??;
         info!("Syncer shutdown complete");
         Ok(())
@@ -267,32 +267,32 @@ impl Syncer {
             cfg_inst_data_cache,
             ignore_network_errors,
         }).await.map_err(|e| {
-            SyncErr::SendActorMessageErr(SendActorMessageErr {
+            SyncErr::SendActorMessageErr(Box::new(SendActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?;
         recv.await.map_err(|e| {
-            SyncErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+            SyncErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?
     }
 
     pub async fn get_last_synced_at(&self) -> Result<DateTime<Utc>, SyncErr> {
         let (send, recv) = oneshot::channel();
         self.sender.send(WorkerCommand::GetLastSyncedAt { respond_to: send }).await.map_err(|e| {
-            SyncErr::SendActorMessageErr(SendActorMessageErr {
+            SyncErr::SendActorMessageErr(Box::new(SendActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?;
         recv.await.map_err(|e| {
-            SyncErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+            SyncErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?
     }
 }

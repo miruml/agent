@@ -184,10 +184,10 @@ where
     };
 
     let data = data_fetcher.read(instance.id.clone()).await.map_err(|e| {
-        DeployErr::CrudErr(DeployCrudErr {
+        DeployErr::CrudErr(Box::new(DeployCrudErr {
             source: e,
             trace: trace!(),
-        })
+        }))
     })?;
 
     let dest_file = deployment_dir.file(filepath);
@@ -195,10 +195,10 @@ where
         .write_json(&data, true, true)
         .await
         .map_err(|e| {
-            DeployErr::FileSysErr(DeployFileSysErr {
+            DeployErr::FileSysErr(Box::new(DeployFileSysErr {
                 source: e,
                 trace: trace!(),
-            })
+            }))
         })
 }
 
@@ -281,9 +281,9 @@ async fn delete_instance_from_deployment_dir(
 
     let dest_file = deployment_dir.file(filepath);
     dest_file.delete().await.map_err(|e| {
-        DeployErr::FileSysErr(DeployFileSysErr {
+        DeployErr::FileSysErr(Box::new(DeployFileSysErr {
             source: e,
             trace: trace!(),
-        })
+        }))
     })
 }

@@ -19,7 +19,7 @@ pub trait PathExt {
             false => {
                 let current_dir = env::current_dir().map_err(|e| {
                     FileSysErr::UnknownCurrentDirErr(UnknownCurrentDirErr {
-                        source: e,
+                        source: Box::new(e),
                         trace: trace!(),
                     })
                 })?;

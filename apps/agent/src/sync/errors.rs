@@ -225,16 +225,16 @@ pub type ReceiveActorMessageErr = crate::cache::errors::ReceiveActorMessageErr;
 
 #[derive(Debug)]
 pub enum SyncErr {
-    AuthErr(SyncAuthErr),
-    CacheErr(SyncCacheErr),
-    CrudErr(SyncCrudErr),
-    DeployErr(SyncDeployErr),
-    HTTPClientErr(SyncHTTPClientErr),
-    StorageErr(SyncStorageErr),
+    AuthErr(Box<SyncAuthErr>),
+    CacheErr(Box<SyncCacheErr>),
+    CrudErr(Box<SyncCrudErr>),
+    DeployErr(Box<SyncDeployErr>),
+    HTTPClientErr(Box<SyncHTTPClientErr>),
+    StorageErr(Box<SyncStorageErr>),
 
-    ConfigInstanceDataNotFound(ConfigInstanceDataNotFoundErr),
-    SendActorMessageErr(SendActorMessageErr),
-    ReceiveActorMessageErr(ReceiveActorMessageErr),
+    ConfigInstanceDataNotFound(Box<ConfigInstanceDataNotFoundErr>),
+    SendActorMessageErr(Box<SendActorMessageErr>),
+    ReceiveActorMessageErr(Box<ReceiveActorMessageErr>),
 }
 
 macro_rules! forward_error_method {

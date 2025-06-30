@@ -48,7 +48,7 @@ impl Dir {
         let home_dir = std::env::var("HOME")
             .map_err(|e| {
                 FileSysErr::UnknownHomeDirErr(UnknownHomeDirErr {
-                    source: e,
+                    source: Box::new(e),
                     trace: trace!(),
                 })
             })
@@ -59,7 +59,7 @@ impl Dir {
     pub fn new_current_dir() -> Result<Dir, FileSysErr> {
         let current_dir = std::env::current_dir().map_err(|e| {
             FileSysErr::UnknownCurrentDirErr(UnknownCurrentDirErr {
-                source: e,
+                source: Box::new(e),
                 trace: trace!(),
             })
         })?;
@@ -164,7 +164,7 @@ impl Dir {
             .await
             .map_err(|e| {
                 FileSysErr::CreateDirErr(CreateDirErr {
-                    source: e,
+                    source: Box::new(e),
                     dir: self.clone(),
                     trace: trace!(),
                 })
@@ -179,7 +179,7 @@ impl Dir {
         }
         tokio::fs::remove_dir_all(self.path()).await.map_err(|e| {
             FileSysErr::DeleteDirErr(DeleteDirErr {
-                source: e,
+                source: Box::new(e),
                 dir: self.clone(),
                 trace: trace!(),
             })
@@ -212,7 +212,7 @@ impl Dir {
         let mut dirs = Vec::new();
         let mut entries = tokio::fs::read_dir(self.to_string()).await.map_err(|e| {
             FileSysErr::ReadDirErr(ReadDirErr {
-                source: e,
+                source: Box::new(e),
                 dir: self.clone(),
                 trace: trace!(),
             })
@@ -220,7 +220,7 @@ impl Dir {
 
         while let Some(entry) = entries.next_entry().await.map_err(|e| {
             FileSysErr::ReadDirErr(ReadDirErr {
-                source: e,
+                source: Box::new(e),
                 dir: self.clone(),
                 trace: trace!(),
             })
@@ -240,7 +240,7 @@ impl Dir {
 
         let mut entries = tokio::fs::read_dir(self.to_string()).await.map_err(|e| {
             FileSysErr::ReadDirErr(ReadDirErr {
-                source: e,
+                source: Box::new(e),
                 dir: self.clone(),
                 trace: trace!(),
             })
@@ -248,7 +248,7 @@ impl Dir {
 
         while let Some(entry) = entries.next_entry().await.map_err(|e| {
             FileSysErr::ReadDirErr(ReadDirErr {
-                source: e,
+                source: Box::new(e),
                 dir: self.clone(),
                 trace: trace!(),
             })

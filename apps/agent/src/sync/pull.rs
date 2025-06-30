@@ -86,7 +86,7 @@ async fn fetch_unremoved_instances<HTTPClientT: ConfigInstancesExt>(
     http_client.list_all_config_instances(
         filters, &[] as &[ConfigInstanceExpand], token,
     ).await.map_err(|e| {
-        SyncErr::HTTPClientErr(SyncHTTPClientErr { source: e, trace: trace!() })
+        SyncErr::HTTPClientErr(Box::new(SyncHTTPClientErr { source: e, trace: trace!() }))
     })
 }
 
@@ -113,10 +113,10 @@ async fn categorize_instances(
 
         // check if the config instance is known
         let mut storage_inst = match cfg_inst_cache.read_optional(server_inst.id.clone()).await.map_err(|e| {
-            SyncErr::CrudErr(SyncCrudErr {
+            SyncErr::CrudErr(Box::new(SyncCrudErr {
                 source: e,
                 trace: trace!(),
-            })
+            }))
         })? {
             Some(storage_inst) => storage_inst,
             None => {
@@ -158,7 +158,7 @@ async fn fetch_instances_with_expanded_instance_data<HTTPClientT: ConfigInstance
     http_client.list_all_config_instances(
         filters, [ConfigInstanceExpand::CONFIG_INSTANCE_EXPAND_INSTANCE], token,
     ).await.map_err(|e| {
-        SyncErr::HTTPClientErr(SyncHTTPClientErr { source: e, trace: trace!() })
+        SyncErr::HTTPClientErr(Box::new(SyncHTTPClientErr { source: e, trace: trace!() }))
     })
 }
 
@@ -177,10 +177,10 @@ async fn add_unknown_instances_to_storage(
         let instance_data = match unknown_inst.instance {
             Some(instance_data) => instance_data,
             None => {
-                return Err(SyncErr::ConfigInstanceDataNotFound(ConfigInstanceDataNotFoundErr {
+                return Err(SyncErr::ConfigInstanceDataNotFound(Box::new(ConfigInstanceDataNotFoundErr {
                     instance_id: unknown_inst.id.clone(),
                     trace: trace!(),
-                }));
+                })));
             }
         };
         unknown_inst.instance = None;
