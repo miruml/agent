@@ -105,6 +105,9 @@ where
         filter: QueryValueFilter<V>,
         respond_to: oneshot::Sender<Result<V, CacheErr>>,
     },
+    GetDirtyEntries {
+        respond_to: oneshot::Sender<Result<Vec<CacheEntry<K, V>>, CacheErr>>,
+    },
 }
 
 // =================================== WORKER ====================================== //
@@ -257,6 +260,12 @@ where
                     let result = self.cache.find_one(filter_name, filter).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to find one cache entry: {:?}", e);
+                    }
+                }
+                WorkerCommand::GetDirtyEntries { respond_to } => {
+                    let result = self.cache.get_dirty_entries().await;
+                    if let Err(e) = respond_to.send(result) {
+                        error!("Actor failed to get dirty entries: {:?}", e);
                     }
                 }
             }
@@ -671,6 +680,25 @@ where
                 filter: Box::new(filter),
                 respond_to: send,
             })
+            .await
+            .map_err(|e| {
+                CacheErr::SendActorMessageErr(SendActorMessageErr {
+                    source: Box::new(e),
+                    trace: trace!(),
+                })
+            })?;
+        recv.await.map_err(|e| {
+            CacheErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+                source: Box::new(e),
+                trace: trace!(),
+            })
+        })?
+    }
+
+    pub async fn get_dirty_entries(&self) -> Result<Vec<CacheEntry<K, V>>, CacheErr> {
+        let (send, recv) = oneshot::channel();
+        self.sender
+            .send(WorkerCommand::GetDirtyEntries { respond_to: send })
             .await
             .map_err(|e| {
                 CacheErr::SendActorMessageErr(SendActorMessageErr {

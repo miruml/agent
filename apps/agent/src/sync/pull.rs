@@ -32,7 +32,6 @@ use openapi_client::models::{
 // external crates
 use tracing::error;
 
-
 pub async fn pull_config_instances<HTTPClientT: ConfigInstancesExt>(
     cfg_inst_cache: &ConfigInstanceCache,
     cfg_inst_data_cache: &ConfigInstanceDataCache,
@@ -49,8 +48,6 @@ pub async fn pull_config_instances<HTTPClientT: ConfigInstancesExt>(
         cfg_inst_cache,
         unremoved_insts,
     ).await?;
-
-    println!("categorized_insts: {:?}", categorized_insts);
 
     let unknown_insts = fetch_instances_with_expanded_instance_data(
         http_client,

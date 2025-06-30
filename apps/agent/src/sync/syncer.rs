@@ -8,6 +8,7 @@ use crate::deploy::{
     apply::apply,
     fsm,
 };
+use crate::errors::MiruError;
 use crate::filesys::dir::Dir;
 use crate::http::config_instances::ConfigInstancesExt;
 use crate::storage::config_instances::{
@@ -71,6 +72,7 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
         &mut self,
         cfg_inst_cache: &ConfigInstanceCache,
         cfg_inst_data_cache: &ConfigInstanceDataCache,
+        ignore_network_errors: bool,
     ) -> Result<(), SyncErr> {
 
         self.last_synced_at = Utc::now();
@@ -81,13 +83,21 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
         }))?;
 
         // pull config instances from server
-        pull_config_instances(
+        let result =  pull_config_instances(
             cfg_inst_cache,
             cfg_inst_data_cache,
             self.http_client.as_ref(),
             &self.device_id,
             &token.token,
-        ).await?;
+        ).await;
+        match result {
+            Ok(_) => (),
+            Err(e) => {
+                if !ignore_network_errors && !e.is_network_connection_error() {
+                    return Err(e);
+                }
+            }
+        };
 
         // read the config instances which need to be applied
         let cfg_insts_to_apply = cfg_inst_cache.find_where(
@@ -111,11 +121,19 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
         }))?;
 
         // push config instances to server
-        push_config_instances(
+        let result = push_config_instances(
             cfg_inst_cache,
             self.http_client.as_ref(),
             &token.token,
-        ).await?;
+        ).await;
+        match result {
+            Ok(_) => (),
+            Err(e) => {
+                if !ignore_network_errors && !e.is_network_connection_error() {
+                    return Err(e);
+                }
+            }
+        };
 
         Ok(())
     }
@@ -132,6 +150,7 @@ enum WorkerCommand {
         respond_to: oneshot::Sender<Result<(), SyncErr>>,
         cfg_inst_cache: Arc<ConfigInstanceCache>,
         cfg_inst_data_cache: Arc<ConfigInstanceDataCache>,
+        ignore_network_errors: bool,
     },
     GetLastSyncedAt {
         respond_to: oneshot::Sender<Result<DateTime<Utc>, SyncErr>>,
@@ -157,10 +176,12 @@ impl<HTTPClientT: ConfigInstancesExt + Send> Worker<HTTPClientT> {
                     respond_to,
                     cfg_inst_cache,
                     cfg_inst_data_cache,
+                    ignore_network_errors,
                 } => {
                     let result = self.syncer.sync(
                         cfg_inst_cache.as_ref(),
                         cfg_inst_data_cache.as_ref(),
+                        ignore_network_errors,
                     ).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to send sync response: {:?}", e);
@@ -226,12 +247,14 @@ impl Syncer {
         &self,
         cfg_inst_cache: Arc<ConfigInstanceCache>,
         cfg_inst_data_cache: Arc<ConfigInstanceDataCache>,
+        ignore_network_errors: bool,
     ) -> Result<(), SyncErr> {
         let (send, recv) = oneshot::channel();
         self.sender.send(WorkerCommand::Sync { 
             respond_to: send,
             cfg_inst_cache,
             cfg_inst_data_cache,
+            ignore_network_errors,
         }).await.map_err(|e| {
             SyncErr::SendActorMessageErr(SendActorMessageErr {
                 source: Box::new(e),

@@ -285,4 +285,13 @@ where
             })),
         }
     }
+
+    async fn get_dirty_entries(&self) -> Result<Vec<CacheEntry<K, V>>, CacheErr> {
+        let entries = self.entries().await?;
+        let dirty_entries = entries
+            .into_iter()
+            .filter(|entry| entry.is_dirty)
+            .collect();
+        Ok(dirty_entries)
+    }
 }

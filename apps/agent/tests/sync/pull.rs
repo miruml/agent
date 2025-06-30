@@ -31,13 +31,13 @@ pub mod pull_config_instances_func {
         ).await.unwrap();
 
         // define the mock http client
-        let mock_http_client = MockConfigInstancesClient::default();
+        let http_client = MockConfigInstancesClient::default();
 
         // pull the config instances
         pull_config_instances(
             &metadata_cache,
             &instance_cache,
-            &mock_http_client,
+            &http_client,
             "device_id",
             "token",
         ).await.unwrap();
@@ -155,9 +155,9 @@ pub mod pull_config_instances_func {
 
         // check the instance data cache
         assert_eq!(instance_cache.size().await.unwrap(), n);
-        for i in 0..n {
+        for (i, instance_data) in instance_datas.iter().enumerate() {
             let id = format!("instance{}", i);
-            let expected = instance_datas[i].clone();
+            let expected = instance_data.clone();
             let actual = instance_cache.read(id.clone()).await.unwrap();
             assert_eq!(expected, actual);
         }

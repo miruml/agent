@@ -234,6 +234,15 @@ macro_rules! single_thread_cache_tests {
                 $crate::cache::single_thread::find_one::find_one_impl($spawn_cache).await;
             }
         }
+
+        pub mod get_dirty_entries {
+            use super::*;
+
+            #[tokio::test]
+            async fn get_dirty_entries() {
+                $crate::cache::single_thread::get_dirty_entries::get_dirty_entries_impl($spawn_cache).await;
+            }
+        }
     }
 }
 
@@ -1086,5 +1095,52 @@ pub mod find_one {
         // multiple entries found
         let err = cache.find_one("not value5", |value| value != "value5").await.unwrap_err();
         assert!(matches!(err, CacheErr::FoundTooManyCacheElements { .. }));
+    }
+}
+
+pub mod get_dirty_entries {
+    use super::*;
+
+    pub async fn get_dirty_entries_impl<F, Fut, SingleThreadCacheT>(new_cache: F)
+    where
+        F: Fn() -> Fut + Clone,
+        Fut: Future<Output = SingleThreadCacheT>,
+        SingleThreadCacheT: SingleThreadCache<String, String>,
+    {
+        let mut cache = new_cache().await;
+
+        // create 10 entries
+        for i in 0..10 {
+            let key = format!("key{}", i);
+            let value = format!("value{}", i);
+            cache.write(key, value, |_, _| true, false).await.unwrap();
+        }
+
+        // get dirty entries
+        let dirty_entries = cache.get_dirty_entries().await.unwrap();
+        assert_eq!(dirty_entries.len(), 10);
+        for (i, dirty_entry) in dirty_entries.iter().enumerate() {
+            let key = format!("key{}", i);
+            let value = format!("value{}", i);
+            assert_eq!(dirty_entry.key, key);
+            assert_eq!(dirty_entry.value, value);
+        }
+
+        // add 10 more entries which are not dirty
+        for i in 10..20 {
+            let key = format!("key{}", i);
+            let value = format!("value{}", i);
+            cache.write(key, value, |_, _| false, false).await.unwrap();
+        }
+
+        // dirty entries should be the same as before
+        let dirty_entries = cache.get_dirty_entries().await.unwrap();
+        assert_eq!(dirty_entries.len(), 10);
+        for (i, dirty_entry) in dirty_entries.iter().enumerate() {
+            let key = format!("key{}", i);
+            let value = format!("value{}", i);
+            assert_eq!(dirty_entry.key, key);
+            assert_eq!(dirty_entry.value, value);
+        }
     }
 }

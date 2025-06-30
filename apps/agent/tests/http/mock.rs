@@ -1,5 +1,6 @@
 // standard crates
 use std::fmt;
+use std::sync::{Arc, Mutex};
 
 // internal crates
 use config_agent::http::config_instances::{ConfigInstanceFilters, ConfigInstancesExt};
@@ -123,6 +124,59 @@ impl ConfigInstancesExt for MockConfigInstancesClient {
         _: &str,
     ) -> Result<BackendConfigInstance, HTTPErr> {
         (self.update_config_instance_result)()
+    }
+}
+
+// ============================ CONFIG INSTANCES EXT =============================== //
+pub struct HistoryConfigInstancesClient {
+    pub update_config_instance_requests: Arc<Mutex<Vec<UpdateConfigInstanceRequest>>>,
+}
+
+impl Default for HistoryConfigInstancesClient {
+    fn default() -> Self {
+        Self {
+            update_config_instance_requests: Arc::new(Mutex::new(vec![])),
+        }
+    }
+}
+
+impl HistoryConfigInstancesClient {
+    pub fn get_update_config_instance_requests(&self) -> Vec<UpdateConfigInstanceRequest> {
+        self.update_config_instance_requests.lock().unwrap().clone()
+    }
+}
+
+#[async_trait]
+impl ConfigInstancesExt for HistoryConfigInstancesClient {
+    async fn list_config_instances(
+        &self,
+        _: &str,
+        _: &str,
+    ) -> Result<ConfigInstanceList, HTTPErr> {
+        Ok(ConfigInstanceList::default())
+    }
+
+    async fn list_all_config_instances<I>(
+        &self,
+        _: ConfigInstanceFilters,
+        _: I,
+        _: &str,
+    ) -> Result<Vec<BackendConfigInstance>, HTTPErr>
+    where
+        I: IntoIterator + Send,
+        I::Item: fmt::Display,
+    {
+        Ok(vec![])
+    }
+
+    async fn update_config_instance(
+        &self,
+        _: &str,
+        request: &UpdateConfigInstanceRequest,
+        _: &str,
+    ) -> Result<BackendConfigInstance, HTTPErr> {
+        self.update_config_instance_requests.lock().unwrap().push(request.clone());
+        Ok(BackendConfigInstance::default())
     }
 }
 
