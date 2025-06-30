@@ -2,10 +2,7 @@
 use std::fmt;
 use std::fmt::Write;
 
-// external crates
-use serde::Serialize;
-
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub enum SearchOperator {
     Equals,
     Contains,
@@ -20,6 +17,7 @@ impl fmt::Display for SearchOperator {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum LogicalOperator {
     And,
 }
@@ -53,15 +51,17 @@ where
 pub fn format_search_group<I>(
     clauses: I,
     op: LogicalOperator,
-) -> String
+) -> Option<String>
 where
     I: IntoIterator,
     I::Item: fmt::Display,
 {
-    join(clauses, &format!(" {} ", op))
+    let mut iter = clauses.into_iter().peekable();
+    iter.peek()?;
+    Some(join(iter, &format!(" {} ", op)))
 }
 
-fn join<I, T>(values: I, sep: &str) -> String
+pub fn join<I, T>(values: I, sep: &str) -> String
 where
     I: IntoIterator<Item = T>,
     T: fmt::Display,

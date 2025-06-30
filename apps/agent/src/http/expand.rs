@@ -2,19 +2,21 @@
 use std::fmt;
 
 
-pub fn build_expand_query<I>(expansions: I) -> Option<String>
+pub fn format_expand_query<I>(expansions: I) -> Option<String>
 where
     I: IntoIterator,
     I::Item: fmt::Display,
 {
     let mut iter = expansions.into_iter().peekable();
-    if iter.peek().is_none() {
-        None
-    } else {
-        let mut query = String::new();
-        for expansion in iter {
+    iter.peek()?;
+
+    let mut query = String::new();
+    for (i, expansion) in iter.enumerate() {
+        if i == 0 {
             query.push_str(&format!("expand[]={}", expansion));
+        } else {
+            query.push_str(&format!("&expand[]={}", expansion));
         }
-        Some(query)
     }
+    Some(query)
 }

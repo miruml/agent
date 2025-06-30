@@ -14,7 +14,6 @@ use openapi_client::models::{
     hash_schema_serialized_request::HashSchemaSerializedRequest, ConfigSchema, ConfigSchemaList,
     ConfigSchemaSearch, SchemaDigestResponse,
 };
-use serde::Serialize;
 use crate::trace;
 
 #[allow(async_fn_in_trait)]
@@ -166,7 +165,7 @@ fn build_query_params(
 }
 
 // ================================ SEARCH FILTERS ================================ //
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub struct ConfigSchemaFilters {
     pub digests: Option<DigestFilter>,
     pub config_type_slugs: Option<ConfigTypeSlugFilter>,
@@ -178,14 +177,14 @@ impl ConfigSchemaFilters {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub struct DigestFilter {
     pub not: bool,
     pub op: SearchOperator,
     pub val: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub struct ConfigTypeSlugFilter {
     pub not: bool,
     pub op: SearchOperator,
@@ -193,11 +192,6 @@ pub struct ConfigTypeSlugFilter {
 }
 
 fn build_search_query(filters: ConfigSchemaFilters) -> Option<String> {
-    if !filters.has_filters() {
-        return None;
-    }
-
-    // build the search query
     let mut clauses: Vec<String> = Vec::new();
     if let Some(digests) = filters.digests {
         clauses.push(format_search_clause(
@@ -215,5 +209,5 @@ fn build_search_query(filters: ConfigSchemaFilters) -> Option<String> {
             config_type_slugs.not,
         ));
     }
-    Some(format_search_group(clauses, LogicalOperator::And))
+    format_search_group(clauses, LogicalOperator::And).map(|s| format!("search={}", s))
 }

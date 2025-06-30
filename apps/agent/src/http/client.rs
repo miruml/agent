@@ -297,7 +297,6 @@ impl HTTPClient {
         })
     }
 
-    #[doc(hidden)]
     pub fn new_with(
         base_url: &str,
         default_timeout: Duration,

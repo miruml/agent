@@ -5,7 +5,7 @@ use std::sync::Arc;
 // internal crates
 use crate::http::client::HTTPClient;
 use crate::http::errors::HTTPErr;
-use crate::http::expand::build_expand_query;
+use crate::http::expand::format_expand_query;
 use crate::http::pagination::{MAX_PAGINATE_LIMIT, Pagination};
 use crate::http::search::{
     LogicalOperator, SearchOperator, format_search_clause, format_search_group,
@@ -93,8 +93,8 @@ impl ConfigInstancesExt for HTTPClient {
         I: IntoIterator + Send,
         I::Item: fmt::Display,
     {
-        let search_query = format!("search={}", build_search_query(filters));
-        let expand_query = build_expand_query(expansions);
+        let search_query = build_search_query(filters);
+        let expand_query = format_expand_query(expansions);
         let mut pagination = Pagination {
             limit: MAX_PAGINATE_LIMIT, offset: 0,
         };
@@ -102,7 +102,7 @@ impl ConfigInstancesExt for HTTPClient {
 
         loop {
             let query_params = build_query_params(
-                &search_query, expand_query.as_deref(), &pagination,
+                search_query.as_deref(), expand_query.as_deref(), &pagination,
             );
             let resp = self.list_config_instances(&query_params, token).await?;
             config_instances.extend(resp.data);
@@ -181,15 +181,18 @@ impl ConfigInstancesExt for Arc<HTTPClient> {
 
 // ================================ QUERY PARAMS ================================ //
 fn build_query_params(
-    search_query: &str,
+    search_query: Option<&str>,
     expand_query: Option<&str>,
     pagination: &Pagination,
 ) -> String
 {
     let mut query_params = format!(
-        "?{}&limit={}&offset={}",
-        search_query, pagination.limit, pagination.offset,
+        "?limit={}&offset={}",
+        pagination.limit, pagination.offset,
     );
+    if let Some(search_query) = search_query {
+        query_params.push_str(&format!("&{}", search_query));
+    }
     if let Some(expand_query) = expand_query {
         query_params.push_str(&format!("&{}", expand_query));
     }
@@ -282,7 +285,7 @@ pub struct ErrorStatusFilter {
     pub val: Vec<ConfigInstanceErrorStatus>,
 }
 
-fn build_search_query(filters: ConfigInstanceFilters) -> String {
+fn build_search_query(filters: ConfigInstanceFilters) -> Option<String> {
     // build the search query
     let mut clauses: Vec<String> = Vec::new();
     if let Some(ids) = filters.ids {
@@ -331,5 +334,5 @@ fn build_search_query(filters: ConfigInstanceFilters) -> String {
             error_statuses.not,
         ));
     }
-    format_search_group(clauses, LogicalOperator::And)
+    format_search_group(clauses, LogicalOperator::And).map(|s| format!("search={}", s))
 }
