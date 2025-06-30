@@ -17,10 +17,7 @@ use openapi_client::models::{
 use serde::Serialize;
 use crate::trace;
 
-// external crates
-use async_trait::async_trait;
-
-#[async_trait]
+#[allow(async_fn_in_trait)]
 pub trait ConfigSchemasExt: Send + Sync {
     async fn hash_schema(
         &self,
@@ -47,7 +44,6 @@ impl HTTPClient {
     }
 }
 
-#[async_trait]
 impl ConfigSchemasExt for HTTPClient {
     async fn hash_schema(
         &self,
@@ -126,7 +122,6 @@ impl ConfigSchemasExt for HTTPClient {
     }
 }
 
-#[async_trait]
 impl ConfigSchemasExt for Arc<HTTPClient> {
     async fn hash_schema(
         &self,

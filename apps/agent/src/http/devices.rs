@@ -5,10 +5,7 @@ use openapi_client::models::{
     ActivateDeviceRequest, Device, IssueDeviceTokenRequest, TokenResponse,
 };
 
-// external crates
-use async_trait::async_trait;
-
-#[async_trait]
+#[allow(async_fn_in_trait)]
 pub trait DevicesExt: Send + Sync {
     async fn activate_device(
         &self,
@@ -34,7 +31,6 @@ impl HTTPClient {
     }
 }
 
-#[async_trait]
 impl DevicesExt for HTTPClient {
     async fn activate_device(
         &self,

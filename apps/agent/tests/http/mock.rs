@@ -13,9 +13,6 @@ use openapi_client::models::{
     SchemaDigestResponse, TokenResponse, UpdateConfigInstanceRequest,
 };
 
-// external crates
-use async_trait::async_trait;
-
 // ================================== AUTH EXT ===================================== //
 pub struct MockAuthClient {
     pub activate_device_result: Box<dyn Fn() -> Result<Device, HTTPErr> + Send + Sync>,
@@ -31,7 +28,6 @@ impl Default for MockAuthClient {
     }
 }
 
-#[async_trait]
 impl DevicesExt for MockAuthClient {
     async fn activate_device(
         &self,
@@ -94,7 +90,6 @@ impl MockConfigInstancesClient {
     }
 }
 
-#[async_trait]
 impl ConfigInstancesExt for MockConfigInstancesClient {
     async fn list_config_instances(
         &self,
@@ -146,7 +141,6 @@ impl HistoryConfigInstancesClient {
     }
 }
 
-#[async_trait]
 impl ConfigInstancesExt for HistoryConfigInstancesClient {
     async fn list_config_instances(
         &self,
@@ -222,7 +216,6 @@ impl MockConfigSchemasClient {
     }
 }
 
-#[async_trait]
 impl ConfigSchemasExt for MockConfigSchemasClient {
     async fn hash_schema(
         &self,

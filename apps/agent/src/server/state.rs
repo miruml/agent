@@ -108,6 +108,7 @@ impl ServerState {
 
         // initialize the token manager
         let (token_mngr, token_mngr_handle) = TokenManager::spawn(
+            64,
             device_id.clone(),
             http_client.clone(),
             token_file,

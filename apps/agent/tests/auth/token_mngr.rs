@@ -5,18 +5,48 @@ use std::sync::Arc;
 use crate::http::mock::MockAuthClient;
 use config_agent::auth::errors::AuthErr;
 use config_agent::auth::token_mngr::{
-    determine_refresh_loop_sleep_duration, run_refresh_loop, TokenFile, TokenManager,
+    determine_refresh_loop_sleep_duration,
+    run_refresh_loop,
+    SingleThreadTokenManager,
+    TokenFile,
+    TokenManager,
+    Worker,
 };
 use config_agent::crypt::rsa;
-use config_agent::filesys::{dir::Dir, file::File};
-use config_agent::http::errors::{HTTPErr, MockErr};
+use config_agent::filesys::{cached_file::CachedFile, dir::Dir, file::File};
+use config_agent::http::{
+    client::HTTPClient,
+    errors::{HTTPErr, MockErr},
+};
 use config_agent::storage::token::Token;
 use config_agent::trace;
 use openapi_client::models::TokenResponse;
 
 // external crates
 use chrono::{Duration, Utc};
+use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
+
+pub fn spawn(
+    buffer_size: usize,
+    device_id: String,
+    http_client: Arc<MockAuthClient>,
+    token_file: CachedFile<Token>,
+    private_key_file: File,
+) -> Result<(TokenManager, JoinHandle<()>), AuthErr> {
+    let (sender, receiver) = mpsc::channel(buffer_size);
+    let worker = Worker::new(
+        SingleThreadTokenManager::new(
+            device_id,
+            http_client,
+            token_file,
+            private_key_file,
+        )?,
+        receiver,
+    );
+    let worker_handle = tokio::spawn(worker.run());
+    Ok((TokenManager::new(sender), worker_handle))
+}
 
 pub mod spawn {
     use super::*;
@@ -30,12 +60,12 @@ pub mod spawn {
             .unwrap();
         token_file.file.delete().await.unwrap();
 
-        let mock_http_client = MockAuthClient::default();
-
         // spawn the token manager
+        let http_client = HTTPClient::new("doesntmatter").await;
         let result = TokenManager::spawn(
+            32,
             "device_id".to_string(),
-            Arc::new(mock_http_client),
+            Arc::new(http_client),
             token_file,
             File::new("private_key.pem"),
         )
@@ -56,15 +86,17 @@ pub mod spawn {
         let private_key_file = dir.file("private_key.pem");
         private_key_file.delete().await.unwrap();
 
-        let mock_http_client = MockAuthClient::default();
-
+        // spawn the token manager
+        let http_client = HTTPClient::new("doesntmatter").await;
         let result = TokenManager::spawn(
+            32,
             "device_id".to_string(),
-            Arc::new(mock_http_client),
+            Arc::new(http_client),
             token_file,
-            private_key_file,
+            File::new("private_key.pem"),
         )
         .unwrap_err();
+
         assert!(matches!(result, AuthErr::FileSysErr(_)));
     }
 
@@ -80,11 +112,12 @@ pub mod spawn {
         rsa::gen_key_pair(4096, &private_key_file, &public_key_file, true)
             .await
             .unwrap();
-        let mock_http_client = MockAuthClient::default();
 
+        let http_client = HTTPClient::new("doesntmatter").await;
         TokenManager::spawn(
+            32,
             "device_id".to_string(),
-            Arc::new(mock_http_client),
+            Arc::new(http_client),
             token_file,
             private_key_file,
         )
@@ -109,7 +142,8 @@ pub mod shutdown {
             .unwrap();
 
         let mock_http_client = MockAuthClient::default();
-        let (token_mngr, worker_handle) = TokenManager::spawn(
+        let (token_mngr, worker_handle) = spawn(
+            32,
             "device_id".to_string(),
             Arc::new(mock_http_client),
             token_file,
@@ -138,7 +172,8 @@ pub mod get_token {
 
         let mock_http_client = MockAuthClient::default();
 
-        let (token_mngr, _) = TokenManager::spawn(
+        let (token_mngr, _) = spawn(
+            32,
             "device_id".to_string(),
             Arc::new(mock_http_client),
             token_file,
@@ -176,7 +211,8 @@ pub mod refresh_token {
         mock_http_client.issue_device_token_result = Box::new(move || Ok(expected.clone()));
 
         // spawn the token manager
-        let (token_mngr, _) = TokenManager::spawn(
+        let (token_mngr, _) = spawn(
+            32,
             "device_id".to_string(),
             Arc::new(mock_http_client),
             token_file,
@@ -214,7 +250,8 @@ pub mod refresh_token {
         };
 
         // spawn the token manager
-        let (token_mngr, _) = TokenManager::spawn(
+        let (token_mngr, _) = spawn(
+            32,
             "device_id".to_string(),
             Arc::new(mock_http_client),
             token_file,
@@ -253,7 +290,8 @@ pub mod refresh_token {
         };
 
         // spawn the token manager
-        let (token_mngr, _) = TokenManager::spawn(
+        let (token_mngr, _) = spawn(
+            32,
             "device_id".to_string(),
             Arc::new(mock_http_client),
             token_file,
@@ -298,7 +336,8 @@ pub mod refresh_token {
         };
 
         // spawn the token manager
-        let (token_mngr, _) = TokenManager::spawn(
+        let (token_mngr, _) = spawn(
+            32,
             "device_id".to_string(),
             Arc::new(mock_http_client),
             cached_token_file,
@@ -346,7 +385,8 @@ async fn create_token_manager(dir: &Dir, token: Option<Token>) -> (TokenManager,
     };
 
     // spawn the token manager
-    let (token_mngr, worker_handle) = TokenManager::spawn(
+    let (token_mngr, worker_handle) = spawn(
+        32,
         "device_id".to_string(),
         Arc::new(mock_http_client),
         cached_token_file,

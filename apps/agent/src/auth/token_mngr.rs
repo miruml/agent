@@ -10,7 +10,10 @@ use crate::auth::errors::{
 use crate::crypt::{base64, rsa};
 use crate::errors::MiruError;
 use crate::filesys::{cached_file::CachedFile, file::File, path::PathExt};
-use crate::http::devices::DevicesExt;
+use crate::http::{
+    devices::DevicesExt,
+    client::HTTPClient,
+};
 use crate::storage::token::Token;
 use crate::trace;
 use crate::utils::time_delta_to_duration;
@@ -35,7 +38,7 @@ struct IssueTokenClaim {
 }
 
 // ======================== SINGLE THREADED IMPLEMENTATION ========================= //
-struct SingleThreadTokenManager<HTTPClientT: DevicesExt> {
+pub struct SingleThreadTokenManager<HTTPClientT: DevicesExt> {
     device_id: String,
     http_client: Arc<HTTPClientT>,
     token_file: CachedFile<Token>,
@@ -43,7 +46,7 @@ struct SingleThreadTokenManager<HTTPClientT: DevicesExt> {
 }
 
 impl<HTTPClientT: DevicesExt> SingleThreadTokenManager<HTTPClientT> {
-    fn new(
+    pub fn new(
         device_id: String,
         http_client: Arc<HTTPClientT>,
         token_file: CachedFile<Token>,
@@ -165,7 +168,7 @@ impl<HTTPClientT: DevicesExt> SingleThreadTokenManager<HTTPClientT> {
 }
 
 // ========================= MULTI-THREADED IMPLEMENTATION ========================= //
-enum WorkerCommand {
+pub enum WorkerCommand {
     GetToken {
         respond_to: oneshot::Sender<Result<Arc<Token>, AuthErr>>,
     },
@@ -177,13 +180,23 @@ enum WorkerCommand {
     },
 }
 
-struct Worker<HTTPClientT: DevicesExt> {
+pub struct Worker<HTTPClientT: DevicesExt> {
     token_mngr: SingleThreadTokenManager<HTTPClientT>,
     receiver: Receiver<WorkerCommand>,
 }
 
 impl<HTTPClientT: DevicesExt> Worker<HTTPClientT> {
-    async fn run(mut self) {
+    pub fn new(
+        token_mngr: SingleThreadTokenManager<HTTPClientT>,
+        receiver: Receiver<WorkerCommand>,
+    ) -> Self {
+        Self { token_mngr, receiver }
+    }
+}
+
+
+impl<HTTPClientT: DevicesExt> Worker<HTTPClientT> {
+    pub async fn run(mut self) {
         while let Some(cmd) = self.receiver.recv().await {
             match cmd {
                 WorkerCommand::Shutdown { respond_to } => {
@@ -217,13 +230,14 @@ pub struct TokenManager {
 }
 
 impl TokenManager {
-    pub fn spawn<HTTPClientT: DevicesExt + 'static>(
+    pub fn spawn(
+        buffer_size: usize,
         device_id: String,
-        http_client: Arc<HTTPClientT>,
+        http_client: Arc<HTTPClient>,
         token_file: CachedFile<Token>,
         private_key_file: File,
     ) -> Result<(Self, JoinHandle<()>), AuthErr> {
-        let (sender, receiver) = mpsc::channel(32);
+        let (sender, receiver) = mpsc::channel(buffer_size);
         let worker = Worker {
             token_mngr: SingleThreadTokenManager::new(
                 device_id,
@@ -235,6 +249,10 @@ impl TokenManager {
         };
         let worker_handle = tokio::spawn(worker.run());
         Ok((Self { sender }, worker_handle))
+    }
+
+    pub fn new(sender: Sender<WorkerCommand>) -> Self {
+        Self { sender }
     }
 
     pub async fn shutdown(&self) -> Result<(), AuthErr> {

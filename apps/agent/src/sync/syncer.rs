@@ -10,7 +10,10 @@ use crate::deploy::{
 };
 use crate::errors::MiruError;
 use crate::filesys::dir::Dir;
-use crate::http::config_instances::ConfigInstancesExt;
+use crate::http::{
+    client::HTTPClient,
+    config_instances::ConfigInstancesExt,
+};
 use crate::storage::config_instances::{
     ConfigInstanceCache,
     ConfigInstanceDataCache,
@@ -29,14 +32,17 @@ use crate::trace;
 
 // external crates
 use chrono::{DateTime, Utc};
-use tokio::sync::mpsc::{self, Receiver, Sender};
-use tokio::sync::oneshot;
+use tokio::sync::{
+    mpsc,
+    mpsc::{Receiver, Sender},
+    oneshot,
+};
 use tokio::task::JoinHandle;
 use tracing::{error, info};
 
 
 // ======================== SINGLE-THREADED IMPLEMENTATION ========================= //
-struct SingleThreadSyncer<HTTPClientT: ConfigInstancesExt> {
+pub struct SingleThreadSyncer<HTTPClientT: ConfigInstancesExt> {
     device_id: String,
     http_client: Arc<HTTPClientT>,
     token_mngr: Arc<TokenManager>,
@@ -47,7 +53,7 @@ struct SingleThreadSyncer<HTTPClientT: ConfigInstancesExt> {
 
 impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
     
-    fn new(
+    pub fn new(
         device_id: String,
         http_client: Arc<HTTPClientT>,
         token_mngr: Arc<TokenManager>,
@@ -140,9 +146,8 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
 }
 
 
-
 // ========================= MULTI-THREADED IMPLEMENTATION ========================= //
-enum WorkerCommand {
+pub enum WorkerCommand {
     Shutdown {
         respond_to: oneshot::Sender<Result<(), SyncErr>>,
     },
@@ -203,14 +208,16 @@ pub struct Syncer {
 }
 
 impl Syncer {
-    pub fn spawn<HTTPClientT: ConfigInstancesExt + 'static>(
+
+    pub fn spawn(
+        buffer_size: usize,
         device_id: String,
-        http_client: Arc<HTTPClientT>,
+        http_client: Arc<HTTPClient>,
         token_mngr: Arc<TokenManager>,
         deployment_dir: Dir,
         fsm_settings: fsm::Settings,
-    ) -> (Self, JoinHandle<()>) {
-        let (sender, receiver) = mpsc::channel(100);
+    ) -> Result<(Self, JoinHandle<()>), SyncErr> {
+        let (sender, receiver) = mpsc::channel(buffer_size);
         let worker = Worker {
             syncer: SingleThreadSyncer::new(
                 device_id,
@@ -221,8 +228,12 @@ impl Syncer {
             ),
             receiver,
         };
-        let worker_handle = tokio::spawn( worker.run() );
-        (Self { sender }, worker_handle)
+        let worker_handle = tokio::spawn(worker.run());
+        Ok((Self { sender }, worker_handle))
+    }
+
+    pub fn new(sender: Sender<WorkerCommand>) -> Self {
+        Self { sender }
     }
 
     pub async fn shutdown(&self) -> Result<(), SyncErr> {

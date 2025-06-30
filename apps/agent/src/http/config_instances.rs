@@ -21,9 +21,8 @@ use openapi_client::models::{
 };
 
 // external crates
-use async_trait::async_trait;
 
-#[async_trait]
+#[allow(async_fn_in_trait)]
 pub trait ConfigInstancesExt: Send + Sync {
     async fn list_config_instances(
         &self,
@@ -60,7 +59,6 @@ impl HTTPClient {
     }
 }
 
-#[async_trait]
 impl ConfigInstancesExt for HTTPClient {
     async fn list_config_instances(
         &self,
@@ -140,7 +138,6 @@ impl ConfigInstancesExt for HTTPClient {
     }
 }
 
-#[async_trait]
 impl ConfigInstancesExt for Arc<HTTPClient> {
     async fn list_config_instances(
         &self,
