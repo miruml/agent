@@ -24,10 +24,10 @@ pub mod pull_config_instances_func {
         // define the caches
         let dir = Dir::create_temp_dir("apply").await.unwrap();
         let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            dir.file("metadata.json"), 16,
+            16, dir.file("metadata.json"),
         ).await.unwrap();
         let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            dir.subdir("instances"), 16,
+            16, dir.subdir("instances"),
         ).await.unwrap();
 
         // define the mock http client
@@ -52,10 +52,10 @@ pub mod pull_config_instances_func {
         // define the caches
         let dir = Dir::create_temp_dir("apply").await.unwrap();
         let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            dir.file("metadata.json"), 16,
+            16, dir.file("metadata.json"),
         ).await.unwrap();
         let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            dir.subdir("instances"), 16,
+            16, dir.subdir("instances"),
         ).await.unwrap();
 
         // define the mock http client
@@ -104,10 +104,10 @@ pub mod pull_config_instances_func {
         // define the caches
         let dir = Dir::create_temp_dir("apply").await.unwrap();
         let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            dir.file("metadata.json"), 16,
+            16, dir.file("metadata.json"),
         ).await.unwrap();
         let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            dir.subdir("instances"), 16,
+            16, dir.subdir("instances"),
         ).await.unwrap();
 
         // define the mock http client
@@ -182,13 +182,13 @@ pub mod pull_config_instances_func {
         // define the caches
         let dir = Dir::create_temp_dir("apply").await.unwrap();
         let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            dir.file("metadata.json"), 16,
+            16, dir.file("metadata.json"),
         ).await.unwrap();
         metadata_cache.write(
             id.clone(), existing_instance.clone(), |_, _| false, true,
         ).await.unwrap();
         let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            dir.subdir("instances"), 16,
+            16, dir.subdir("instances"),
         ).await.unwrap();
         instance_cache.write(
             id.clone(), instance_data.clone(), |_, _| false, true,
@@ -251,13 +251,13 @@ pub mod pull_config_instances_func {
         // define the caches
         let dir = Dir::create_temp_dir("apply").await.unwrap();
         let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            dir.file("metadata.json"), 16,
+            16, dir.file("metadata.json"),
         ).await.unwrap();
         metadata_cache.write(
             id.clone(), existing_instance.clone(), |_, _| false, true,
         ).await.unwrap();
         let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            dir.subdir("instances"), 16,
+            16, dir.subdir("instances"),
         ).await.unwrap();
         instance_cache.write(
             id.clone(), instance_data.clone(), |_, _| false, true,

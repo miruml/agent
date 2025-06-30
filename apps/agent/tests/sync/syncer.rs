@@ -6,14 +6,24 @@ use config_agent::auth::token_mngr::{
     TokenFile,
     TokenManager,
 };
+use config_agent::crud::prelude::*;
 use config_agent::deploy::fsm;
 use config_agent::filesys::dir::Dir;
-use config_agent::http::client::HTTPClient;
+use config_agent::http::{
+    client::HTTPClient,
+    errors::{HTTPErr, MockErr},
+};
+use config_agent::models::config_instance::ActivityStatus;
 use config_agent::storage::token::Token;
+use config_agent::storage::config_instances::{
+    ConfigInstanceCache,
+    ConfigInstanceDataCache,
+};
 use config_agent::sync::{
     errors::SyncErr,
     syncer::{SingleThreadSyncer, Syncer, Worker},
 };
+use config_agent::trace;
 use crate::auth::token_mngr::spawn as spawn_token_manager;
 use crate::http::mock::{MockAuthClient, MockConfigInstancesClient};
 
@@ -93,20 +103,150 @@ pub mod sync {
 
     #[tokio::test]
     async fn network_error_ignored() {
+        let dir = Dir::create_temp_dir("spawn").await.unwrap();
+        let auth_client = Arc::new(MockAuthClient::default());
+        let (token_mngr, _) = create_token_manager(&dir, auth_client.clone()).await;
+
+        let mut http_client = MockConfigInstancesClient::default();
+        http_client.set_list_all_config_instances(|| {
+            Err(HTTPErr::MockErr(Box::new(MockErr{
+                is_network_connection_error: true,
+                trace: trace!(),
+            })))
+        });
+        http_client.set_update_config_instance(|| {
+            Err(HTTPErr::MockErr(Box::new(MockErr{
+                is_network_connection_error: true,
+                trace: trace!(),
+            })))
+        });
+
+        let (syncer, _) = spawn(
+            32,
+            "device_id".to_string(),
+            Arc::new(http_client),
+            Arc::new(token_mngr),
+            dir.clone(),
+            fsm::Settings::default(),
+        ).unwrap();
+
+        // create the caches
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(
+            16, dir.file("cfg_inst_cache.json"),
+        ).await.unwrap();
+        let (cfg_inst_data_cache, _) = ConfigInstanceDataCache::spawn(
+            16, dir.subdir("cfg_inst_data_cache"),
+        ).await.unwrap();
+
+        syncer.sync(
+            Arc::new(cfg_inst_cache),
+            Arc::new(cfg_inst_data_cache),
+            true,
+        ).await.unwrap();
     }
 
     #[tokio::test]
     async fn network_error_not_ignored() {
+        let dir = Dir::create_temp_dir("spawn").await.unwrap();
+        let auth_client = Arc::new(MockAuthClient::default());
+        let (token_mngr, _) = create_token_manager(&dir, auth_client.clone()).await;
+
+        let mut http_client = MockConfigInstancesClient::default();
+        http_client.set_list_all_config_instances(|| {
+            Err(HTTPErr::MockErr(Box::new(MockErr{
+                is_network_connection_error: true,
+                trace: trace!(),
+            })))
+        });
+        http_client.set_update_config_instance(|| {
+            Err(HTTPErr::MockErr(Box::new(MockErr{
+                is_network_connection_error: true,
+                trace: trace!(),
+            })))
+        });
+
+        let (syncer, _) = spawn(
+            32,
+            "device_id".to_string(),
+            Arc::new(http_client),
+            Arc::new(token_mngr),
+            dir.clone(),
+            fsm::Settings::default(),
+        ).unwrap();
+
+        // create the caches
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(
+            16, dir.file("cfg_inst_cache.json"),
+        ).await.unwrap();
+        let (cfg_inst_data_cache, _) = ConfigInstanceDataCache::spawn(
+            16, dir.subdir("cfg_inst_data_cache"),
+        ).await.unwrap();
+
+        syncer.sync(
+            Arc::new(cfg_inst_cache),
+            Arc::new(cfg_inst_data_cache),
+            false,
+        ).await.unwrap_err();
     }
 
     #[tokio::test]
-    async fn already_synced() {
-    }
+    async fn pull_deploy_and_push() {
+        let dir = Dir::create_temp_dir("spawn").await.unwrap();
+        let auth_client = Arc::new(MockAuthClient::default());
+        let (token_mngr, _) = create_token_manager(&dir, auth_client.clone()).await;
 
-    #[tokio::test]
-    async fn pull_and_deploy_and_push_new_instance() {
-    }
+        // define the new instance
+        let id = "new_instance".to_string();
+        let new_instance_data = serde_json::json!({"id": id});
+        let new_instance = openapi_client::models::BackendConfigInstance {
+            id: id.clone(),
+            target_status: openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_DEPLOYED,
+            instance: Some(new_instance_data.clone()),
+            ..Default::default()
+        };
+        let mut http_client = MockConfigInstancesClient::default();
+        let new_instance_cloned = new_instance.clone();
+        http_client.set_list_all_config_instances(move || {
+            Ok(vec![new_instance_cloned.clone()])
+        });
 
+        let (syncer, _) = spawn(
+            32,
+            "device_id".to_string(),
+            Arc::new(http_client),
+            Arc::new(token_mngr),
+            dir.clone(),
+            fsm::Settings::default(),
+        ).unwrap();
+
+        // create the caches
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(
+            16, dir.file("cfg_inst_cache.json"),
+        ).await.unwrap();
+        let (cfg_inst_data_cache, _) = ConfigInstanceDataCache::spawn(
+            16, dir.subdir("cfg_inst_data_cache"),
+        ).await.unwrap();
+        let cfg_inst_cache = Arc::new(cfg_inst_cache);
+        let cfg_inst_data_cache = Arc::new(cfg_inst_data_cache);
+
+        syncer.sync(
+            cfg_inst_cache.clone(),
+            cfg_inst_data_cache.clone(),
+            false,
+        ).await.unwrap();
+
+        // check the metadata cache has the new instance
+        let cache_cfg_inst = cfg_inst_cache.read(id.clone()).await.unwrap();
+        assert_eq!(cache_cfg_inst.activity_status, ActivityStatus::Deployed);
+
+        // check the data cache has the new instance data
+        let cache_cfg_inst_data = cfg_inst_data_cache.read(id.clone()).await.unwrap();
+        assert_eq!(cache_cfg_inst_data, new_instance_data);
+
+        // check that the metadata cache isn't dirty
+        let unsynced_entries = cfg_inst_cache.get_dirty_entries().await.unwrap();
+        assert_eq!(unsynced_entries.len(), 0);
+    }
 }
 
 pub mod get_last_synced_at {

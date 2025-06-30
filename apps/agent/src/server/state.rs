@@ -67,7 +67,7 @@ impl ServerState {
 
         // initialize the caches
         let (cfg_sch_digest_cache, cfg_sch_digest_cache_handle) =
-            ConfigSchemaDigestCache::spawn(layout.config_schema_digest_cache(), 64)
+            ConfigSchemaDigestCache::spawn(64, layout.config_schema_digest_cache())
                 .await
                 .map_err(|e| {
                     ServerErr::CacheErr(Box::new(ServerCacheErr {
@@ -78,7 +78,7 @@ impl ServerState {
         let cfg_sch_digest_cache = Arc::new(cfg_sch_digest_cache);
 
         let (cfg_schema_cache, cfg_schema_cache_handle) =
-            ConfigSchemaCache::spawn(layout.config_schema_cache(), 64)
+            ConfigSchemaCache::spawn(64, layout.config_schema_cache())
                 .await
                 .map_err(|e| {
                     ServerErr::CacheErr(Box::new(ServerCacheErr {
@@ -89,7 +89,7 @@ impl ServerState {
         let cfg_schema_cache = Arc::new(cfg_schema_cache);
 
         let (cfg_inst_metadata_cache, cfg_inst_metadata_cache_handle) =
-            ConfigInstanceCache::spawn(layout.config_instance_metadata_cache(), 100)
+            ConfigInstanceCache::spawn(64, layout.config_instance_metadata_cache())
                 .await
                 .map_err(|e| {
                     ServerErr::CacheErr(Box::new(ServerCacheErr {
@@ -100,7 +100,7 @@ impl ServerState {
         let cfg_inst_metadata_cache = Arc::new(cfg_inst_metadata_cache);
 
         let (cfg_inst_data_cache, cfg_inst_data_cache_handle) =
-            ConfigInstanceDataCache::spawn(layout.config_instance_data_cache(), 64)
+            ConfigInstanceDataCache::spawn(64, layout.config_instance_data_cache())
                 .await
                 .map_err(|e| {
                     ServerErr::CacheErr(Box::new(ServerCacheErr {

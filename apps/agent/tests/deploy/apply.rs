@@ -125,10 +125,10 @@ pub mod apply_func {
     async fn no_instances() {
         let dir = Dir::create_temp_dir("apply").await.unwrap();
         let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            dir.file("metadata.json"), 16,
+            16, dir.file("metadata.json"),
         ).await.unwrap();
         let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            dir.clone(), 16,
+            16, dir.clone(),
         ).await.unwrap();
 
         let result = apply(
@@ -154,10 +154,10 @@ pub mod apply_func {
         // create the cache but omit the instance data
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
         let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            dir.file("metadata.json"), 16,
+            16, dir.file("metadata.json"),
         ).await.unwrap();
         let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            dir.clone(), 16,
+            16, dir.clone(),
         ).await.unwrap();
         instance_cache.write(
             instance.id.clone(), json!({"speed": 4}), |_, _| false, true,
@@ -204,10 +204,10 @@ pub mod apply_func {
         // create the cache but omit the instance data
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
         let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            dir.file("metadata.json"), 16,
+            16, dir.file("metadata.json"),
         ).await.unwrap();
         let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            dir.clone(), 16,
+            16, dir.clone(),
         ).await.unwrap();
         instance_cache.write(
             instance1.id.clone(), json!({"speed": 4}), |_, _| false, true,
@@ -270,10 +270,10 @@ pub mod apply_func {
         // create the instance in the cache
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
         let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            dir.file("metadata.json"), 16,
+            16, dir.file("metadata.json"),
         ).await.unwrap();
         let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            dir.clone(), 16,
+            16, dir.clone(),
         ).await.unwrap();
         instance_cache.write(
             instance.id.clone(), json!({"speed": 4}), |_, _| false, true,
@@ -322,7 +322,7 @@ pub mod apply_func {
         // create the cache but omit the instance data
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
         let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            dir.file("metadata.json"), 16,
+            16, dir.file("metadata.json"),
         ).await.unwrap();
         metadata_cache.write(
             to_remove.id.clone(), to_remove.clone(), |_, _| false, true,
@@ -331,7 +331,7 @@ pub mod apply_func {
             to_deploy.id.clone(), to_deploy.clone(), |_, _| false, true,
         ).await.unwrap();
         let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            dir.clone(), 16,
+            16, dir.clone(),
         ).await.unwrap();
         let to_remove_data = json!({"speed": 4});
         instance_cache.write(
@@ -404,7 +404,7 @@ pub mod apply_func {
         // create the cache but omit the instance data
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
         let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            dir.file("metadata.json"), 16,
+            16, dir.file("metadata.json"),
         ).await.unwrap();
         metadata_cache.write(
             to_remove.id.clone(), to_remove.clone(), |_, _| false, true,
@@ -413,7 +413,7 @@ pub mod apply_func {
             to_deploy.id.clone(), to_deploy.clone(), |_, _| false, true,
         ).await.unwrap();
         let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            dir.clone(), 16,
+            16, dir.clone(),
         ).await.unwrap();
         let to_remove_data = json!({"speed": 4});
         instance_cache.write(
@@ -487,7 +487,7 @@ pub mod apply_func {
         // create the cache but omit the instance data
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
         let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            dir.file("metadata.json"), 16,
+            16, dir.file("metadata.json"),
         ).await.unwrap();
         metadata_cache.write(
             to_remove.id.clone(), to_remove.clone(), |_, _| false, true,
@@ -496,7 +496,7 @@ pub mod apply_func {
             to_deploy.id.clone(), to_deploy.clone(), |_, _| false, true,
         ).await.unwrap();
         let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            dir.clone(), 16,
+            16, dir.clone(),
         ).await.unwrap();
         let to_remove_data = json!({"speed": 4});
         instance_cache.write(
@@ -547,7 +547,7 @@ pub mod find_instances_to_replace_func {
     async fn no_matches() {
         let dir = Dir::create_temp_dir("apply").await.unwrap();
         let (cache, _) = FileCache::spawn(
-            dir.file("cache.json"), 16,
+            16, dir.file("cache.json"),
         ).await.unwrap();
 
         let instance = ConfigInstance {
@@ -576,7 +576,7 @@ pub mod find_instances_to_replace_func {
     async fn one_file_path_match() {
         let dir = Dir::create_temp_dir("apply").await.unwrap();
         let (cache, _) = FileCache::spawn(
-            dir.file("cache.json"), 16,
+            16, dir.file("cache.json"),
         ).await.unwrap();
 
         let filepath = "/test/filepath".to_string();
@@ -607,7 +607,7 @@ pub mod find_instances_to_replace_func {
     async fn one_config_schema_match() {
         let dir = Dir::create_temp_dir("apply").await.unwrap();
         let (cache, _) = FileCache::spawn(
-            dir.file("cache.json"), 16,
+            16, dir.file("cache.json"),
         ).await.unwrap();
 
         let instance = ConfigInstance {
@@ -636,7 +636,7 @@ pub mod find_instances_to_replace_func {
     async fn multiple_matches() {
         let dir = Dir::create_temp_dir("apply").await.unwrap();
         let (cache, _) = FileCache::spawn(
-            dir.file("cache.json"), 16,
+            16, dir.file("cache.json"),
         ).await.unwrap();
 
         let instance = ConfigInstance {
@@ -676,7 +676,7 @@ pub mod find_instances_to_replace_func {
     async fn conflicting_target_status() {
         let dir = Dir::create_temp_dir("apply").await.unwrap();
         let (cache, _) = FileCache::spawn(
-            dir.file("cache.json"), 16,
+            16, dir.file("cache.json"),
         ).await.unwrap();
 
         let instance = ConfigInstance {
@@ -709,7 +709,7 @@ pub mod find_replacement_func {
     async fn no_matches() {
         let dir = Dir::create_temp_dir("apply").await.unwrap();
         let (cache, _) = FileCache::spawn(
-            dir.file("cache.json"), 16,
+            16, dir.file("cache.json"),
         ).await.unwrap();
 
         let instance = ConfigInstance {
@@ -737,7 +737,7 @@ pub mod find_replacement_func {
     async fn one_match_no_cooldown() {
         let dir = Dir::create_temp_dir("apply").await.unwrap();
         let (cache, _) = FileCache::spawn(
-            dir.file("cache.json"), 16,
+            16, dir.file("cache.json"),
         ).await.unwrap();
 
         let instance = ConfigInstance {
@@ -766,7 +766,7 @@ pub mod find_replacement_func {
     async fn one_match_in_cooldown() {
         let dir = Dir::create_temp_dir("apply").await.unwrap();
         let (cache, _) = FileCache::spawn(
-            dir.file("cache.json"), 16,
+            16, dir.file("cache.json"),
         ).await.unwrap();
 
         let instance = ConfigInstance {
@@ -796,7 +796,7 @@ pub mod find_replacement_func {
     async fn multiple_matches_no_cooldown() {
         let dir = Dir::create_temp_dir("apply").await.unwrap();
         let (cache, _) = FileCache::spawn(
-            dir.file("cache.json"), 16,
+            16, dir.file("cache.json"),
         ).await.unwrap();
 
         let instance = ConfigInstance {

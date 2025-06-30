@@ -9,7 +9,6 @@ use crate::errors::{
 use crate::{utils, utils::Colors};
 use config_agent::crypt::jwt;
 use config_agent::http::devices::DevicesExt;
-use config_agent::logs::LogLevel;
 use config_agent::models::agent::Agent;
 use config_agent::storage::{layout::StorageLayout, setup::setup_storage};
 use config_agent::trace;

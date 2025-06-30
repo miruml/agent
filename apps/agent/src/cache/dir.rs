@@ -200,8 +200,8 @@ where
     V: ConcurrentCacheValue,
 {
     pub async fn spawn(
-        dir: Dir,
         buffer_size: usize,
+        dir: Dir,
     ) -> Result<(Self, JoinHandle<()>), CacheErr> {
         let (sender, receiver) = mpsc::channel::<WorkerCommand<K, V>>(buffer_size);
         let worker = Worker {

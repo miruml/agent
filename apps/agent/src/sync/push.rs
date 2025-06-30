@@ -18,9 +18,7 @@ pub async fn push_config_instances<HTTPClientT: ConfigInstancesExt>(
 ) -> Result<(), SyncErr> {
 
     // get all unsynced instances
-    let unsynced_entries = cfg_inst_cache.find_entries_where(
-        |entry| { entry.is_dirty }
-    ).await.map_err(|e| SyncErr::CacheErr(Box::new(SyncCacheErr {
+    let unsynced_entries = cfg_inst_cache.get_dirty_entries().await.map_err(|e| SyncErr::CacheErr(Box::new(SyncCacheErr {
         source: e,
         trace: trace!(),
     })))?;

@@ -20,7 +20,7 @@ pub mod concurrent {
             .await
             .unwrap()
             .file("cache.json");
-        TestCache::spawn(file.clone(), 32).await.unwrap()
+        TestCache::spawn(32, file.clone()).await.unwrap()
     }
 
     pub mod spawn {
@@ -32,11 +32,11 @@ pub mod concurrent {
                 .await
                 .unwrap()
                 .file("cache.json");
-            TestCache::spawn(file.clone(), 32).await.unwrap();
+            TestCache::spawn(32, file.clone()).await.unwrap();
             assert!(file.exists());
 
             // spawn again should not fail
-            TestCache::spawn(file.clone(), 32).await.unwrap();
+            TestCache::spawn(32, file.clone()).await.unwrap();
         }
     }
 

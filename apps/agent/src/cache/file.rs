@@ -159,8 +159,8 @@ where
     V: ConcurrentCacheValue,
 {
     pub async fn spawn(
-        file: File,
         buffer_size: usize,
+        file: File,
     ) -> Result<(Self, JoinHandle<()>), CacheErr> {
 
         let (sender, receiver) = mpsc::channel::<WorkerCommand<K, V>>(buffer_size);

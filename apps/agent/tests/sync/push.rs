@@ -19,7 +19,7 @@ pub mod push_config_instances_func {
         // define the caches
         let dir = Dir::create_temp_dir("apply").await.unwrap();
         let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            dir.file("metadata.json"), 16,
+            16, dir.file("metadata.json"),
         ).await.unwrap();
 
         // define the mock http client
@@ -42,7 +42,7 @@ pub mod push_config_instances_func {
         // define the caches
         let dir = Dir::create_temp_dir("apply").await.unwrap();
         let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            dir.file("metadata.json"), 16,
+            16, dir.file("metadata.json"),
         ).await.unwrap();
 
         // create the instance
@@ -69,7 +69,7 @@ pub mod push_config_instances_func {
         // define the caches
         let dir = Dir::create_temp_dir("apply").await.unwrap();
         let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            dir.file("metadata.json"), 16,
+            16, dir.file("metadata.json"),
         ).await.unwrap();
 
         // create the instance

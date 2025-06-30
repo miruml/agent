@@ -23,7 +23,7 @@ pub mod concurrent {
             .await
             .unwrap()
             .subdir(PathBuf::from("cache"));
-        TestCache::spawn(dir.clone(), 32).await.unwrap()
+        TestCache::spawn(32, dir.clone()).await.unwrap()
     }
 
     concurrent_cache_tests!(spawn_cache);
@@ -34,12 +34,12 @@ pub mod concurrent {
             .await
             .unwrap()
             .subdir(PathBuf::from("cache"));
-        let _ = TestCache::spawn(dir.clone(), 32).await.unwrap();
+        let _ = TestCache::spawn(32, dir.clone()).await.unwrap();
         // the directory should not exist yet
         assert!(dir.exists());
 
         // spawn again should not fail
-        let _ = TestCache::spawn(dir.clone(), 32).await.unwrap();
+        let _ = TestCache::spawn(32, dir.clone()).await.unwrap();
     }
 
     #[tokio::test]
@@ -48,7 +48,7 @@ pub mod concurrent {
             .await
             .unwrap()
             .subdir(PathBuf::from("cache"));
-        let (cache, _) = TestCache::spawn(dir.clone(), 32).await.unwrap();
+        let (cache, _) = TestCache::spawn(32, dir.clone()).await.unwrap();
 
         // write invalid json files to files in the cache directory
         let invalid_json_file = dir.file("invalid.json");

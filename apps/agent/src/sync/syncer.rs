@@ -99,7 +99,8 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
         match result {
             Ok(_) => (),
             Err(e) => {
-                if !ignore_network_errors && !e.is_network_connection_error() {
+                error!("Error pulling config instances: {:?}", e);
+                if !ignore_network_errors || !e.is_network_connection_error() {
                     return Err(e);
                 }
             }
@@ -135,7 +136,8 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
         match result {
             Ok(_) => (),
             Err(e) => {
-                if !ignore_network_errors && !e.is_network_connection_error() {
+                error!("Error pushing config instances: {:?}", e);
+                if !ignore_network_errors || !e.is_network_connection_error() {
                     return Err(e);
                 }
             }
