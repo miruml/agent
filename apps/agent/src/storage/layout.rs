@@ -59,7 +59,9 @@ impl StorageLayout {
         self.config_instance_caches().subdir("instances")
     }
 
-
+    pub fn config_instance_deployment_dir(&self) -> Dir {
+        self.root.subdir("/srv/miru/config_instances")
+    }
 }
 
 impl Default for StorageLayout {

@@ -62,6 +62,7 @@ pub fn is_action_required(action: NextAction) -> bool {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct Settings {
     pub max_attempts: u32,
     pub exp_backoff_base_secs: u32,

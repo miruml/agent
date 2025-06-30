@@ -8,6 +8,7 @@ use crate::errors::{Code, HTTPCode, MiruError, Trace};
 use crate::http::errors::HTTPErr;
 use crate::models::errors::ModelsErr;
 use crate::storage::errors::StorageErr;
+use crate::sync::errors::SyncErr;
 
 // external crates
 use serde_json::json;
@@ -73,6 +74,36 @@ impl MiruError for ServiceModelsErr {
 impl fmt::Display for ServiceModelsErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Models Error: {}", self.source)
+    }
+}
+
+#[derive(Debug)]
+pub struct ServiceSyncErr {
+    pub source: SyncErr,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for ServiceSyncErr {
+    fn code(&self) -> Code {
+        self.source.code()
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        self.source.http_status()
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        self.source.is_network_connection_error()
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        self.source.params()
+    }
+}
+
+impl fmt::Display for ServiceSyncErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Sync Error: {}", self.source)
     }
 }
 
@@ -207,6 +238,7 @@ pub enum ServiceErr {
     ModelsErr(Box<ServiceModelsErr>),
     StorageErr(Box<ServiceStorageErr>),
     HTTPErr(Box<ServiceHTTPErr>),
+    SyncErr(Box<ServiceSyncErr>),
 }
 
 macro_rules! forward_error_method {
@@ -219,6 +251,7 @@ macro_rules! forward_error_method {
             Self::ModelsErr(e) => e.$method($($arg)?),
             Self::StorageErr(e) => e.$method($($arg)?),
             Self::HTTPErr(e) => e.$method($($arg)?),
+            Self::SyncErr(e) => e.$method($($arg)?),
         }
     };
 }

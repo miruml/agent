@@ -12,6 +12,7 @@ use crate::filesys::file::File;
 use crate::http::errors::HTTPErr;
 use crate::services::errors::ServiceErr;
 use crate::storage::errors::StorageErr;
+use crate::sync::errors::SyncErr;
 
 #[derive(Debug)]
 pub struct ServerCacheErr {
@@ -290,6 +291,37 @@ impl fmt::Display for ServerServiceErr {
 }
 
 #[derive(Debug)]
+pub struct ServerSyncErr {
+    pub source: SyncErr,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for ServerSyncErr {
+    fn code(&self) -> Code {
+        self.source.code()
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        self.source.http_status()
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        self.source.is_network_connection_error()
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        self.source.params()
+    }
+}
+
+impl fmt::Display for ServerSyncErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "server sync error: {}", self.source)
+    }
+}
+
+
+#[derive(Debug)]
 pub struct BindUnixSocketErr {
     pub socket_file: File,
     pub source: std::io::Error,
@@ -457,8 +489,9 @@ pub enum ServerErr {
     CryptErr(Box<ServerCryptErr>),
     FileSysErr(Box<ServerFileSysErr>),
     HTTPErr(Box<ServerHTTPErr>),
-    StorageErr(Box<ServerStorageErr>),
     ServiceErr(Box<ServerServiceErr>),
+    StorageErr(Box<ServerStorageErr>),
+    SyncErr(Box<ServerSyncErr>),
 
     // external crate errors
     BindUnixSocketErr(Box<BindUnixSocketErr>),
@@ -477,8 +510,9 @@ macro_rules! forward_error_method {
             Self::CryptErr(e) => e.$method($($arg)?),
             Self::FileSysErr(e) => e.$method($($arg)?),
             Self::HTTPErr(e) => e.$method($($arg)?),
-            Self::StorageErr(e) => e.$method($($arg)?),
             Self::ServiceErr(e) => e.$method($($arg)?),
+            Self::StorageErr(e) => e.$method($($arg)?),
+            Self::SyncErr(e) => e.$method($($arg)?),
             Self::BindUnixSocketErr(e) => e.$method($($arg)?),
             Self::RunAxumServerErr(e) => e.$method($($arg)?),
             Self::SendShutdownSignalErr(e) => e.$method($($arg)?),

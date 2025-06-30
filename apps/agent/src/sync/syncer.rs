@@ -168,6 +168,18 @@ pub struct Worker<HTTPClientT: ConfigInstancesExt + Send> {
 }
 
 impl<HTTPClientT: ConfigInstancesExt + Send> Worker<HTTPClientT> {
+    pub fn new(
+        syncer: SingleThreadSyncer<HTTPClientT>,
+        receiver: Receiver<WorkerCommand>,
+    ) -> Self {
+        Self {
+            syncer,
+            receiver,
+        }
+    }
+}
+
+impl<HTTPClientT: ConfigInstancesExt + Send> Worker<HTTPClientT> {
     pub async fn run(mut self) {
         while let Some(cmd) = self.receiver.recv().await {
             match cmd {
@@ -203,6 +215,7 @@ impl<HTTPClientT: ConfigInstancesExt + Send> Worker<HTTPClientT> {
     }
 }
 
+#[derive(Debug)]
 pub struct Syncer {
     sender: Sender<WorkerCommand>,
 }

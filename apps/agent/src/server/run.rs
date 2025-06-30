@@ -8,6 +8,7 @@ use std::time::{Duration, SystemTime};
 // internal crates
 use crate::auth::token_mngr::run_refresh_loop;
 use crate::auth::token_mngr::TokenManager;
+use crate::deploy::fsm;
 use crate::filesys::file::File;
 use crate::http::client::HTTPClient;
 use crate::server::errors::{JoinHandleErr, ServerAuthErr, ServerErr, ShutdownMngrDuplicateArgErr};
@@ -35,6 +36,9 @@ pub struct RunServerOptions {
     pub backend_base_url: String,
     pub socket_file: File,
 
+    // fsm settings
+    pub fsm_settings: fsm::Settings,
+
     // caches
     pub config_schema_digest_cache_max_size: usize,
     pub config_instance_cache_max_size: usize,
@@ -56,6 +60,9 @@ impl Default for RunServerOptions {
             socket_file: File::new("/run/miru/miru.sock"),
             backend_base_url: "https://configs.api.miruml.com/agent/v1".to_string(),
             layout: StorageLayout::default(),
+
+            // fsm settings
+            fsm_settings: fsm::Settings::default(),
 
             // caches
             config_schema_digest_cache_max_size: 100,
@@ -150,6 +157,7 @@ async fn start_server(
     let (state, state_handle) = ServerState::new(
         options.layout.clone(),
         Arc::new(HTTPClient::new(&options.backend_base_url).await),
+        options.fsm_settings,
     )
     .await?;
     let state = Arc::new(state);

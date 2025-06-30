@@ -7,17 +7,19 @@ use std::time::{SystemTime, UNIX_EPOCH};
 // internal crates
 use crate::auth::token_mngr::TokenManager;
 use crate::crypt::jwt;
+use crate::deploy::fsm;
 use crate::filesys::{cached_file::CachedFile, file::File, path::PathExt};
 use crate::http::client::HTTPClient;
 use crate::models::agent::Agent;
 use crate::server::errors::{
-    MissingDeviceIDErr, ServerAuthErr, ServerErr, ServerFileSysErr, ServerCacheErr,
+    MissingDeviceIDErr, ServerAuthErr, ServerErr, ServerFileSysErr, ServerCacheErr, ServerSyncErr
 };
 use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
 use crate::storage::digests::ConfigSchemaDigestCache;
 use crate::storage::config_schemas::ConfigSchemaCache;
 use crate::storage::layout::StorageLayout;
 use crate::storage::token::Token;
+use crate::sync::syncer::Syncer;
 use crate::trace;
 
 type DeviceID = String;
@@ -26,6 +28,7 @@ type DeviceID = String;
 pub struct ServerState {
     pub device_id: String,
     pub http_client: Arc<HTTPClient>,
+    pub syncer: Arc<Syncer>,
     pub cfg_sch_digest_cache: Arc<ConfigSchemaDigestCache>,
     pub cfg_inst_metadata_cache: Arc<ConfigInstanceCache>,
     pub cfg_inst_data_cache: Arc<ConfigInstanceDataCache>,
@@ -38,6 +41,7 @@ impl ServerState {
     pub async fn new(
         layout: StorageLayout,
         http_client: Arc<HTTPClient>,
+        fsm_settings: fsm::Settings,
     ) -> Result<(Self, impl Future<Output = ()>), ServerErr> {
         // storage layout stuff
         let auth_dir = layout.auth_dir();
@@ -122,10 +126,28 @@ impl ServerState {
         })?;
         let token_mngr = Arc::new(token_mngr);
 
+        // initialize the syncer
+        let (syncer, syncer_handle) = Syncer::spawn(
+            64,
+            device_id.clone(),
+            http_client.clone(),
+            token_mngr.clone(),
+            layout.config_instance_deployment_dir(),
+            fsm_settings,
+        )
+        .map_err(|e| {
+            ServerErr::SyncErr(Box::new(ServerSyncErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
+        let syncer = Arc::new(syncer);
+
         // initialize the server state
         let server_state = ServerState {
             device_id,
             http_client,
+            syncer,
             cfg_sch_digest_cache,
             cfg_inst_metadata_cache,
             cfg_inst_data_cache,
@@ -147,6 +169,7 @@ impl ServerState {
                 cfg_inst_data_cache_handle,
                 cfg_schema_cache_handle,
                 token_mngr_handle,
+                syncer_handle,
             ];
 
             futures::future::join_all(handles).await;
@@ -156,6 +179,14 @@ impl ServerState {
     }
 
     pub async fn shutdown(&self) -> Result<(), ServerErr> {
+        // shutdown the syncer
+        self.syncer.shutdown().await.map_err(|e| {
+            ServerErr::SyncErr(Box::new(ServerSyncErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
+
         // shutdown the caches
         self.cfg_sch_digest_cache
             .shutdown()

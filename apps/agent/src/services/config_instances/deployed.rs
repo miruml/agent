@@ -1,7 +1,11 @@
+// standard crates
+use std::sync::Arc;
+
 // internal crates
 use crate::crud::prelude::*;
 use crate::crud::config_instance::matches_config_schema_and_activity_status;
 use crate::crud::config_schema::matches_config_type_slug_and_schema_digest;
+use crate::errors::MiruError;
 use crate::http::prelude::*;
 use crate::http::{
     config_schemas::{ConfigSchemaFilters, DigestFilter, ConfigTypeSlugFilter},
@@ -12,15 +16,18 @@ use crate::models::config_instance::{
     ConfigInstance,
 };
 use crate::services::errors::{
-    ServiceErr, ServiceHTTPErr, ServiceCrudErr, DeployedConfigInstanceNotFound
+    ServiceErr, ServiceHTTPErr, ServiceCrudErr, DeployedConfigInstanceNotFound, ServiceSyncErr
 };
 use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
 use crate::storage::config_schemas::ConfigSchemaCache;
+use crate::sync::syncer::Syncer;
 use crate::trace;
 use openapi_server::models::BaseConfigInstance;
 
 // external crates
+use chrono::{TimeDelta, Utc};
 use serde::Deserialize;
+use tracing::error;
 
 pub trait ReadDeployedArgsI {
     fn device_id(&self) -> &str;
@@ -52,26 +59,32 @@ pub async fn read_deployed<
     HTTPClientT: ConfigSchemasExt,
 >(
     args: &ReadDeployedArgsT,
-    instance_cache: &ConfigInstanceCache,
-    instance_data_cache: &ConfigInstanceDataCache,
+    syncer: &Syncer,
+    cfg_inst_cache: Arc<ConfigInstanceCache>,
+    cfg_inst_data_cache: Arc<ConfigInstanceDataCache>,
     schema_cache: &ConfigSchemaCache,
     http_client: &HTTPClientT,
     token: &str,
 ) -> Result<BaseConfigInstance, ServiceErr> {
 
-    // thread 1: 
-    let config_schema_id = fetch_config_schema_id(
-        args, http_client, schema_cache, token
-    ).await?;
+    let (config_schema_id_result, sync_result) = tokio::join!(
+        // thread 1: 
+        fetch_config_schema_id(args, http_client, schema_cache, token),
+        // thread 2: 
+        sync_with_backend(syncer, cfg_inst_cache.clone(), cfg_inst_data_cache.clone())
+    );
 
-    // thread 2: 
-    // if !mqtt_enabled {
-        //     use the controller to refresh the agent's cache 
-        // TODO: implement this
-    // }
+    let config_schema_id = config_schema_id_result?;
+
+    // ignore sync errors and only log them if they're not network connection errors
+    if let Err(e) = sync_result {
+        if !e.is_network_connection_error() {
+            error!("error syncing config instances: {}", e);
+        }
+    }
 
     // read the config instance metadata from the cache
-    let result = instance_cache.find_one_optional(
+    let result = cfg_inst_cache.find_one_optional(
         "filter by config schema and activity status",
         move |cfg_inst| {
             matches_config_schema_and_activity_status(cfg_inst, &config_schema_id, ActivityStatus::Deployed)
@@ -98,7 +111,7 @@ pub async fn read_deployed<
 
     // if we can't find the *data*, there was an internal error somewhere because if
     // the metadata exists, the data should exist too
-    let data = instance_data_cache.read(metadata.id.clone()).await.map_err(|e| {
+    let data = cfg_inst_data_cache.read(metadata.id.clone()).await.map_err(|e| {
         ServiceErr::CrudErr(Box::new(ServiceCrudErr {
             source: e,
             trace: trace!(),
@@ -160,4 +173,31 @@ async fn fetch_config_schema_id<
     })?;
 
     Ok(cfg_schema.id)
+}
+
+async fn sync_with_backend(
+    syncer: &Syncer,
+    cfg_inst_cache: Arc<ConfigInstanceCache>,
+    cfg_inst_data_cache: Arc<ConfigInstanceDataCache>,
+) -> Result<(), ServiceErr> {
+    let last_synced_at = syncer.get_last_synced_at().await.map_err(|e| {
+        ServiceErr::SyncErr(Box::new(ServiceSyncErr {
+            source: e,
+            trace: trace!(),
+        }))
+    })?;
+    if last_synced_at > Utc::now() - TimeDelta::seconds(30) {
+        syncer.sync(
+            cfg_inst_cache,
+            cfg_inst_data_cache,
+            true,
+        ).await.map_err(|e| {
+            ServiceErr::SyncErr(Box::new(ServiceSyncErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
+    }
+
+    Ok(())
 }
