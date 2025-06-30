@@ -57,10 +57,13 @@ pub mod deploy_with_rollback {
         result.unwrap();
 
         // define the expected instance
-        let mut expected = instance.clone();
-        expected.activity_status = ActivityStatus::Removed;
-        expected.error_status = ErrorStatus::Retrying;
-        expected.attempts = 1;
+        let expected = ConfigInstance {
+            activity_status: ActivityStatus::Removed,
+            error_status: ErrorStatus::Retrying,
+            attempts: 1,
+            cooldown_ends_at: deploy_results.to_deploy[0].cooldown_ends_at,
+            ..instance
+        };
         let cooldown = fsm::calc_exp_backoff(
             2,
             settings.exp_backoff_base_secs,
@@ -68,7 +71,6 @@ pub mod deploy_with_rollback {
             settings.max_cooldown_secs,
         );
         let approx_cooldown_ends_at = Utc::now() + TimeDelta::seconds(cooldown as i64);
-        expected.cooldown_ends_at = deploy_results.to_deploy[0].cooldown_ends_at;
         assert!(expected.cooldown_ends_at <= approx_cooldown_ends_at);
         assert!(expected.cooldown_ends_at >= approx_cooldown_ends_at - TimeDelta::seconds(1));
 
@@ -115,8 +117,10 @@ pub mod deploy_with_rollback {
         result.unwrap();
 
         // define the expected instance
-        let mut expected = instance.clone();
-        expected.activity_status = ActivityStatus::Deployed;
+        let expected = ConfigInstance {
+            activity_status: ActivityStatus::Deployed,
+            ..instance
+        };
 
         // check that the returned instances' states were correctly updated
         assert!(deploy_results.to_remove.is_empty());
@@ -168,8 +172,10 @@ pub mod deploy_with_rollback {
         result.unwrap();
 
         // define the expected instance
-        let mut expected = instance.clone();
-        expected.activity_status = ActivityStatus::Deployed;
+        let expected = ConfigInstance {
+            activity_status: ActivityStatus::Deployed,
+            ..instance
+        };
 
         // check that the returned instances' states were correctly updated
         assert!(deploy_results.to_remove.is_empty());
@@ -222,8 +228,10 @@ pub mod deploy_with_rollback {
         result.unwrap();
 
         // define the expected instance
-        let mut expected = instance.clone();
-        expected.activity_status = ActivityStatus::Deployed;
+        let expected = ConfigInstance {
+            activity_status: ActivityStatus::Deployed,
+            ..instance
+        };
 
         // check that the returned instances' states were correctly updated
         assert!(deploy_results.to_remove.is_empty());
@@ -276,8 +284,10 @@ pub mod deploy_with_rollback {
         result.unwrap();
 
         // define the expected instance
-        let mut expected = instance.clone();
-        expected.activity_status = ActivityStatus::Removed;
+        let expected = ConfigInstance {
+            activity_status: ActivityStatus::Removed,
+            ..instance
+        };
 
         // check that the returned instances' states were correctly updated
         assert_eq!(deploy_results.to_remove.len(), 1);
@@ -323,8 +333,10 @@ pub mod deploy_with_rollback {
         result.unwrap();
 
         // define the expected instance
-        let mut expected = instance.clone();
-        expected.activity_status = ActivityStatus::Removed;
+        let expected = ConfigInstance {
+            activity_status: ActivityStatus::Removed,
+            ..instance
+        };
 
         // check that the returned instances' states were correctly updated
         assert_eq!(deploy_results.to_remove.len(), 1);
@@ -375,8 +387,10 @@ pub mod deploy_with_rollback {
         result.unwrap();
 
         // define the expected instance
-        let mut expected = instance.clone();
-        expected.activity_status = ActivityStatus::Removed;
+        let expected = ConfigInstance {
+            activity_status: ActivityStatus::Removed,
+            ..instance
+        };
 
         // check that the returned instances' states were correctly updated
         assert_eq!(deploy_results.to_remove.len(), 1);
@@ -434,12 +448,18 @@ pub mod deploy_with_rollback {
         result.unwrap();
 
         // define the expected instances
-        let mut expected_to_remove = to_remove.clone();
-        expected_to_remove.activity_status = ActivityStatus::Deployed;
-        let mut expected_to_deploy = to_deploy.clone();
-        expected_to_deploy.activity_status = ActivityStatus::Removed;
-        expected_to_deploy.error_status = ErrorStatus::Retrying;
-        expected_to_deploy.attempts = 1;
+        let expected_to_remove = ConfigInstance {
+            activity_status: ActivityStatus::Deployed,
+            ..to_remove
+        };
+
+        let expected_to_deploy = ConfigInstance {
+            activity_status: ActivityStatus::Removed,
+            error_status: ErrorStatus::Retrying,
+            attempts: 1,
+            cooldown_ends_at: deploy_results.to_deploy[0].cooldown_ends_at,
+            ..to_deploy
+        };
         let cooldown = fsm::calc_exp_backoff(
             2,
             settings.exp_backoff_base_secs,
@@ -447,7 +467,6 @@ pub mod deploy_with_rollback {
             settings.max_cooldown_secs,
         );
         let approx_cooldown_ends_at = Utc::now() + TimeDelta::seconds(cooldown as i64);
-        expected_to_deploy.cooldown_ends_at = deploy_results.to_deploy[0].cooldown_ends_at;
         assert!(expected_to_deploy.cooldown_ends_at <= approx_cooldown_ends_at);
         assert!(expected_to_deploy.cooldown_ends_at >= approx_cooldown_ends_at - TimeDelta::seconds(1));
 

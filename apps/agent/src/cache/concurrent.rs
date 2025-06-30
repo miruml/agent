@@ -74,6 +74,9 @@ where
         max_size: usize,
         respond_to: oneshot::Sender<Result<(), CacheErr>>,
     },
+    Size {
+        respond_to: oneshot::Sender<Result<usize, CacheErr>>,
+    },
     FindEntriesWhere {
         filter: QueryEntryFilter<K, V>,
         respond_to: oneshot::Sender<Result<Vec<CacheEntry<K, V>>, CacheErr>>,
@@ -190,6 +193,12 @@ where
                     let result = self.cache.prune(max_size).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to prune cache: {:?}", e);
+                    }
+                }
+                WorkerCommand::Size { respond_to } => {
+                    let result = self.cache.size().await;
+                    if let Err(e) = respond_to.send(result) {
+                        error!("Actor failed to get cache size: {:?}", e);
                     }
                 }
                 WorkerCommand::FindEntriesWhere {
@@ -482,6 +491,25 @@ where
         })?
     }
 
+    pub async fn size(&self) -> Result<usize, CacheErr> {
+        let (send, recv) = oneshot::channel();
+        self.sender
+            .send(WorkerCommand::Size { respond_to: send })
+            .await
+            .map_err(|e| {
+                CacheErr::SendActorMessageErr(SendActorMessageErr {
+                    source: Box::new(e),
+                    trace: trace!(),
+                })
+            })?;
+        recv.await.map_err(|e| {
+            CacheErr::ReceiveActorMessageErr(ReceiveActorMessageErr {
+                source: Box::new(e),
+                trace: trace!(),
+            })
+        })?
+    }
+    
     pub async fn find_entries_where<F>(
         &self,
         filter: F,

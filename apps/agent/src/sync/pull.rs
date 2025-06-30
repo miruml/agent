@@ -50,6 +50,8 @@ pub async fn pull_config_instances<HTTPClientT: ConfigInstancesExt>(
         unremoved_insts,
     ).await?;
 
+    println!("categorized_insts: {:?}", categorized_insts);
+
     let unknown_insts = fetch_instances_with_expanded_instance_data(
         http_client,
         device_id,
@@ -71,7 +73,7 @@ pub async fn pull_config_instances<HTTPClientT: ConfigInstancesExt>(
     Ok(())
 }
 
-pub async fn fetch_unremoved_instances<HTTPClientT: ConfigInstancesExt>(
+async fn fetch_unremoved_instances<HTTPClientT: ConfigInstancesExt>(
     http_client: &HTTPClientT,
     device_id: &str,
     token: &str,
@@ -91,13 +93,14 @@ pub async fn fetch_unremoved_instances<HTTPClientT: ConfigInstancesExt>(
     })
 }
 
+#[derive(Debug)]
 pub struct CategorizedConfigInstances {
     pub unknown: Vec<BackendConfigInstance>,
     pub update_target_status: Vec<ConfigInstance>,
     pub other: Vec<BackendConfigInstance>,
 }
 
-pub async fn categorize_instances(
+async fn categorize_instances(
     cfg_inst_cache: &ConfigInstanceCache,
     unremoved_insts: Vec<BackendConfigInstance>,
 ) -> Result<CategorizedConfigInstances, SyncErr> {
@@ -137,12 +140,15 @@ pub async fn categorize_instances(
     Ok(categorized)
 }
 
-pub async fn fetch_instances_with_expanded_instance_data<HTTPClientT: ConfigInstancesExt>(
+async fn fetch_instances_with_expanded_instance_data<HTTPClientT: ConfigInstancesExt>(
     http_client: &HTTPClientT,
     device_id: &str,
     ids: Vec<String>,
     token: &str,
 ) -> Result<Vec<BackendConfigInstance>, SyncErr> {
+    if ids.is_empty() {
+        return Ok(Vec::new());
+    }
 
     // read the unknown config instances from the server with instance data expanded
     let filters = ConfigInstanceFiltersBuilder::new(
@@ -159,7 +165,7 @@ pub async fn fetch_instances_with_expanded_instance_data<HTTPClientT: ConfigInst
     })
 }
 
-pub async fn add_unknown_instances_to_storage(
+async fn add_unknown_instances_to_storage(
     cfg_inst_cache: &ConfigInstanceCache,
     cfg_inst_data_cache: &ConfigInstanceDataCache,
     unknown_insts: Vec<BackendConfigInstance>,
@@ -203,16 +209,36 @@ pub async fn add_unknown_instances_to_storage(
     Ok(())
 }
 
-pub async fn update_target_status_instances(
+async fn update_target_status_instances(
     cfg_inst_cache: &ConfigInstanceCache,
     update_target_status: Vec<ConfigInstance>,
 ) -> Result<(), SyncErr> {
 
     for instance in update_target_status {
         let instance_id = instance.id.clone();
+
+        // read the instance from the cache to update only select fields
+        let cache_inst = match cfg_inst_cache.read(instance_id.clone()).await {
+            Ok(cache_inst) => cache_inst,
+            Err(e) => {
+                error!("Failed to read instance from cache for instance '{}': {}", instance_id, e);
+                continue;
+            }
+        };
+        let updated_inst = ConfigInstance {
+            target_status: instance.target_status,
+            updated_by_id: instance.updated_by_id,
+            updated_at: instance.updated_at,
+            ..cache_inst
+        };
+
+        // write the updated instance to the cache
         let overwrite = true;
         if let Err(e) = cfg_inst_cache.write(
-            instance_id.clone(), instance, |_, _| false, overwrite,
+            instance_id.clone(),
+            updated_inst,
+            |_, _| false,
+            overwrite,
         ).await {
             error!("Failed to write instance to cache for instance '{}': {}", instance_id, e);
             continue;

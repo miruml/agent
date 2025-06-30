@@ -35,7 +35,7 @@ use tracing::{error, info};
 
 
 // ======================== SINGLE-THREADED IMPLEMENTATION ========================= //
-pub struct SingleThreadSyncer<HTTPClientT: ConfigInstancesExt> {
+struct SingleThreadSyncer<HTTPClientT: ConfigInstancesExt> {
     device_id: String,
     http_client: Arc<HTTPClientT>,
     token_mngr: Arc<TokenManager>,
@@ -46,7 +46,7 @@ pub struct SingleThreadSyncer<HTTPClientT: ConfigInstancesExt> {
 
 impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
     
-    pub fn new(
+    fn new(
         device_id: String,
         http_client: Arc<HTTPClientT>,
         token_mngr: Arc<TokenManager>,
@@ -63,11 +63,11 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
         }
     }
 
-    pub fn get_last_synced_at(&self) -> DateTime<Utc> {
+    fn get_last_synced_at(&self) -> DateTime<Utc> {
         self.last_synced_at
     }
 
-    pub async fn sync(
+    async fn sync(
         &mut self,
         cfg_inst_cache: &ConfigInstanceCache,
         cfg_inst_data_cache: &ConfigInstanceDataCache,

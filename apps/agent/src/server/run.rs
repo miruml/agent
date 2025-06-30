@@ -58,9 +58,9 @@ impl Default for RunServerOptions {
             layout: StorageLayout::default(),
 
             // caches
-            config_schema_digest_cache_max_size: 1000,
-            config_instance_cache_max_size: 1000,
-            config_schema_cache_max_size: 1000,
+            config_schema_digest_cache_max_size: 100,
+            config_instance_cache_max_size: 100,
+            config_schema_cache_max_size: 100,
 
             // timing
             token_refresh_expiration_threshold: Duration::from_secs(15 * 60), // 15 minutes
@@ -115,7 +115,7 @@ pub async fn run(
             options.idle_timeout_poll_interval,
         ) => {
             info!("Idle timeout ({:?}) reached", options.idle_timeout);
-            info!("Pruning filesystem cache...");
+            info!("Pruning filesystem caches...");
             if let Err(e) = state.cfg_sch_digest_cache.prune(options.config_schema_digest_cache_max_size).await {
                 error!("Failed to prune config schema digest cache: {}", e);
             }

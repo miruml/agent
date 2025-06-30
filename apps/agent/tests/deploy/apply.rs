@@ -81,8 +81,10 @@ pub mod is_dirty_func {
             activity_status: ActivityStatus::Queued,
             ..Default::default()
         };
-        let mut new = old.clone();
-        new.activity_status = ActivityStatus::Deployed;
+        let new = ConfigInstance {
+            activity_status: ActivityStatus::Deployed,
+            ..Default::default()
+        };
         let entry = CacheEntry {
             key: old.id.clone(),
             value: old.clone(),
@@ -100,8 +102,10 @@ pub mod is_dirty_func {
             error_status: ErrorStatus::None,
             ..Default::default()
         };
-        let mut new = old.clone();
-        new.error_status = ErrorStatus::Retrying;
+        let new = ConfigInstance {
+            error_status: ErrorStatus::Retrying,
+            ..Default::default()
+        };
         let entry = CacheEntry {
             key: old.id.clone(),
             value: old.clone(),
@@ -173,8 +177,10 @@ pub mod apply_func {
         let actual = result[&instance.id].clone();
 
         // define the expected instance
-        let mut expected = instance.clone();
-        expected.activity_status = ActivityStatus::Deployed;
+        let expected = ConfigInstance {
+            activity_status: ActivityStatus::Deployed,
+            ..instance
+        };
 
         // check that the returned instances' states were correctly updated
         assert_eq!(actual, expected);
@@ -225,12 +231,17 @@ pub mod apply_func {
         let actual2 = result[&instance2.id].clone();
 
         // define the expected instances
-        let mut expected1 = instance1.clone();
-        expected1.activity_status = ActivityStatus::Deployed;
-        let mut expected2 = instance2.clone();
-        expected2.activity_status = ActivityStatus::Removed;
-        expected2.error_status = ErrorStatus::Retrying;
-        expected2.attempts = 1;
+        let expected1 = ConfigInstance {
+            activity_status: ActivityStatus::Deployed,
+            ..instance1
+        };
+        let expected2 = ConfigInstance {
+            activity_status: ActivityStatus::Removed,
+            error_status: ErrorStatus::Retrying,
+            attempts: 1,
+            cooldown_ends_at: actual2.cooldown_ends_at,
+            ..instance2
+        };
         let cooldown = fsm::calc_exp_backoff(
             2,
             settings.exp_backoff_base_secs,
@@ -238,7 +249,6 @@ pub mod apply_func {
             settings.max_cooldown_secs,
         );
         let approx_cooldown_ends_at = Utc::now() + TimeDelta::seconds(cooldown as i64);
-        expected2.cooldown_ends_at = actual2.cooldown_ends_at;
         assert!(expected2.cooldown_ends_at <= approx_cooldown_ends_at);
         assert!(expected2.cooldown_ends_at >= approx_cooldown_ends_at - TimeDelta::seconds(1));
 
@@ -283,8 +293,10 @@ pub mod apply_func {
         let actual = result[&instance.id].clone();
 
         // define the expected instance
-        let mut expected = instance.clone();
-        expected.activity_status = ActivityStatus::Removed;
+        let expected = ConfigInstance {
+            activity_status: ActivityStatus::Removed,
+            ..instance
+        };
 
         // check that the returned instances' states were correctly updated
         assert_eq!(actual, expected);
@@ -344,12 +356,18 @@ pub mod apply_func {
         let actual_to_deploy = result[&to_deploy.id].clone();
 
         // define the expected instances
-        let mut expected_to_remove = to_remove.clone();
-        expected_to_remove.activity_status = ActivityStatus::Removed;
-        let mut expected_to_deploy = to_deploy.clone();
-        expected_to_deploy.activity_status = ActivityStatus::Removed;
-        expected_to_deploy.error_status = ErrorStatus::Retrying;
-        expected_to_deploy.attempts = 1;
+        let expected_to_remove = ConfigInstance {
+            activity_status: ActivityStatus::Removed,
+            ..to_remove
+        };
+
+        let expected_to_deploy = ConfigInstance {
+            activity_status: ActivityStatus::Removed,
+            error_status: ErrorStatus::Retrying,
+            attempts: 1,
+            cooldown_ends_at: actual_to_deploy.cooldown_ends_at,
+            ..to_deploy
+        };
         let cooldown = fsm::calc_exp_backoff(
             2,
             settings.exp_backoff_base_secs,
@@ -357,7 +375,6 @@ pub mod apply_func {
             settings.max_cooldown_secs,
         );
         let approx_cooldown_ends_at = Utc::now() + TimeDelta::seconds(cooldown as i64);
-        expected_to_deploy.cooldown_ends_at = actual_to_deploy.cooldown_ends_at;
         assert!(expected_to_deploy.cooldown_ends_at <= approx_cooldown_ends_at);
         assert!(expected_to_deploy.cooldown_ends_at >= approx_cooldown_ends_at - TimeDelta::seconds(1));
 
@@ -421,10 +438,13 @@ pub mod apply_func {
         let actual_to_deploy = result[&to_deploy.id].clone();
 
         // define the expected instances
-        let mut expected_to_deploy = to_deploy.clone();
-        expected_to_deploy.activity_status = ActivityStatus::Removed;
-        expected_to_deploy.error_status = ErrorStatus::Retrying;
-        expected_to_deploy.attempts = 1;
+        let expected_to_deploy = ConfigInstance {
+            activity_status: ActivityStatus::Removed,
+            error_status: ErrorStatus::Retrying,
+            attempts: 1,
+            cooldown_ends_at: actual_to_deploy.cooldown_ends_at,
+            ..to_deploy
+        };
         let cooldown = fsm::calc_exp_backoff(
             2,
             settings.exp_backoff_base_secs,
@@ -432,12 +452,14 @@ pub mod apply_func {
             settings.max_cooldown_secs,
         );
         let approx_cooldown_ends_at = Utc::now() + TimeDelta::seconds(cooldown as i64);
-        expected_to_deploy.cooldown_ends_at = actual_to_deploy.cooldown_ends_at;
         assert!(expected_to_deploy.cooldown_ends_at <= approx_cooldown_ends_at);
         assert!(expected_to_deploy.cooldown_ends_at >= approx_cooldown_ends_at - TimeDelta::seconds(1));
-        let mut expected_to_remove = to_remove.clone();
-        expected_to_remove.activity_status = ActivityStatus::Deployed;
-        expected_to_remove.cooldown_ends_at = actual_to_remove.cooldown_ends_at;
+
+        let expected_to_remove = ConfigInstance {
+            activity_status: ActivityStatus::Deployed,
+            cooldown_ends_at: actual_to_remove.cooldown_ends_at,
+            ..to_remove
+        };
 
         // check that the returned instances' states were correctly updated
         assert_eq!(expected_to_remove, actual_to_remove);
@@ -503,10 +525,14 @@ pub mod apply_func {
         let actual_to_deploy = result[&to_deploy.id].clone();
 
         // define the expected instances
-        let mut expected_to_remove = to_remove.clone();
-        expected_to_remove.activity_status = ActivityStatus::Removed;
-        let mut expected_to_deploy = to_deploy.clone();
-        expected_to_deploy.activity_status = ActivityStatus::Deployed;
+        let expected_to_remove = ConfigInstance {
+            activity_status: ActivityStatus::Removed,
+            ..to_remove
+        };
+        let expected_to_deploy = ConfigInstance {
+            activity_status: ActivityStatus::Deployed,
+            ..to_deploy
+        };
 
         // check that the returned instances' states were correctly updated
         assert_eq!(expected_to_remove, actual_to_remove);

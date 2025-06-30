@@ -73,6 +73,7 @@ pub async fn apply(
     deployment_dir: &Dir,
     fsm_settings: &fsm::Settings,
 ) -> Result<HashMap<ConfigInstanceID, ConfigInstance>, DeployErr> {
+
     // observers
     let mut observers: Vec<&mut dyn Observer> = Vec::new();
     let mut storage_observer = StorageObserver { cfg_inst_cache };
@@ -81,7 +82,7 @@ pub async fn apply(
     let mut applied_cfg_insts = HashMap::new();
 
     // apply the deployments until there are none left to apply
-    let max_iters = 2;
+    let max_iters = 30;
     let mut i = 0;
     while !cfg_insts_to_apply.is_empty() {
         i += 1;

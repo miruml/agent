@@ -65,10 +65,9 @@ pub async fn read_deployed<
     ).await?;
 
     // thread 2: 
-    // TODO: implement this
     // if !mqtt_enabled {
-    //     //     use the controller to refresh the agent's cache 
-    //     // TODO: implement this
+        //     use the controller to refresh the agent's cache 
+        // TODO: implement this
     // }
 
     // read the config instance metadata from the cache

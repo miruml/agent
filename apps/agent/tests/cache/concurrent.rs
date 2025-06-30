@@ -22,7 +22,16 @@ macro_rules! concurrent_cache_tests {
 
             #[tokio::test]
             async fn test_shutdown() {
-                $crate::cache::concurrent::shutdown::test_shutdown_impl($spawn_cache).await;
+                $crate::cache::concurrent::shutdown::shutdown_impl($spawn_cache).await;
+            }
+        }
+
+        pub mod size {
+            use super::*;
+
+            #[tokio::test]
+            async fn test_size() {
+                $crate::cache::concurrent::size::size_impl($spawn_cache).await;
             }
         }
 
@@ -208,7 +217,7 @@ macro_rules! concurrent_cache_tests {
 pub mod shutdown {
     use super::*;
 
-    pub async fn test_shutdown_impl<F, Fut, SingleThreadCacheT>(
+    pub async fn shutdown_impl<F, Fut, SingleThreadCacheT>(
         spawn_cache: F,
     )
     where
@@ -219,6 +228,44 @@ pub mod shutdown {
         let (cache, worker_handle) = spawn_cache().await;
         cache.shutdown().await.unwrap();
         worker_handle.await.unwrap();
+    }
+}
+
+pub mod size {
+    use super::*;
+
+    pub async fn size_impl<F, Fut, SingleThreadCacheT>(new_cache: F)
+    where
+        F: Fn() -> Fut + Clone,
+        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        SingleThreadCacheT: SingleThreadCache<String, String>,
+    {
+        let (cache, _) = new_cache().await;
+        assert_eq!(cache.size().await.unwrap(), 0);
+
+        // create 10 entries
+        for i in 0..10 {
+            let key = format!("key{}", i);
+            let value = format!("value{}", i);
+            cache.write(key, value, |_, _| true, false).await.unwrap();
+        }
+        assert_eq!(cache.size().await.unwrap(), 10);
+
+        // create 10 more entries
+        for i in 0..10 {
+            let key = format!("key{}", i+10);
+            let value = format!("value{}", i+10);
+            cache.write(key, value, |_, _| true, false).await.unwrap();
+        }
+        assert_eq!(cache.size().await.unwrap(), 20);
+
+        // overwrite 10 entries
+        for i in 0..10 {
+            let key = format!("key{}", i+5);
+            let value = format!("value{}", i+5);
+            cache.write(key, value, |_, _| true, true).await.unwrap();
+        }
+        assert_eq!(cache.size().await.unwrap(), 20);
     }
 }
 

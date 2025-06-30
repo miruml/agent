@@ -77,6 +77,20 @@ impl MockConfigInstancesClient {
     {
         self.list_config_instances_result = Box::new(list_config_instances_result);
     }
+
+    pub fn set_list_all_config_instances<F>(&mut self, list_all_config_instances_result: F)
+    where
+        F: Fn() -> Result<Vec<BackendConfigInstance>, HTTPErr> + Send + Sync + 'static,
+    {
+        self.list_all_config_instances_result = Box::new(list_all_config_instances_result);
+    }
+
+    pub fn set_update_config_instance<F>(&mut self, update_config_instance_result: F)
+    where
+        F: Fn() -> Result<BackendConfigInstance, HTTPErr> + Send + Sync + 'static,
+    {
+        self.update_config_instance_result = Box::new(update_config_instance_result);
+    }
 }
 
 #[async_trait]
