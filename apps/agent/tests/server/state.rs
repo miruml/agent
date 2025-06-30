@@ -3,6 +3,7 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 // internal crates
+use config_agent::deploy::fsm;
 use config_agent::filesys::dir::Dir;
 use config_agent::filesys::errors::FileSysErr;
 use config_agent::http::client::HTTPClient;
@@ -23,10 +24,15 @@ pub mod new {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
         let layout = StorageLayout::new(dir);
         let result =
-            ServerState::new(layout, Arc::new(HTTPClient::new("doesntmatter").await)).await;
+            ServerState::new(
+                layout,
+                Arc::new(HTTPClient::new("doesntmatter").await),
+                fsm::Settings::default(),
+            )
+            .await;
         match result {
             Err(ServerErr::FileSysErr(e)) => {
-                assert!(matches!(*e.source, FileSysErr::PathDoesNotExistErr(_)));
+                assert!(matches!(e.source, FileSysErr::PathDoesNotExistErr(_)));
             }
             Err(e) => {
                 panic!("Expected FileSysErr not {:?}", e);
@@ -49,7 +55,12 @@ pub mod new {
             .unwrap();
 
         let result =
-            ServerState::new(layout, Arc::new(HTTPClient::new("doesntmatter").await)).await;
+            ServerState::new(
+                layout,
+                Arc::new(HTTPClient::new("doesntmatter").await),
+                fsm::Settings::default(),
+            )
+            .await;
         assert!(matches!(result, Err(ServerErr::MissingDeviceIDErr(_))));
     }
 
@@ -77,6 +88,7 @@ pub mod new {
         let (state, _) = ServerState::new(
             layout.clone(),
             Arc::new(HTTPClient::new("doesntmatter").await),
+            fsm::Settings::default(),
         )
         .await
         .unwrap();
@@ -107,6 +119,7 @@ pub mod new {
         let (state, _) = ServerState::new(
             layout.clone(),
             Arc::new(HTTPClient::new("doesntmatter").await),
+            fsm::Settings::default(),
         )
         .await
         .unwrap();
@@ -145,6 +158,7 @@ pub mod shutdown {
         let (state, state_handle) = ServerState::new(
             layout.clone(),
             Arc::new(HTTPClient::new("doesntmatter").await),
+            fsm::Settings::default(),
         )
         .await
         .unwrap();
@@ -176,6 +190,7 @@ pub mod record_activity {
         let (state, _) = ServerState::new(
             layout.clone(),
             Arc::new(HTTPClient::new("doesntmatter").await),
+            fsm::Settings::default(),
         )
         .await
         .unwrap();
