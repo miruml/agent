@@ -1,5 +1,4 @@
 // internal crates
-use crate::cache::entry::is_not_dirty;
 use crate::crypt::sha256;
 use crate::crud::prelude::*;
 use crate::http::prelude::*;
@@ -83,7 +82,7 @@ pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
         .write(
             raw_digest,
             digests,
-            is_not_dirty,
+            |_, _| false,
             overwrite,
         )
         .await

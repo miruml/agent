@@ -1,6 +1,3 @@
-// std
-use std::path::PathBuf;
-
 // internal crates
 use config_agent::cache::file::FileCache;
 use config_agent::deploy::{
@@ -46,7 +43,6 @@ pub mod deploy_with_rollback {
 
         // deploy the instance
         let settings = Settings::default();
-        let deployment_dir = dir.subdir("/srv/miru/configs/");
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
         observers.push(&mut observer);
@@ -54,7 +50,7 @@ pub mod deploy_with_rollback {
             vec![],
             vec![instance.clone()],
             &cache,
-            &deployment_dir,
+            &dir,
             &settings,
             &mut observers,
         ).await;
@@ -79,7 +75,6 @@ pub mod deploy_with_rollback {
         // check that the returned instances' states were correctly updated
         assert!(deploy_results.to_remove.is_empty());
         assert_eq!(deploy_results.to_deploy.len(), 1);
-
         assert_eq!(deploy_results.to_deploy[0], expected);
 
         // check that the observer's history was correctly updated
@@ -106,7 +101,6 @@ pub mod deploy_with_rollback {
 
         // deploy the instance
         let settings = Settings::default();
-        let deployment_dir = dir.subdir("/srv/miru/configs/");
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
         observers.push(&mut observer);
@@ -114,7 +108,7 @@ pub mod deploy_with_rollback {
             vec![],
             vec![instance.clone()],
             &cache,
-            &deployment_dir,
+            &dir,
             &settings,
             &mut observers,
         ).await;
@@ -155,8 +149,7 @@ pub mod deploy_with_rollback {
         ).await.unwrap();
 
         // create the file in the deployment directory
-        let deployment_dir = dir.subdir(PathBuf::from("/srv/miru/configs/"));
-        let file = deployment_dir.file(filepath.as_str());
+        let file = dir.file(filepath.as_str());
         file.write_json(&instance_data, true, true).await.unwrap();
 
         // deploy the instance
@@ -168,7 +161,7 @@ pub mod deploy_with_rollback {
             vec![],
             vec![instance.clone()],
             &cache,
-            &deployment_dir,
+            &dir,
             &settings,
             &mut observers
         ).await;
@@ -188,7 +181,7 @@ pub mod deploy_with_rollback {
         assert_eq!(observer.history[0], expected);
 
         // check that the file was created
-        let file = deployment_dir.file(filepath.as_str());
+        let file = dir.file(filepath.as_str());
         let actual = file.read_json::<serde_json::Value>().await.unwrap();
         assert_eq!(actual, instance_data);
     }
@@ -215,7 +208,6 @@ pub mod deploy_with_rollback {
 
         // deploy the instance
         let settings = Settings::default();
-        let deployment_dir = dir.subdir(PathBuf::from("/srv/miru/configs/"));
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
         observers.push(&mut observer);
@@ -223,7 +215,7 @@ pub mod deploy_with_rollback {
             vec![],
             vec![instance.clone()],
             &cache,
-            &deployment_dir,
+            &dir,
             &settings,
             &mut observers
         ).await;
@@ -243,16 +235,14 @@ pub mod deploy_with_rollback {
         assert_eq!(observer.history[0], expected);
 
         // check that the file was created
-        let file = deployment_dir.file(filepath.as_str());
+        let file = dir.file(filepath.as_str());
         let actual = file.read_json::<serde_json::Value>().await.unwrap();
         assert_eq!(actual, instance_data);
     }
 
-
     // remove failures are essentially impossible since removing a file that doesn't exist
     // does not throw an error
 
-    // remove 1 - no filepath specified
     #[tokio::test]
     async fn remove_1_no_filepath() {
         // define the instance 
@@ -272,7 +262,6 @@ pub mod deploy_with_rollback {
 
         // deploy the instance
         let settings = Settings::default();
-        let deployment_dir = dir.subdir("/srv/miru/configs/");
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
         observers.push(&mut observer);
@@ -280,7 +269,7 @@ pub mod deploy_with_rollback {
             vec![instance.clone()],
             vec![],
             &cache,
-            &deployment_dir,
+            &dir,
             &settings,
             &mut observers,
         ).await;
@@ -300,7 +289,6 @@ pub mod deploy_with_rollback {
         assert_eq!(observer.history[0], expected);
     }
 
-    // remove 1 - filepath specified but doesn't exist
     #[tokio::test]
     async fn remove_1_filepath_specified_doesnt_exist() {
         // define the instance 
@@ -321,7 +309,6 @@ pub mod deploy_with_rollback {
 
         // deploy the instance
         let settings = Settings::default();
-        let deployment_dir = dir.subdir("/srv/miru/configs/");
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
         observers.push(&mut observer);
@@ -329,7 +316,7 @@ pub mod deploy_with_rollback {
             vec![instance.clone()],
             vec![],
             &cache,
-            &deployment_dir,
+            &dir,
             &settings,
             &mut observers,
         ).await;
@@ -349,7 +336,6 @@ pub mod deploy_with_rollback {
         assert_eq!(observer.history[0], expected);
     }
 
-    // remove 1 - filepath specified and exists
     #[tokio::test]
     async fn remove_1_filepath_specified_exists() {
         // define the instance 
@@ -370,13 +356,11 @@ pub mod deploy_with_rollback {
         ).await.unwrap();
 
         // create the file in the deployment directory
-        let deployment_dir = dir.subdir(PathBuf::from("/srv/miru/configs/"));
-        let file = deployment_dir.file(filepath.as_str());
+        let file = dir.file(filepath.as_str());
         file.write_json(&instance_data, true, true).await.unwrap();
 
         // deploy the instance
         let settings = Settings::default();
-        let deployment_dir = dir.subdir("/srv/miru/configs/");
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
         observers.push(&mut observer);
@@ -384,7 +368,7 @@ pub mod deploy_with_rollback {
             vec![instance.clone()],
             vec![],
             &cache,
-            &deployment_dir,
+            &dir,
             &settings,
             &mut observers,
         ).await;
@@ -407,7 +391,6 @@ pub mod deploy_with_rollback {
         assert!(!file.exists());
     }
 
-    // replace 1, deploy failed -> rollback
     #[tokio::test]
     async fn rollback_1_deploy_missing_instance_data() {
         // define the instance 
@@ -437,7 +420,6 @@ pub mod deploy_with_rollback {
 
         // deploy the instance
         let settings = Settings::default();
-        let deployment_dir = dir.subdir("/srv/miru/configs/");
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
         observers.push(&mut observer);
@@ -445,7 +427,7 @@ pub mod deploy_with_rollback {
             vec![to_remove.clone()],
             vec![to_deploy.clone()],
             &cache,
-            &deployment_dir,
+            &dir,
             &settings,
             &mut observers,
         ).await;
@@ -481,12 +463,11 @@ pub mod deploy_with_rollback {
         assert_eq!(observer.history[3], expected_to_remove);
 
         // check that the removed instance is still deployed
-        let file = deployment_dir.file(to_remove_filepath.as_str());
+        let file = dir.file(to_remove_filepath.as_str());
         let actual = file.read_json::<serde_json::Value>().await.unwrap();
         assert_eq!(actual, to_remove_data);
     }
 
-    // replace n, deploy failed -> rollback
     #[tokio::test]
     async fn rollback_n_deploy_missing_instance_data() {
         // define the instances 
@@ -525,7 +506,6 @@ pub mod deploy_with_rollback {
 
         // deploy the instance
         let settings = Settings::default();
-        let deployment_dir = dir.subdir("/srv/miru/configs/");
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
         observers.push(&mut observer);
@@ -533,7 +513,7 @@ pub mod deploy_with_rollback {
             to_remove_instances.clone(),
             to_deploy_instances.clone(),
             &cache,
-            &deployment_dir,
+            &dir,
             &settings,
             &mut observers,
         ).await;
@@ -585,7 +565,7 @@ pub mod deploy_with_rollback {
 
         // check that the removed instances are still deployed
         for instance in to_remove_instances {
-            let file = deployment_dir.file(instance.filepath.as_ref().unwrap());
+            let file = dir.file(instance.filepath.as_ref().unwrap());
             let actual = file.read_json::<serde_json::Value>().await.unwrap();
             assert_eq!(actual, json!({"filepath": instance.filepath.as_ref().unwrap()}));
         }

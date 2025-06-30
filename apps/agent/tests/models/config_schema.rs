@@ -7,6 +7,30 @@ use serde_json::json;
 use tracing::{debug, error, info, trace, warn};
 
 #[test]
+fn serialize_deserialize_config_schema() {
+    let expected = ConfigSchema {
+        id: "cfg_123".to_string(),
+        version: 1,
+        digest: "digest_123".to_string(),
+        created_at: "2021-01-01T00:00:00Z".to_string(),
+        created_by_id: None,
+        config_type_id: "cfg_type_123".to_string(),
+        config_type_slug: None,
+    };
+    let valid_input = json!({
+        "id": expected.id,
+        "version": expected.version,
+        "digest": expected.digest,
+        "created_at": expected.created_at,
+        "created_by_id": expected.created_by_id,
+        "config_type_id": expected.config_type_id,
+        "config_type_slug": expected.config_type_slug,
+    });
+    let config_schema: ConfigSchema = serde_json::from_value(valid_input).unwrap();
+    assert_eq!(config_schema, expected);
+}
+
+#[test]
 fn deserialize_config_schema() {
     // valid deserialization
     let expected = ConfigSchema {

@@ -8,13 +8,13 @@ use crate::crud::config_instance::{
 };
 use crate::crud::prelude::{Find, Read};
 use crate::deploy::errors::{
-    DeployErr, DeployCrudErr, ConflictingDeploymentsErr, InstanceNotDeployableErr,
+    DeployErr, DeployCacheErr, DeployCrudErr, ConflictingDeploymentsErr, InstanceNotDeployableErr,
 };
 use crate::deploy::{
     filesys,
     filesys::DeployResults,
     fsm,
-    observer::Observer,
+    observer::{Observer, on_update},
 };
 use crate::filesys::dir::Dir;
 use crate::models::config_instance::{
@@ -23,28 +23,73 @@ use crate::models::config_instance::{
     ActivityStatus,
     TargetStatus,
 };
+use crate::storage::config_instances::{
+    ConfigInstanceCache,
+    ConfigInstanceCacheEntry,
+    ConfigInstanceDataCache,
+};
 use crate::trace;
 
 // external crates
-use tracing::error;
+use async_trait::async_trait;
+use tracing::{error, info};
 
+pub fn is_dirty(old: Option<&ConfigInstanceCacheEntry>, new: &ConfigInstance) -> bool {
+    let old = match old {
+        Some(old) => old,
+        None => return true,
+    };
+    old.is_dirty ||
+    old.value.activity_status != new.activity_status || 
+    old.value.error_status != new.error_status
+}
 
-pub async fn apply_deployments<R1, R2>(
+pub struct StorageObserver<'a> {
+    pub cfg_inst_cache: &'a ConfigInstanceCache,
+}
+
+#[async_trait]
+impl<'a> Observer for StorageObserver<'a> {
+    async fn on_update(&mut self, instance: &ConfigInstance) -> Result<(), DeployErr> {
+        let overwrite = true;
+        self.cfg_inst_cache.write(
+            instance.id.clone(),
+            instance.clone(),
+            is_dirty,
+            overwrite,
+        ).await.map_err(|e| {
+            DeployErr::CacheErr(DeployCacheErr {
+                source: e,
+                trace: trace!(),
+            })
+        })
+    }
+}
+
+pub async fn apply(
     mut cfg_insts_to_apply: HashMap<ConfigInstanceID, ConfigInstance>,
-    all_cfg_insts: &R1,
-    all_cfg_insts_data: &R2,
+    cfg_inst_cache: &ConfigInstanceCache,
+    cfg_inst_data_cache: &ConfigInstanceDataCache,
     deployment_dir: &Dir,
     fsm_settings: &fsm::Settings,
-    observers: &mut [&mut dyn Observer],
-) -> Result<HashMap<ConfigInstanceID, ConfigInstance>, DeployErr>
-where
-    R1: Find<ConfigInstanceID, ConfigInstance>,
-    R2: Read<ConfigInstanceID, serde_json::Value>,
-{
+) -> Result<HashMap<ConfigInstanceID, ConfigInstance>, DeployErr> {
+    // observers
+    let mut observers: Vec<&mut dyn Observer> = Vec::new();
+    let mut storage_observer = StorageObserver { cfg_inst_cache };
+    observers.push(&mut storage_observer);
+
     let mut applied_cfg_insts = HashMap::new();
 
     // apply the deployments until there are none left to apply
+    let max_iters = 2;
+    let mut i = 0;
     while !cfg_insts_to_apply.is_empty() {
+        i += 1;
+        if i > max_iters {
+            error!("Max iterations reached while applying deployments, exiting");
+            break;
+        }
+
         let id = match cfg_insts_to_apply.keys().next().cloned() {
             Some(id) => id,
             None => break,
@@ -55,13 +100,13 @@ where
         };
 
         // apply the deployment
-        let (instance_results, result) = apply_deployment(
+        let (instance_results, result) = apply_one(
             cfg_inst,
-            all_cfg_insts,
-            all_cfg_insts_data,
+            cfg_inst_cache,
+            cfg_inst_data_cache,
             deployment_dir,
             fsm_settings,
-            observers,
+            &mut observers,
         ).await;
         if let Err(e) = result {
             error!("Error applying config instance {:?}: {:?}", id, e);
@@ -72,6 +117,7 @@ where
             if fsm::is_action_required(fsm::next_action(&instance, true)) {
                 cfg_insts_to_apply.insert(instance.id.clone(), instance);
             } else {
+                cfg_insts_to_apply.remove(&instance.id);
                 applied_cfg_insts.insert(instance.id.clone(), instance);
             }
         }
@@ -79,6 +125,7 @@ where
             if fsm::is_action_required(fsm::next_action(&instance, true)) {
                 cfg_insts_to_apply.insert(instance.id.clone(), instance);
             } else {
+                cfg_insts_to_apply.remove(&instance.id);
                 applied_cfg_insts.insert(instance.id.clone(), instance);
             }
         }
@@ -87,9 +134,7 @@ where
     Ok(applied_cfg_insts)
 }
 
-
-
-async fn apply_deployment<R1,R2>(
+async fn apply_one<R1,R2>(
     cfg_inst: ConfigInstance,
     all_cfg_insts: &R1,
     all_cfg_insts_data: &R2,
@@ -160,6 +205,9 @@ where
         Err(e) => return (DeployResults::empty(), Err(e)),
     };
 
+    let replacement_ids = conflicts.iter().map(|c| &c.id).collect::<Vec<_>>();
+    info!("deploying config instance {:?} and removing {:?}", cfg_inst.id, replacement_ids);
+
     // remove the old instances and deploy the new instance
     filesys::deploy_with_rollback(
         conflicts,
@@ -172,7 +220,7 @@ where
 }
 
 async fn remove<R1, R2>(
-    cfg_inst: ConfigInstance,
+    mut cfg_inst: ConfigInstance,
     all_cfg_insts: &R1,
     all_cfg_insts_data: &R2,
     deployment_dir: &Dir,
@@ -183,7 +231,6 @@ where
     R1: Find<ConfigInstanceID, ConfigInstance>,
     R2: Read<ConfigInstanceID, serde_json::Value>,
 {
-
     if fsm::next_action(&cfg_inst, true) != fsm::NextAction::Remove {
         let next_action = fsm::next_action(&cfg_inst, true);
         return (DeployResults::empty(), Err(DeployErr::InstanceNotDeployableErr(InstanceNotDeployableErr {
@@ -198,10 +245,27 @@ where
         Ok(replacement) => replacement,
         Err(e) => return (DeployResults::empty(), Err(e)),
     };
+
     let mut replacements = vec![];
     if let Some(replacement) = replacement {
+        // if a replacement exists and is in cooldown, we must wait for the new instance
+        // to finish cooling down before we can remove this one. Thus, this instance
+        // receives the same cooldown as the replacement so that they are removed at the
+        // same time.
+        if replacement.is_in_cooldown() {
+            cfg_inst.set_cooldown(replacement.cooldown());
+            let err_results = on_update(observers, &cfg_inst).await;
+            let deploy_results = DeployResults {
+                to_remove: vec![],
+                to_deploy: vec![cfg_inst],
+            };
+            return (deploy_results, err_results);
+        }
         replacements.push(replacement);
     }
+
+    let replacement_ids = replacements.iter().map(|r| &r.id).collect::<Vec<_>>();
+    info!("removing config instance {:?} and replacing it with {:?}", cfg_inst.id, replacement_ids);
 
     // remove the instance and deploy the replacement
     filesys::deploy_with_rollback(
@@ -214,14 +278,13 @@ where
     ).await
 }
 
-async fn find_instances_to_replace<R>(
+pub async fn find_instances_to_replace<R>(
     cfg_inst: &ConfigInstance,
     all_cfg_insts: &R,
 ) -> Result<Vec<ConfigInstance>, DeployErr>
 where
     R: Find<ConfigInstanceID, ConfigInstance>,
 {
-
     let opt_filepath= cfg_inst.filepath.clone();
     let cfg_sch_id = cfg_inst.config_schema_id.clone();
     let conflicts = all_cfg_insts.find_where(
@@ -264,7 +327,7 @@ where
     Ok(conflicts)
 }
 
-async fn find_replacement<R>(
+pub async fn find_replacement<R>(
     cfg_inst: &ConfigInstance,
     all_cfg_insts: &R,
 ) -> Result<Option<ConfigInstance>, DeployErr>

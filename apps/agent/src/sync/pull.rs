@@ -1,4 +1,3 @@
-use crate::cache::entry::is_not_dirty;
 use crate::crud::prelude::*;
 use crate::http::{
     config_instances::{
@@ -185,7 +184,7 @@ pub async fn add_unknown_instances_to_storage(
 
         let overwrite = true;
         if let Err(e) = cfg_inst_data_cache.write(
-            unknown_inst.id.clone(), instance_data, is_not_dirty, overwrite,
+            unknown_inst.id.clone(), instance_data, |_, _| false, overwrite,
         ).await {
             error!("Failed to write instance data to cache for instance '{}': {}", unknown_inst.id, e);
             continue;
@@ -195,7 +194,7 @@ pub async fn add_unknown_instances_to_storage(
         let storage_inst = ConfigInstance::from_backend(unknown_inst);
         let overwrite = true;
         if let Err(e) = cfg_inst_cache.write(
-            unknown_inst_id.clone(), storage_inst, is_not_dirty, overwrite,
+            unknown_inst_id.clone(), storage_inst, |_, _| false, overwrite,
         ).await {
             error!("Failed to write instance to cache for instance '{}': {}", unknown_inst_id, e);
             continue;
@@ -213,7 +212,7 @@ pub async fn update_target_status_instances(
         let instance_id = instance.id.clone();
         let overwrite = true;
         if let Err(e) = cfg_inst_cache.write(
-            instance_id.clone(), instance, is_not_dirty, overwrite,
+            instance_id.clone(), instance, |_, _| false, overwrite,
         ).await {
             error!("Failed to write instance to cache for instance '{}': {}", instance_id, e);
             continue;

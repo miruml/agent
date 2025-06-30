@@ -71,9 +71,9 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            max_attempts: 5,
+            max_attempts: 2147483647, // a VERY large number
             exp_backoff_base_secs: 15,
-            max_cooldown_secs: 300,
+            max_cooldown_secs: 86400, // 24 hours
         }
     }
 }

@@ -5,17 +5,13 @@ use std::sync::Arc;
 use crate::auth::token_mngr::TokenManager;
 use crate::crud::prelude::*;
 use crate::deploy::{
-    apply::apply_deployments,
-    errors::{DeployErr, DeployCacheErr},
+    apply::apply,
     fsm,
-    observer::Observer,
 };
 use crate::filesys::dir::Dir;
 use crate::http::config_instances::ConfigInstancesExt;
-use crate::models::config_instance::ConfigInstance;
 use crate::storage::config_instances::{
     ConfigInstanceCache,
-    ConfigInstanceCacheEntry,
     ConfigInstanceDataCache,
 };
 use crate::sync::pull::pull_config_instances;
@@ -31,45 +27,11 @@ use crate::sync::errors::{
 use crate::trace;
 
 // external crates
-use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
 use tracing::{error, info};
-
-
-pub struct StorageObserver<'a> {
-    pub cfg_inst_cache: &'a ConfigInstanceCache,
-}
-
-#[async_trait]
-impl<'a> Observer for StorageObserver<'a> {
-    async fn on_update(&mut self, instance: &ConfigInstance) -> Result<(), DeployErr> {
-        let overwrite = true;
-        self.cfg_inst_cache.write(
-            instance.id.clone(),
-            instance.clone(),
-            is_dirty,
-            overwrite,
-        ).await.map_err(|e| {
-            DeployErr::CacheErr(DeployCacheErr {
-                source: e,
-                trace: trace!(),
-            })
-        })
-    }
-}
-
-fn is_dirty(old: Option<&ConfigInstanceCacheEntry>, new: &ConfigInstance) -> bool {
-    let old = match old {
-        Some(old) => old,
-        None => return true,
-    };
-    old.is_dirty ||
-    old.value.activity_status != new.activity_status || 
-    old.value.error_status != new.error_status
-}
 
 
 // ======================== SINGLE-THREADED IMPLEMENTATION ========================= //
@@ -136,19 +98,13 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
         }))?;
         let cfg_insts_to_apply = cfg_insts_to_apply.into_iter().map(|instance| (instance.id.clone(), instance)).collect();
 
-        // observers
-        let mut observers: Vec<&mut dyn Observer> = Vec::new();
-        let mut storage_observer = StorageObserver { cfg_inst_cache };
-        observers.push(&mut storage_observer);
-
         // apply deployments
-        apply_deployments(
+        apply(
             cfg_insts_to_apply,
             cfg_inst_cache,
             cfg_inst_data_cache,
             &self.deployment_dir,
             &self.fsm_settings,
-            &mut observers[..],
         ).await.map_err(|e| SyncErr::DeployErr(SyncDeployErr {
             source: e,
             trace: trace!(),

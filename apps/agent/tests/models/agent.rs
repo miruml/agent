@@ -8,6 +8,20 @@ use serde_json::json;
 use tracing::{debug, error, info, trace, warn};
 
 #[test]
+fn serialize_deserialize_agent() {
+    let agent = Agent {
+        device_id: "dvc_123".to_string(),
+        activated: true,
+        backend_base_url: "https://configs.api.miruml.com/agent/v1/arglebargle".to_string(),
+        log_level: LogLevel::Debug,
+        config_instance_deployment_base_path: "/srv/miru/configs/arglebargle".to_string(),
+    };
+    let serialized = serde_json::to_string(&agent).unwrap();
+    let deserialized = serde_json::from_str::<Agent>(&serialized).unwrap();
+    assert_eq!(deserialized, agent);
+}
+
+#[test]
 fn deserialize_agent() {
     // valid deserialization
     let expected = Agent {

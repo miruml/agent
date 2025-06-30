@@ -178,6 +178,7 @@ impl ActivityStatus {
 
 // =============================== ERROR STATUS ==================================== //
 #[derive(Clone, Copy, Debug, Default, Serialize, PartialEq, Eq, Hash)]
+#[serde(rename_all = "snake_case")]
 pub enum ErrorStatus {
     #[default]
     None,
@@ -528,6 +529,10 @@ impl ConfigInstance {
     pub fn is_in_cooldown(&self) -> bool {
         self.cooldown_ends_at > Utc::now()
     }
+
+    pub fn cooldown(&self) -> TimeDelta {
+        self.cooldown_ends_at - Utc::now()
+    }
 }
 
 impl<'de> Deserialize<'de> for ConfigInstance {
@@ -568,22 +573,22 @@ impl<'de> Deserialize<'de> for ConfigInstance {
 
         let default = ConfigInstance::default();
 
-        let created_at = result.created_at.unwrap_or(deserialize_error!(
+        let created_at = result.created_at.unwrap_or_else(|| deserialize_error!(
             "config_instance",
             "created_at",
             default.created_at
         ));
-        let updated_at = result.updated_at.unwrap_or(deserialize_error!(
+        let updated_at = result.updated_at.unwrap_or_else(|| deserialize_error!(
             "config_instance",
             "updated_at",
             default.updated_at
         ));
-        let attempts = result.attempts.unwrap_or(deserialize_error!(
+        let attempts = result.attempts.unwrap_or_else(|| deserialize_error!(
             "config_instance",
             "attempts",
             default.attempts
         ));
-        let cooldown_ends_at = result.cooldown_ends_at.unwrap_or(deserialize_error!(
+        let cooldown_ends_at = result.cooldown_ends_at.unwrap_or_else(|| deserialize_error!(
             "config_instance",
             "cooldown_ends_at",
             default.cooldown_ends_at

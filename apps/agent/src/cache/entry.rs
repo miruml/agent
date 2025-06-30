@@ -18,19 +18,3 @@ where
     pub created_at: DateTime<Utc>,
     pub last_accessed: DateTime<Utc>,
 }
-
-pub fn is_dirty<K, V>(_old: Option<&CacheEntry<K, V>>, _new: &V) -> bool
-where
-    K: ToString + Serialize,
-    V: Clone + Serialize,
-{
-    true
-}
-
-pub fn is_not_dirty<K, V>(_old: Option<&CacheEntry<K, V>>, _new: &V) -> bool
-where
-    K: ToString + Serialize,
-    V: Clone + Serialize,
-{
-    false
-}

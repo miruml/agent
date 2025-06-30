@@ -53,22 +53,22 @@ impl<'de> Deserialize<'de> for Agent {
 
         Ok(Agent {
             device_id: result.device_id,
-            activated: result.activated.unwrap_or(deserialize_error!(
+            activated: result.activated.unwrap_or_else(|| deserialize_error!(
                 "agent",
                 "activated",
                 default.activated
             )),
-            backend_base_url: result.backend_base_url.unwrap_or(deserialize_error!(
+            backend_base_url: result.backend_base_url.unwrap_or_else(|| deserialize_error!(
                 "agent",
                 "backend_base_url",
                 default.backend_base_url
             )),
-            log_level: result.log_level.unwrap_or(deserialize_error!(
+            log_level: result.log_level.unwrap_or_else(|| deserialize_error!(
                 "agent",
                 "log_level",
                 default.log_level
             )),
-            config_instance_deployment_base_path: result.config_instance_deployment_base_path.unwrap_or(deserialize_error!(
+            config_instance_deployment_base_path: result.config_instance_deployment_base_path.unwrap_or_else(|| deserialize_error!(
                 "agent",
                 "config_instance_deployment_base_path",
                 default.config_instance_deployment_base_path

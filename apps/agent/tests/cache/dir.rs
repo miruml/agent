@@ -2,10 +2,7 @@
 use std::path::PathBuf;
 
 // internal crates
-use config_agent::cache::{
-    entry::is_dirty,
-    dir::{SingleThreadDirCache, DirCache},
-};
+use config_agent::cache::dir::{SingleThreadDirCache, DirCache};
 use config_agent::crud::prelude::*;
 use config_agent::filesys::{dir::Dir, path::PathExt};
 use crate::{concurrent_cache_tests, single_thread_cache_tests};
@@ -64,7 +61,7 @@ pub mod concurrent {
         for i in 0..10 {
             let key = format!("key{}", i);
             let value = format!("value{}", i);
-            cache.write(key, value, is_dirty, false).await.unwrap();
+            cache.write(key, value, |_, _| true, false).await.unwrap();
         }
 
         // prune the cache

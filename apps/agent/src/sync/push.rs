@@ -1,4 +1,3 @@
-use crate::cache::entry::is_not_dirty;
 use crate::http::config_instances::ConfigInstancesExt;
 use crate::models::config_instance::{
     ActivityStatus,
@@ -51,7 +50,7 @@ pub async fn push_config_instances<HTTPClientT: ConfigInstancesExt>(
         if let Err(e) = cfg_inst_cache.write(
             inst.id.clone(),
             inst,
-            is_not_dirty,
+            |_, _| false,
             true,
         ).await.map_err(|e| SyncErr::CacheErr(SyncCacheErr {
             source: e,

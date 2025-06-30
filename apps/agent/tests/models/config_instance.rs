@@ -2,6 +2,8 @@
 use std::collections::HashSet;
 
 // internal crates
+use config_agent::logs::{LogOptions, init};
+use config_agent::filesys::{dir::Dir, path::PathExt};
 use config_agent::models::config_instance::{
     ConfigInstance,
     ActivityStatus,
@@ -23,11 +25,13 @@ use serde_json::json;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, trace, warn};
 
+
 #[test]
-fn deserialize_target_status() {
+fn serialize_deserialize_target_status() {
     struct TestCase {
         input: &'static str,
         expected: TargetStatus,
+        valid: bool,
     }
 
     let test_cases = vec![
@@ -35,19 +39,23 @@ fn deserialize_target_status() {
         TestCase {
             input: "\"created\"",
             expected: TargetStatus::Created,
+            valid: true,
         },
         TestCase {
             input: "\"deployed\"",
             expected: TargetStatus::Deployed,
+            valid: true,
         },
         TestCase {
             input: "\"removed\"",
             expected: TargetStatus::Removed,
+            valid: true,
         },
         // default
         TestCase {
             input: "\"unknown\"",
             expected: TargetStatus::Created,
+            valid: false,
         },
     ];
 
@@ -57,6 +65,10 @@ fn deserialize_target_status() {
         variants.remove(&test_case.expected);
         let deserialized = serde_json::from_str::<TargetStatus>(test_case.input).unwrap();
         assert_eq!(deserialized, test_case.expected);
+        if test_case.valid {
+            let serialized = serde_json::to_string(&test_case.expected).unwrap();
+            assert_eq!(serialized, test_case.input);
+        } 
     }
 
     assert!(variants.is_empty(), "variants: {:?}", variants);
@@ -102,10 +114,11 @@ fn target_status_backend_and_sdk_conversions() {
 }
 
 #[test]
-fn deserialize_activity_status() {
+fn serialize_deserialize_activity_status() {
     struct TestCase {
         input: &'static str,
         expected: ActivityStatus,
+        valid: bool,
     }
 
     let test_cases = vec![
@@ -113,22 +126,27 @@ fn deserialize_activity_status() {
         TestCase {
             input: "\"created\"",
             expected: ActivityStatus::Created,
+            valid: true,
         },
         TestCase {
             input: "\"queued\"",
             expected: ActivityStatus::Queued,
+            valid: true,
         },
         TestCase {
             input: "\"deployed\"",
             expected: ActivityStatus::Deployed,
+            valid: true,
         },
         TestCase {
             input: "\"removed\"",
             expected: ActivityStatus::Removed,
+            valid: true,
         },
         TestCase {
             input: "\"unknown\"",
             expected: ActivityStatus::Created,
+            valid: false,
         },
     ];
 
@@ -138,6 +156,10 @@ fn deserialize_activity_status() {
         variants.remove(&test_case.expected);
         let deserialized = serde_json::from_str::<ActivityStatus>(test_case.input).unwrap();
         assert_eq!(deserialized, test_case.expected);
+        if test_case.valid {
+            let serialized = serde_json::to_string(&test_case.expected).unwrap();
+            assert_eq!(serialized, test_case.input);
+        }
     }
 
     assert!(variants.is_empty(), "variants: {:?}", variants);
@@ -188,10 +210,11 @@ fn activity_status_backend_and_sdk_conversions() {
 }
 
 #[test]
-fn deserialize_error_status() {
+fn serialize_deserialize_error_status() {
     struct TestCase {
         input: &'static str,
         expected: ErrorStatus,
+        valid: bool,
     }
 
     let test_cases = vec![
@@ -199,19 +222,23 @@ fn deserialize_error_status() {
         TestCase {
             input: "\"none\"",
             expected: ErrorStatus::None,
+            valid: true,
         },
         TestCase {
             input: "\"failed\"",
             expected: ErrorStatus::Failed,
+            valid: true,
         },
         TestCase {
             input: "\"retrying\"",
             expected: ErrorStatus::Retrying,
+            valid: true,
         },
         // default
         TestCase {
             input: "\"unknown\"",
             expected: ErrorStatus::None,
+            valid: false,
         },
     ];
 
@@ -221,6 +248,10 @@ fn deserialize_error_status() {
         variants.remove(&test_case.expected);
         let deserialized = serde_json::from_str::<ErrorStatus>(test_case.input).unwrap();
         assert_eq!(deserialized, test_case.expected);
+        if test_case.valid {
+            let serialized = serde_json::to_string(&test_case.expected).unwrap();
+            assert_eq!(serialized, test_case.input);
+        }
     }
 }
 
@@ -264,10 +295,11 @@ fn error_status_backend_and_sdk_conversions() {
 }
 
 #[test]
-fn deserialize_status() {
+fn serialize_deserialize_status() {
     struct TestCase {
         input: &'static str,
         expected: Status,
+        valid: bool,
     }
 
     let test_cases = vec![
@@ -275,31 +307,38 @@ fn deserialize_status() {
         TestCase {
             input: "\"created\"",
             expected: Status::Created,
+            valid: true,
         },
         TestCase {
             input: "\"queued\"",
             expected: Status::Queued,
+            valid: true,
         },
         TestCase {
             input: "\"deployed\"",
             expected: Status::Deployed,
+            valid: true,
         },
         TestCase {
             input: "\"removed\"",
             expected: Status::Removed,
+            valid: true,
         },
         TestCase {
             input: "\"failed\"",
             expected: Status::Failed,
+            valid: true,
         },
         TestCase {
             input: "\"retrying\"",
             expected: Status::Retrying,
+            valid: true,
         },
         // default
         TestCase {
             input: "\"unknown\"",
             expected: Status::Created,
+            valid: false,
         },
     ];
 
@@ -309,6 +348,10 @@ fn deserialize_status() {
         variants.remove(&test_case.expected);
         let deserialized = serde_json::from_str::<Status>(test_case.input).unwrap();
         assert_eq!(deserialized, test_case.expected);
+        if test_case.valid {
+            let serialized = serde_json::to_string(&test_case.expected).unwrap();
+            assert_eq!(test_case.input, serialized);
+        }
     }
 
     assert!(variants.is_empty(), "variants: {:?}", variants);
@@ -369,7 +412,38 @@ fn status_backend_and_sdk_conversions() {
 }
 
 #[test]
-fn deserialize_config_instance() {
+fn serialize_deserialize_config_instance() {
+    let expected = ConfigInstance {
+        id: "123".to_string(),
+        target_status: TargetStatus::Removed,
+        activity_status: ActivityStatus::Removed,
+        error_status: ErrorStatus::Failed,
+        filepath: Some("test".to_string()),
+        patch_id: Some("test".to_string()),
+        created_by_id: Some("test".to_string()),
+        created_at: Utc::now(),
+        updated_by_id: Some("test".to_string()),
+        updated_at: Utc::now(),
+        device_id: "dvc_123".to_string(),
+        config_schema_id: "123".to_string(),
+        attempts: 0,
+        cooldown_ends_at: Utc::now(),
+    };
+    let serialized = serde_json::to_string(&expected).unwrap();
+    let deserialized = serde_json::from_str::<ConfigInstance>(&serialized).unwrap();
+    assert_eq!(deserialized, expected);
+}
+
+#[tokio::test]
+async fn deserialize_config_instance() {
+    let dir = Dir::create_temp_dir("rollback").await.unwrap(); 
+    let options = LogOptions {
+        stdout: true,
+        log_dir: dir.path().to_path_buf(),
+        ..Default::default()
+    };
+    let _ = init(options);
+
     // valid deserialization
     let expected = ConfigInstance {
         id: "123".to_string(),
@@ -404,6 +478,7 @@ fn deserialize_config_instance() {
         "cooldown_ends_at": expected.cooldown_ends_at,
     });
     let config_instance: ConfigInstance = serde_json::from_value(valid_input).unwrap();
+    info!("config_instance: {:?}", config_instance);
     assert_eq!(config_instance, expected);
 
     // exclude required fields
@@ -590,6 +665,16 @@ fn config_instance_is_cooling_down() {
     instance.clear_cooldown();
     assert!(!instance.is_in_cooldown());
 }
+
+#[test]
+fn config_instance_cooldown() {
+    let mut instance = ConfigInstance::default();
+    let cooldown = TimeDelta::seconds(10);
+    instance.set_cooldown(cooldown);
+    assert!(instance.cooldown() < cooldown);
+    assert!(instance.cooldown() > cooldown - TimeDelta::seconds(1));
+}
+
 
 
 

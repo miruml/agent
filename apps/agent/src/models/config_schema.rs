@@ -69,7 +69,7 @@ impl<'de> Deserialize<'de> for ConfigSchema {
 
         let default = ConfigSchema::default();
 
-        let created_at = result.created_at.unwrap_or(deserialize_error!(
+        let created_at = result.created_at.unwrap_or_else(|| deserialize_error!(
             "config_schema",
             "created_at",
             default.created_at
