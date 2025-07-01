@@ -7,6 +7,9 @@ pub struct Pagination {
 
 impl Default for Pagination {
     fn default() -> Self {
-        Self { limit: 10, offset: 0 }
+        Self {
+            limit: 10,
+            offset: 0,
+        }
     }
 }

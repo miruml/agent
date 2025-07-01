@@ -23,13 +23,12 @@ pub mod new {
     async fn fail_missing_private_key_file() {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
         let layout = StorageLayout::new(dir);
-        let result =
-            ServerState::new(
-                layout,
-                Arc::new(HTTPClient::new("doesntmatter").await),
-                fsm::Settings::default(),
-            )
-            .await;
+        let result = ServerState::new(
+            layout,
+            Arc::new(HTTPClient::new("doesntmatter").await),
+            fsm::Settings::default(),
+        )
+        .await;
         match result {
             Err(ServerErr::FileSysErr(e)) => {
                 assert!(matches!(e.source, FileSysErr::PathDoesNotExistErr(_)));
@@ -54,13 +53,12 @@ pub mod new {
             .await
             .unwrap();
 
-        let result =
-            ServerState::new(
-                layout,
-                Arc::new(HTTPClient::new("doesntmatter").await),
-                fsm::Settings::default(),
-            )
-            .await;
+        let result = ServerState::new(
+            layout,
+            Arc::new(HTTPClient::new("doesntmatter").await),
+            fsm::Settings::default(),
+        )
+        .await;
         assert!(matches!(result, Err(ServerErr::MissingDeviceIDErr(_))));
     }
 

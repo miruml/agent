@@ -5,12 +5,8 @@ use std::sync::Arc;
 use crate::http::mock::MockAuthClient;
 use config_agent::auth::errors::AuthErr;
 use config_agent::auth::token_mngr::{
-    determine_refresh_loop_sleep_duration,
-    run_refresh_loop,
-    SingleThreadTokenManager,
-    TokenFile,
-    TokenManager,
-    Worker,
+    determine_refresh_loop_sleep_duration, run_refresh_loop, SingleThreadTokenManager, TokenFile,
+    TokenManager, Worker,
 };
 use config_agent::crypt::rsa;
 use config_agent::filesys::{cached_file::CachedFile, dir::Dir, file::File};
@@ -36,12 +32,7 @@ pub fn spawn(
 ) -> Result<(TokenManager, JoinHandle<()>), AuthErr> {
     let (sender, receiver) = mpsc::channel(buffer_size);
     let worker = Worker::new(
-        SingleThreadTokenManager::new(
-            device_id,
-            http_client,
-            token_file,
-            private_key_file,
-        )?,
+        SingleThreadTokenManager::new(device_id, http_client, token_file, private_key_file)?,
         receiver,
     );
     let worker_handle = tokio::spawn(worker.run());

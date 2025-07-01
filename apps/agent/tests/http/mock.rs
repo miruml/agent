@@ -91,11 +91,7 @@ impl MockConfigInstancesClient {
 }
 
 impl ConfigInstancesExt for MockConfigInstancesClient {
-    async fn list_config_instances(
-        &self,
-        _: &str,
-        _: &str,
-    ) -> Result<ConfigInstanceList, HTTPErr> {
+    async fn list_config_instances(&self, _: &str, _: &str) -> Result<ConfigInstanceList, HTTPErr> {
         (self.list_config_instances_result)()
     }
 
@@ -142,11 +138,7 @@ impl HistoryConfigInstancesClient {
 }
 
 impl ConfigInstancesExt for HistoryConfigInstancesClient {
-    async fn list_config_instances(
-        &self,
-        _: &str,
-        _: &str,
-    ) -> Result<ConfigInstanceList, HTTPErr> {
+    async fn list_config_instances(&self, _: &str, _: &str) -> Result<ConfigInstanceList, HTTPErr> {
         Ok(ConfigInstanceList::default())
     }
 
@@ -169,7 +161,10 @@ impl ConfigInstancesExt for HistoryConfigInstancesClient {
         request: &UpdateConfigInstanceRequest,
         _: &str,
     ) -> Result<BackendConfigInstance, HTTPErr> {
-        self.update_config_instance_requests.lock().unwrap().push(request.clone());
+        self.update_config_instance_requests
+            .lock()
+            .unwrap()
+            .push(request.clone());
         Ok(BackendConfigInstance::default())
     }
 }
@@ -179,8 +174,7 @@ pub struct MockConfigSchemasClient {
     pub hash_schema_result: Box<dyn Fn() -> Result<SchemaDigestResponse, HTTPErr> + Send + Sync>,
     pub list_config_schemas_result:
         Box<dyn Fn() -> Result<ConfigSchemaList, HTTPErr> + Send + Sync>,
-    pub find_one_config_schema_result:
-        Box<dyn Fn() -> Result<ConfigSchema, HTTPErr> + Send + Sync>,
+    pub find_one_config_schema_result: Box<dyn Fn() -> Result<ConfigSchema, HTTPErr> + Send + Sync>,
 }
 
 impl Default for MockConfigSchemasClient {
@@ -225,11 +219,7 @@ impl ConfigSchemasExt for MockConfigSchemasClient {
         (self.hash_schema_result)()
     }
 
-    async fn list_config_schemas(
-        &self,
-        _: &str,
-        _: &str,
-    ) -> Result<ConfigSchemaList, HTTPErr> {
+    async fn list_config_schemas(&self, _: &str, _: &str) -> Result<ConfigSchemaList, HTTPErr> {
         (self.list_config_schemas_result)()
     }
 

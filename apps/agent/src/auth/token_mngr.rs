@@ -10,10 +10,7 @@ use crate::auth::errors::{
 use crate::crypt::{base64, rsa};
 use crate::errors::MiruError;
 use crate::filesys::{cached_file::CachedFile, file::File, path::PathExt};
-use crate::http::{
-    devices::DevicesExt,
-    client::HTTPClient,
-};
+use crate::http::{client::HTTPClient, devices::DevicesExt};
 use crate::storage::token::Token;
 use crate::trace;
 use crate::utils::time_delta_to_duration;
@@ -190,10 +187,12 @@ impl<HTTPClientT: DevicesExt> Worker<HTTPClientT> {
         token_mngr: SingleThreadTokenManager<HTTPClientT>,
         receiver: Receiver<WorkerCommand>,
     ) -> Self {
-        Self { token_mngr, receiver }
+        Self {
+            token_mngr,
+            receiver,
+        }
     }
 }
-
 
 impl<HTTPClientT: DevicesExt> Worker<HTTPClientT> {
     pub async fn run(mut self) {

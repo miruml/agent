@@ -1,6 +1,6 @@
 // standard library
-use std::fmt::Debug;
 use std::cmp::Eq;
+use std::fmt::Debug;
 
 // external crates
 use chrono::{DateTime, Utc};

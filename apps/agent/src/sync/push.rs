@@ -1,8 +1,5 @@
 use crate::http::config_instances::ConfigInstancesExt;
-use crate::models::config_instance::{
-    ActivityStatus,
-    ErrorStatus,
-};
+use crate::models::config_instance::{ActivityStatus, ErrorStatus};
 use crate::storage::config_instances::ConfigInstanceCache;
 use crate::sync::errors::{SyncCacheErr, SyncErr};
 use crate::trace;
@@ -16,16 +13,16 @@ pub async fn push_config_instances<HTTPClientT: ConfigInstancesExt>(
     http_client: &HTTPClientT,
     token: &str,
 ) -> Result<(), SyncErr> {
-
     // get all unsynced instances
-    let unsynced_entries = cfg_inst_cache.get_dirty_entries().await.map_err(|e| SyncErr::CacheErr(Box::new(SyncCacheErr {
-        source: e,
-        trace: trace!(),
-    })))?;
+    let unsynced_entries = cfg_inst_cache.get_dirty_entries().await.map_err(|e| {
+        SyncErr::CacheErr(Box::new(SyncCacheErr {
+            source: e,
+            trace: trace!(),
+        }))
+    })?;
 
     // push each unsynced instance to the server and update the cache
     for entry in unsynced_entries {
-
         let inst = entry.value;
 
         // define the updates
@@ -37,21 +34,23 @@ pub async fn push_config_instances<HTTPClientT: ConfigInstancesExt>(
         };
 
         // send to the server
-        if let Err(e) = http_client.update_config_instance(
-            &inst.id, &updates, token,
-        ).await {
+        if let Err(e) = http_client
+            .update_config_instance(&inst.id, &updates, token)
+            .await
+        {
             error!("Failed to push config instance {}: {}", inst.id, e);
         }
 
         // update the cache
         let inst_id = inst.id.clone();
-        if let Err(e) = cfg_inst_cache.write(
-            inst.id.clone(),
-            inst,
-            |_, _| false,
-            true,
-        ).await {
-            error!("Failed to update cache for config instance {} after pushing to the server: {}", inst_id, e);
+        if let Err(e) = cfg_inst_cache
+            .write(inst.id.clone(), inst, |_, _| false, true)
+            .await
+        {
+            error!(
+                "Failed to update cache for config instance {} after pushing to the server: {}",
+                inst_id, e
+            );
         }
     }
 

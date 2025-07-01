@@ -2,8 +2,8 @@
 use std::time::{Duration, Instant};
 
 // internal crates
-use config_agent::crypt::sha256;
 use config_agent::crud::prelude::*;
+use config_agent::crypt::sha256;
 use config_agent::filesys::dir::Dir;
 use config_agent::http::client::HTTPClient;
 use config_agent::http::errors::{HTTPErr, MockErr};
@@ -29,7 +29,9 @@ pub mod errors {
         let dir = Dir::create_temp_dir("pulled_from_server_resp")
             .await
             .unwrap();
-        let (cache, _) = ConfigSchemaDigestCache::spawn(32, dir.file("cache.json")).await.unwrap();
+        let (cache, _) = ConfigSchemaDigestCache::spawn(32, dir.file("cache.json"))
+            .await
+            .unwrap();
 
         // create the mock
         let mut mock_client = MockConfigSchemasClient::default();
@@ -55,7 +57,9 @@ pub mod errors {
         };
 
         // run the test
-        let result = hash::hash_schema(&args, &cache, &mock_client, "doesntmatter").await.unwrap_err();
+        let result = hash::hash_schema(&args, &cache, &mock_client, "doesntmatter")
+            .await
+            .unwrap_err();
         assert!(result.is_network_connection_error());
     }
 }
@@ -70,7 +74,9 @@ pub mod success {
         let dir = Dir::create_temp_dir("pulled_from_server_resp")
             .await
             .unwrap();
-        let (cache, _) = ConfigSchemaDigestCache::spawn(32, dir.file("cache.json")).await.unwrap();
+        let (cache, _) = ConfigSchemaDigestCache::spawn(32, dir.file("cache.json"))
+            .await
+            .unwrap();
 
         // define the schema
         let schema = json!({
@@ -93,7 +99,7 @@ pub mod success {
             resolved: resolved_digest.to_string(),
         };
         cache
-            .write(raw_digest.clone(), digests, |_,_| false, false)
+            .write(raw_digest.clone(), digests, |_, _| false, false)
             .await
             .unwrap();
 
@@ -121,7 +127,9 @@ pub mod success {
         let dir = Dir::create_temp_dir("pulled_from_server_resp")
             .await
             .unwrap();
-        let (cache, _) = ConfigSchemaDigestCache::spawn(32, dir.file("cache.json")).await.unwrap();
+        let (cache, _) = ConfigSchemaDigestCache::spawn(32, dir.file("cache.json"))
+            .await
+            .unwrap();
 
         // create the mock
         let mut mock_client = MockConfigSchemasClient::default();

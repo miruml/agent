@@ -1,13 +1,6 @@
 // internal crates
-use crate::models::config_instance::{
-    ConfigInstanceID,
-    ConfigInstance,
-};
-use crate::cache::{
-    entry::CacheEntry,
-    dir::DirCache,
-    file::FileCache,
-};
+use crate::cache::{dir::DirCache, entry::CacheEntry, file::FileCache};
+use crate::models::config_instance::{ConfigInstance, ConfigInstanceID};
 
 pub type ConfigInstanceCacheEntry = CacheEntry<ConfigInstanceID, ConfigInstance>;
 

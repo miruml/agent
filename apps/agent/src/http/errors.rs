@@ -123,7 +123,11 @@ impl MiruError for ConfigSchemaNotFound {
 
 impl fmt::Display for ConfigSchemaNotFound {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Unable to find config schema with query params {:?}", self.query_params)
+        write!(
+            f,
+            "Unable to find config schema with query params {:?}",
+            self.query_params
+        )
     }
 }
 

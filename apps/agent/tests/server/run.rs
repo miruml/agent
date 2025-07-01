@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use config_agent::filesys::{dir::Dir, file::File};
 use config_agent::models::agent::Agent;
 use config_agent::models::config_instance::{
-    ConfigInstance, ActivityStatus, ErrorStatus, TargetStatus,
+    ActivityStatus, ConfigInstance, ErrorStatus, TargetStatus,
 };
 use config_agent::models::config_schema::ConfigSchema;
 use config_agent::server::run::{run, RunServerOptions};
@@ -153,7 +153,9 @@ async fn prune_config_schema_digest_cache() {
 
     // create some cache entries
     let cache_dir = layout.config_schema_digest_cache();
-    let (cache, _) = ConfigSchemaDigestCache::spawn(16, cache_dir.clone()).await.unwrap();
+    let (cache, _) = ConfigSchemaDigestCache::spawn(16, cache_dir.clone())
+        .await
+        .unwrap();
     for i in 0..10 {
         cache
             .write(
@@ -162,7 +164,7 @@ async fn prune_config_schema_digest_cache() {
                     raw: format!("test{}", i),
                     resolved: format!("test{}", i),
                 },
-            |_,_| false,
+                |_, _| false,
                 false,
             )
             .await
@@ -200,7 +202,9 @@ async fn prune_config_schema_cache() {
 
     // create some cache entries
     let cache_file = layout.config_schema_cache();
-    let (cache, _) = ConfigSchemaCache::spawn(16, cache_file.clone()).await.unwrap();
+    let (cache, _) = ConfigSchemaCache::spawn(16, cache_file.clone())
+        .await
+        .unwrap();
     for i in 0..10 {
         cache
             .write(
@@ -214,7 +218,7 @@ async fn prune_config_schema_cache() {
                     created_at: Utc::now().to_rfc3339(),
                     created_by_id: None,
                 },
-                |_,_| false,
+                |_, _| false,
                 false,
             )
             .await
@@ -252,7 +256,9 @@ async fn prune_config_instance_metadata_cache() {
 
     // create some cache entries
     let cache_file = layout.config_instance_metadata_cache();
-    let (cache, _) = ConfigInstanceCache::spawn(16, cache_file.clone()).await.unwrap();
+    let (cache, _) = ConfigInstanceCache::spawn(16, cache_file.clone())
+        .await
+        .unwrap();
     for i in 0..10 {
         cache
             .write(
@@ -262,7 +268,7 @@ async fn prune_config_instance_metadata_cache() {
                     target_status: TargetStatus::Created,
                     activity_status: ActivityStatus::Created,
                     error_status: ErrorStatus::None,
-                    filepath: None,
+                    relative_filepath: None,
                     patch_id: None,
                     created_by_id: None,
                     created_at: Utc::now(),
@@ -273,7 +279,7 @@ async fn prune_config_instance_metadata_cache() {
                     attempts: 0,
                     cooldown_ends_at: Utc::now(),
                 },
-                |_,_| false,
+                |_, _| false,
                 false,
             )
             .await
@@ -311,13 +317,15 @@ async fn prune_config_instance_data_cache() {
 
     // create some cache entries
     let cache_dir = layout.config_instance_data_cache();
-    let (cache, _) = ConfigInstanceDataCache::spawn(16, cache_dir.clone()).await.unwrap();
+    let (cache, _) = ConfigInstanceDataCache::spawn(16, cache_dir.clone())
+        .await
+        .unwrap();
     for i in 0..10 {
         cache
             .write(
                 format!("test{}", i),
                 json!({ "test": i }),
-                |_,_| false,
+                |_, _| false,
                 false,
             )
             .await

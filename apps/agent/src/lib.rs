@@ -1,7 +1,7 @@
 pub mod auth;
 pub mod cache;
-pub mod crypt;
 pub mod crud;
+pub mod crypt;
 pub mod deploy;
 pub mod errors;
 pub mod filesys;

@@ -1,14 +1,12 @@
 // internal crates
-use config_agent::cache::{
-    file::{FileCache, SingleThreadFileCache},
-};
-use config_agent::filesys::{dir::Dir, path::PathExt};
 use crate::{concurrent_cache_tests, single_thread_cache_tests};
+use config_agent::cache::file::{FileCache, SingleThreadFileCache};
+use config_agent::filesys::{dir::Dir, path::PathExt};
 
 // external crates
+use tokio::task::JoinHandle;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, trace, warn};
-use tokio::task::JoinHandle;
 
 pub mod concurrent {
     use super::*;

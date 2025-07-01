@@ -1,13 +1,9 @@
 // internal crates
-use config_agent::cache::{
-    entry::CacheEntry,
-    errors::CacheErr,
-    single_thread::SingleThreadCache,
-};
+use config_agent::cache::{entry::CacheEntry, errors::CacheErr, single_thread::SingleThreadCache};
 
 // external crates
-use futures::Future;
 use chrono::Utc;
+use futures::Future;
 
 #[macro_export]
 macro_rules! single_thread_cache_tests {
@@ -258,16 +254,16 @@ pub mod size {
 
         // create 10 more entries
         for i in 0..10 {
-            let key = format!("key{}", i+10);
-            let value = format!("value{}", i+10);
+            let key = format!("key{}", i + 10);
+            let value = format!("value{}", i + 10);
             cache.write(key, value, |_, _| true, false).await.unwrap();
         }
         assert_eq!(cache.size().await.unwrap(), 20);
 
         // overwrite 10 entries
         for i in 0..10 {
-            let key = format!("key{}", i+5);
-            let value = format!("value{}", i+5);
+            let key = format!("key{}", i + 5);
+            let value = format!("value{}", i + 5);
             cache.write(key, value, |_, _| true, true).await.unwrap();
         }
         assert_eq!(cache.size().await.unwrap(), 20);
@@ -290,15 +286,27 @@ pub mod entry_map {
         // create 2 entries
         let key1 = "key1".to_string();
         let value1 = "value1".to_string();
-        cache.write(key1.clone(), value1.clone(), |_, _| true, false).await.unwrap();
+        cache
+            .write(key1.clone(), value1.clone(), |_, _| true, false)
+            .await
+            .unwrap();
         let key2 = "key2".to_string();
         let value2 = "value2".to_string();
-        cache.write(key2.clone(), value2.clone(), |_, _| true, false).await.unwrap();
+        cache
+            .write(key2.clone(), value2.clone(), |_, _| true, false)
+            .await
+            .unwrap();
 
         let result = cache.entry_map().await.unwrap();
         assert_eq!(result.len(), 2);
-        assert_eq!(result.get(&key1).map(|e| e.value.clone()), Some(value1.clone()));
-        assert_eq!(result.get(&key2).map(|e| e.value.clone()), Some(value2.clone()));
+        assert_eq!(
+            result.get(&key1).map(|e| e.value.clone()),
+            Some(value1.clone())
+        );
+        assert_eq!(
+            result.get(&key2).map(|e| e.value.clone()),
+            Some(value2.clone())
+        );
     }
 }
 
@@ -318,10 +326,16 @@ pub mod value_map {
         // create 2 entries
         let key1 = "key1".to_string();
         let value1 = "value1".to_string();
-        cache.write(key1.clone(), value1.clone(), |_, _| true, false).await.unwrap();
+        cache
+            .write(key1.clone(), value1.clone(), |_, _| true, false)
+            .await
+            .unwrap();
         let key2 = "key2".to_string();
         let value2 = "value2".to_string();
-        cache.write(key2.clone(), value2.clone(), |_, _| true, false).await.unwrap();
+        cache
+            .write(key2.clone(), value2.clone(), |_, _| true, false)
+            .await
+            .unwrap();
 
         let result = cache.value_map().await.unwrap();
         assert_eq!(result.len(), 2);
@@ -346,10 +360,16 @@ pub mod entries {
         // create 2 entries
         let key1 = "key1".to_string();
         let value1 = "value1".to_string();
-        cache.write(key1.clone(), value1.clone(), |_, _| true, false).await.unwrap();
+        cache
+            .write(key1.clone(), value1.clone(), |_, _| true, false)
+            .await
+            .unwrap();
         let key2 = "key2".to_string();
         let value2 = "value2".to_string();
-        cache.write(key2.clone(), value2.clone(), |_, _| true, false).await.unwrap();
+        cache
+            .write(key2.clone(), value2.clone(), |_, _| true, false)
+            .await
+            .unwrap();
 
         let mut result = cache.entries().await.unwrap();
         result.sort();
@@ -377,10 +397,16 @@ pub mod values {
         // create 2 entries
         let key1 = "key1".to_string();
         let value1 = "value1".to_string();
-        cache.write(key1.clone(), value1.clone(), |_, _| true, false).await.unwrap();
+        cache
+            .write(key1.clone(), value1.clone(), |_, _| true, false)
+            .await
+            .unwrap();
         let key2 = "key2".to_string();
         let value2 = "value2".to_string();
-        cache.write(key2.clone(), value2.clone(), |_, _| true, false).await.unwrap();
+        cache
+            .write(key2.clone(), value2.clone(), |_, _| true, false)
+            .await
+            .unwrap();
 
         let mut result = cache.values().await.unwrap();
         result.sort();
@@ -427,11 +453,7 @@ pub mod read_entry_optional {
 
         // read the entry
         let before_read = Utc::now();
-        let read_entry = cache
-            .read_entry_optional(&key)
-            .await
-            .unwrap()
-            .unwrap();
+        let read_entry = cache.read_entry_optional(&key).await.unwrap().unwrap();
 
         // check the timestamps
         assert!(read_entry.created_at > before_write);
@@ -489,10 +511,7 @@ pub mod read_entry {
 
         // read the entry
         let before_read = Utc::now();
-        let read_entry = cache
-            .read_entry(&key)
-            .await
-            .unwrap();
+        let read_entry = cache.read_entry(&key).await.unwrap();
 
         // check the timestamps
         assert!(read_entry.created_at > before_write);
@@ -563,10 +582,7 @@ pub mod read {
     {
         let mut cache = new_cache().await;
         assert!(matches!(
-            cache
-                .read(&"1234567890".to_string())
-                .await
-                .unwrap_err(),
+            cache.read(&"1234567890".to_string()).await.unwrap_err(),
             CacheErr::CacheElementNotFound { .. }
         ));
     }
@@ -848,11 +864,17 @@ pub mod find_entries_where {
         let after_write = Utc::now();
 
         // no entries found
-        let found = cache.find_entries_where(|entry| entry.key == "key10").await.unwrap();
+        let found = cache
+            .find_entries_where(|entry| entry.key == "key10")
+            .await
+            .unwrap();
         assert!(found.is_empty());
 
         // one entry found
-        let found = cache.find_entries_where(|entry| entry.key == "key5").await.unwrap();
+        let found = cache
+            .find_entries_where(|entry| entry.key == "key5")
+            .await
+            .unwrap();
         assert_eq!(found.len(), 1);
         assert_eq!(found[0].key, "key5");
 
@@ -860,7 +882,10 @@ pub mod find_entries_where {
         assert!(found[0].last_accessed > after_write);
 
         // multiple entries found
-        let found = cache.find_entries_where(|entry| entry.key != "key5").await.unwrap();
+        let found = cache
+            .find_entries_where(|entry| entry.key != "key5")
+            .await
+            .unwrap();
         assert_eq!(found.len(), 9);
     }
 }
@@ -925,11 +950,17 @@ pub mod find_one_entry_optional {
         let after_write = Utc::now();
 
         // no entries found
-        let found = cache.find_one_entry_optional("key10", |entry| entry.key == "key10").await.unwrap();
+        let found = cache
+            .find_one_entry_optional("key10", |entry| entry.key == "key10")
+            .await
+            .unwrap();
         assert!(found.is_none());
 
         // one entry found
-        let found = cache.find_one_entry_optional("key5", |entry| entry.key == "key5").await.unwrap();
+        let found = cache
+            .find_one_entry_optional("key5", |entry| entry.key == "key5")
+            .await
+            .unwrap();
         assert!(found.is_some());
         assert_eq!(found.clone().unwrap().key, "key5");
 
@@ -937,7 +968,10 @@ pub mod find_one_entry_optional {
         assert!(found.unwrap().last_accessed > after_write);
 
         // multiple entries found
-        let err = cache.find_one_entry_optional("not key5", |entry| entry.key != "key5").await.unwrap_err();
+        let err = cache
+            .find_one_entry_optional("not key5", |entry| entry.key != "key5")
+            .await
+            .unwrap_err();
         assert!(matches!(err, CacheErr::FoundTooManyCacheElements { .. }));
     }
 }
@@ -963,11 +997,17 @@ pub mod find_one_optional {
         let after_write = Utc::now();
 
         // no entries found
-        let found = cache.find_one_optional("value10", |value| value == "value10").await.unwrap();
+        let found = cache
+            .find_one_optional("value10", |value| value == "value10")
+            .await
+            .unwrap();
         assert!(found.is_none());
 
         // one entry found
-        let found = cache.find_one_optional("value5", |value| value == "value5").await.unwrap();
+        let found = cache
+            .find_one_optional("value5", |value| value == "value5")
+            .await
+            .unwrap();
         assert!(found.is_some());
         assert_eq!(found.unwrap(), "value5");
 
@@ -976,7 +1016,10 @@ pub mod find_one_optional {
         assert!(entries.get("key5").unwrap().last_accessed > after_write);
 
         // multiple entries found
-        let err = cache.find_one_optional("not value5", |value| value != "value5").await.unwrap_err();
+        let err = cache
+            .find_one_optional("not value5", |value| value != "value5")
+            .await
+            .unwrap_err();
         assert!(matches!(err, CacheErr::FoundTooManyCacheElements { .. }));
     }
 }
@@ -1002,18 +1045,27 @@ pub mod find_one_entry {
         let after_write = Utc::now();
 
         // no entries found
-        let error = cache.find_one_entry("key10", |entry| entry.key == "key10").await.unwrap_err();
+        let error = cache
+            .find_one_entry("key10", |entry| entry.key == "key10")
+            .await
+            .unwrap_err();
         assert!(matches!(error, CacheErr::CacheElementNotFound { .. }));
 
         // one entry found
-        let found = cache.find_one_entry("key5", |entry| entry.key == "key5").await.unwrap();
+        let found = cache
+            .find_one_entry("key5", |entry| entry.key == "key5")
+            .await
+            .unwrap();
         assert_eq!(found.key, "key5");
 
         // check the last accessed time was properly set
         assert!(found.last_accessed > after_write);
 
         // multiple entries found
-        let err = cache.find_one_entry("not key5", |entry| entry.key != "key5").await.unwrap_err();
+        let err = cache
+            .find_one_entry("not key5", |entry| entry.key != "key5")
+            .await
+            .unwrap_err();
         assert!(matches!(err, CacheErr::FoundTooManyCacheElements { .. }));
     }
 }
@@ -1039,11 +1091,17 @@ pub mod find_one {
         let after_write = Utc::now();
 
         // no entries found
-        let error = cache.find_one("value10", |value| value == "value10").await.unwrap_err();
+        let error = cache
+            .find_one("value10", |value| value == "value10")
+            .await
+            .unwrap_err();
         assert!(matches!(error, CacheErr::CacheElementNotFound { .. }));
 
         // one entry found
-        let found = cache.find_one("value5", |value| value == "value5").await.unwrap();
+        let found = cache
+            .find_one("value5", |value| value == "value5")
+            .await
+            .unwrap();
         assert_eq!(found, "value5");
 
         // check the last accessed time was properly set
@@ -1051,7 +1109,10 @@ pub mod find_one {
         assert!(entries.get("key5").unwrap().last_accessed > after_write);
 
         // multiple entries found
-        let err = cache.find_one("not value5", |value| value != "value5").await.unwrap_err();
+        let err = cache
+            .find_one("not value5", |value| value != "value5")
+            .await
+            .unwrap_err();
         assert!(matches!(err, CacheErr::FoundTooManyCacheElements { .. }));
     }
 }

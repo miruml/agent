@@ -1,6 +1,6 @@
 // internal crates
-use config_agent::models::agent::Agent;
 use config_agent::logs::LogLevel;
+use config_agent::models::agent::Agent;
 
 // external crates
 use serde_json::json;

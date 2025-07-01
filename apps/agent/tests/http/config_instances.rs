@@ -1,12 +1,7 @@
 use config_agent::http::{
     config_instances::{
-        build_search_query,
-        ConfigInstanceFiltersBuilder,
-        IDFilter,
-        ConfigSchemaIDFilter,
-        TargetStatusFilter,
-        ActivityStatusFilter,
-        ErrorStatusFilter,
+        build_search_query, ActivityStatusFilter, ConfigInstanceFiltersBuilder,
+        ConfigSchemaIDFilter, ErrorStatusFilter, IDFilter, TargetStatusFilter,
     },
     search::SearchOperator,
 };
@@ -17,29 +12,35 @@ pub mod build_search_query_func {
     #[tokio::test]
     async fn ids() {
         let builder = ConfigInstanceFiltersBuilder::new("dvc_123".to_string());
-        let filters = builder.with_id_filter(
-            IDFilter {
+        let filters = builder
+            .with_id_filter(IDFilter {
                 not: false,
                 op: SearchOperator::Equals,
                 val: vec!["1".to_string(), "2".to_string(), "3".to_string()],
-            }
-        ).build();
+            })
+            .build();
         let query = build_search_query(filters);
-        assert_eq!(query, Some("search=id:1,2,3 AND device_id:dvc_123".to_string()));
+        assert_eq!(
+            query,
+            Some("search=id:1,2,3 AND device_id:dvc_123".to_string())
+        );
     }
 
     #[tokio::test]
     async fn config_schema_ids() {
         let builder = ConfigInstanceFiltersBuilder::new("dvc_123".to_string());
-        let filters = builder.with_config_schema_id_filter(
-            ConfigSchemaIDFilter {
+        let filters = builder
+            .with_config_schema_id_filter(ConfigSchemaIDFilter {
                 not: false,
                 op: SearchOperator::Equals,
                 val: vec!["1".to_string(), "2".to_string(), "3".to_string()],
-            }
-        ).build();
+            })
+            .build();
         let query = build_search_query(filters);
-        assert_eq!(query, Some("search=device_id:dvc_123 AND config_schema_id:1,2,3".to_string()));
+        assert_eq!(
+            query,
+            Some("search=device_id:dvc_123 AND config_schema_id:1,2,3".to_string())
+        );
     }
 
     #[tokio::test]
@@ -53,7 +54,10 @@ pub mod build_search_query_func {
             }
         ).build();
         let query = build_search_query(filters);
-        assert_eq!(query, Some("search=device_id:dvc_123 AND target_status:removed".to_string()));
+        assert_eq!(
+            query,
+            Some("search=device_id:dvc_123 AND target_status:removed".to_string())
+        );
     }
 
     #[tokio::test]
@@ -67,7 +71,10 @@ pub mod build_search_query_func {
             }
         ).build();
         let query = build_search_query(filters);
-        assert_eq!(query, Some("search=device_id:dvc_123 AND activity_status:deployed".to_string()));
+        assert_eq!(
+            query,
+            Some("search=device_id:dvc_123 AND activity_status:deployed".to_string())
+        );
     }
 
     #[tokio::test]
@@ -81,6 +88,9 @@ pub mod build_search_query_func {
             }
         ).build();
         let query = build_search_query(filters);
-        assert_eq!(query, Some("search=device_id:dvc_123 AND error_status:none".to_string()));
+        assert_eq!(
+            query,
+            Some("search=device_id:dvc_123 AND error_status:none".to_string())
+        );
     }
 }

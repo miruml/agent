@@ -5,19 +5,11 @@ use std::fmt::Debug;
 // internal crates
 use crate::cache::{
     concurrent::{
-        ConcurrentCache,
-        Worker,
-        WorkerCommand,
-        ConcurrentCacheKey,
-        ConcurrentCacheValue,
+        ConcurrentCache, ConcurrentCacheKey, ConcurrentCacheValue, Worker, WorkerCommand,
     },
-    single_thread::{SingleThreadCache, CacheKey, CacheValue},
     entry::CacheEntry,
-    errors::{
-        CacheErr,
-        CacheFileSysErr,
-        CannotOverwriteCacheElement,
-    },
+    errors::{CacheErr, CacheFileSysErr, CannotOverwriteCacheElement},
+    single_thread::{CacheKey, CacheValue, SingleThreadCache},
 };
 use crate::filesys::{dir::Dir, file, file::File, path::PathExt};
 use crate::trace;
@@ -89,20 +81,24 @@ where
         Ok(Some(entry))
     }
 
-    async fn write_entry_impl(&mut self, entry: &CacheEntry<K, V>, overwrite: bool) -> Result<(), CacheErr> {
+    async fn write_entry_impl(
+        &mut self,
+        entry: &CacheEntry<K, V>,
+        overwrite: bool,
+    ) -> Result<(), CacheErr> {
         let atomic = true;
         let entry_file = self.cache_entry_file(&entry.key);
         if !overwrite && entry_file.exists() {
-            return Err(CacheErr::CannotOverwriteCacheElement(Box::new(CannotOverwriteCacheElement {
-                key: entry.key.to_string(),
-                trace: trace!(),
-            })));
+            return Err(CacheErr::CannotOverwriteCacheElement(Box::new(
+                CannotOverwriteCacheElement {
+                    key: entry.key.to_string(),
+                    trace: trace!(),
+                },
+            )));
         }
 
         entry_file
-            .write_json(
-                &entry, overwrite, atomic, 
-            )
+            .write_json(&entry, overwrite, atomic)
             .await
             .map_err(|e| {
                 CacheErr::FileSysErr(Box::new(CacheFileSysErr {
@@ -199,10 +195,7 @@ where
     K: ConcurrentCacheKey,
     V: ConcurrentCacheValue,
 {
-    pub async fn spawn(
-        buffer_size: usize,
-        dir: Dir,
-    ) -> Result<(Self, JoinHandle<()>), CacheErr> {
+    pub async fn spawn(buffer_size: usize, dir: Dir) -> Result<(Self, JoinHandle<()>), CacheErr> {
         let (sender, receiver) = mpsc::channel::<WorkerCommand<K, V>>(buffer_size);
         let worker = Worker {
             cache: SingleThreadDirCache::new(dir).await?,

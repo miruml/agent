@@ -38,4 +38,3 @@ impl fmt::Display for MockMiruError {
         write!(f, "MockMiruError")
     }
 }
-

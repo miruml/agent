@@ -2,10 +2,9 @@
 use std::sync::Arc;
 
 // internal crates
-use config_agent::auth::token_mngr::{
-    TokenFile,
-    TokenManager,
-};
+use crate::auth::token_mngr::spawn as spawn_token_manager;
+use crate::http::mock::{MockAuthClient, MockConfigInstancesClient};
+use config_agent::auth::token_mngr::{TokenFile, TokenManager};
 use config_agent::crud::prelude::*;
 use config_agent::deploy::fsm;
 use config_agent::filesys::dir::Dir;
@@ -14,18 +13,13 @@ use config_agent::http::{
     errors::{HTTPErr, MockErr},
 };
 use config_agent::models::config_instance::ActivityStatus;
+use config_agent::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
 use config_agent::storage::token::Token;
-use config_agent::storage::config_instances::{
-    ConfigInstanceCache,
-    ConfigInstanceDataCache,
-};
 use config_agent::sync::{
     errors::SyncErr,
     syncer::{SingleThreadSyncer, Syncer, Worker},
 };
 use config_agent::trace;
-use crate::auth::token_mngr::spawn as spawn_token_manager;
-use crate::http::mock::{MockAuthClient, MockConfigInstancesClient};
 
 // external crates
 use chrono::{DateTime, Utc};
@@ -40,7 +34,10 @@ pub async fn create_token_manager(
         .await
         .unwrap();
     let private_key_file = dir.file("private_key.pem");
-    private_key_file.write_string("private_key", true, true).await.unwrap();
+    private_key_file
+        .write_string("private_key", true, true)
+        .await
+        .unwrap();
 
     spawn_token_manager(
         32,
@@ -48,7 +45,8 @@ pub async fn create_token_manager(
         http_client.clone(),
         token_file,
         private_key_file,
-    ).unwrap()
+    )
+    .unwrap()
 }
 
 pub fn spawn(
@@ -91,7 +89,8 @@ pub mod shutdown {
             Arc::new(token_mngr),
             dir,
             fsm::Settings::default(),
-        ).unwrap();
+        )
+        .unwrap();
 
         syncer.shutdown().await.unwrap();
         worker_handler.await.unwrap();
@@ -109,13 +108,13 @@ pub mod sync {
 
         let mut http_client = MockConfigInstancesClient::default();
         http_client.set_list_all_config_instances(|| {
-            Err(HTTPErr::MockErr(Box::new(MockErr{
+            Err(HTTPErr::MockErr(Box::new(MockErr {
                 is_network_connection_error: true,
                 trace: trace!(),
             })))
         });
         http_client.set_update_config_instance(|| {
-            Err(HTTPErr::MockErr(Box::new(MockErr{
+            Err(HTTPErr::MockErr(Box::new(MockErr {
                 is_network_connection_error: true,
                 trace: trace!(),
             })))
@@ -128,21 +127,26 @@ pub mod sync {
             Arc::new(token_mngr),
             dir.clone(),
             fsm::Settings::default(),
-        ).unwrap();
+        )
+        .unwrap();
 
         // create the caches
-        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(
-            16, dir.file("cfg_inst_cache.json"),
-        ).await.unwrap();
-        let (cfg_inst_data_cache, _) = ConfigInstanceDataCache::spawn(
-            16, dir.subdir("cfg_inst_data_cache"),
-        ).await.unwrap();
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"))
+            .await
+            .unwrap();
+        let (cfg_inst_data_cache, _) =
+            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"))
+                .await
+                .unwrap();
 
-        syncer.sync(
-            Arc::new(cfg_inst_cache),
-            Arc::new(cfg_inst_data_cache),
-            true,
-        ).await.unwrap();
+        syncer
+            .sync(
+                Arc::new(cfg_inst_cache),
+                Arc::new(cfg_inst_data_cache),
+                true,
+            )
+            .await
+            .unwrap();
     }
 
     #[tokio::test]
@@ -153,13 +157,13 @@ pub mod sync {
 
         let mut http_client = MockConfigInstancesClient::default();
         http_client.set_list_all_config_instances(|| {
-            Err(HTTPErr::MockErr(Box::new(MockErr{
+            Err(HTTPErr::MockErr(Box::new(MockErr {
                 is_network_connection_error: true,
                 trace: trace!(),
             })))
         });
         http_client.set_update_config_instance(|| {
-            Err(HTTPErr::MockErr(Box::new(MockErr{
+            Err(HTTPErr::MockErr(Box::new(MockErr {
                 is_network_connection_error: true,
                 trace: trace!(),
             })))
@@ -172,21 +176,26 @@ pub mod sync {
             Arc::new(token_mngr),
             dir.clone(),
             fsm::Settings::default(),
-        ).unwrap();
+        )
+        .unwrap();
 
         // create the caches
-        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(
-            16, dir.file("cfg_inst_cache.json"),
-        ).await.unwrap();
-        let (cfg_inst_data_cache, _) = ConfigInstanceDataCache::spawn(
-            16, dir.subdir("cfg_inst_data_cache"),
-        ).await.unwrap();
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"))
+            .await
+            .unwrap();
+        let (cfg_inst_data_cache, _) =
+            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"))
+                .await
+                .unwrap();
 
-        syncer.sync(
-            Arc::new(cfg_inst_cache),
-            Arc::new(cfg_inst_data_cache),
-            false,
-        ).await.unwrap_err();
+        syncer
+            .sync(
+                Arc::new(cfg_inst_cache),
+                Arc::new(cfg_inst_data_cache),
+                false,
+            )
+            .await
+            .unwrap_err();
     }
 
     #[tokio::test]
@@ -206,9 +215,7 @@ pub mod sync {
         };
         let mut http_client = MockConfigInstancesClient::default();
         let new_instance_cloned = new_instance.clone();
-        http_client.set_list_all_config_instances(move || {
-            Ok(vec![new_instance_cloned.clone()])
-        });
+        http_client.set_list_all_config_instances(move || Ok(vec![new_instance_cloned.clone()]));
 
         let (syncer, _) = spawn(
             32,
@@ -217,23 +224,24 @@ pub mod sync {
             Arc::new(token_mngr),
             dir.clone(),
             fsm::Settings::default(),
-        ).unwrap();
+        )
+        .unwrap();
 
         // create the caches
-        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(
-            16, dir.file("cfg_inst_cache.json"),
-        ).await.unwrap();
-        let (cfg_inst_data_cache, _) = ConfigInstanceDataCache::spawn(
-            16, dir.subdir("cfg_inst_data_cache"),
-        ).await.unwrap();
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"))
+            .await
+            .unwrap();
+        let (cfg_inst_data_cache, _) =
+            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"))
+                .await
+                .unwrap();
         let cfg_inst_cache = Arc::new(cfg_inst_cache);
         let cfg_inst_data_cache = Arc::new(cfg_inst_data_cache);
 
-        syncer.sync(
-            cfg_inst_cache.clone(),
-            cfg_inst_data_cache.clone(),
-            false,
-        ).await.unwrap();
+        syncer
+            .sync(cfg_inst_cache.clone(), cfg_inst_data_cache.clone(), false)
+            .await
+            .unwrap();
 
         // check the metadata cache has the new instance
         let cache_cfg_inst = cfg_inst_cache.read(id.clone()).await.unwrap();
@@ -266,8 +274,12 @@ pub mod get_last_synced_at {
             Arc::new(token_mngr),
             dir,
             fsm::Settings::default(),
-        ).unwrap();
+        )
+        .unwrap();
 
-        assert_eq!(syncer.get_last_synced_at().await.unwrap(), DateTime::<Utc>::UNIX_EPOCH);
+        assert_eq!(
+            syncer.get_last_synced_at().await.unwrap(),
+            DateTime::<Utc>::UNIX_EPOCH
+        );
     }
 }

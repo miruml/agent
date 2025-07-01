@@ -6,11 +6,11 @@ use std::fmt::Debug;
 use crate::cache::{
     entry::CacheEntry,
     errors::{CacheErr, ReceiveActorMessageErr, SendActorMessageErr},
-    single_thread::{SingleThreadCache, CacheKey, CacheValue},
+    single_thread::{CacheKey, CacheValue, SingleThreadCache},
 };
 use crate::crud::{
+    errors::{CrudCacheErr, CrudErr},
     prelude::*,
-    errors::{CrudErr, CrudCacheErr},
 };
 use crate::trace;
 
@@ -147,22 +147,13 @@ where
                     }
                     break;
                 }
-                WorkerCommand::ReadEntryOptional {
-                    key,
-                    respond_to,
-                } => {
-                    let result = self
-                        .cache
-                        .read_entry_optional(&key)
-                        .await;
+                WorkerCommand::ReadEntryOptional { key, respond_to } => {
+                    let result = self.cache.read_entry_optional(&key).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to read optional cache entry: {:?}", e);
                     }
                 }
-                WorkerCommand::ReadEntry {
-                    key,
-                    respond_to,
-                } => {
+                WorkerCommand::ReadEntry { key, respond_to } => {
                     let result = self.cache.read_entry(&key).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to read cache entry: {:?}", e);
@@ -231,30 +222,20 @@ where
                         error!("Actor failed to get cache entry map: {:?}", e);
                     }
                 }
-                WorkerCommand::ValueMap { respond_to } => { 
+                WorkerCommand::ValueMap { respond_to } => {
                     let result = self.cache.value_map().await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to get cache value map: {:?}", e);
                     }
                 }
-                WorkerCommand::FindEntriesWhere {
-                    filter,
-                    respond_to,
-                } => {
-                    let result = self.cache.find_entries_where(
-                        filter,
-                    ).await;
+                WorkerCommand::FindEntriesWhere { filter, respond_to } => {
+                    let result = self.cache.find_entries_where(filter).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to find all cache entries: {:?}", e);
                     }
                 }
-                WorkerCommand::FindWhere {
-                    filter,
-                    respond_to,
-                } => {
-                    let result = self.cache.find_where(
-                        filter,
-                    ).await;
+                WorkerCommand::FindWhere { filter, respond_to } => {
+                    let result = self.cache.find_where(filter).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to find all cache entries: {:?}", e);
                     }
@@ -264,10 +245,10 @@ where
                     filter,
                     respond_to,
                 } => {
-                    let result = self.cache.find_one_entry_optional(
-                        filter_name,
-                        filter,
-                    ).await;
+                    let result = self
+                        .cache
+                        .find_one_entry_optional(filter_name, filter)
+                        .await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to find one cache entry: {:?}", e);
                     }
@@ -277,10 +258,7 @@ where
                     filter,
                     respond_to,
                 } => {
-                    let result = self.cache.find_one_optional(
-                        filter_name,
-                        filter,
-                    ).await;
+                    let result = self.cache.find_one_optional(filter_name, filter).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to find one cache entry: {:?}", e);
                     }
@@ -290,10 +268,7 @@ where
                     filter,
                     respond_to,
                 } => {
-                    let result = self.cache.find_one_entry(
-                        filter_name,
-                        filter,
-                    ).await;
+                    let result = self.cache.find_one_entry(filter_name, filter).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to find one cache entry: {:?}", e);
                     }
@@ -303,10 +278,7 @@ where
                     filter,
                     respond_to,
                 } => {
-                    let result = self.cache.find_one(
-                        filter_name,
-                        filter,
-                    ).await;
+                    let result = self.cache.find_one(filter_name, filter).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to find one cache entry: {:?}", e);
                     }
@@ -341,7 +313,10 @@ where
     V: ConcurrentCacheValue,
 {
     pub fn new(sender: Sender<WorkerCommand<K, V>>) -> Self {
-        Self { sender, _phantom: std::marker::PhantomData }
+        Self {
+            sender,
+            _phantom: std::marker::PhantomData,
+        }
     }
 }
 
@@ -373,10 +348,7 @@ where
         Ok(())
     }
 
-    pub async fn read_entry_optional(
-        &self,
-        key: K,
-    ) -> Result<Option<CacheEntry<K, V>>, CacheErr> {
+    pub async fn read_entry_optional(&self, key: K) -> Result<Option<CacheEntry<K, V>>, CacheErr> {
         let (send, recv) = oneshot::channel();
         self.sender
             .send(WorkerCommand::ReadEntryOptional {
@@ -398,10 +370,7 @@ where
         })?
     }
 
-    pub async fn read_entry(
-        &self,
-        key: K,
-    ) -> Result<CacheEntry<K, V>, CacheErr> {
+    pub async fn read_entry(&self, key: K) -> Result<CacheEntry<K, V>, CacheErr> {
         let (send, recv) = oneshot::channel();
         self.sender
             .send(WorkerCommand::ReadEntry {
@@ -639,11 +608,8 @@ where
             }))
         })?
     }
-    
-    pub async fn find_entries_where<F>(
-        &self,
-        filter: F,
-    ) -> Result<Vec<CacheEntry<K, V>>, CacheErr>
+
+    pub async fn find_entries_where<F>(&self, filter: F) -> Result<Vec<CacheEntry<K, V>>, CacheErr>
     where
         F: Fn(&CacheEntry<K, V>) -> bool + Send + Sync + 'static,
     {
@@ -728,10 +694,7 @@ where
         })?
     }
 
-    async fn find_where_impl<F>(
-        &self,
-        filter: F,
-    ) -> Result<Vec<V>, CacheErr>
+    async fn find_where_impl<F>(&self, filter: F) -> Result<Vec<V>, CacheErr>
     where
         F: Fn(&V) -> bool + Send + Sync + 'static,
     {
@@ -786,11 +749,7 @@ where
         })?
     }
 
-    async fn find_one_impl<F>(
-        &self,
-        filter_name: &'static str,
-        filter: F,
-    ) -> Result<V, CacheErr>
+    async fn find_one_impl<F>(&self, filter_name: &'static str, filter: F) -> Result<V, CacheErr>
     where
         F: Fn(&V) -> bool + Send + Sync + 'static,
     {
@@ -843,17 +802,16 @@ where
     K: ConcurrentCacheKey,
     V: ConcurrentCacheValue,
 {
-    async fn find_where<F>(
-        &self,
-        filter: F,
-    ) -> Result<Vec<V>, CrudErr>
+    async fn find_where<F>(&self, filter: F) -> Result<Vec<V>, CrudErr>
     where
         F: Fn(&V) -> bool + Send + Sync + 'static,
     {
-        self.find_where_impl(filter).await.map_err(|e| CrudErr::CacheErr(Box::new(CrudCacheErr {
-            source: e,
-            trace: trace!(),
-        })))
+        self.find_where_impl(filter).await.map_err(|e| {
+            CrudErr::CacheErr(Box::new(CrudCacheErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })
     }
 
     async fn find_one_optional<F>(
@@ -864,30 +822,26 @@ where
     where
         F: Fn(&V) -> bool + Send + Sync + 'static,
     {
-        self.find_one_optional_impl(
-            filter_name,
-            filter,
-        ).await.map_err(|e| CrudErr::CacheErr(Box::new(CrudCacheErr {
-            source: e,
-            trace: trace!(),
-        })))
+        self.find_one_optional_impl(filter_name, filter)
+            .await
+            .map_err(|e| {
+                CrudErr::CacheErr(Box::new(CrudCacheErr {
+                    source: e,
+                    trace: trace!(),
+                }))
+            })
     }
 
-    async fn find_one<F>(
-        &self,
-        filter_name: &'static str,
-        filter: F,
-    ) -> Result<V, CrudErr>
+    async fn find_one<F>(&self, filter_name: &'static str, filter: F) -> Result<V, CrudErr>
     where
         F: Fn(&V) -> bool + Send + Sync + 'static,
     {
-        self.find_one_impl(
-            filter_name,
-            filter,
-        ).await.map_err(|e| CrudErr::CacheErr(Box::new(CrudCacheErr {
-            source: e,
-            trace: trace!(),
-        })))
+        self.find_one_impl(filter_name, filter).await.map_err(|e| {
+            CrudErr::CacheErr(Box::new(CrudCacheErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })
     }
 }
 
@@ -899,16 +853,20 @@ where
     V: ConcurrentCacheValue,
 {
     async fn read(&self, key: K) -> Result<V, CrudErr> {
-        self.read_impl(key).await.map_err(|e| CrudErr::CacheErr(Box::new(CrudCacheErr {
-            source: e,
-            trace: trace!(),
-        })))
+        self.read_impl(key).await.map_err(|e| {
+            CrudErr::CacheErr(Box::new(CrudCacheErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })
     }
 
     async fn read_optional(&self, key: K) -> Result<Option<V>, CrudErr> {
-        self.read_optional_impl(key).await.map_err(|e| CrudErr::CacheErr(Box::new(CrudCacheErr {
-            source: e,
-            trace: trace!(),
-        })))
+        self.read_optional_impl(key).await.map_err(|e| {
+            CrudErr::CacheErr(Box::new(CrudCacheErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })
     }
 }

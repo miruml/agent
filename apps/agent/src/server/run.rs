@@ -274,12 +274,12 @@ impl ShutdownManager {
         state_handle: Pin<Box<dyn Future<Output = ()> + Send>>,
     ) -> Result<(), ServerErr> {
         if self.state_params.is_some() {
-            return Err(ServerErr::ShutdownMngrDuplicateArgErr(
-                Box::new(ShutdownMngrDuplicateArgErr {
+            return Err(ServerErr::ShutdownMngrDuplicateArgErr(Box::new(
+                ShutdownMngrDuplicateArgErr {
                     arg_name: "state".to_string(),
                     trace: trace!(),
-                }),
-            ));
+                },
+            )));
         }
         self.state_params = Some(StateShutdownParams {
             state,
@@ -293,12 +293,12 @@ impl ShutdownManager {
         token_refresh_handle: JoinHandle<()>,
     ) -> Result<(), ServerErr> {
         if self.token_refresh_handle.is_some() {
-            return Err(ServerErr::ShutdownMngrDuplicateArgErr(
-                Box::new(ShutdownMngrDuplicateArgErr {
+            return Err(ServerErr::ShutdownMngrDuplicateArgErr(Box::new(
+                ShutdownMngrDuplicateArgErr {
                     arg_name: "token_refresh_handle".to_string(),
                     trace: trace!(),
-                }),
-            ));
+                },
+            )));
         }
         self.token_refresh_handle = Some(token_refresh_handle);
         Ok(())
@@ -309,12 +309,12 @@ impl ShutdownManager {
         server_handle: JoinHandle<Result<(), ServerErr>>,
     ) -> Result<(), ServerErr> {
         if self.server_handle.is_some() {
-            return Err(ServerErr::ShutdownMngrDuplicateArgErr(
-                Box::new(ShutdownMngrDuplicateArgErr {
+            return Err(ServerErr::ShutdownMngrDuplicateArgErr(Box::new(
+                ShutdownMngrDuplicateArgErr {
                     arg_name: "server_handle".to_string(),
                     trace: trace!(),
-                }),
-            ));
+                },
+            )));
         }
         self.server_handle = Some(server_handle);
         Ok(())

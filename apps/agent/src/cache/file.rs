@@ -5,19 +5,11 @@ use std::fmt::Debug;
 // internal crates
 use crate::cache::{
     concurrent::{
-        ConcurrentCache,
-        Worker,
-        WorkerCommand,
-        ConcurrentCacheKey,
-        ConcurrentCacheValue,
+        ConcurrentCache, ConcurrentCacheKey, ConcurrentCacheValue, Worker, WorkerCommand,
     },
     entry::CacheEntry,
-    errors::{
-        CacheErr,
-        CacheFileSysErr,
-        CannotOverwriteCacheElement,
-    },
-    single_thread::{SingleThreadCache, CacheKey, CacheValue},
+    errors::{CacheErr, CacheFileSysErr, CannotOverwriteCacheElement},
+    single_thread::{CacheKey, CacheValue, SingleThreadCache},
 };
 use crate::filesys::{file::File, path::PathExt};
 use crate::trace;
@@ -45,16 +37,14 @@ where
     pub async fn new(file: File) -> Result<Self, CacheErr> {
         if !file.exists() {
             let empty_cache: HashMap<K, CacheEntry<K, V>> = HashMap::new();
-            file.write_json(
-                &empty_cache,
-                true,
-                true,
-            ).await.map_err(|e| {
-                CacheErr::FileSysErr(Box::new(CacheFileSysErr {
-                    source: e,
-                    trace: trace!(),
-                }))
-            })?;
+            file.write_json(&empty_cache, true, true)
+                .await
+                .map_err(|e| {
+                    CacheErr::FileSysErr(Box::new(CacheFileSysErr {
+                        source: e,
+                        trace: trace!(),
+                    }))
+                })?;
         }
 
         Ok(Self {
@@ -65,7 +55,8 @@ where
     }
 
     async fn read_cache(&self) -> Result<HashMap<K, CacheEntry<K, V>>, CacheErr> {
-        self.file.read_json::<HashMap<K, CacheEntry<K, V>>>()
+        self.file
+            .read_json::<HashMap<K, CacheEntry<K, V>>>()
             .await
             .map_err(|e| {
                 CacheErr::FileSysErr(Box::new(CacheFileSysErr {
@@ -76,18 +67,12 @@ where
     }
 
     async fn write_cache(&self, cache: &HashMap<K, CacheEntry<K, V>>) -> Result<(), CacheErr> {
-        self.file.write_json(
-            cache,
-            true,
-            true,
-        )
-        .await
-        .map_err(|e| {
-                CacheErr::FileSysErr(Box::new(CacheFileSysErr {
-                    source: e,
-                    trace: trace!(),
-                }))
-            })
+        self.file.write_json(cache, true, true).await.map_err(|e| {
+            CacheErr::FileSysErr(Box::new(CacheFileSysErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })
     }
 }
 
@@ -101,13 +86,19 @@ where
         Ok(cache.get(key).cloned())
     }
 
-    async fn write_entry_impl(&mut self, entry: &CacheEntry<K, V>, overwrite: bool) -> Result<(), CacheErr> {
+    async fn write_entry_impl(
+        &mut self,
+        entry: &CacheEntry<K, V>,
+        overwrite: bool,
+    ) -> Result<(), CacheErr> {
         let mut cache = self.read_cache().await?;
         if !overwrite && cache.contains_key(&entry.key) {
-            return Err(CacheErr::CannotOverwriteCacheElement(Box::new(CannotOverwriteCacheElement {
-                key: entry.key.to_string(),
-                trace: trace!(),
-            })));
+            return Err(CacheErr::CannotOverwriteCacheElement(Box::new(
+                CannotOverwriteCacheElement {
+                    key: entry.key.to_string(),
+                    trace: trace!(),
+                },
+            )));
         }
         cache.insert(entry.key.clone(), entry.clone());
         self.write_cache(&cache).await?;
@@ -158,11 +149,7 @@ where
     K: ConcurrentCacheKey,
     V: ConcurrentCacheValue,
 {
-    pub async fn spawn(
-        buffer_size: usize,
-        file: File,
-    ) -> Result<(Self, JoinHandle<()>), CacheErr> {
-
+    pub async fn spawn(buffer_size: usize, file: File) -> Result<(Self, JoinHandle<()>), CacheErr> {
         let (sender, receiver) = mpsc::channel::<WorkerCommand<K, V>>(buffer_size);
         let worker = Worker {
             cache: SingleThreadFileCache::new(file).await?,

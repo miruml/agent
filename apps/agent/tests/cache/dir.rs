@@ -2,16 +2,15 @@
 use std::path::PathBuf;
 
 // internal crates
-use config_agent::cache::dir::{SingleThreadDirCache, DirCache};
+use crate::{concurrent_cache_tests, single_thread_cache_tests};
+use config_agent::cache::dir::{DirCache, SingleThreadDirCache};
 use config_agent::crud::prelude::*;
 use config_agent::filesys::{dir::Dir, path::PathExt};
-use crate::{concurrent_cache_tests, single_thread_cache_tests};
 
 // external crates
+use tokio::task::JoinHandle;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, trace, warn};
-use tokio::task::JoinHandle;
-
 
 pub mod concurrent {
     use super::*;

@@ -65,7 +65,6 @@ impl fmt::Display for CacheFileSysErr {
     }
 }
 
-
 #[derive(Debug)]
 pub struct FoundTooManyCacheElements {
     pub expected_count: usize,
@@ -94,7 +93,11 @@ impl MiruError for FoundTooManyCacheElements {
 
 impl fmt::Display for FoundTooManyCacheElements {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "expected to find {} elements when filtering by '{}' but found {}", self.expected_count, self.filter_name, self.actual_count)
+        write!(
+            f,
+            "expected to find {} elements when filtering by '{}' but found {}",
+            self.expected_count, self.filter_name, self.actual_count
+        )
     }
 }
 

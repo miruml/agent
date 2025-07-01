@@ -1,12 +1,8 @@
 // internal crates
 use config_agent::crud::config_instance::{
-    matches_config_schema_and_activity_status,
-    matches_filepath_and_activity_status,
+    matches_config_schema_and_activity_status, matches_filepath_and_activity_status,
 };
-use config_agent::models::config_instance::{
-    ConfigInstance,
-    ActivityStatus,
-};
+use config_agent::models::config_instance::{ActivityStatus, ConfigInstance};
 
 pub mod matches_config_schema_and_activity_status {
     use super::*;
@@ -58,7 +54,6 @@ pub mod matches_config_schema_and_activity_status {
     }
 }
 
-
 pub mod matches_filepath_and_activity_status {
     use super::*;
 
@@ -67,11 +62,15 @@ pub mod matches_filepath_and_activity_status {
         let filepath = "test.txt";
         let activity_status = ActivityStatus::Deployed;
         let instance = ConfigInstance {
-            filepath: Some(filepath.to_string()),
+            relative_filepath: Some(filepath.to_string()),
             activity_status,
             ..Default::default()
         };
-        assert!(matches_filepath_and_activity_status(&instance, filepath, activity_status));
+        assert!(matches_filepath_and_activity_status(
+            &instance,
+            filepath,
+            activity_status
+        ));
     }
 
     #[test]
@@ -81,7 +80,11 @@ pub mod matches_filepath_and_activity_status {
             activity_status,
             ..Default::default()
         };
-        assert!(!matches_filepath_and_activity_status(&instance, "wrong_filepath", activity_status));
+        assert!(!matches_filepath_and_activity_status(
+            &instance,
+            "wrong_filepath",
+            activity_status
+        ));
     }
 
     #[test]
@@ -89,10 +92,14 @@ pub mod matches_filepath_and_activity_status {
         let filepath = "test.txt";
         let activity_status = ActivityStatus::Deployed;
         let instance = ConfigInstance {
-            filepath: Some(filepath.to_string()),
+            relative_filepath: Some(filepath.to_string()),
             activity_status,
             ..Default::default()
         };
-        assert!(!matches_filepath_and_activity_status(&instance, filepath, ActivityStatus::Created));
+        assert!(!matches_filepath_and_activity_status(
+            &instance,
+            filepath,
+            ActivityStatus::Created
+        ));
     }
 }

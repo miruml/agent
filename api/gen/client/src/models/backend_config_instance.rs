@@ -25,8 +25,8 @@ pub struct BackendConfigInstance {
     pub activity_status: models::ConfigInstanceActivityStatus,
     #[serde(rename = "error_status")]
     pub error_status: models::ConfigInstanceErrorStatus,
-    #[serde(rename = "filepath", deserialize_with = "Option::deserialize")]
-    pub filepath: Option<String>,
+    #[serde(rename = "relative_filepath", deserialize_with = "Option::deserialize")]
+    pub relative_filepath: Option<String>,
     #[serde(rename = "patch_id", deserialize_with = "Option::deserialize")]
     pub patch_id: Option<String>,
     #[serde(rename = "created_by_id", deserialize_with = "Option::deserialize")]
@@ -52,7 +52,7 @@ pub struct BackendConfigInstance {
 }
 
 impl BackendConfigInstance {
-    pub fn new(object: Object, id: String, target_status: models::ConfigInstanceTargetStatus, status: models::ConfigInstanceStatus, activity_status: models::ConfigInstanceActivityStatus, error_status: models::ConfigInstanceErrorStatus, filepath: Option<String>, patch_id: Option<String>, created_by_id: Option<String>, created_at: String, updated_by_id: Option<String>, updated_at: String, device_id: String, config_schema_id: String, instance: Option<serde_json::Value>, created_by: Option<models::User>, updated_by: Option<models::User>, patch: Option<models::Patch>) -> BackendConfigInstance {
+    pub fn new(object: Object, id: String, target_status: models::ConfigInstanceTargetStatus, status: models::ConfigInstanceStatus, activity_status: models::ConfigInstanceActivityStatus, error_status: models::ConfigInstanceErrorStatus, relative_filepath: Option<String>, patch_id: Option<String>, created_by_id: Option<String>, created_at: String, updated_by_id: Option<String>, updated_at: String, device_id: String, config_schema_id: String, instance: Option<serde_json::Value>, created_by: Option<models::User>, updated_by: Option<models::User>, patch: Option<models::Patch>) -> BackendConfigInstance {
         BackendConfigInstance {
             object,
             id,
@@ -60,7 +60,7 @@ impl BackendConfigInstance {
             status,
             activity_status,
             error_status,
-            filepath,
+            relative_filepath,
             patch_id,
             created_by_id,
             created_at,

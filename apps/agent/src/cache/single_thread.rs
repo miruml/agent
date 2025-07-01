@@ -1,23 +1,20 @@
 // standard library
-use std::fmt::Debug;
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::hash::Hash;
 
 // internal crates
 use crate::cache::{
     entry::CacheEntry,
-    errors::{
-        CacheElementNotFound, FoundTooManyCacheElements, CacheErr,
-    },
+    errors::{CacheElementNotFound, CacheErr, FoundTooManyCacheElements},
 };
 use crate::trace;
 
 // external crates
-use chrono::{Utc, DateTime};
-use serde::Serialize;
+use chrono::{DateTime, Utc};
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 use tracing::info;
-
 
 pub trait CacheKey: Debug + Clone + ToString + Serialize + DeserializeOwned + Eq + Hash {}
 
@@ -33,11 +30,11 @@ where
     K: CacheKey,
     V: CacheValue,
 {
-
-// -------------------------------- CUSTOM METHODS --------------------------------- //
+    // -------------------------------- CUSTOM METHODS --------------------------------- //
     async fn read_entry_impl(&self, key: &K) -> Result<Option<CacheEntry<K, V>>, CacheErr>;
 
-    async fn write_entry_impl(&mut self,
+    async fn write_entry_impl(
+        &mut self,
         entry: &CacheEntry<K, V>,
         overwrite: bool,
     ) -> Result<(), CacheErr>;
@@ -56,7 +53,7 @@ where
 
     async fn value_map(&self) -> Result<HashMap<K, V>, CacheErr>;
 
-// -------------------------------- TRAIT METHODS ---------------------------------- //
+    // -------------------------------- TRAIT METHODS ---------------------------------- //
     async fn set_last_accessed(
         &mut self,
         entry: &mut CacheEntry<K, V>,
@@ -67,10 +64,7 @@ where
         Ok(())
     }
 
-    async fn read_entry_optional(
-        &mut self,
-        key: &K,
-    ) -> Result<Option<CacheEntry<K, V>>, CacheErr> {
+    async fn read_entry_optional(&mut self, key: &K) -> Result<Option<CacheEntry<K, V>>, CacheErr> {
         let mut entry = match self.read_entry_impl(key).await? {
             Some(entry) => entry,
             None => return Ok(None),
@@ -82,17 +76,16 @@ where
         Ok(Some(entry))
     }
 
-    async fn read_entry(
-        &mut self,
-        key: &K,
-    ) -> Result<CacheEntry<K, V>, CacheErr> {
+    async fn read_entry(&mut self, key: &K) -> Result<CacheEntry<K, V>, CacheErr> {
         let result = self.read_entry_optional(key).await?;
         match result {
             Some(entry) => Ok(entry),
-            None => Err(CacheErr::CacheElementNotFound(Box::new(CacheElementNotFound {
-                msg: format!("Unable to find cache entry with key: '{}'", key.to_string()),
-                trace: trace!(),
-            }))),
+            None => Err(CacheErr::CacheElementNotFound(Box::new(
+                CacheElementNotFound {
+                    msg: format!("Unable to find cache entry with key: '{}'", key.to_string()),
+                    trace: trace!(),
+                },
+            ))),
         }
     }
 
@@ -184,18 +177,13 @@ where
         Ok(())
     }
 
-    async fn find_entries_where<F>(
-        &mut self,
-        filter: F,
-    ) -> Result<Vec<CacheEntry<K, V>>, CacheErr>
+    async fn find_entries_where<F>(&mut self, filter: F) -> Result<Vec<CacheEntry<K, V>>, CacheErr>
     where
         F: Fn(&CacheEntry<K, V>) -> bool,
     {
         let entries = self.entries().await?;
-        let mut filtered_entries: Vec<CacheEntry<K, V>> = entries
-            .into_iter()
-            .filter(|entry| filter(entry))
-            .collect();
+        let mut filtered_entries: Vec<CacheEntry<K, V>> =
+            entries.into_iter().filter(|entry| filter(entry)).collect();
 
         // update the last accessed time
         for entry in filtered_entries.iter_mut() {
@@ -205,20 +193,14 @@ where
         Ok(filtered_entries)
     }
 
-    async fn find_where<F>(
-        &mut self,
-        filter: F,
-    ) -> Result<Vec<V>, CacheErr>
+    async fn find_where<F>(&mut self, filter: F) -> Result<Vec<V>, CacheErr>
     where
         F: Fn(&V) -> bool,
     {
-        let entries = self.find_entries_where(
-            |entry| filter(&entry.value),
-        ).await?;
-        let values = entries
-            .into_iter()
-            .map(|entry| entry.value)
-            .collect();
+        let entries = self
+            .find_entries_where(|entry| filter(&entry.value))
+            .await?;
+        let values = entries.into_iter().map(|entry| entry.value).collect();
         Ok(values)
     }
 
@@ -232,12 +214,14 @@ where
     {
         let entries = self.find_entries_where(filter).await?;
         if entries.len() > 1 {
-            return Err(CacheErr::FoundTooManyCacheElements(Box::new(FoundTooManyCacheElements {
-                expected_count: 1,
-                actual_count: entries.len(),
-                filter_name: filter_name.to_string(),
-                trace: trace!(),
-            })));
+            return Err(CacheErr::FoundTooManyCacheElements(Box::new(
+                FoundTooManyCacheElements {
+                    expected_count: 1,
+                    actual_count: entries.len(),
+                    filter_name: filter_name.to_string(),
+                    trace: trace!(),
+                },
+            )));
         }
         Ok(entries.into_iter().next())
     }
@@ -252,12 +236,14 @@ where
     {
         let entries = self.find_where(filter).await?;
         if entries.len() > 1 {
-            return Err(CacheErr::FoundTooManyCacheElements(Box::new(FoundTooManyCacheElements {
-                expected_count: 1,
-                actual_count: entries.len(),
-                filter_name: filter_name.to_string(),
-                trace: trace!(),
-            })));
+            return Err(CacheErr::FoundTooManyCacheElements(Box::new(
+                FoundTooManyCacheElements {
+                    expected_count: 1,
+                    actual_count: entries.len(),
+                    filter_name: filter_name.to_string(),
+                    trace: trace!(),
+                },
+            )));
         }
         Ok(entries.into_iter().next())
     }
@@ -270,43 +256,37 @@ where
     where
         F: Fn(&CacheEntry<K, V>) -> bool,
     {
-        let entry = self.find_one_entry_optional(
-            filter_name,
-            filter,
-        ).await?;
+        let entry = self.find_one_entry_optional(filter_name, filter).await?;
         match entry {
             Some(entry) => Ok(entry),
-            None => Err(CacheErr::CacheElementNotFound(Box::new(CacheElementNotFound {
-                msg: format!("Unable to find cache entry with filter: '{}'", filter_name),
-                trace: trace!(),
-            }))),
+            None => Err(CacheErr::CacheElementNotFound(Box::new(
+                CacheElementNotFound {
+                    msg: format!("Unable to find cache entry with filter: '{}'", filter_name),
+                    trace: trace!(),
+                },
+            ))),
         }
     }
 
-    async fn find_one<F>(
-        &mut self,
-        filter_name: &str,
-        filter: F,
-    ) -> Result<V, CacheErr>
+    async fn find_one<F>(&mut self, filter_name: &str, filter: F) -> Result<V, CacheErr>
     where
         F: Fn(&V) -> bool,
     {
         let opt_value = self.find_one_optional(filter_name, filter).await?;
         match opt_value {
             Some(value) => Ok(value),
-            None => Err(CacheErr::CacheElementNotFound(Box::new(CacheElementNotFound {
-                msg: format!("Unable to find cache entry with filter: '{}'", filter_name),
-                trace: trace!(),
-            }))),
+            None => Err(CacheErr::CacheElementNotFound(Box::new(
+                CacheElementNotFound {
+                    msg: format!("Unable to find cache entry with filter: '{}'", filter_name),
+                    trace: trace!(),
+                },
+            ))),
         }
     }
 
     async fn get_dirty_entries(&self) -> Result<Vec<CacheEntry<K, V>>, CacheErr> {
         let entries = self.entries().await?;
-        let dirty_entries = entries
-            .into_iter()
-            .filter(|entry| entry.is_dirty)
-            .collect();
+        let dirty_entries = entries.into_iter().filter(|entry| entry.is_dirty).collect();
         Ok(dirty_entries)
     }
 }

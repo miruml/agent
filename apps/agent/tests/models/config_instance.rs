@@ -2,21 +2,14 @@
 use std::collections::HashSet;
 
 // internal crates
-use config_agent::logs::{LogOptions, init};
 use config_agent::filesys::{dir::Dir, path::PathExt};
+use config_agent::logs::{init, LogOptions};
 use config_agent::models::config_instance::{
-    ConfigInstance,
-    ActivityStatus,
-    ErrorStatus,
-    Status,
-    TargetStatus,
+    ActivityStatus, ConfigInstance, ErrorStatus, Status, TargetStatus,
 };
 use openapi_client::models::{
-    BackendConfigInstance,
-    ConfigInstanceActivityStatus,
-    ConfigInstanceErrorStatus,
-    ConfigInstanceStatus,
-    ConfigInstanceTargetStatus,
+    BackendConfigInstance, ConfigInstanceActivityStatus, ConfigInstanceErrorStatus,
+    ConfigInstanceStatus, ConfigInstanceTargetStatus,
 };
 
 // external crates
@@ -24,7 +17,6 @@ use chrono::{DateTime, TimeDelta, Utc};
 use serde_json::json;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, trace, warn};
-
 
 #[test]
 fn serialize_deserialize_target_status() {
@@ -68,10 +60,10 @@ fn serialize_deserialize_target_status() {
         if test_case.valid {
             let serialized = serde_json::to_string(&test_case.expected).unwrap();
             assert_eq!(serialized, test_case.input);
-        } 
+        }
     }
 
-    assert!(variants.is_empty(), "variants: {:?}", variants);
+    assert!(variants.is_empty(), "variants: {variants:?}");
 }
 
 #[test]
@@ -104,13 +96,19 @@ fn target_status_backend_and_sdk_conversions() {
 
     for test_case in test_cases {
         variants.remove(&test_case.storage);
-        assert_eq!(TargetStatus::from_backend(&test_case.backend), test_case.storage);
-        assert_eq!(test_case.backend, TargetStatus::to_backend(&test_case.storage));
+        assert_eq!(
+            TargetStatus::from_backend(&test_case.backend),
+            test_case.storage
+        );
+        assert_eq!(
+            test_case.backend,
+            TargetStatus::to_backend(&test_case.storage)
+        );
         assert_eq!(TargetStatus::from_sdk(&test_case.sdk), test_case.storage);
         assert_eq!(test_case.sdk, TargetStatus::to_sdk(&test_case.storage));
     }
 
-    assert!(variants.is_empty(), "variants: {:?}", variants);
+    assert!(variants.is_empty(), "variants: {variants:?}");
 }
 
 #[test]
@@ -150,7 +148,9 @@ fn serialize_deserialize_activity_status() {
         },
     ];
 
-    let mut variants = ActivityStatus::variants().into_iter().collect::<HashSet<_>>();
+    let mut variants = ActivityStatus::variants()
+        .into_iter()
+        .collect::<HashSet<_>>();
 
     for test_case in test_cases {
         variants.remove(&test_case.expected);
@@ -162,7 +162,7 @@ fn serialize_deserialize_activity_status() {
         }
     }
 
-    assert!(variants.is_empty(), "variants: {:?}", variants);
+    assert!(variants.is_empty(), "variants: {variants:?}");
 }
 
 #[test]
@@ -196,17 +196,25 @@ fn activity_status_backend_and_sdk_conversions() {
         },
     ];
 
-    let mut variants = ActivityStatus::variants().into_iter().collect::<HashSet<_>>();
-    
+    let mut variants = ActivityStatus::variants()
+        .into_iter()
+        .collect::<HashSet<_>>();
+
     for test_case in test_cases {
         variants.remove(&test_case.storage);
-        assert_eq!(ActivityStatus::from_backend(&test_case.backend), test_case.storage);
-        assert_eq!(test_case.backend, ActivityStatus::to_backend(&test_case.storage));
+        assert_eq!(
+            ActivityStatus::from_backend(&test_case.backend),
+            test_case.storage
+        );
+        assert_eq!(
+            test_case.backend,
+            ActivityStatus::to_backend(&test_case.storage)
+        );
         assert_eq!(ActivityStatus::from_sdk(&test_case.sdk), test_case.storage);
         assert_eq!(test_case.sdk, ActivityStatus::to_sdk(&test_case.storage));
     }
 
-    assert!(variants.is_empty(), "variants: {:?}", variants);
+    assert!(variants.is_empty(), "variants: {variants:?}");
 }
 
 #[test]
@@ -285,13 +293,19 @@ fn error_status_backend_and_sdk_conversions() {
 
     for test_case in test_cases {
         variants.remove(&test_case.storage);
-        assert_eq!(ErrorStatus::from_backend(&test_case.backend), test_case.storage);
-        assert_eq!(test_case.backend, ErrorStatus::to_backend(&test_case.storage));
+        assert_eq!(
+            ErrorStatus::from_backend(&test_case.backend),
+            test_case.storage
+        );
+        assert_eq!(
+            test_case.backend,
+            ErrorStatus::to_backend(&test_case.storage)
+        );
         assert_eq!(ErrorStatus::from_sdk(&test_case.sdk), test_case.storage);
         assert_eq!(test_case.sdk, ErrorStatus::to_sdk(&test_case.storage));
     }
 
-    assert!(variants.is_empty(), "variants: {:?}", variants);
+    assert!(variants.is_empty(), "variants: {variants:?}");
 }
 
 #[test]
@@ -354,7 +368,7 @@ fn serialize_deserialize_status() {
         }
     }
 
-    assert!(variants.is_empty(), "variants: {:?}", variants);
+    assert!(variants.is_empty(), "variants: {variants:?}");
 }
 
 #[test]
@@ -408,7 +422,7 @@ fn status_backend_and_sdk_conversions() {
         assert_eq!(test_case.sdk, Status::to_sdk(&test_case.storage));
     }
 
-    assert!(variants.is_empty(), "variants: {:?}", variants);
+    assert!(variants.is_empty(), "variants: {variants:?}");
 }
 
 #[test]
@@ -418,7 +432,7 @@ fn serialize_deserialize_config_instance() {
         target_status: TargetStatus::Removed,
         activity_status: ActivityStatus::Removed,
         error_status: ErrorStatus::Failed,
-        filepath: Some("test".to_string()),
+        relative_filepath: Some("test".to_string()),
         patch_id: Some("test".to_string()),
         created_by_id: Some("test".to_string()),
         created_at: Utc::now(),
@@ -436,21 +450,14 @@ fn serialize_deserialize_config_instance() {
 
 #[tokio::test]
 async fn deserialize_config_instance() {
-    let dir = Dir::create_temp_dir("rollback").await.unwrap(); 
-    let options = LogOptions {
-        stdout: true,
-        log_dir: dir.path().to_path_buf(),
-        ..Default::default()
-    };
-    let _ = init(options);
-
+    let dir = Dir::create_temp_dir("rollback").await.unwrap();
     // valid deserialization
     let expected = ConfigInstance {
         id: "123".to_string(),
         target_status: TargetStatus::Created,
         activity_status: ActivityStatus::Created,
         error_status: ErrorStatus::None,
-        filepath: Some("test".to_string()),
+        relative_filepath: Some("test".to_string()),
         patch_id: Some("test".to_string()),
         created_by_id: Some("test".to_string()),
         created_at: Utc::now(),
@@ -466,7 +473,7 @@ async fn deserialize_config_instance() {
         "target_status": expected.target_status,
         "activity_status": expected.activity_status,
         "error_status": expected.error_status,
-        "filepath": expected.filepath,
+        "relative_filepath": expected.relative_filepath,
         "patch_id": expected.patch_id,
         "created_by_id": expected.created_by_id,
         "created_at": expected.created_at,
@@ -521,46 +528,44 @@ fn config_instance_from_backend() {
 
     let now = Utc::now();
 
-    let test_cases = vec![
-        TestCase {
-            backend: BackendConfigInstance {
-                object: openapi_client::models::backend_config_instance::Object::ConfigInstance,
-                id: "cfg_inst_123".to_string(),
-                target_status: ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_CREATED,
-                status: ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_CREATED,
-                activity_status: ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_CREATED,
-                error_status: ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_NONE,
-                filepath: Some("filepath".to_string()),
-                patch_id: Some("ptch_123".to_string()),
-                created_by_id: Some("created_by_id".to_string()),
-                created_at: now.to_rfc3339(),
-                updated_by_id: Some("updated_by_id".to_string()),
-                updated_at: now.to_rfc3339(),
-                device_id: "device_id".to_string(),
-                config_schema_id: "config_schema_id".to_string(),
-                instance: None,
-                created_by: None,
-                updated_by: None,
-                patch: None,
-            },
-            expected: ConfigInstance {
-                id: "cfg_inst_123".to_string(),
-                target_status: TargetStatus::Created,
-                activity_status: ActivityStatus::Created,
-                error_status: ErrorStatus::None,
-                filepath: Some("filepath".to_string()),
-                patch_id: Some("ptch_123".to_string()),
-                created_by_id: Some("created_by_id".to_string()),
-                created_at: now,
-                updated_by_id: Some("updated_by_id".to_string()),
-                updated_at: now,
-                device_id: "device_id".to_string(),
-                config_schema_id: "config_schema_id".to_string(),
-                attempts: 0,
-                cooldown_ends_at: DateTime::<Utc>::UNIX_EPOCH,
-            },
+    let test_cases = vec![TestCase {
+        backend: BackendConfigInstance {
+            object: openapi_client::models::backend_config_instance::Object::ConfigInstance,
+            id: "cfg_inst_123".to_string(),
+            target_status: ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_CREATED,
+            status: ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_CREATED,
+            activity_status: ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_CREATED,
+            error_status: ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_NONE,
+            relative_filepath: Some("filepath".to_string()),
+            patch_id: Some("ptch_123".to_string()),
+            created_by_id: Some("created_by_id".to_string()),
+            created_at: now.to_rfc3339(),
+            updated_by_id: Some("updated_by_id".to_string()),
+            updated_at: now.to_rfc3339(),
+            device_id: "device_id".to_string(),
+            config_schema_id: "config_schema_id".to_string(),
+            instance: None,
+            created_by: None,
+            updated_by: None,
+            patch: None,
         },
-    ];
+        expected: ConfigInstance {
+            id: "cfg_inst_123".to_string(),
+            target_status: TargetStatus::Created,
+            activity_status: ActivityStatus::Created,
+            error_status: ErrorStatus::None,
+            relative_filepath: Some("filepath".to_string()),
+            patch_id: Some("ptch_123".to_string()),
+            created_by_id: Some("created_by_id".to_string()),
+            created_at: now,
+            updated_by_id: Some("updated_by_id".to_string()),
+            updated_at: now,
+            device_id: "device_id".to_string(),
+            config_schema_id: "config_schema_id".to_string(),
+            attempts: 0,
+            cooldown_ends_at: DateTime::<Utc>::UNIX_EPOCH,
+        },
+    }];
 
     for test_case in test_cases {
         let config_instance = ConfigInstance::from_backend(test_case.backend.clone());
@@ -570,7 +575,6 @@ fn config_instance_from_backend() {
 
 #[test]
 fn config_instance_status() {
-
     struct TestCase {
         instance: ConfigInstance,
         expected: Status,
@@ -636,12 +640,11 @@ fn config_instance_status() {
         assert_eq!(test_case.instance.status(), test_case.expected);
     }
 
-    assert!(variants.is_empty(), "variants: {:?}", variants);
+    assert!(variants.is_empty(), "variants: {variants:?}");
 }
 
 #[test]
 fn config_instance_set_cooldown() {
-
     let mut instance = ConfigInstance::default();
     instance.set_cooldown(TimeDelta::seconds(10));
     let now = Utc::now();
@@ -674,7 +677,3 @@ fn config_instance_cooldown() {
     assert!(instance.cooldown() < cooldown);
     assert!(instance.cooldown() > cooldown - TimeDelta::seconds(1));
 }
-
-
-
-

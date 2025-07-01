@@ -37,7 +37,11 @@ impl MiruError for InstanceNotDeployableErr {
 
 impl fmt::Display for InstanceNotDeployableErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "cannot deploy config instance '{:?}' since it's next action is: {:?}", self.instance.id, self.next_action)
+        write!(
+            f,
+            "cannot deploy config instance '{:?}' since it's next action is: {:?}",
+            self.instance.id, self.next_action
+        )
     }
 }
 
@@ -67,7 +71,11 @@ impl MiruError for ConflictingDeploymentsErr {
 
 impl fmt::Display for ConflictingDeploymentsErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "the following config instances both desire to be deployed: {:?}", self.instances)
+        write!(
+            f,
+            "the following config instances both desire to be deployed: {:?}",
+            self.instances
+        )
     }
 }
 
@@ -160,7 +168,6 @@ impl fmt::Display for DeployCrudErr {
         write!(f, "crud error: {}", self.source)
     }
 }
-
 
 #[derive(Debug)]
 pub struct DeployStorageErr {

@@ -71,7 +71,7 @@ impl fmt::Display for SyncCacheErr {
 }
 
 #[derive(Debug)]
-pub struct SyncCrudErr{
+pub struct SyncCrudErr {
     pub source: CrudErr,
     pub trace: Box<Trace>,
 }
@@ -216,7 +216,11 @@ impl MiruError for ConfigInstanceDataNotFoundErr {
 
 impl fmt::Display for ConfigInstanceDataNotFoundErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Config instance data not found for config instance '{}'", self.instance_id)
+        write!(
+            f,
+            "Config instance data not found for config instance '{}'",
+            self.instance_id
+        )
     }
 }
 

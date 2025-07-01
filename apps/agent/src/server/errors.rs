@@ -44,7 +44,6 @@ impl fmt::Display for ServerCacheErr {
     }
 }
 
-
 #[derive(Debug)]
 pub struct MissingDeviceIDErr {
     pub agent_file_err: FileSysErr,
@@ -319,7 +318,6 @@ impl fmt::Display for ServerSyncErr {
         write!(f, "server sync error: {}", self.source)
     }
 }
-
 
 #[derive(Debug)]
 pub struct BindUnixSocketErr {

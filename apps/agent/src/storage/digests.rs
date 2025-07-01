@@ -1,8 +1,5 @@
 // internal crates
-use crate::cache::{
-    entry::CacheEntry,
-    file::FileCache,
-};
+use crate::cache::{entry::CacheEntry, file::FileCache};
 
 // external crates
 use serde::Deserialize;

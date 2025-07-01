@@ -95,7 +95,6 @@ impl fmt::Display for ConfigSchemaNotFound {
     }
 }
 
-
 #[derive(Debug)]
 pub struct ServiceModelsErr {
     pub source: ModelsErr,

@@ -1,22 +1,19 @@
 // internal crates
 use config_agent::cache::{
-    concurrent::ConcurrentCache,
-    entry::{CacheEntry},
-    errors::CacheErr,
+    concurrent::ConcurrentCache, entry::CacheEntry, errors::CacheErr,
     single_thread::SingleThreadCache,
 };
-use config_agent::crud::prelude::*;
 use config_agent::crud::errors::CrudErr;
+use config_agent::crud::prelude::*;
 
 // external crates
 use chrono::Utc;
-use tokio::task::JoinHandle;
 use std::future::Future;
+use tokio::task::JoinHandle;
 
 #[macro_export]
 macro_rules! concurrent_cache_tests {
     ($spawn_cache:expr) => {
-
         pub mod shutdown {
             use super::*;
 
@@ -76,7 +73,8 @@ macro_rules! concurrent_cache_tests {
 
             #[tokio::test]
             async fn doesnt_exist() {
-                $crate::cache::concurrent::read_entry_optional::doesnt_exist_impl($spawn_cache).await;
+                $crate::cache::concurrent::read_entry_optional::doesnt_exist_impl($spawn_cache)
+                    .await;
             }
 
             #[tokio::test]
@@ -132,12 +130,14 @@ macro_rules! concurrent_cache_tests {
 
             #[tokio::test]
             async fn doesnt_exist_overwrite_false() {
-                $crate::cache::concurrent::write::doesnt_exist_overwrite_false_impl($spawn_cache).await;
+                $crate::cache::concurrent::write::doesnt_exist_overwrite_false_impl($spawn_cache)
+                    .await;
             }
 
             #[tokio::test]
             async fn doesnt_exist_overwrite_true() {
-                $crate::cache::concurrent::write::doesnt_exist_overwrite_true_impl($spawn_cache).await;
+                $crate::cache::concurrent::write::doesnt_exist_overwrite_true_impl($spawn_cache)
+                    .await;
             }
 
             #[tokio::test]
@@ -189,7 +189,10 @@ macro_rules! concurrent_cache_tests {
 
             #[tokio::test]
             async fn find_entries_where() {
-                $crate::cache::concurrent::find_entries_where::find_entries_where_impl($spawn_cache).await;
+                $crate::cache::concurrent::find_entries_where::find_entries_where_impl(
+                    $spawn_cache,
+                )
+                .await;
             }
         }
 
@@ -207,7 +210,10 @@ macro_rules! concurrent_cache_tests {
 
             #[tokio::test]
             async fn find_one_entry_optional() {
-                $crate::cache::concurrent::find_one_entry_optional::find_one_entry_optional_impl($spawn_cache).await;
+                $crate::cache::concurrent::find_one_entry_optional::find_one_entry_optional_impl(
+                    $spawn_cache,
+                )
+                .await;
             }
         }
 
@@ -216,7 +222,8 @@ macro_rules! concurrent_cache_tests {
 
             #[tokio::test]
             async fn find_one_optional() {
-                $crate::cache::concurrent::find_one_optional::find_one_optional_impl($spawn_cache).await;
+                $crate::cache::concurrent::find_one_optional::find_one_optional_impl($spawn_cache)
+                    .await;
             }
         }
 
@@ -243,21 +250,25 @@ macro_rules! concurrent_cache_tests {
 
             #[tokio::test]
             async fn get_dirty_entries() {
-                $crate::cache::concurrent::get_dirty_entries::get_dirty_entries_impl($spawn_cache).await;
+                $crate::cache::concurrent::get_dirty_entries::get_dirty_entries_impl($spawn_cache)
+                    .await;
             }
         }
-    }
+    };
 }
 
 pub mod shutdown {
     use super::*;
 
-    pub async fn shutdown_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn shutdown_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, worker_handle) = spawn_cache().await;
@@ -272,7 +283,12 @@ pub mod size {
     pub async fn size_impl<F, Fut, SingleThreadCacheT>(new_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = new_cache().await;
@@ -288,16 +304,16 @@ pub mod size {
 
         // create 10 more entries
         for i in 0..10 {
-            let key = format!("key{}", i+10);
-            let value = format!("value{}", i+10);
+            let key = format!("key{}", i + 10);
+            let value = format!("value{}", i + 10);
             cache.write(key, value, |_, _| true, false).await.unwrap();
         }
         assert_eq!(cache.size().await.unwrap(), 20);
 
         // overwrite 10 entries
         for i in 0..10 {
-            let key = format!("key{}", i+5);
-            let value = format!("value{}", i+5);
+            let key = format!("key{}", i + 5);
+            let value = format!("value{}", i + 5);
             cache.write(key, value, |_, _| true, true).await.unwrap();
         }
         assert_eq!(cache.size().await.unwrap(), 20);
@@ -310,7 +326,12 @@ pub mod entry_map {
     pub async fn entry_map_impl<F, Fut, SingleThreadCacheT>(new_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = new_cache().await;
@@ -320,15 +341,27 @@ pub mod entry_map {
         // create 2 entries
         let key1 = "key1".to_string();
         let value1 = "value1".to_string();
-        cache.write(key1.clone(), value1.clone(), |_, _| true, false).await.unwrap();
+        cache
+            .write(key1.clone(), value1.clone(), |_, _| true, false)
+            .await
+            .unwrap();
         let key2 = "key2".to_string();
         let value2 = "value2".to_string();
-        cache.write(key2.clone(), value2.clone(), |_, _| true, false).await.unwrap();
+        cache
+            .write(key2.clone(), value2.clone(), |_, _| true, false)
+            .await
+            .unwrap();
 
         let result = cache.entry_map().await.unwrap();
         assert_eq!(result.len(), 2);
-        assert_eq!(result.get(&key1).map(|e| e.value.clone()), Some(value1.clone()));
-        assert_eq!(result.get(&key2).map(|e| e.value.clone()), Some(value2.clone()));
+        assert_eq!(
+            result.get(&key1).map(|e| e.value.clone()),
+            Some(value1.clone())
+        );
+        assert_eq!(
+            result.get(&key2).map(|e| e.value.clone()),
+            Some(value2.clone())
+        );
     }
 }
 
@@ -338,7 +371,12 @@ pub mod value_map {
     pub async fn value_map_impl<F, Fut, SingleThreadCacheT>(new_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = new_cache().await;
@@ -348,10 +386,16 @@ pub mod value_map {
         // create 2 entries
         let key1 = "key1".to_string();
         let value1 = "value1".to_string();
-        cache.write(key1.clone(), value1.clone(), |_, _| true, false).await.unwrap();
+        cache
+            .write(key1.clone(), value1.clone(), |_, _| true, false)
+            .await
+            .unwrap();
         let key2 = "key2".to_string();
         let value2 = "value2".to_string();
-        cache.write(key2.clone(), value2.clone(), |_, _| true, false).await.unwrap();
+        cache
+            .write(key2.clone(), value2.clone(), |_, _| true, false)
+            .await
+            .unwrap();
 
         let result = cache.value_map().await.unwrap();
         assert_eq!(result.len(), 2);
@@ -366,7 +410,12 @@ pub mod entries {
     pub async fn entries_impl<F, Fut, SingleThreadCacheT>(new_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = new_cache().await;
@@ -376,10 +425,16 @@ pub mod entries {
         // create 2 entries
         let key1 = "key1".to_string();
         let value1 = "value1".to_string();
-        cache.write(key1.clone(), value1.clone(), |_, _| true, false).await.unwrap();
+        cache
+            .write(key1.clone(), value1.clone(), |_, _| true, false)
+            .await
+            .unwrap();
         let key2 = "key2".to_string();
         let value2 = "value2".to_string();
-        cache.write(key2.clone(), value2.clone(), |_, _| true, false).await.unwrap();
+        cache
+            .write(key2.clone(), value2.clone(), |_, _| true, false)
+            .await
+            .unwrap();
 
         let mut result = cache.entries().await.unwrap();
         result.sort();
@@ -397,7 +452,12 @@ pub mod values {
     pub async fn values_impl<F, Fut, SingleThreadCacheT>(new_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = new_cache().await;
@@ -407,10 +467,16 @@ pub mod values {
         // create 2 entries
         let key1 = "key1".to_string();
         let value1 = "value1".to_string();
-        cache.write(key1.clone(), value1.clone(), |_, _| true, false).await.unwrap();
+        cache
+            .write(key1.clone(), value1.clone(), |_, _| true, false)
+            .await
+            .unwrap();
         let key2 = "key2".to_string();
         let value2 = "value2".to_string();
-        cache.write(key2.clone(), value2.clone(), |_, _| true, false).await.unwrap();
+        cache
+            .write(key2.clone(), value2.clone(), |_, _| true, false)
+            .await
+            .unwrap();
 
         let mut result = cache.values().await.unwrap();
         result.sort();
@@ -420,16 +486,18 @@ pub mod values {
     }
 }
 
-
 pub mod read_entry_optional {
     use super::*;
 
-    pub async fn doesnt_exist_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn doesnt_exist_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = spawn_cache().await;
@@ -440,12 +508,15 @@ pub mod read_entry_optional {
         assert!(result.is_none());
     }
 
-    pub async fn exists_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn exists_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         // spawn the cache
@@ -488,12 +559,15 @@ pub mod read_entry_optional {
 pub mod read_entry {
     use super::*;
 
-    pub async fn doesnt_exist_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn doesnt_exist_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = spawn_cache().await;
@@ -506,12 +580,15 @@ pub mod read_entry {
         ));
     }
 
-    pub async fn exists_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn exists_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         // spawn the cache
@@ -528,10 +605,7 @@ pub mod read_entry {
 
         // read the entry
         let before_read = Utc::now();
-        let read_entry = cache
-            .read_entry(key.clone())
-            .await
-            .unwrap();
+        let read_entry = cache.read_entry(key.clone()).await.unwrap();
 
         // check the timestamps
         assert!(read_entry.created_at > before_write);
@@ -553,12 +627,15 @@ pub mod read_entry {
 pub mod read_optional {
     use super::*;
 
-    pub async fn doesnt_exist_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn doesnt_exist_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = spawn_cache().await;
@@ -567,12 +644,15 @@ pub mod read_optional {
         assert_eq!(read_value, None);
     }
 
-    pub async fn exists_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn exists_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = spawn_cache().await;
@@ -598,12 +678,15 @@ pub mod read_optional {
 pub mod read {
     use super::*;
 
-    pub async fn doesnt_exist_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn doesnt_exist_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = spawn_cache().await;
@@ -617,12 +700,15 @@ pub mod read {
         ));
     }
 
-    pub async fn exists_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn exists_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = spawn_cache().await;
@@ -650,12 +736,15 @@ pub mod read {
 pub mod write {
     use super::*;
 
-    pub async fn doesnt_exist_overwrite_false_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn doesnt_exist_overwrite_false_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = spawn_cache().await;
@@ -680,12 +769,15 @@ pub mod write {
         assert_eq!(read_entry.last_accessed, read_entry.created_at);
     }
 
-    pub async fn doesnt_exist_overwrite_true_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn doesnt_exist_overwrite_true_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = spawn_cache().await;
@@ -710,12 +802,15 @@ pub mod write {
         assert_eq!(read_entry.last_accessed, read_entry.created_at);
     }
 
-    pub async fn exists_overwrite_false_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn exists_overwrite_false_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = spawn_cache().await;
@@ -736,12 +831,15 @@ pub mod write {
         ));
     }
 
-    pub async fn exists_overwrite_true_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn exists_overwrite_true_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = spawn_cache().await;
@@ -776,12 +874,15 @@ pub mod write {
 pub mod delete {
     use super::*;
 
-    pub async fn doesnt_exist_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn doesnt_exist_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = spawn_cache().await;
@@ -789,12 +890,15 @@ pub mod delete {
         cache.delete(key.clone()).await.unwrap();
     }
 
-    pub async fn exists_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn exists_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = spawn_cache().await;
@@ -819,24 +923,30 @@ pub mod delete {
 pub mod prune {
     use super::*;
 
-    pub async fn empty_cache_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn empty_cache_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = spawn_cache().await;
         cache.prune(10).await.unwrap();
     }
 
-    pub async fn cache_equal_to_max_size_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn cache_equal_to_max_size_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = spawn_cache().await;
@@ -859,12 +969,15 @@ pub mod prune {
         }
     }
 
-    pub async fn remove_oldest_entries_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn remove_oldest_entries_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = spawn_cache().await;
@@ -897,12 +1010,15 @@ pub mod prune {
 pub mod find_entries_where {
     use super::*;
 
-    pub async fn find_entries_where_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn find_entries_where_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = spawn_cache().await;
@@ -917,11 +1033,17 @@ pub mod find_entries_where {
         let after_write = Utc::now();
 
         // no entries found
-        let found = cache.find_entries_where(|entry| entry.key == "key10").await.unwrap();
+        let found = cache
+            .find_entries_where(|entry| entry.key == "key10")
+            .await
+            .unwrap();
         assert!(found.is_empty());
 
         // one entry found
-        let found = cache.find_entries_where(|entry| entry.key == "key5").await.unwrap();
+        let found = cache
+            .find_entries_where(|entry| entry.key == "key5")
+            .await
+            .unwrap();
         assert_eq!(found.len(), 1);
         assert_eq!(found[0].key, "key5");
 
@@ -929,7 +1051,10 @@ pub mod find_entries_where {
         assert!(found[0].last_accessed > after_write);
 
         // multiple entries found
-        let found = cache.find_entries_where(|entry| entry.key != "key5").await.unwrap();
+        let found = cache
+            .find_entries_where(|entry| entry.key != "key5")
+            .await
+            .unwrap();
         assert_eq!(found.len(), 9);
     }
 }
@@ -937,12 +1062,15 @@ pub mod find_entries_where {
 pub mod find_where {
     use super::*;
 
-    pub async fn find_where_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn find_where_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = spawn_cache().await;
@@ -979,12 +1107,15 @@ pub mod find_where {
 pub mod find_one_entry_optional {
     use super::*;
 
-    pub async fn find_one_entry_optional_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn find_one_entry_optional_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = spawn_cache().await;
@@ -999,11 +1130,17 @@ pub mod find_one_entry_optional {
         let after_write = Utc::now();
 
         // no entries found
-        let found = cache.find_one_entry_optional("key10", |entry| entry.key == "key10").await.unwrap();
+        let found = cache
+            .find_one_entry_optional("key10", |entry| entry.key == "key10")
+            .await
+            .unwrap();
         assert!(found.is_none());
 
         // one entry found
-        let found = cache.find_one_entry_optional("key5", |entry| entry.key == "key5").await.unwrap();
+        let found = cache
+            .find_one_entry_optional("key5", |entry| entry.key == "key5")
+            .await
+            .unwrap();
         assert!(found.is_some());
         assert_eq!(found.clone().unwrap().key, "key5");
 
@@ -1011,7 +1148,10 @@ pub mod find_one_entry_optional {
         assert!(found.unwrap().last_accessed > after_write);
 
         // multiple entries found
-        let err = cache.find_one_entry_optional("not key5", |entry| entry.key != "key5").await.unwrap_err();
+        let err = cache
+            .find_one_entry_optional("not key5", |entry| entry.key != "key5")
+            .await
+            .unwrap_err();
         assert!(matches!(err, CacheErr::FoundTooManyCacheElements { .. }));
     }
 }
@@ -1019,12 +1159,15 @@ pub mod find_one_entry_optional {
 pub mod find_one_optional {
     use super::*;
 
-    pub async fn find_one_optional_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn find_one_optional_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = spawn_cache().await;
@@ -1039,11 +1182,17 @@ pub mod find_one_optional {
         let after_write = Utc::now();
 
         // no entries found
-        let found = cache.find_one_optional("value10", |value| value == "value10").await.unwrap();
+        let found = cache
+            .find_one_optional("value10", |value| value == "value10")
+            .await
+            .unwrap();
         assert!(found.is_none());
 
         // one entry found
-        let found = cache.find_one_optional("value5", |value| value == "value5").await.unwrap();
+        let found = cache
+            .find_one_optional("value5", |value| value == "value5")
+            .await
+            .unwrap();
         assert!(found.is_some());
         assert_eq!(found.unwrap(), "value5");
 
@@ -1053,7 +1202,10 @@ pub mod find_one_optional {
         assert!(entry.last_accessed > after_write);
 
         // multiple entries found
-        let err = cache.find_one_optional("not value5", |value| value != "value5").await.unwrap_err();
+        let err = cache
+            .find_one_optional("not value5", |value| value != "value5")
+            .await
+            .unwrap_err();
         assert!(matches!(
             err,
             CrudErr::CacheErr(ref e)
@@ -1065,12 +1217,15 @@ pub mod find_one_optional {
 pub mod find_one_entry {
     use super::*;
 
-    pub async fn find_one_entry_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn find_one_entry_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = spawn_cache().await;
@@ -1085,18 +1240,27 @@ pub mod find_one_entry {
         let after_write = Utc::now();
 
         // no entries found
-        let error = cache.find_one_entry("key10", |entry| entry.key == "key10").await.unwrap_err();
+        let error = cache
+            .find_one_entry("key10", |entry| entry.key == "key10")
+            .await
+            .unwrap_err();
         assert!(matches!(error, CacheErr::CacheElementNotFound { .. }));
 
         // one entry found
-        let found = cache.find_one_entry("key5", |entry| entry.key == "key5").await.unwrap();
+        let found = cache
+            .find_one_entry("key5", |entry| entry.key == "key5")
+            .await
+            .unwrap();
         assert_eq!(found.key, "key5");
 
         // check the last accessed time was properly set
         assert!(found.last_accessed > after_write);
 
         // multiple entries found
-        let err = cache.find_one_entry("not key5", |entry| entry.key != "key5").await.unwrap_err();
+        let err = cache
+            .find_one_entry("not key5", |entry| entry.key != "key5")
+            .await
+            .unwrap_err();
         assert!(matches!(err, CacheErr::FoundTooManyCacheElements { .. }));
     }
 }
@@ -1104,12 +1268,15 @@ pub mod find_one_entry {
 pub mod find_one {
     use super::*;
 
-    pub async fn find_one_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
+    pub async fn find_one_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = spawn_cache().await;
@@ -1124,11 +1291,19 @@ pub mod find_one {
         let after_write = Utc::now();
 
         // no entries found
-        let error = cache.find_one("value10", |value| value == "value10").await.unwrap_err();
-        assert!(matches!(error, CrudErr::CacheErr(ref e) if matches!(e.source, CacheErr::CacheElementNotFound { .. })));
+        let error = cache
+            .find_one("value10", |value| value == "value10")
+            .await
+            .unwrap_err();
+        assert!(
+            matches!(error, CrudErr::CacheErr(ref e) if matches!(e.source, CacheErr::CacheElementNotFound { .. }))
+        );
 
         // one entry found
-        let found = cache.find_one("value5", |value| value == "value5").await.unwrap();
+        let found = cache
+            .find_one("value5", |value| value == "value5")
+            .await
+            .unwrap();
         assert_eq!(found, "value5");
 
         // check the last accessed time was properly set
@@ -1137,8 +1312,13 @@ pub mod find_one {
         assert!(entry.last_accessed > after_write);
 
         // multiple entries found
-        let err = cache.find_one("not value5", |value| value != "value5").await.unwrap_err();
-        assert!(matches!(err, CrudErr::CacheErr(ref e) if matches!(e.source, CacheErr::FoundTooManyCacheElements{ .. })));
+        let err = cache
+            .find_one("not value5", |value| value != "value5")
+            .await
+            .unwrap_err();
+        assert!(
+            matches!(err, CrudErr::CacheErr(ref e) if matches!(e.source, CacheErr::FoundTooManyCacheElements{ .. }))
+        );
     }
 }
 
@@ -1148,7 +1328,12 @@ pub mod get_dirty_entries {
     pub async fn get_dirty_entries_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
         F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = spawn_cache().await;

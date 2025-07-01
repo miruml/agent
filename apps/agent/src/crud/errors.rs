@@ -2,8 +2,8 @@
 use std::fmt;
 
 // internal crates
-use crate::errors::{Code, HTTPCode, MiruError, Trace};
 use crate::cache::errors::CacheErr;
+use crate::errors::{Code, HTTPCode, MiruError, Trace};
 use crate::storage::errors::StorageErr;
 
 // external crates
@@ -23,11 +23,11 @@ impl MiruError for CrudStorageErr {
     fn http_status(&self) -> HTTPCode {
         self.source.http_status()
     }
-    
+
     fn is_network_connection_error(&self) -> bool {
         self.source.is_network_connection_error()
     }
-    
+
     fn params(&self) -> Option<serde_json::Value> {
         self.source.params()
     }
@@ -53,7 +53,7 @@ impl MiruError for CrudCacheErr {
     fn http_status(&self) -> HTTPCode {
         self.source.http_status()
     }
-    
+
     fn is_network_connection_error(&self) -> bool {
         self.source.is_network_connection_error()
     }

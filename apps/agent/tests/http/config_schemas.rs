@@ -1,13 +1,7 @@
 use config_agent::http::{
-    config_schemas::{
-        ConfigSchemaFilters,
-        ConfigTypeSlugFilter,
-        DigestFilter,
-        build_search_query,
-    },
+    config_schemas::{build_search_query, ConfigSchemaFilters, ConfigTypeSlugFilter, DigestFilter},
     search::SearchOperator,
 };
-
 
 pub mod build_search_query_func {
     use super::*;

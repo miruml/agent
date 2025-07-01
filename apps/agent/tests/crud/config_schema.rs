@@ -2,7 +2,6 @@
 use config_agent::crud::config_schema::matches_config_type_slug_and_schema_digest;
 use config_agent::models::config_schema::ConfigSchema;
 
-
 pub mod matches_config_type_slug_and_schema_digest {
     use super::*;
 
@@ -15,7 +14,11 @@ pub mod matches_config_type_slug_and_schema_digest {
             digest: digest.to_string(),
             ..Default::default()
         };
-        assert!(matches_config_type_slug_and_schema_digest(&config_schema, config_type_slug, digest));
+        assert!(matches_config_type_slug_and_schema_digest(
+            &config_schema,
+            config_type_slug,
+            digest
+        ));
     }
 
     #[test]
@@ -27,7 +30,11 @@ pub mod matches_config_type_slug_and_schema_digest {
             digest: digest.to_string(),
             ..Default::default()
         };
-        assert!(!matches_config_type_slug_and_schema_digest(&config_schema, config_type_slug, digest));
+        assert!(!matches_config_type_slug_and_schema_digest(
+            &config_schema,
+            config_type_slug,
+            digest
+        ));
     }
 
     #[test]
@@ -39,6 +46,10 @@ pub mod matches_config_type_slug_and_schema_digest {
             digest: "wrong_digest".to_string(),
             ..Default::default()
         };
-        assert!(!matches_config_type_slug_and_schema_digest(&config_schema, config_type_slug, digest));
+        assert!(!matches_config_type_slug_and_schema_digest(
+            &config_schema,
+            config_type_slug,
+            digest
+        ));
     }
 }

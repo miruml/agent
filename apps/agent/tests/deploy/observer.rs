@@ -1,7 +1,7 @@
 // internal crates
-use config_agent::models::config_instance::ConfigInstance;
 use config_agent::deploy::errors::DeployErr;
 use config_agent::deploy::observer::Observer;
+use config_agent::models::config_instance::ConfigInstance;
 
 // external crates
 use async_trait::async_trait;

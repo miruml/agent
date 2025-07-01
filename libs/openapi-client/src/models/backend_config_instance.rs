@@ -25,8 +25,8 @@ pub struct BackendConfigInstance {
     pub activity_status: models::ConfigInstanceActivityStatus,
     #[serde(rename = "error_status")]
     pub error_status: models::ConfigInstanceErrorStatus,
-    #[serde(rename = "filepath", deserialize_with = "Option::deserialize")]
-    pub filepath: Option<String>,
+    #[serde(rename = "relative_filepath", deserialize_with = "Option::deserialize")]
+    pub relative_filepath: Option<String>,
     #[serde(rename = "patch_id", deserialize_with = "Option::deserialize")]
     pub patch_id: Option<String>,
     #[serde(rename = "created_by_id", deserialize_with = "Option::deserialize")]
@@ -59,7 +59,7 @@ impl BackendConfigInstance {
         status: models::ConfigInstanceStatus,
         activity_status: models::ConfigInstanceActivityStatus,
         error_status: models::ConfigInstanceErrorStatus,
-        filepath: Option<String>,
+        relative_filepath: Option<String>,
         patch_id: Option<String>,
         created_by_id: Option<String>,
         created_at: String,
@@ -79,7 +79,7 @@ impl BackendConfigInstance {
             status,
             activity_status,
             error_status,
-            filepath,
+            relative_filepath,
             patch_id,
             created_by_id,
             created_at,

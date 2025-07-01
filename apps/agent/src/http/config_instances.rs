@@ -6,18 +6,14 @@ use std::sync::Arc;
 use crate::http::client::HTTPClient;
 use crate::http::errors::HTTPErr;
 use crate::http::expand::format_expand_query;
-use crate::http::pagination::{MAX_PAGINATE_LIMIT, Pagination};
+use crate::http::pagination::{Pagination, MAX_PAGINATE_LIMIT};
 use crate::http::query::build_query_params;
 use crate::http::search::{
-    LogicalOperator, SearchOperator, format_search_clause, format_search_group,
+    format_search_clause, format_search_group, LogicalOperator, SearchOperator,
 };
 use openapi_client::models::{
-    BackendConfigInstance,
-    ConfigInstanceActivityStatus,
-    ConfigInstanceErrorStatus,
-    ConfigInstanceList,
-    ConfigInstanceSearch,
-    ConfigInstanceTargetStatus,
+    BackendConfigInstance, ConfigInstanceActivityStatus, ConfigInstanceErrorStatus,
+    ConfigInstanceList, ConfigInstanceSearch, ConfigInstanceTargetStatus,
     UpdateConfigInstanceRequest,
 };
 
@@ -37,8 +33,7 @@ pub trait ConfigInstancesExt: Send + Sync {
     ) -> Result<Vec<BackendConfigInstance>, HTTPErr>
     where
         I: IntoIterator + Send,
-        I::Item: fmt::Display,
-    ;
+        I::Item: fmt::Display;
 
     async fn update_config_instance(
         &self,
@@ -64,22 +59,16 @@ impl ConfigInstancesExt for HTTPClient {
         query_params: &str,
         token: &str,
     ) -> Result<ConfigInstanceList, HTTPErr> {
-
         // build the request
-        let url = format!(
-            "{}{}",
-            self.config_instances_url(),
-            query_params,
-        );
-        let (request, context) = self.build_get_request(
-            &url, self.default_timeout, Some(token),
-        )?;
+        let url = format!("{}{}", self.config_instances_url(), query_params,);
+        let (request, context) = self.build_get_request(&url, self.default_timeout, Some(token))?;
 
         // send the request (with caching)
         let response = self.send_cached(url, request, &context).await?.0;
 
         // parse the response
-        self.parse_json_response_text::<ConfigInstanceList>(response, &context).await
+        self.parse_json_response_text::<ConfigInstanceList>(response, &context)
+            .await
     }
 
     async fn list_all_config_instances<I>(
@@ -95,13 +84,16 @@ impl ConfigInstancesExt for HTTPClient {
         let search_query = build_search_query(filters);
         let expand_query = format_expand_query(expansions);
         let mut pagination = Pagination {
-            limit: MAX_PAGINATE_LIMIT, offset: 0,
+            limit: MAX_PAGINATE_LIMIT,
+            offset: 0,
         };
         let mut config_instances = Vec::new();
 
         loop {
             let query_params = build_query_params(
-                search_query.as_deref(), expand_query.as_deref(), &pagination,
+                search_query.as_deref(),
+                expand_query.as_deref(),
+                &pagination,
             );
             let resp = self.list_config_instances(&query_params, token).await?;
             config_instances.extend(resp.data);
@@ -119,7 +111,6 @@ impl ConfigInstancesExt for HTTPClient {
         updates: &UpdateConfigInstanceRequest,
         token: &str,
     ) -> Result<BackendConfigInstance, HTTPErr> {
-
         // build the request
         let (request, context) = self.build_patch_request(
             &self.config_instance_url(config_instance_id),
@@ -133,7 +124,8 @@ impl ConfigInstancesExt for HTTPClient {
         let text_resp = self.handle_response(http_resp, &context).await?;
 
         // parse the response
-        self.parse_json_response_text::<BackendConfigInstance>(text_resp, &context).await
+        self.parse_json_response_text::<BackendConfigInstance>(text_resp, &context)
+            .await
     }
 }
 
@@ -143,11 +135,9 @@ impl ConfigInstancesExt for Arc<HTTPClient> {
         query_params: &str,
         token: &str,
     ) -> Result<ConfigInstanceList, HTTPErr> {
-        self.as_ref().list_config_instances(
-            query_params,
-            token,
-        )
-        .await
+        self.as_ref()
+            .list_config_instances(query_params, token)
+            .await
     }
 
     async fn list_all_config_instances<I>(
@@ -160,7 +150,9 @@ impl ConfigInstancesExt for Arc<HTTPClient> {
         I: IntoIterator + Send,
         I::Item: fmt::Display,
     {
-        self.as_ref().list_all_config_instances(filters, expansions, token).await
+        self.as_ref()
+            .list_all_config_instances(filters, expansions, token)
+            .await
     }
 
     async fn update_config_instance(
@@ -169,12 +161,9 @@ impl ConfigInstancesExt for Arc<HTTPClient> {
         updates: &UpdateConfigInstanceRequest,
         token: &str,
     ) -> Result<BackendConfigInstance, HTTPErr> {
-        self.as_ref().update_config_instance(
-            config_instance_id,
-            updates,
-            token,
-        )
-        .await
+        self.as_ref()
+            .update_config_instance(config_instance_id, updates, token)
+            .await
     }
 }
 
@@ -194,14 +183,16 @@ pub struct ConfigInstanceFiltersBuilder {
 
 impl ConfigInstanceFiltersBuilder {
     pub fn new(device_id: String) -> Self {
-        Self { filters: ConfigInstanceFilters {
-            device_id,
-            ids: None,
-            config_schema_ids: None,
-            target_statuses: None,
-            activity_statuses: None,
-            error_statuses: None,
-        } }
+        Self {
+            filters: ConfigInstanceFilters {
+                device_id,
+                ids: None,
+                config_schema_ids: None,
+                target_statuses: None,
+                activity_statuses: None,
+                error_statuses: None,
+            },
+        }
     }
 
     pub fn with_id_filter(mut self, id_filter: IDFilter) -> Self {
@@ -209,7 +200,10 @@ impl ConfigInstanceFiltersBuilder {
         self
     }
 
-    pub fn with_config_schema_id_filter(mut self, config_schema_id_filter: ConfigSchemaIDFilter) -> Self {
+    pub fn with_config_schema_id_filter(
+        mut self,
+        config_schema_id_filter: ConfigSchemaIDFilter,
+    ) -> Self {
         self.filters.config_schema_ids = Some(config_schema_id_filter);
         self
     }
@@ -219,7 +213,10 @@ impl ConfigInstanceFiltersBuilder {
         self
     }
 
-    pub fn with_activity_status_filter(mut self, activity_status_filter: ActivityStatusFilter) -> Self {
+    pub fn with_activity_status_filter(
+        mut self,
+        activity_status_filter: ActivityStatusFilter,
+    ) -> Self {
         self.filters.activity_statuses = Some(activity_status_filter);
         self
     }

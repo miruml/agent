@@ -3,9 +3,7 @@ use std::cmp::min;
 
 // internal crates
 use crate::errors::MiruError;
-use crate::models::config_instance::{
-    ConfigInstance, ActivityStatus, ErrorStatus, TargetStatus,
-};
+use crate::models::config_instance::{ActivityStatus, ConfigInstance, ErrorStatus, TargetStatus};
 
 // external crates
 use chrono::{TimeDelta, Utc};
@@ -142,11 +140,8 @@ fn get_success_options(
     }
 }
 
-fn has_recovered(
-    instance: &ConfigInstance,
-    new_activity_status: ActivityStatus,
-) -> bool {
-    // the error status only needs to be updated if it is currently retrying. If is 
+fn has_recovered(instance: &ConfigInstance, new_activity_status: ActivityStatus) -> bool {
+    // the error status only needs to be updated if it is currently retrying. If is
     // failed then it can never exit failed and if it is None then it is already correct
     if instance.error_status != ErrorStatus::Retrying {
         return false;
@@ -165,22 +160,18 @@ fn has_recovered(
                 ActivityStatus::Removed => true,
             }
         }
-        TargetStatus::Deployed => {
-            match new_activity_status {
-                ActivityStatus::Created => false,
-                ActivityStatus::Queued => false,
-                ActivityStatus::Deployed => true,
-                ActivityStatus::Removed => false,
-            }
-        }
-        TargetStatus::Removed => {
-            match new_activity_status {
-                ActivityStatus::Created => false,
-                ActivityStatus::Queued => false,
-                ActivityStatus::Deployed => false,
-                ActivityStatus::Removed => true,
-            }
-        }
+        TargetStatus::Deployed => match new_activity_status {
+            ActivityStatus::Created => false,
+            ActivityStatus::Queued => false,
+            ActivityStatus::Deployed => true,
+            ActivityStatus::Removed => false,
+        },
+        TargetStatus::Removed => match new_activity_status {
+            ActivityStatus::Created => false,
+            ActivityStatus::Queued => false,
+            ActivityStatus::Deployed => false,
+            ActivityStatus::Removed => true,
+        },
     }
 }
 
@@ -237,11 +228,6 @@ fn get_error_options(
     }
 }
 
-pub fn calc_exp_backoff(
-    k: u32,
-    base: u32,
-    exp: u32,
-    max: u32,
-) -> u32 {
+pub fn calc_exp_backoff(k: u32, base: u32, exp: u32, max: u32) -> u32 {
     min(k.saturating_mul(base.saturating_pow(exp)), max)
 }

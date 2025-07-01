@@ -31,7 +31,10 @@ impl<'de> Deserialize<'de> for TargetStatus {
             "deployed" => Ok(TargetStatus::Deployed),
             "removed" => Ok(TargetStatus::Removed),
             status => {
-                warn!("target status '{}' is not valid, defaulting to {:?}", status, default);
+                warn!(
+                    "target status '{}' is not valid, defaulting to {:?}",
+                    status, default
+                );
                 Ok(default)
             }
         }
@@ -86,7 +89,6 @@ impl TargetStatus {
             TargetStatus::Removed => openapi_server::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_REMOVED,
         }
     }
-
 }
 
 // ============================== ACTIVITY STATUS ================================== //
@@ -113,7 +115,10 @@ impl<'de> Deserialize<'de> for ActivityStatus {
             "deployed" => Ok(ActivityStatus::Deployed),
             "removed" => Ok(ActivityStatus::Removed),
             status => {
-                warn!("activity status '{}' is not valid, defaulting to {:?}", status, default);
+                warn!(
+                    "activity status '{}' is not valid, defaulting to {:?}",
+                    status, default
+                );
                 Ok(default)
             }
         }
@@ -173,7 +178,6 @@ impl ActivityStatus {
             ActivityStatus::Removed => openapi_server::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_REMOVED,
         }
     }
-
 }
 
 // =============================== ERROR STATUS ==================================== //
@@ -198,7 +202,10 @@ impl<'de> Deserialize<'de> for ErrorStatus {
             "failed" => Ok(ErrorStatus::Failed),
             "retrying" => Ok(ErrorStatus::Retrying),
             status => {
-                warn!("error status '{}' is not valid, defaulting to {:?}", status, default);
+                warn!(
+                    "error status '{}' is not valid, defaulting to {:?}",
+                    status, default
+                );
                 Ok(default)
             }
         }
@@ -250,9 +257,7 @@ impl ErrorStatus {
         }
     }
 
-    pub fn to_sdk(
-        error_status: &ErrorStatus,
-    ) -> openapi_server::models::ConfigInstanceErrorStatus {
+    pub fn to_sdk(error_status: &ErrorStatus) -> openapi_server::models::ConfigInstanceErrorStatus {
         match error_status {
             ErrorStatus::None => {
                 openapi_server::models::ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_NONE
@@ -295,7 +300,10 @@ impl<'de> Deserialize<'de> for Status {
             "failed" => Ok(Status::Failed),
             "retrying" => Ok(Status::Retrying),
             status => {
-                warn!("status '{}' is not valid, defaulting to {:?}", status, default);
+                warn!(
+                    "status '{}' is not valid, defaulting to {:?}",
+                    status, default
+                );
                 Ok(default)
             }
         }
@@ -314,9 +322,7 @@ impl Status {
         ]
     }
 
-    pub fn from_backend(
-        status: &openapi_client::models::ConfigInstanceStatus,
-    ) -> Status {
+    pub fn from_backend(status: &openapi_client::models::ConfigInstanceStatus) -> Status {
         match status {
             openapi_client::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_CREATED => {
                 Status::Created
@@ -339,10 +345,8 @@ impl Status {
         }
     }
 
-    pub fn to_backend(
-        status: &Status,
-    ) -> openapi_client::models::ConfigInstanceStatus {
-    match status {
+    pub fn to_backend(status: &Status) -> openapi_client::models::ConfigInstanceStatus {
+        match status {
             Status::Created => {
                 openapi_client::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_CREATED
             }
@@ -364,22 +368,30 @@ impl Status {
         }
     }
 
-    pub fn from_sdk(
-        status: &openapi_server::models::ConfigInstanceStatus,
-    ) -> Status {
+    pub fn from_sdk(status: &openapi_server::models::ConfigInstanceStatus) -> Status {
         match status {
-            openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_CREATED => Status::Created,
-            openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_QUEUED => Status::Queued,
-            openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_DEPLOYED => Status::Deployed,
-            openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_REMOVED => Status::Removed,
-            openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_FAILED => Status::Failed,
-            openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_RETRYING => Status::Retrying,
+            openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_CREATED => {
+                Status::Created
+            }
+            openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_QUEUED => {
+                Status::Queued
+            }
+            openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_DEPLOYED => {
+                Status::Deployed
+            }
+            openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_REMOVED => {
+                Status::Removed
+            }
+            openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_FAILED => {
+                Status::Failed
+            }
+            openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_RETRYING => {
+                Status::Retrying
+            }
         }
     }
 
-    pub fn to_sdk(
-        status: &Status,
-    ) -> openapi_server::models::ConfigInstanceStatus {
+    pub fn to_sdk(status: &Status) -> openapi_server::models::ConfigInstanceStatus {
         match status {
             Status::Created => {
                 openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_CREATED
@@ -412,7 +424,7 @@ pub struct ConfigInstance {
     pub target_status: TargetStatus,
     pub activity_status: ActivityStatus,
     pub error_status: ErrorStatus,
-    pub filepath: Option<String>,
+    pub relative_filepath: Option<String>,
     pub patch_id: Option<String>,
     pub created_by_id: Option<String>,
     pub created_at: DateTime<Utc>,
@@ -433,7 +445,7 @@ impl Default for ConfigInstance {
             target_status: TargetStatus::Created,
             activity_status: ActivityStatus::Created,
             error_status: ErrorStatus::None,
-            filepath: None,
+            relative_filepath: None,
             patch_id: None,
             created_by_id: None,
             created_at: DateTime::<Utc>::UNIX_EPOCH,
@@ -456,20 +468,22 @@ impl ConfigInstance {
             target_status: TargetStatus::from_backend(&backend_instance.target_status),
             activity_status: ActivityStatus::from_backend(&backend_instance.activity_status),
             error_status: ErrorStatus::from_backend(&backend_instance.error_status),
-            filepath: backend_instance.filepath,
+            relative_filepath: backend_instance.relative_filepath,
             patch_id: backend_instance.patch_id,
-            created_at: backend_instance.created_at.parse::<DateTime<Utc>>().unwrap_or_else(
-                |e| {
+            created_at: backend_instance
+                .created_at
+                .parse::<DateTime<Utc>>()
+                .unwrap_or_else(|e| {
                     error!("Error parsing created_at: {}", e);
                     DateTime::<Utc>::UNIX_EPOCH
-                },
-            ),
-            updated_at: backend_instance.updated_at.parse::<DateTime<Utc>>().unwrap_or_else(
-                |e| {
+                }),
+            updated_at: backend_instance
+                .updated_at
+                .parse::<DateTime<Utc>>()
+                .unwrap_or_else(|e| {
                     error!("Error parsing updated_at: {}", e);
                     DateTime::<Utc>::UNIX_EPOCH
-                },
-            ),
+                }),
             created_by_id: backend_instance.created_by_id,
             updated_by_id: backend_instance.updated_by_id,
             device_id: backend_instance.device_id,
@@ -493,7 +507,7 @@ impl ConfigInstance {
             status,
             activity_status: ActivityStatus::to_sdk(&instance.activity_status),
             error_status: ErrorStatus::to_sdk(&instance.error_status),
-            filepath: instance.filepath,
+            relative_filepath: instance.relative_filepath,
             patch_id: instance.patch_id,
             created_by_id: instance.created_by_id,
             updated_by_id: instance.updated_by_id,
@@ -557,7 +571,7 @@ impl<'de> Deserialize<'de> for ConfigInstance {
             cooldown_ends_at: Option<DateTime<Utc>>,
 
             // optional fields
-            filepath: Option<String>,
+            relative_filepath: Option<String>,
             patch_id: Option<String>,
             created_by_id: Option<String>,
             updated_by_id: Option<String>,
@@ -573,33 +587,29 @@ impl<'de> Deserialize<'de> for ConfigInstance {
 
         let default = ConfigInstance::default();
 
-        let created_at = result.created_at.unwrap_or_else(|| deserialize_error!(
-            "config_instance",
-            "created_at",
-            default.created_at
-        ));
-        let updated_at = result.updated_at.unwrap_or_else(|| deserialize_error!(
-            "config_instance",
-            "updated_at",
-            default.updated_at
-        ));
-        let attempts = result.attempts.unwrap_or_else(|| deserialize_error!(
-            "config_instance",
-            "attempts",
-            default.attempts
-        ));
-        let cooldown_ends_at = result.cooldown_ends_at.unwrap_or_else(|| deserialize_error!(
-            "config_instance",
-            "cooldown_ends_at",
-            default.cooldown_ends_at
-        ));
+        let created_at = result.created_at.unwrap_or_else(|| {
+            deserialize_error!("config_instance", "created_at", default.created_at)
+        });
+        let updated_at = result.updated_at.unwrap_or_else(|| {
+            deserialize_error!("config_instance", "updated_at", default.updated_at)
+        });
+        let attempts = result
+            .attempts
+            .unwrap_or_else(|| deserialize_error!("config_instance", "attempts", default.attempts));
+        let cooldown_ends_at = result.cooldown_ends_at.unwrap_or_else(|| {
+            deserialize_error!(
+                "config_instance",
+                "cooldown_ends_at",
+                default.cooldown_ends_at
+            )
+        });
 
         Ok(ConfigInstance {
             id: result.id,
             target_status: result.target_status,
             activity_status: result.activity_status,
             error_status: result.error_status,
-            filepath: result.filepath,
+            relative_filepath: result.relative_filepath,
             patch_id: result.patch_id,
             created_by_id: result.created_by_id,
             created_at,
@@ -612,5 +622,3 @@ impl<'de> Deserialize<'de> for ConfigInstance {
         })
     }
 }
-
-

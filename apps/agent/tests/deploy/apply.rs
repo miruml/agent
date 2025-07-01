@@ -2,30 +2,21 @@
 use std::collections::HashMap;
 
 // internal crates
-use config_agent::cache::{
-    entry::CacheEntry,
-    file::FileCache,
-};
+use config_agent::cache::{entry::CacheEntry, file::FileCache};
 use config_agent::deploy::{
     apply::{apply, find_instances_to_replace, find_replacement, is_dirty},
     errors::DeployErr,
-    fsm::Settings,
     fsm,
+    fsm::Settings,
 };
 use config_agent::filesys::dir::Dir;
 use config_agent::models::config_instance::{
-    ConfigInstance,
-    ActivityStatus,
-    ErrorStatus,
-    TargetStatus,
+    ActivityStatus, ConfigInstance, ErrorStatus, TargetStatus,
 };
-use config_agent::storage::config_instances::{
-    ConfigInstanceCache,
-    ConfigInstanceDataCache,
-};
+use config_agent::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
 
 // external crates
-use chrono::{Utc, TimeDelta};
+use chrono::{TimeDelta, Utc};
 use serde_json::json;
 
 pub mod is_dirty_func {
@@ -73,7 +64,6 @@ pub mod is_dirty_func {
         let old = Some(&entry);
         assert!(is_dirty(old, new));
     }
-
 
     #[tokio::test]
     async fn activity_status_changed() {
@@ -124,12 +114,12 @@ pub mod apply_func {
     #[tokio::test]
     async fn no_instances() {
         let dir = Dir::create_temp_dir("apply").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            16, dir.file("metadata.json"),
-        ).await.unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            16, dir.clone(),
-        ).await.unwrap();
+        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"))
+            .await
+            .unwrap();
+        let (instance_cache, _) = ConfigInstanceDataCache::spawn(16, dir.clone())
+            .await
+            .unwrap();
 
         let result = apply(
             HashMap::new(),
@@ -137,15 +127,17 @@ pub mod apply_func {
             &instance_cache,
             &dir,
             &Settings::default(),
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
         assert_eq!(result.len(), 0);
     }
 
     #[tokio::test]
     async fn deploy_1() {
-        // define the instance 
+        // define the instance
         let instance = ConfigInstance {
-            filepath: Some("/test/filepath".to_string()),
+            relative_filepath: Some("/test/filepath".to_string()),
             // target status must be deployed to increment failure attempts
             target_status: TargetStatus::Deployed,
             ..Default::default()
@@ -153,15 +145,16 @@ pub mod apply_func {
 
         // create the cache but omit the instance data
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            16, dir.file("metadata.json"),
-        ).await.unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            16, dir.clone(),
-        ).await.unwrap();
-        instance_cache.write(
-            instance.id.clone(), json!({"speed": 4}), |_, _| false, true,
-        ).await.unwrap();
+        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"))
+            .await
+            .unwrap();
+        let (instance_cache, _) = ConfigInstanceDataCache::spawn(16, dir.clone())
+            .await
+            .unwrap();
+        instance_cache
+            .write(instance.id.clone(), json!({"speed": 4}), |_, _| false, true)
+            .await
+            .unwrap();
 
         // deploy the instance
         let settings = Settings::default();
@@ -172,7 +165,9 @@ pub mod apply_func {
             &instance_cache,
             &dir,
             &settings,
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
         assert_eq!(result.len(), 1);
         let actual = result[&instance.id].clone();
 
@@ -188,30 +183,36 @@ pub mod apply_func {
 
     #[tokio::test]
     async fn deploy_1_failure_1_success() {
-        // define the instances 
+        // define the instances
         let instance1 = ConfigInstance {
-            filepath: Some("/test/filepath1".to_string()),
+            relative_filepath: Some("/test/filepath1".to_string()),
             // target status must be deployed to increment failure attempts
             target_status: TargetStatus::Deployed,
             ..Default::default()
         };
         let instance2 = ConfigInstance {
-            filepath: Some("/test/filepath2".to_string()),
+            relative_filepath: Some("/test/filepath2".to_string()),
             target_status: TargetStatus::Deployed,
             ..Default::default()
         };
 
         // create the cache but omit the instance data
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            16, dir.file("metadata.json"),
-        ).await.unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            16, dir.clone(),
-        ).await.unwrap();
-        instance_cache.write(
-            instance1.id.clone(), json!({"speed": 4}), |_, _| false, true,
-        ).await.unwrap();
+        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"))
+            .await
+            .unwrap();
+        let (instance_cache, _) = ConfigInstanceDataCache::spawn(16, dir.clone())
+            .await
+            .unwrap();
+        instance_cache
+            .write(
+                instance1.id.clone(),
+                json!({"speed": 4}),
+                |_, _| false,
+                true,
+            )
+            .await
+            .unwrap();
 
         // deploy the instance
         let settings = Settings::default();
@@ -225,7 +226,9 @@ pub mod apply_func {
             &instance_cache,
             &dir,
             &settings,
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
         assert_eq!(result.len(), 2);
         let actual1 = result[&instance1.id].clone();
         let actual2 = result[&instance2.id].clone();
@@ -259,25 +262,26 @@ pub mod apply_func {
 
     #[tokio::test]
     async fn remove_1() {
-        // define the instance 
+        // define the instance
         let filepath = "/test/filepath".to_string();
         let instance = ConfigInstance {
-            filepath: Some(filepath.clone()),
+            relative_filepath: Some(filepath.clone()),
             target_status: TargetStatus::Removed,
             ..Default::default()
         };
 
         // create the instance in the cache
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            16, dir.file("metadata.json"),
-        ).await.unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            16, dir.clone(),
-        ).await.unwrap();
-        instance_cache.write(
-            instance.id.clone(), json!({"speed": 4}), |_, _| false, true,
-        ).await.unwrap();
+        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"))
+            .await
+            .unwrap();
+        let (instance_cache, _) = ConfigInstanceDataCache::spawn(16, dir.clone())
+            .await
+            .unwrap();
+        instance_cache
+            .write(instance.id.clone(), json!({"speed": 4}), |_, _| false, true)
+            .await
+            .unwrap();
 
         // deploy the instance
         let settings = Settings::default();
@@ -288,7 +292,9 @@ pub mod apply_func {
             &instance_cache,
             &dir,
             &settings,
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
         assert_eq!(result.len(), 1);
         let actual = result[&instance.id].clone();
 
@@ -306,14 +312,14 @@ pub mod apply_func {
     async fn rollback_1_deploy_failed_different_config_schemas() {
         // define the instances with DIFFERENT config schemas but the same filepath
         let filepath = "/test/filepath".to_string();
-        let to_deploy= ConfigInstance {
-            filepath: Some(filepath.clone()),
+        let to_deploy = ConfigInstance {
+            relative_filepath: Some(filepath.clone()),
             target_status: TargetStatus::Deployed,
             activity_status: ActivityStatus::Queued,
             ..Default::default()
         };
         let to_remove = ConfigInstance {
-            filepath: Some(filepath.clone()),
+            relative_filepath: Some(filepath.clone()),
             target_status: TargetStatus::Removed,
             activity_status: ActivityStatus::Deployed,
             ..Default::default()
@@ -321,22 +327,30 @@ pub mod apply_func {
 
         // create the cache but omit the instance data
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            16, dir.file("metadata.json"),
-        ).await.unwrap();
-        metadata_cache.write(
-            to_remove.id.clone(), to_remove.clone(), |_, _| false, true,
-        ).await.unwrap();
-        metadata_cache.write(
-            to_deploy.id.clone(), to_deploy.clone(), |_, _| false, true,
-        ).await.unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            16, dir.clone(),
-        ).await.unwrap();
+        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"))
+            .await
+            .unwrap();
+        metadata_cache
+            .write(to_remove.id.clone(), to_remove.clone(), |_, _| false, true)
+            .await
+            .unwrap();
+        metadata_cache
+            .write(to_deploy.id.clone(), to_deploy.clone(), |_, _| false, true)
+            .await
+            .unwrap();
+        let (instance_cache, _) = ConfigInstanceDataCache::spawn(16, dir.clone())
+            .await
+            .unwrap();
         let to_remove_data = json!({"speed": 4});
-        instance_cache.write(
-            to_remove.id.clone(), to_remove_data.clone(), |_, _| false, true,
-        ).await.unwrap();
+        instance_cache
+            .write(
+                to_remove.id.clone(),
+                to_remove_data.clone(),
+                |_, _| false,
+                true,
+            )
+            .await
+            .unwrap();
 
         // deploy the instance
         let settings = Settings::default();
@@ -350,7 +364,9 @@ pub mod apply_func {
             &instance_cache,
             &dir,
             &settings,
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
         assert_eq!(result.len(), 2);
         let actual_to_remove = result[&to_remove.id].clone();
         let actual_to_deploy = result[&to_deploy.id].clone();
@@ -376,7 +392,9 @@ pub mod apply_func {
         );
         let approx_cooldown_ends_at = Utc::now() + TimeDelta::seconds(cooldown as i64);
         assert!(expected_to_deploy.cooldown_ends_at <= approx_cooldown_ends_at);
-        assert!(expected_to_deploy.cooldown_ends_at >= approx_cooldown_ends_at - TimeDelta::seconds(1));
+        assert!(
+            expected_to_deploy.cooldown_ends_at >= approx_cooldown_ends_at - TimeDelta::seconds(1)
+        );
 
         // check that the returned instances' states were correctly updated
         assert_eq!(expected_to_remove, actual_to_remove);
@@ -387,15 +405,15 @@ pub mod apply_func {
     async fn rollback_1_deploy_failed_same_config_schema() {
         // define the instances with DIFFERENT config schemas but the same filepath
         let filepath = "/test/filepath".to_string();
-        let to_deploy= ConfigInstance {
-            filepath: Some(filepath.clone()),
+        let to_deploy = ConfigInstance {
+            relative_filepath: Some(filepath.clone()),
             target_status: TargetStatus::Deployed,
             activity_status: ActivityStatus::Queued,
             ..Default::default()
         };
         let to_remove = ConfigInstance {
             config_schema_id: to_deploy.config_schema_id.clone(),
-            filepath: Some(filepath.clone()),
+            relative_filepath: Some(filepath.clone()),
             target_status: TargetStatus::Removed,
             activity_status: ActivityStatus::Deployed,
             ..Default::default()
@@ -403,22 +421,30 @@ pub mod apply_func {
 
         // create the cache but omit the instance data
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            16, dir.file("metadata.json"),
-        ).await.unwrap();
-        metadata_cache.write(
-            to_remove.id.clone(), to_remove.clone(), |_, _| false, true,
-        ).await.unwrap();
-        metadata_cache.write(
-            to_deploy.id.clone(), to_deploy.clone(), |_, _| false, true,
-        ).await.unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            16, dir.clone(),
-        ).await.unwrap();
+        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"))
+            .await
+            .unwrap();
+        metadata_cache
+            .write(to_remove.id.clone(), to_remove.clone(), |_, _| false, true)
+            .await
+            .unwrap();
+        metadata_cache
+            .write(to_deploy.id.clone(), to_deploy.clone(), |_, _| false, true)
+            .await
+            .unwrap();
+        let (instance_cache, _) = ConfigInstanceDataCache::spawn(16, dir.clone())
+            .await
+            .unwrap();
         let to_remove_data = json!({"speed": 4});
-        instance_cache.write(
-            to_remove.id.clone(), to_remove_data.clone(), |_, _| false, true,
-        ).await.unwrap();
+        instance_cache
+            .write(
+                to_remove.id.clone(),
+                to_remove_data.clone(),
+                |_, _| false,
+                true,
+            )
+            .await
+            .unwrap();
 
         // deploy the instance
         let settings = Settings::default();
@@ -432,7 +458,9 @@ pub mod apply_func {
             &instance_cache,
             &dir,
             &settings,
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
         assert_eq!(result.len(), 2);
         let actual_to_remove = result[&to_remove.id].clone();
         let actual_to_deploy = result[&to_deploy.id].clone();
@@ -453,7 +481,9 @@ pub mod apply_func {
         );
         let approx_cooldown_ends_at = Utc::now() + TimeDelta::seconds(cooldown as i64);
         assert!(expected_to_deploy.cooldown_ends_at <= approx_cooldown_ends_at);
-        assert!(expected_to_deploy.cooldown_ends_at >= approx_cooldown_ends_at - TimeDelta::seconds(1));
+        assert!(
+            expected_to_deploy.cooldown_ends_at >= approx_cooldown_ends_at - TimeDelta::seconds(1)
+        );
 
         let expected_to_remove = ConfigInstance {
             activity_status: ActivityStatus::Deployed,
@@ -470,15 +500,15 @@ pub mod apply_func {
     async fn replace_1() {
         // define the instances with DIFFERENT config schemas but the same filepath
         let filepath = "/test/filepath".to_string();
-        let to_deploy= ConfigInstance {
-            filepath: Some(filepath.clone()),
+        let to_deploy = ConfigInstance {
+            relative_filepath: Some(filepath.clone()),
             target_status: TargetStatus::Deployed,
             activity_status: ActivityStatus::Queued,
             ..Default::default()
         };
         let to_remove = ConfigInstance {
             config_schema_id: to_deploy.config_schema_id.clone(),
-            filepath: Some(filepath.clone()),
+            relative_filepath: Some(filepath.clone()),
             target_status: TargetStatus::Removed,
             activity_status: ActivityStatus::Deployed,
             ..Default::default()
@@ -486,26 +516,40 @@ pub mod apply_func {
 
         // create the cache but omit the instance data
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            16, dir.file("metadata.json"),
-        ).await.unwrap();
-        metadata_cache.write(
-            to_remove.id.clone(), to_remove.clone(), |_, _| false, true,
-        ).await.unwrap();
-        metadata_cache.write(
-            to_deploy.id.clone(), to_deploy.clone(), |_, _| false, true,
-        ).await.unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            16, dir.clone(),
-        ).await.unwrap();
+        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"))
+            .await
+            .unwrap();
+        metadata_cache
+            .write(to_remove.id.clone(), to_remove.clone(), |_, _| false, true)
+            .await
+            .unwrap();
+        metadata_cache
+            .write(to_deploy.id.clone(), to_deploy.clone(), |_, _| false, true)
+            .await
+            .unwrap();
+        let (instance_cache, _) = ConfigInstanceDataCache::spawn(16, dir.clone())
+            .await
+            .unwrap();
         let to_remove_data = json!({"speed": 4});
-        instance_cache.write(
-            to_remove.id.clone(), to_remove_data.clone(), |_, _| false, true,
-        ).await.unwrap();
+        instance_cache
+            .write(
+                to_remove.id.clone(),
+                to_remove_data.clone(),
+                |_, _| false,
+                true,
+            )
+            .await
+            .unwrap();
         let to_deploy_data = json!({"speed": 5});
-        instance_cache.write(
-            to_deploy.id.clone(), to_deploy_data.clone(), |_, _| false, true,
-        ).await.unwrap();
+        instance_cache
+            .write(
+                to_deploy.id.clone(),
+                to_deploy_data.clone(),
+                |_, _| false,
+                true,
+            )
+            .await
+            .unwrap();
 
         // deploy the instance
         let settings = Settings::default();
@@ -519,7 +563,9 @@ pub mod apply_func {
             &instance_cache,
             &dir,
             &settings,
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
         assert_eq!(result.len(), 2);
         let actual_to_remove = result[&to_remove.id].clone();
         let actual_to_deploy = result[&to_deploy.id].clone();
@@ -546,59 +592,59 @@ pub mod find_instances_to_replace_func {
     #[tokio::test]
     async fn no_matches() {
         let dir = Dir::create_temp_dir("apply").await.unwrap();
-        let (cache, _) = FileCache::spawn(
-            16, dir.file("cache.json"),
-        ).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json")).await.unwrap();
 
         let instance = ConfigInstance {
-            filepath: Some("/test/filepath".to_string()),
+            relative_filepath: Some("/test/filepath".to_string()),
             ..Default::default()
         };
 
         // create a bunch of instances with that don't match
         for i in 0..10 {
             let instance = ConfigInstance {
-                filepath: Some(format!("/test/filepath{}", i)),
+                relative_filepath: Some(format!("/test/filepath{}", i)),
                 activity_status: ActivityStatus::Deployed,
                 target_status: TargetStatus::Removed,
                 ..Default::default()
             };
-            cache.write(instance.id.clone(), instance, |_, _| false, true,
-            ).await.unwrap();
+            cache
+                .write(instance.id.clone(), instance, |_, _| false, true)
+                .await
+                .unwrap();
         }
-        let result = find_instances_to_replace(
-            &instance, &cache,
-        ).await.unwrap();
+        let result = find_instances_to_replace(&instance, &cache).await.unwrap();
         assert!(result.is_empty());
     }
 
     #[tokio::test]
     async fn one_file_path_match() {
         let dir = Dir::create_temp_dir("apply").await.unwrap();
-        let (cache, _) = FileCache::spawn(
-            16, dir.file("cache.json"),
-        ).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json")).await.unwrap();
 
         let filepath = "/test/filepath".to_string();
         let instance = ConfigInstance {
-            filepath: Some(filepath.clone()),
+            relative_filepath: Some(filepath.clone()),
             ..Default::default()
         };
 
         // create a valid replacement instance
         let to_replace = ConfigInstance {
-            filepath: Some(filepath.clone()),
+            relative_filepath: Some(filepath.clone()),
             activity_status: ActivityStatus::Deployed,
             target_status: TargetStatus::Removed,
             ..Default::default()
         };
-        cache.write(
-            to_replace.id.clone(), to_replace.clone(), |_, _| false, true,
-        ).await.unwrap();
+        cache
+            .write(
+                to_replace.id.clone(),
+                to_replace.clone(),
+                |_, _| false,
+                true,
+            )
+            .await
+            .unwrap();
 
-        let result = find_instances_to_replace(
-            &instance, &cache,
-        ).await.unwrap();
+        let result = find_instances_to_replace(&instance, &cache).await.unwrap();
         assert_eq!(result.len(), 1);
         assert_eq!(result[0], to_replace);
     }
@@ -606,9 +652,7 @@ pub mod find_instances_to_replace_func {
     #[tokio::test]
     async fn one_config_schema_match() {
         let dir = Dir::create_temp_dir("apply").await.unwrap();
-        let (cache, _) = FileCache::spawn(
-            16, dir.file("cache.json"),
-        ).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json")).await.unwrap();
 
         let instance = ConfigInstance {
             ..Default::default()
@@ -621,13 +665,17 @@ pub mod find_instances_to_replace_func {
             target_status: TargetStatus::Removed,
             ..Default::default()
         };
-        cache.write(
-            to_replace.id.clone(), to_replace.clone(), |_, _| false, true,
-        ).await.unwrap();
+        cache
+            .write(
+                to_replace.id.clone(),
+                to_replace.clone(),
+                |_, _| false,
+                true,
+            )
+            .await
+            .unwrap();
 
-        let result = find_instances_to_replace(
-            &instance, &cache,
-        ).await.unwrap();
+        let result = find_instances_to_replace(&instance, &cache).await.unwrap();
         assert_eq!(result.len(), 1);
         assert_eq!(result[0], to_replace);
     }
@@ -635,38 +683,46 @@ pub mod find_instances_to_replace_func {
     #[tokio::test]
     async fn multiple_matches() {
         let dir = Dir::create_temp_dir("apply").await.unwrap();
-        let (cache, _) = FileCache::spawn(
-            16, dir.file("cache.json"),
-        ).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json")).await.unwrap();
 
         let instance = ConfigInstance {
-            filepath: Some("/test/filepath".to_string()),
+            relative_filepath: Some("/test/filepath".to_string()),
             ..Default::default()
         };
 
         // create a valid replacement instance
         let filepath_to_replace = ConfigInstance {
-            filepath: instance.filepath.clone(),
+            relative_filepath: instance.relative_filepath.clone(),
             activity_status: ActivityStatus::Deployed,
             target_status: TargetStatus::Removed,
             ..Default::default()
         };
-        cache.write(
-            filepath_to_replace.id.clone(), filepath_to_replace.clone(), |_, _| false, true,
-        ).await.unwrap();
+        cache
+            .write(
+                filepath_to_replace.id.clone(),
+                filepath_to_replace.clone(),
+                |_, _| false,
+                true,
+            )
+            .await
+            .unwrap();
         let schema_to_replace = ConfigInstance {
             config_schema_id: instance.config_schema_id.clone(),
             activity_status: ActivityStatus::Deployed,
             target_status: TargetStatus::Removed,
             ..Default::default()
         };
-        cache.write(
-            schema_to_replace.id.clone(), schema_to_replace.clone(), |_, _| false, true,
-        ).await.unwrap();
+        cache
+            .write(
+                schema_to_replace.id.clone(),
+                schema_to_replace.clone(),
+                |_, _| false,
+                true,
+            )
+            .await
+            .unwrap();
 
-        let result = find_instances_to_replace(
-            &instance, &cache,
-        ).await.unwrap();
+        let result = find_instances_to_replace(&instance, &cache).await.unwrap();
         assert_eq!(result.len(), 2);
         assert!(result.contains(&schema_to_replace));
         assert!(result.contains(&filepath_to_replace));
@@ -675,9 +731,7 @@ pub mod find_instances_to_replace_func {
     #[tokio::test]
     async fn conflicting_target_status() {
         let dir = Dir::create_temp_dir("apply").await.unwrap();
-        let (cache, _) = FileCache::spawn(
-            16, dir.file("cache.json"),
-        ).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json")).await.unwrap();
 
         let instance = ConfigInstance {
             ..Default::default()
@@ -690,16 +744,21 @@ pub mod find_instances_to_replace_func {
             target_status: TargetStatus::Deployed,
             ..Default::default()
         };
-        cache.write(
-            to_replace.id.clone(), to_replace.clone(), |_, _| false, true,
-        ).await.unwrap();
+        cache
+            .write(
+                to_replace.id.clone(),
+                to_replace.clone(),
+                |_, _| false,
+                true,
+            )
+            .await
+            .unwrap();
 
-        let error= find_instances_to_replace(
-            &instance, &cache,
-        ).await.unwrap_err();
+        let error = find_instances_to_replace(&instance, &cache)
+            .await
+            .unwrap_err();
         assert!(matches!(error, DeployErr::ConflictingDeploymentsErr(_)));
     }
-
 }
 
 pub mod find_replacement_func {
@@ -708,9 +767,7 @@ pub mod find_replacement_func {
     #[tokio::test]
     async fn no_matches() {
         let dir = Dir::create_temp_dir("apply").await.unwrap();
-        let (cache, _) = FileCache::spawn(
-            16, dir.file("cache.json"),
-        ).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json")).await.unwrap();
 
         let instance = ConfigInstance {
             ..Default::default()
@@ -723,22 +780,20 @@ pub mod find_replacement_func {
                 target_status: TargetStatus::Deployed,
                 ..Default::default()
             };
-            cache.write(instance.id.clone(), instance, |_, _| false, true,
-            ).await.unwrap();
+            cache
+                .write(instance.id.clone(), instance, |_, _| false, true)
+                .await
+                .unwrap();
         }
 
-        let result = find_replacement(
-            &instance, &cache,
-        ).await.unwrap();
+        let result = find_replacement(&instance, &cache).await.unwrap();
         assert!(result.is_none());
     }
 
     #[tokio::test]
     async fn one_match_no_cooldown() {
         let dir = Dir::create_temp_dir("apply").await.unwrap();
-        let (cache, _) = FileCache::spawn(
-            16, dir.file("cache.json"),
-        ).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json")).await.unwrap();
 
         let instance = ConfigInstance {
             ..Default::default()
@@ -751,13 +806,18 @@ pub mod find_replacement_func {
             target_status: TargetStatus::Deployed,
             ..Default::default()
         };
-        cache.write(replacement.id.clone(), replacement.clone(), |_, _| false, true,
-        ).await.unwrap();
+        cache
+            .write(
+                replacement.id.clone(),
+                replacement.clone(),
+                |_, _| false,
+                true,
+            )
+            .await
+            .unwrap();
 
         // find the replacement
-        let result = find_replacement(
-            &instance, &cache,
-        ).await.unwrap();
+        let result = find_replacement(&instance, &cache).await.unwrap();
         assert!(result.is_some());
         assert_eq!(result.unwrap(), replacement);
     }
@@ -765,9 +825,7 @@ pub mod find_replacement_func {
     #[tokio::test]
     async fn one_match_in_cooldown() {
         let dir = Dir::create_temp_dir("apply").await.unwrap();
-        let (cache, _) = FileCache::spawn(
-            16, dir.file("cache.json"),
-        ).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json")).await.unwrap();
 
         let instance = ConfigInstance {
             ..Default::default()
@@ -781,13 +839,18 @@ pub mod find_replacement_func {
             cooldown_ends_at: Utc::now() + TimeDelta::seconds(10),
             ..Default::default()
         };
-        cache.write(replacement.id.clone(), replacement.clone(), |_, _| false, true,
-        ).await.unwrap();
+        cache
+            .write(
+                replacement.id.clone(),
+                replacement.clone(),
+                |_, _| false,
+                true,
+            )
+            .await
+            .unwrap();
 
         // find the replacement
-        let result = find_replacement(
-            &instance, &cache,
-        ).await.unwrap();
+        let result = find_replacement(&instance, &cache).await.unwrap();
         assert!(result.is_some());
         assert_eq!(result.unwrap(), replacement);
     }
@@ -795,9 +858,7 @@ pub mod find_replacement_func {
     #[tokio::test]
     async fn multiple_matches_no_cooldown() {
         let dir = Dir::create_temp_dir("apply").await.unwrap();
-        let (cache, _) = FileCache::spawn(
-            16, dir.file("cache.json"),
-        ).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json")).await.unwrap();
 
         let instance = ConfigInstance {
             ..Default::default()
@@ -811,8 +872,15 @@ pub mod find_replacement_func {
             cooldown_ends_at: Utc::now() + TimeDelta::seconds(10),
             ..Default::default()
         };
-        cache.write(replacement1.id.clone(), replacement1.clone(), |_, _| false, true,
-        ).await.unwrap();
+        cache
+            .write(
+                replacement1.id.clone(),
+                replacement1.clone(),
+                |_, _| false,
+                true,
+            )
+            .await
+            .unwrap();
         let replacement2 = ConfigInstance {
             config_schema_id: instance.config_schema_id.clone(),
             activity_status: ActivityStatus::Queued,
@@ -820,8 +888,15 @@ pub mod find_replacement_func {
             cooldown_ends_at: Utc::now() + TimeDelta::seconds(10),
             ..Default::default()
         };
-        cache.write(replacement2.id.clone(), replacement2.clone(), |_, _| false, true,
-        ).await.unwrap();
+        cache
+            .write(
+                replacement2.id.clone(),
+                replacement2.clone(),
+                |_, _| false,
+                true,
+            )
+            .await
+            .unwrap();
 
         // find the replacement
         find_replacement(&instance, &cache).await.unwrap_err();

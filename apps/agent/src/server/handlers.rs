@@ -4,10 +4,7 @@ use std::sync::Arc;
 use crate::errors::MiruError;
 use crate::server::errors::{ServerAuthErr, ServerErr, ServerServiceErr};
 use crate::server::state::ServerState;
-use crate::services::config_instances::{
-    read_deployed,
-    read_deployed::ReadDeployedArgs,
-};
+use crate::services::config_instances::{read_deployed, read_deployed::ReadDeployedArgs};
 use crate::services::config_schemas::{hash, hash::HashSchemaArgsI};
 use crate::trace;
 use openapi_server::models::SchemaDigestResponse;

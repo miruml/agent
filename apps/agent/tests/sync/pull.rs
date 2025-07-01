@@ -1,20 +1,13 @@
 // internal crates
+use crate::http::mock::MockConfigInstancesClient;
 use config_agent::crud::prelude::*;
 use config_agent::filesys::dir::Dir;
-use config_agent::models::config_instance::{
-    ConfigInstance,
-    TargetStatus,
-};
-use config_agent::storage::config_instances::{
-    ConfigInstanceCache,
-    ConfigInstanceDataCache,
-};
+use config_agent::models::config_instance::{ConfigInstance, TargetStatus};
+use config_agent::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
 use config_agent::sync::pull::pull_config_instances;
-use crate::http::mock::MockConfigInstancesClient;
 
 // external crates
 use serde_json::json;
-
 
 pub mod pull_config_instances_func {
     use super::*;
@@ -23,12 +16,12 @@ pub mod pull_config_instances_func {
     async fn no_instances() {
         // define the caches
         let dir = Dir::create_temp_dir("apply").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            16, dir.file("metadata.json"),
-        ).await.unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            16, dir.subdir("instances"),
-        ).await.unwrap();
+        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"))
+            .await
+            .unwrap();
+        let (instance_cache, _) = ConfigInstanceDataCache::spawn(16, dir.subdir("instances"))
+            .await
+            .unwrap();
 
         // define the mock http client
         let http_client = MockConfigInstancesClient::default();
@@ -40,7 +33,9 @@ pub mod pull_config_instances_func {
             &http_client,
             "device_id",
             "token",
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
         // assert the caches are still empty
         assert_eq!(metadata_cache.size().await.unwrap(), 0);
@@ -51,15 +46,15 @@ pub mod pull_config_instances_func {
     async fn one_unknown_instance() {
         // define the caches
         let dir = Dir::create_temp_dir("apply").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            16, dir.file("metadata.json"),
-        ).await.unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            16, dir.subdir("instances"),
-        ).await.unwrap();
+        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"))
+            .await
+            .unwrap();
+        let (instance_cache, _) = ConfigInstanceDataCache::spawn(16, dir.subdir("instances"))
+            .await
+            .unwrap();
 
         // define the mock http client
-        let mut http_client= MockConfigInstancesClient::default();
+        let mut http_client = MockConfigInstancesClient::default();
         let instance_data = json!({
             "instance1": {
                 "data": "data1",
@@ -67,15 +62,13 @@ pub mod pull_config_instances_func {
             }
         });
         let id = "instance1".to_string();
-        let result = vec![
-            openapi_client::models::BackendConfigInstance {
-                id: id.clone(),
-                instance: Some(instance_data.clone()),
-                ..Default::default()
-            }
-        ];
+        let result = vec![openapi_client::models::BackendConfigInstance {
+            id: id.clone(),
+            instance: Some(instance_data.clone()),
+            ..Default::default()
+        }];
         let result_cloned = result.clone();
-        http_client.set_list_all_config_instances(move || { Ok(result_cloned.clone()) });
+        http_client.set_list_all_config_instances(move || Ok(result_cloned.clone()));
 
         // pull the config instances
         pull_config_instances(
@@ -84,7 +77,9 @@ pub mod pull_config_instances_func {
             &http_client,
             "device_id",
             "token",
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
         // check the metadata cache
         assert_eq!(metadata_cache.size().await.unwrap(), 1);
@@ -103,16 +98,16 @@ pub mod pull_config_instances_func {
     async fn n_unknown_instances() {
         // define the caches
         let dir = Dir::create_temp_dir("apply").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            16, dir.file("metadata.json"),
-        ).await.unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            16, dir.subdir("instances"),
-        ).await.unwrap();
+        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"))
+            .await
+            .unwrap();
+        let (instance_cache, _) = ConfigInstanceDataCache::spawn(16, dir.subdir("instances"))
+            .await
+            .unwrap();
 
         // define the mock http client
         let n = 10;
-        let mut http_client= MockConfigInstancesClient::default();
+        let mut http_client = MockConfigInstancesClient::default();
         let mut instance_datas = Vec::new();
         let mut metadatas = Vec::new();
         for i in 0..n {
@@ -133,7 +128,7 @@ pub mod pull_config_instances_func {
             metadatas.push(backend_instance);
         }
         let metadatas_cloned = metadatas.clone();
-        http_client.set_list_all_config_instances(move || { Ok(metadatas_cloned.clone()) });
+        http_client.set_list_all_config_instances(move || Ok(metadatas_cloned.clone()));
 
         // pull the config instances
         pull_config_instances(
@@ -142,7 +137,9 @@ pub mod pull_config_instances_func {
             &http_client,
             "device_id",
             "token",
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
         // check the metadata cache
         assert_eq!(metadata_cache.size().await.unwrap(), n);
@@ -181,21 +178,23 @@ pub mod pull_config_instances_func {
 
         // define the caches
         let dir = Dir::create_temp_dir("apply").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            16, dir.file("metadata.json"),
-        ).await.unwrap();
-        metadata_cache.write(
-            id.clone(), existing_instance.clone(), |_, _| false, true,
-        ).await.unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            16, dir.subdir("instances"),
-        ).await.unwrap();
-        instance_cache.write(
-            id.clone(), instance_data.clone(), |_, _| false, true,
-        ).await.unwrap();
+        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"))
+            .await
+            .unwrap();
+        metadata_cache
+            .write(id.clone(), existing_instance.clone(), |_, _| false, true)
+            .await
+            .unwrap();
+        let (instance_cache, _) = ConfigInstanceDataCache::spawn(16, dir.subdir("instances"))
+            .await
+            .unwrap();
+        instance_cache
+            .write(id.clone(), instance_data.clone(), |_, _| false, true)
+            .await
+            .unwrap();
 
         // define the mock http client
-        let mut http_client= MockConfigInstancesClient::default();
+        let mut http_client = MockConfigInstancesClient::default();
         let result = vec![
             openapi_client::models::BackendConfigInstance {
                 id: id.clone(),
@@ -205,7 +204,7 @@ pub mod pull_config_instances_func {
             }
         ];
         let result_cloned = result.clone();
-        http_client.set_list_all_config_instances(move || { Ok(result_cloned.clone()) });
+        http_client.set_list_all_config_instances(move || Ok(result_cloned.clone()));
 
         // pull the config instances
         pull_config_instances(
@@ -214,7 +213,9 @@ pub mod pull_config_instances_func {
             &http_client,
             "device_id",
             "token",
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
         // check the metadata cache
         assert_eq!(metadata_cache.size().await.unwrap(), 1);
@@ -250,21 +251,23 @@ pub mod pull_config_instances_func {
 
         // define the caches
         let dir = Dir::create_temp_dir("apply").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(
-            16, dir.file("metadata.json"),
-        ).await.unwrap();
-        metadata_cache.write(
-            id.clone(), existing_instance.clone(), |_, _| false, true,
-        ).await.unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(
-            16, dir.subdir("instances"),
-        ).await.unwrap();
-        instance_cache.write(
-            id.clone(), instance_data.clone(), |_, _| false, true,
-        ).await.unwrap();
+        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"))
+            .await
+            .unwrap();
+        metadata_cache
+            .write(id.clone(), existing_instance.clone(), |_, _| false, true)
+            .await
+            .unwrap();
+        let (instance_cache, _) = ConfigInstanceDataCache::spawn(16, dir.subdir("instances"))
+            .await
+            .unwrap();
+        instance_cache
+            .write(id.clone(), instance_data.clone(), |_, _| false, true)
+            .await
+            .unwrap();
 
         // define the mock http client
-        let mut http_client= MockConfigInstancesClient::default();
+        let mut http_client = MockConfigInstancesClient::default();
         let result = vec![
             openapi_client::models::BackendConfigInstance {
                 id: id.clone(),
@@ -274,7 +277,7 @@ pub mod pull_config_instances_func {
             }
         ];
         let result_cloned = result.clone();
-        http_client.set_list_all_config_instances(move || { Ok(result_cloned.clone()) });
+        http_client.set_list_all_config_instances(move || Ok(result_cloned.clone()));
 
         // pull the config instances
         pull_config_instances(
@@ -283,7 +286,9 @@ pub mod pull_config_instances_func {
             &http_client,
             "device_id",
             "token",
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
         // check the metadata cache
         assert_eq!(metadata_cache.size().await.unwrap(), 1);

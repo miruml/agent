@@ -30,12 +30,7 @@ impl fmt::Display for LogicalOperator {
     }
 }
 
-pub fn format_search_clause<K, V, I>(
-    key: K,
-    op: SearchOperator,
-    values: I,
-    not: bool,
-) -> String
+pub fn format_search_clause<K, V, I>(key: K, op: SearchOperator, values: I, not: bool) -> String
 where
     K: fmt::Display,
     V: fmt::Display,
@@ -48,10 +43,7 @@ where
     }
 }
 
-pub fn format_search_group<I>(
-    clauses: I,
-    op: LogicalOperator,
-) -> Option<String>
+pub fn format_search_group<I>(clauses: I, op: LogicalOperator) -> Option<String>
 where
     I: IntoIterator,
     I::Item: fmt::Display,

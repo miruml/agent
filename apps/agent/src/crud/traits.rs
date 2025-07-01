@@ -21,11 +21,7 @@ pub trait Find<K, V> {
     where
         F: Fn(&V) -> bool + Send + Sync + 'static;
 
-    async fn find_one<F>(
-        &self,
-        filter_name: &'static str,
-        filter: F,
-    ) -> Result<V, CrudErr>
+    async fn find_one<F>(&self, filter_name: &'static str, filter: F) -> Result<V, CrudErr>
     where
         F: Fn(&V) -> bool + Send + Sync + 'static;
 }

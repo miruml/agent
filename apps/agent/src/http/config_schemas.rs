@@ -5,17 +5,17 @@ use std::sync::Arc;
 use crate::crypt::sha256;
 use crate::http::client::HTTPClient;
 use crate::http::errors::HTTPErr;
+use crate::http::errors::{ConfigSchemaNotFound, TooManyConfigSchemas};
 use crate::http::pagination::Pagination;
 use crate::http::query::build_query_params;
 use crate::http::search::{
-    LogicalOperator, SearchOperator, format_search_clause, format_search_group,
+    format_search_clause, format_search_group, LogicalOperator, SearchOperator,
 };
-use crate::http::errors::{TooManyConfigSchemas, ConfigSchemaNotFound};
+use crate::trace;
 use openapi_client::models::{
     hash_schema_serialized_request::HashSchemaSerializedRequest, ConfigSchema, ConfigSchemaList,
     ConfigSchemaSearch, SchemaDigestResponse,
 };
-use crate::trace;
 
 #[allow(async_fn_in_trait)]
 pub trait ConfigSchemasExt: Send + Sync {
@@ -75,36 +75,34 @@ impl ConfigSchemasExt for HTTPClient {
     ) -> Result<ConfigSchema, HTTPErr> {
         let search_query = build_search_query(filters.clone());
         let pagination = Pagination {
-            limit: 1, offset: 0,
+            limit: 1,
+            offset: 0,
         };
-        let query_params = build_query_params(
-            search_query.as_deref(),
-            None,
-            &pagination,
-        );
+        let query_params = build_query_params(search_query.as_deref(), None, &pagination);
 
-        let cfg_schemas = self.list_config_schemas(
-            &query_params,
-            token,
-        ).await?;
+        let cfg_schemas = self.list_config_schemas(&query_params, token).await?;
 
         // check that there is only one config schema
         if cfg_schemas.data.len() > 1 {
             let ids = cfg_schemas.data.iter().map(|c| c.id.clone()).collect();
-            return Err(HTTPErr::TooManyConfigSchemas(Box::new(TooManyConfigSchemas {
-                expected_count: 1,
-                found_config_schema_ids: ids,
-                query_params,
-                trace: trace!(),
-            })));
+            return Err(HTTPErr::TooManyConfigSchemas(Box::new(
+                TooManyConfigSchemas {
+                    expected_count: 1,
+                    found_config_schema_ids: ids,
+                    query_params,
+                    trace: trace!(),
+                },
+            )));
         }
 
         match cfg_schemas.data.first() {
             Some(config_schema) => Ok(config_schema.clone()),
-            None => Err(HTTPErr::ConfigSchemaNotFound(Box::new(ConfigSchemaNotFound {
-                query_params,
-                trace: trace!(),
-            }))),
+            None => Err(HTTPErr::ConfigSchemaNotFound(Box::new(
+                ConfigSchemaNotFound {
+                    query_params,
+                    trace: trace!(),
+                },
+            ))),
         }
     }
 

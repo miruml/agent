@@ -23,10 +23,12 @@ pub async fn assert_activated(agent_file: &File) -> Result<(), StorageErr> {
 
     // check the agent is activated
     if !agent.activated {
-        return Err(StorageErr::AgentNotActivatedErr(Box::new(AgentNotActivatedErr {
-            msg: "agent is not activated".to_string(),
-            trace: trace!(),
-        })));
+        return Err(StorageErr::AgentNotActivatedErr(Box::new(
+            AgentNotActivatedErr {
+                msg: "agent is not activated".to_string(),
+                trace: trace!(),
+            },
+        )));
     }
 
     Ok(())

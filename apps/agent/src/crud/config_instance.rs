@@ -1,8 +1,5 @@
 // internal crates
-use crate::models::config_instance::{
-    ConfigInstance,
-    ActivityStatus,
-};
+use crate::models::config_instance::{ActivityStatus, ConfigInstance};
 
 pub fn matches_config_schema_and_activity_status(
     instance: &ConfigInstance,
@@ -14,13 +11,12 @@ pub fn matches_config_schema_and_activity_status(
 
 pub fn matches_filepath_and_activity_status(
     instance: &ConfigInstance,
-    filepath: &str,
+    rel_filepath: &str,
     status: ActivityStatus,
 ) -> bool {
-    let instance_filepath = match &instance.filepath {
+    let instance_rel_filepath = match &instance.relative_filepath {
         Some(filepath) => filepath,
         None => return false,
     };
-    filepath == instance_filepath && status == instance.activity_status
+    rel_filepath == instance_rel_filepath && status == instance.activity_status
 }
-

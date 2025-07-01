@@ -1,43 +1,35 @@
-use config_agent::models::config_instance::{
-    ConfigInstance,
-    ActivityStatus,
-    TargetStatus,
-    ErrorStatus,
-};
 use config_agent::deploy::fsm;
 use config_agent::errors::MiruError;
+use config_agent::models::config_instance::{
+    ActivityStatus, ConfigInstance, ErrorStatus, TargetStatus,
+};
 
 use crate::mock::MockMiruError;
 
 // external crates
-use chrono::{Utc, TimeDelta};
+use chrono::{TimeDelta, Utc};
 
 // ================================= NEXT ACTION =================================== //
 pub mod next_action {
 
     use super::*;
 
-    fn validate_eq_wait_time(
-        expected: TimeDelta,
-        actual: TimeDelta,
-        tol: TimeDelta,
-    ) {
+    fn validate_eq_wait_time(expected: TimeDelta, actual: TimeDelta, tol: TimeDelta) {
         assert!(
             expected - actual > -tol,
             "expected wait time {} is not equal to actual wait time {}",
-            expected, actual
+            expected,
+            actual
         );
         assert!(
             expected - actual < tol,
             "expected wait time {} is not equal to actual wait time {}",
-            expected, actual
+            expected,
+            actual
         );
     }
 
-    fn validate_next_action(
-        expected: fsm::NextAction,
-        actual: fsm::NextAction,
-    ) {
+    fn validate_next_action(expected: fsm::NextAction, actual: fsm::NextAction) {
         // if the expected action is not a wait, then compare the actions
         let expected_wait_time = match expected {
             fsm::NextAction::Wait(expected_wait_time) => expected_wait_time,
@@ -58,7 +50,9 @@ pub mod next_action {
 
         // both actions are a wait, so compare the wait times
         validate_eq_wait_time(
-            expected_wait_time, actual_wait_time, TimeDelta::milliseconds(1),
+            expected_wait_time,
+            actual_wait_time,
+            TimeDelta::milliseconds(1),
         );
     }
 
@@ -70,25 +64,16 @@ pub mod next_action {
         target_removed: fsm::NextAction,
     ) {
         instance.target_status = TargetStatus::Created;
-        validate_next_action(
-            target_created,
-            fsm::next_action(&instance, use_cooldown),
-        );
+        validate_next_action(target_created, fsm::next_action(&instance, use_cooldown));
         instance.target_status = TargetStatus::Deployed;
-        validate_next_action(
-            target_deployed,
-            fsm::next_action(&instance, use_cooldown),
-        );
+        validate_next_action(target_deployed, fsm::next_action(&instance, use_cooldown));
         instance.target_status = TargetStatus::Removed;
-        validate_next_action(
-            target_removed,
-            fsm::next_action(&instance, use_cooldown),
-        );
+        validate_next_action(target_removed, fsm::next_action(&instance, use_cooldown));
     }
 
     #[test]
     fn created_activity_status() {
-        let mut instance= ConfigInstance {
+        let mut instance = ConfigInstance {
             activity_status: ActivityStatus::Created,
             error_status: ErrorStatus::None,
             ..Default::default()
@@ -152,7 +137,7 @@ pub mod next_action {
 
     #[test]
     fn queued_activity_status() {
-        let mut instance= ConfigInstance {
+        let mut instance = ConfigInstance {
             activity_status: ActivityStatus::Queued,
             error_status: ErrorStatus::None,
             ..Default::default()
@@ -348,7 +333,9 @@ fn is_action_required() {
     assert!(!fsm::is_action_required(fsm::NextAction::None));
     assert!(fsm::is_action_required(fsm::NextAction::Deploy));
     assert!(fsm::is_action_required(fsm::NextAction::Remove));
-    assert!(!fsm::is_action_required(fsm::NextAction::Wait(TimeDelta::minutes(1))));
+    assert!(!fsm::is_action_required(fsm::NextAction::Wait(
+        TimeDelta::minutes(1)
+    )));
 }
 
 // ================================= TRANSITIONS =================================== //
@@ -409,10 +396,7 @@ pub mod transitions {
         instances
     }
 
-    fn validate_deploy_transition(
-        instance: ConfigInstance,
-        expected_error_status: ErrorStatus,
-    ) {
+    fn validate_deploy_transition(instance: ConfigInstance, expected_error_status: ErrorStatus) {
         let actual = fsm::deploy(instance.clone());
 
         let expected = ConfigInstance {
@@ -420,7 +404,7 @@ pub mod transitions {
             target_status: instance.target_status,
             activity_status: ActivityStatus::Deployed,
             error_status: expected_error_status,
-            filepath: instance.filepath.clone(),
+            relative_filepath: instance.relative_filepath.clone(),
             patch_id: instance.patch_id.clone(),
             created_by_id: instance.created_by_id.clone(),
             created_at: instance.created_at,
@@ -431,7 +415,12 @@ pub mod transitions {
             attempts: 0,
             cooldown_ends_at: actual.cooldown_ends_at,
         };
-        assert!(expected == actual, "expected:\n{:?}\n actual:\n{:?}\n", expected, actual);
+        assert!(
+            expected == actual,
+            "expected:\n{:?}\n actual:\n{:?}\n",
+            expected,
+            actual
+        );
 
         // check the cooldown
         assert!(instance.cooldown_ends_at < Utc::now());
@@ -464,10 +453,7 @@ pub mod transitions {
         }
     }
 
-    fn validate_remove_transition(
-        instance: ConfigInstance,
-        expected_error_status: ErrorStatus,
-    ) {
+    fn validate_remove_transition(instance: ConfigInstance, expected_error_status: ErrorStatus) {
         let actual = fsm::remove(instance.clone());
 
         let expected = ConfigInstance {
@@ -475,7 +461,7 @@ pub mod transitions {
             target_status: instance.target_status,
             activity_status: ActivityStatus::Removed,
             error_status: expected_error_status,
-            filepath: instance.filepath.clone(),
+            relative_filepath: instance.relative_filepath.clone(),
             patch_id: instance.patch_id.clone(),
             created_by_id: instance.created_by_id.clone(),
             created_at: instance.created_at,
@@ -486,7 +472,12 @@ pub mod transitions {
             attempts: 0,
             cooldown_ends_at: actual.cooldown_ends_at,
         };
-        assert!(expected == actual, "expected:\n{:?}\n actual:\n{:?}\n", expected, actual);
+        assert!(
+            expected == actual,
+            "expected:\n{:?}\n actual:\n{:?}\n",
+            expected,
+            actual
+        );
 
         // check the cooldown
         assert!(instance.cooldown_ends_at < Utc::now());
@@ -505,8 +496,9 @@ pub mod transitions {
         let instances = def_deps_w_error_status(ErrorStatus::Retrying);
         for instance in instances {
             match instance.target_status {
-                TargetStatus::Removed |
-                TargetStatus::Created => validate_remove_transition(instance, ErrorStatus::None),
+                TargetStatus::Removed | TargetStatus::Created => {
+                    validate_remove_transition(instance, ErrorStatus::None)
+                }
                 _ => validate_remove_transition(instance, ErrorStatus::Retrying),
             }
         }
@@ -531,23 +523,20 @@ pub mod transitions {
         } else {
             instance.attempts
         };
-        let expected_err_status = if attempts >= settings.max_attempts
-            || instance.error_status == ErrorStatus::Failed
-        {
-            ErrorStatus::Failed
-        } else {
-            ErrorStatus::Retrying
-        };
-        let actual = fsm::error(
-            instance.clone(), settings, e, increment_attempts,
-        );
+        let expected_err_status =
+            if attempts >= settings.max_attempts || instance.error_status == ErrorStatus::Failed {
+                ErrorStatus::Failed
+            } else {
+                ErrorStatus::Retrying
+            };
+        let actual = fsm::error(instance.clone(), settings, e, increment_attempts);
 
         let expected = ConfigInstance {
             id: instance.id.clone(),
             target_status: instance.target_status,
             activity_status: instance.activity_status,
             error_status: expected_err_status,
-            filepath: instance.filepath.clone(),
+            relative_filepath: instance.relative_filepath.clone(),
             patch_id: instance.patch_id.clone(),
             created_by_id: instance.created_by_id.clone(),
             created_at: instance.created_at,
@@ -558,7 +547,12 @@ pub mod transitions {
             attempts,
             cooldown_ends_at: actual.cooldown_ends_at,
         };
-        assert!(expected == actual, "expected:\n{:?}\n actual:\n{:?}\n", expected, actual);
+        assert!(
+            expected == actual,
+            "expected:\n{:?}\n actual:\n{:?}\n",
+            expected,
+            actual
+        );
 
         // check the cooldown
         let now = Utc::now();
@@ -569,8 +563,18 @@ pub mod transitions {
             settings.max_cooldown_secs,
         );
         let expected_cooldown_ends_at = now + TimeDelta::seconds(cooldown as i64);
-        assert!(actual.cooldown_ends_at <= expected_cooldown_ends_at, "actual:\n{:?}\n expected:\n{:?}\n", actual.cooldown_ends_at, expected_cooldown_ends_at);
-        assert!(actual.cooldown_ends_at >= expected_cooldown_ends_at - TimeDelta::seconds(1), "actual:\n{:?}\n expected:\n{:?}\n", actual.cooldown_ends_at, expected_cooldown_ends_at);
+        assert!(
+            actual.cooldown_ends_at <= expected_cooldown_ends_at,
+            "actual:\n{:?}\n expected:\n{:?}\n",
+            actual.cooldown_ends_at,
+            expected_cooldown_ends_at
+        );
+        assert!(
+            actual.cooldown_ends_at >= expected_cooldown_ends_at - TimeDelta::seconds(1),
+            "actual:\n{:?}\n expected:\n{:?}\n",
+            actual.cooldown_ends_at,
+            expected_cooldown_ends_at
+        );
     }
 
     #[test]

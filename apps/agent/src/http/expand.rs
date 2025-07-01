@@ -1,7 +1,6 @@
 // standard library
 use std::fmt;
 
-
 pub fn format_expand_query<I>(expansions: I) -> Option<String>
 where
     I: IntoIterator,

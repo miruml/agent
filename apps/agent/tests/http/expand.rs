@@ -1,8 +1,6 @@
 // internal crates
 use config_agent::http::expand::format_expand_query;
 
-
-
 pub mod format_expand_query {
     use super::*;
 
@@ -18,7 +16,10 @@ pub mod format_expand_query {
 
         // four queries
         let expand_query = format_expand_query(vec!["test", "test2", "test3", "test4"]).unwrap();
-        assert_eq!(expand_query, "expand[]=test&expand[]=test2&expand[]=test3&expand[]=test4");
+        assert_eq!(
+            expand_query,
+            "expand[]=test&expand[]=test2&expand[]=test3&expand[]=test4"
+        );
     }
 
     #[tokio::test]

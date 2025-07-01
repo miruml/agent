@@ -1,10 +1,8 @@
 // internal crates
-use crate::crypt::sha256;
 use crate::crud::prelude::*;
+use crate::crypt::sha256;
 use crate::http::prelude::*;
-use crate::services::errors::{
-    ServiceErr, ServiceHTTPErr, ServiceCrudErr, ServiceCacheErr,
-};
+use crate::services::errors::{ServiceCacheErr, ServiceCrudErr, ServiceErr, ServiceHTTPErr};
 use crate::storage::digests::{ConfigSchemaDigestCache, ConfigSchemaDigests};
 use crate::trace;
 use openapi_client::models::{
@@ -79,12 +77,7 @@ pub async fn hash_schema<ArgsT: HashSchemaArgsI, HTTPClientT: ConfigSchemasExt>(
     };
     let overwrite = true;
     cache
-        .write(
-            raw_digest,
-            digests,
-            |_, _| false,
-            overwrite,
-        )
+        .write(raw_digest, digests, |_, _| false, overwrite)
         .await
         .map_err(|e| {
             ServiceErr::CacheErr(Box::new(ServiceCacheErr {

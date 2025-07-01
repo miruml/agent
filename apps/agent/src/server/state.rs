@@ -12,11 +12,11 @@ use crate::filesys::{cached_file::CachedFile, file::File, path::PathExt};
 use crate::http::client::HTTPClient;
 use crate::models::agent::Agent;
 use crate::server::errors::{
-    MissingDeviceIDErr, ServerAuthErr, ServerErr, ServerFileSysErr, ServerCacheErr, ServerSyncErr
+    MissingDeviceIDErr, ServerAuthErr, ServerCacheErr, ServerErr, ServerFileSysErr, ServerSyncErr,
 };
 use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
-use crate::storage::digests::ConfigSchemaDigestCache;
 use crate::storage::config_schemas::ConfigSchemaCache;
+use crate::storage::digests::ConfigSchemaDigestCache;
 use crate::storage::layout::StorageLayout;
 use crate::storage::token::Token;
 use crate::sync::syncer::Syncer;
@@ -188,42 +188,30 @@ impl ServerState {
         })?;
 
         // shutdown the caches
-        self.cfg_sch_digest_cache
-            .shutdown()
-            .await
-            .map_err(|e| {
-                ServerErr::CacheErr(Box::new(ServerCacheErr {
-                    source: e,
-                    trace: trace!(),
-                }))
-            })?;
-        self.cfg_inst_metadata_cache
-            .shutdown()
-            .await
-            .map_err(|e| {
-                ServerErr::CacheErr(Box::new(ServerCacheErr {
-                    source: e,
-                    trace: trace!(),
-                }))
-            })?;
-        self.cfg_inst_data_cache
-            .shutdown()
-            .await
-            .map_err(|e| {
-                ServerErr::CacheErr(Box::new(ServerCacheErr {
-                    source: e,
-                    trace: trace!(),
-                }))
-            })?;
-        self.cfg_schema_cache
-            .shutdown()
-            .await
-            .map_err(|e| {
-                ServerErr::CacheErr(Box::new(ServerCacheErr {
-                    source: e,
-                    trace: trace!(),
-                }))
-            })?;
+        self.cfg_sch_digest_cache.shutdown().await.map_err(|e| {
+            ServerErr::CacheErr(Box::new(ServerCacheErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
+        self.cfg_inst_metadata_cache.shutdown().await.map_err(|e| {
+            ServerErr::CacheErr(Box::new(ServerCacheErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
+        self.cfg_inst_data_cache.shutdown().await.map_err(|e| {
+            ServerErr::CacheErr(Box::new(ServerCacheErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
+        self.cfg_schema_cache.shutdown().await.map_err(|e| {
+            ServerErr::CacheErr(Box::new(ServerCacheErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
 
         // shutdown the token manager
         self.token_mngr.shutdown().await.map_err(|e| {
@@ -253,11 +241,13 @@ impl ServerState {
         let device_id = match jwt::extract_device_id(&token.token) {
             Ok(device_id) => device_id,
             Err(e) => {
-                return Err(ServerErr::MissingDeviceIDErr(Box::new(MissingDeviceIDErr {
-                    agent_file_err,
-                    jwt_err: e,
-                    trace: trace!(),
-                })));
+                return Err(ServerErr::MissingDeviceIDErr(Box::new(
+                    MissingDeviceIDErr {
+                        agent_file_err,
+                        jwt_err: e,
+                        trace: trace!(),
+                    },
+                )));
             }
         };
 
