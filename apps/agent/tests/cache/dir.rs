@@ -58,8 +58,8 @@ pub mod concurrent {
 
         // create 10 entries
         for i in 0..10 {
-            let key = format!("key{}", i);
-            let value = format!("value{}", i);
+            let key = format!("key{i}");
+            let value = format!("value{i}");
             cache.write(key, value, |_, _| true, false).await.unwrap();
         }
 
@@ -71,9 +71,9 @@ pub mod concurrent {
 
         // the cache should still have all ten entries
         for i in 0..10 {
-            let key = format!("key{}", i);
+            let key = format!("key{i}");
             let value = cache.read(key).await.unwrap();
-            assert_eq!(value, format!("value{}", i));
+            assert_eq!(value, format!("value{i}"));
         }
     }
 }

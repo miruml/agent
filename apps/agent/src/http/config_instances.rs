@@ -310,5 +310,5 @@ pub fn build_search_query(filters: ConfigInstanceFilters) -> Option<String> {
             error_statuses.not,
         ));
     }
-    format_search_group(clauses, LogicalOperator::And).map(|s| format!("search={}", s))
+    format_search_group(clauses, LogicalOperator::And).map(|s| format!("search={s}"))
 }

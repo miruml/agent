@@ -34,7 +34,7 @@ pub mod new {
                 assert!(matches!(e.source, FileSysErr::PathDoesNotExistErr(_)));
             }
             Err(e) => {
-                panic!("Expected FileSysErr not {:?}", e);
+                panic!("Expected FileSysErr not {e:?}");
             }
             Ok(_) => {
                 panic!("expected error from initializing server state");

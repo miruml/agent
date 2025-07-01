@@ -33,6 +33,7 @@ impl<V> ConcurrentCacheValue for V where V: CacheValue + Send + Sync + 'static {
 type QueryEntryFilter<K, V> = Box<dyn Fn(&CacheEntry<K, V>) -> bool + Send + Sync>;
 type QueryValueFilter<V> = Box<dyn Fn(&V) -> bool + Send + Sync>;
 type IsDirty<K, V> = Box<dyn Fn(Option<&CacheEntry<K, V>>, &V) -> bool + Send + Sync>;
+type CacheEntryMap<K, V> = HashMap<K, CacheEntry<K, V>>;
 
 pub enum WorkerCommand<K, V>
 where
@@ -83,7 +84,7 @@ where
         respond_to: oneshot::Sender<Result<Vec<V>, CacheErr>>,
     },
     EntryMap {
-        respond_to: oneshot::Sender<Result<HashMap<K, CacheEntry<K, V>>, CacheErr>>,
+        respond_to: oneshot::Sender<Result<CacheEntryMap<K, V>, CacheErr>>,
     },
     ValueMap {
         respond_to: oneshot::Sender<Result<HashMap<K, V>, CacheErr>>,

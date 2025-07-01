@@ -296,24 +296,26 @@ pub mod size {
 
         // create 10 entries
         for i in 0..10 {
-            let key = format!("key{}", i);
-            let value = format!("value{}", i);
+            let key = format!("key{i}");
+            let value = format!("value{i}");
             cache.write(key, value, |_, _| true, false).await.unwrap();
         }
         assert_eq!(cache.size().await.unwrap(), 10);
 
         // create 10 more entries
         for i in 0..10 {
-            let key = format!("key{}", i + 10);
-            let value = format!("value{}", i + 10);
+            let j = i + 10;
+            let key = format!("key{j}");
+            let value = format!("value{j}");
             cache.write(key, value, |_, _| true, false).await.unwrap();
         }
         assert_eq!(cache.size().await.unwrap(), 20);
 
         // overwrite 10 entries
         for i in 0..10 {
-            let key = format!("key{}", i + 5);
-            let value = format!("value{}", i + 5);
+            let j = i + 5;
+            let key = format!("key{j}");
+            let value = format!("value{j}");
             cache.write(key, value, |_, _| true, true).await.unwrap();
         }
         assert_eq!(cache.size().await.unwrap(), 20);
@@ -953,8 +955,8 @@ pub mod prune {
 
         // create 10 entries
         for i in 0..10 {
-            let key = format!("key{}", i);
-            let value = format!("value{}", i);
+            let key = format!("key{i}");
+            let value = format!("value{i}");
             cache.write(key, value, |_, _| true, false).await.unwrap();
         }
 
@@ -963,9 +965,9 @@ pub mod prune {
 
         // the cache should still have all ten entries
         for i in 0..10 {
-            let key = format!("key{}", i);
+            let key = format!("key{i}");
             let value = cache.read(key).await.unwrap();
-            assert_eq!(value, format!("value{}", i));
+            assert_eq!(value, format!("value{i}"));
         }
     }
 
@@ -984,8 +986,8 @@ pub mod prune {
 
         // create 20 entries
         for i in 0..20 {
-            let key = format!("key{}", i);
-            let value = format!("value{}", i);
+            let key = format!("key{i}");
+            let value = format!("value{i}");
             cache.write(key, value, |_, _| true, false).await.unwrap();
         }
 
@@ -994,15 +996,15 @@ pub mod prune {
 
         // first 10 entries should be deleted since they are the oldest
         for i in 0..10 {
-            let key = format!("key{}", i);
+            let key = format!("key{i}");
             cache.read(key).await.unwrap_err();
         }
 
         // last 10 entries should still exist
         for i in 10..20 {
-            let key = format!("key{}", i);
+            let key = format!("key{i}");
             let value = cache.read(key).await.unwrap();
-            assert_eq!(value, format!("value{}", i));
+            assert_eq!(value, format!("value{i}"));
         }
     }
 }
@@ -1025,8 +1027,8 @@ pub mod find_entries_where {
 
         // create 10 entries
         for i in 0..10 {
-            let key = format!("key{}", i);
-            let value = format!("value{}", i);
+            let key = format!("key{i}");
+            let value = format!("value{i}");
             cache.write(key, value, |_, _| true, false).await.unwrap();
         }
 
@@ -1077,8 +1079,8 @@ pub mod find_where {
 
         // create 10 entries
         for i in 0..10 {
-            let key = format!("key{}", i);
-            let value = format!("value{}", i);
+            let key = format!("key{i}");
+            let value = format!("value{i}");
             cache.write(key, value, |_, _| true, false).await.unwrap();
         }
 
@@ -1122,8 +1124,8 @@ pub mod find_one_entry_optional {
 
         // create 10 entries
         for i in 0..10 {
-            let key = format!("key{}", i);
-            let value = format!("value{}", i);
+            let key = format!("key{i}");
+            let value = format!("value{i}");
             cache.write(key, value, |_, _| true, false).await.unwrap();
         }
 
@@ -1174,8 +1176,8 @@ pub mod find_one_optional {
 
         // create 10 entries
         for i in 0..10 {
-            let key = format!("key{}", i);
-            let value = format!("value{}", i);
+            let key = format!("key{i}");
+            let value = format!("value{i}");
             cache.write(key, value, |_, _| true, false).await.unwrap();
         }
 
@@ -1232,8 +1234,8 @@ pub mod find_one_entry {
 
         // create 10 entries
         for i in 0..10 {
-            let key = format!("key{}", i);
-            let value = format!("value{}", i);
+            let key = format!("key{i}");
+            let value = format!("value{i}");
             cache.write(key, value, |_, _| true, false).await.unwrap();
         }
 
@@ -1283,8 +1285,8 @@ pub mod find_one {
 
         // create 10 entries
         for i in 0..10 {
-            let key = format!("key{}", i);
-            let value = format!("value{}", i);
+            let key = format!("key{i}");
+            let value = format!("value{i}");
             cache.write(key, value, |_, _| true, false).await.unwrap();
         }
 
@@ -1340,8 +1342,8 @@ pub mod get_dirty_entries {
 
         // create 10 entries
         for i in 0..10 {
-            let key = format!("key{}", i);
-            let value = format!("value{}", i);
+            let key = format!("key{i}");
+            let value = format!("value{i}");
             cache.write(key, value, |_, _| true, false).await.unwrap();
         }
 
@@ -1351,8 +1353,8 @@ pub mod get_dirty_entries {
 
         // add 10 more entries which are not dirty
         for i in 10..20 {
-            let key = format!("key{}", i);
-            let value = format!("value{}", i);
+            let key = format!("key{i}");
+            let value = format!("value{i}");
             cache.write(key, value, |_, _| false, false).await.unwrap();
         }
 

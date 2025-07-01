@@ -189,5 +189,5 @@ pub fn build_search_query(filters: ConfigSchemaFilters) -> Option<String> {
             config_type_slugs.not,
         ));
     }
-    format_search_group(clauses, LogicalOperator::And).map(|s| format!("search={}", s))
+    format_search_group(clauses, LogicalOperator::And).map(|s| format!("search={s}"))
 }

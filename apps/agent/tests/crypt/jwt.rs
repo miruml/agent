@@ -30,11 +30,10 @@ pub mod decode {
     fn payload_not_decodable() {
         let payload = "arglechargle";
         let token = format!(
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.{}.UIqAz_V-ZuZLIHUXwLHw-A2CrXBQrpXnJAMlVfmMXYY",
-            payload
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.{payload}.UIqAz_V-ZuZLIHUXwLHw-A2CrXBQrpXnJAMlVfmMXYY",
         );
         let result = jwt::decode(&token);
-        println!("Result: {:?}", result);
+        println!("Result: {result:?}");
         assert!(result.is_err());
         assert!(matches!(
             result,
@@ -133,11 +132,10 @@ pub mod extract_device_id {
     fn payload_not_decodable() {
         let payload = "arglechargle";
         let token = format!(
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.{}.UIqAz_V-ZuZLIHUXwLHw-A2CrXBQrpXnJAMlVfmMXYY",
-            payload
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.{payload}.UIqAz_V-ZuZLIHUXwLHw-A2CrXBQrpXnJAMlVfmMXYY",
         );
         let result = jwt::extract_device_id(&token).unwrap_err();
-        println!("Result: {:?}", result);
+        println!("Result: {result:?}");
         assert!(matches!(result, CryptErr::ConvertBytesToStringErr { .. }));
     }
 

@@ -51,7 +51,7 @@ pub mod build_post_request {
             )
             .unwrap();
         let response = http_client.send(request.0, &request.1).await.unwrap();
-        println!("response: {:?}", response);
+        println!("response: {response:?}");
         assert!(response.status().is_success());
 
         // Parse and verify the response

@@ -106,7 +106,7 @@ pub async fn read_deployed_config_instance(
     match service.await {
         Ok(config_instance) => (StatusCode::OK, Json(json!(config_instance))),
         Err(e) => {
-            error!("Error reading deployed config instance: {:?}", e);
+            error!("Error reading deployed config instance: {e:?}");
             (e.http_status(), Json(json!(to_error_response(e))))
         }
     }
@@ -118,7 +118,7 @@ fn to_error_response(e: impl MiruError) -> ErrorResponse {
             code: e.code().as_str().to_string(),
             params: e.params(),
             message: e.to_string(),
-            debug_message: format!("{:?}", e),
+            debug_message: format!("{e:?}"),
         }),
     }
 }

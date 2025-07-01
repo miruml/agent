@@ -602,7 +602,7 @@ pub mod find_instances_to_replace_func {
         // create a bunch of instances with that don't match
         for i in 0..10 {
             let instance = ConfigInstance {
-                relative_filepath: Some(format!("/test/filepath{}", i)),
+                relative_filepath: Some(format!("/test/filepath{i}")),
                 activity_status: ActivityStatus::Deployed,
                 target_status: TargetStatus::Removed,
                 ..Default::default()

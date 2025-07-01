@@ -108,7 +108,7 @@ async fn acquire_unix_socket_listener(
                 socket_file: socket_file.clone(),
                 source: std::io::Error::new(
                     std::io::ErrorKind::InvalidData,
-                    format!("Failed to parse LISTEN_FDS: {}", e),
+                    format!("Failed to parse LISTEN_FDS: {e}"),
                 ),
                 trace: trace!(),
             }))

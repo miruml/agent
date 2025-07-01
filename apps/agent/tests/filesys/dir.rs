@@ -188,7 +188,7 @@ pub mod valid_dir_name {
         fn contains_special_characters() {
             let special_chars = "!@#$%^&*()";
             for special_char in special_chars.chars() {
-                let dir_name = format!("is_valid_dir_name{}", special_char);
+                let dir_name = format!("is_valid_dir_name{special_char}");
                 assert!(Dir::is_valid_dir_name(&dir_name));
                 Dir::assert_valid_dir_name(&dir_name).unwrap();
             }

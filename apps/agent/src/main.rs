@@ -42,7 +42,7 @@ async fn main() {
     };
     let result = init(log_options);
     if let Err(e) = result {
-        println!("Failed to initialize logging: {}", e);
+        println!("Failed to initialize logging: {e}");
     }
 
     // run the server
@@ -53,7 +53,7 @@ async fn main() {
     info!("Running the server with options: {:?}", options);
     let result = run(options, await_shutdown_signal()).await;
     if let Err(e) = result {
-        error!("Failed to run the server: {}", e);
+        error!("Failed to run the server: {e}");
     }
 }
 

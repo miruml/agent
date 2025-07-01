@@ -119,7 +119,7 @@ pub mod pull_config_instances_func {
             });
             instance_datas.push(instance_data.clone());
 
-            let id = format!("instance{}", i);
+            let id = format!("instance{i}");
             let backend_instance = openapi_client::models::BackendConfigInstance {
                 id: id.clone(),
                 instance: Some(instance_data.clone()),
@@ -153,7 +153,7 @@ pub mod pull_config_instances_func {
         // check the instance data cache
         assert_eq!(instance_cache.size().await.unwrap(), n);
         for (i, instance_data) in instance_datas.iter().enumerate() {
-            let id = format!("instance{}", i);
+            let id = format!("instance{i}");
             let expected = instance_data.clone();
             let actual = instance_cache.read(id.clone()).await.unwrap();
             assert_eq!(expected, actual);

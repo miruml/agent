@@ -505,7 +505,7 @@ pub mod deploy_with_rollback {
         let n = 10;
         let mut to_deploy_instances = Vec::new();
         for i in 0..n {
-            let filepath = format!("/to/deploy/filepath-{}", i);
+            let filepath = format!("/to/deploy/filepath{i}");
             let instance = ConfigInstance {
                 relative_filepath: Some(filepath.clone()),
                 target_status: TargetStatus::Deployed,
@@ -515,7 +515,7 @@ pub mod deploy_with_rollback {
         }
         let mut to_remove_instances = Vec::new();
         for i in 0..n {
-            let filepath = format!("/to/remove/filepath-{}", i);
+            let filepath = format!("/to/remove/filepath{i}");
             let instance = ConfigInstance {
                 relative_filepath: Some(filepath.clone()),
                 target_status: TargetStatus::Removed,

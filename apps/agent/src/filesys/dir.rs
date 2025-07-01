@@ -72,7 +72,7 @@ impl Dir {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
             .as_nanos();
-        let subdir_name = format!("{}_{}", prefix, timestamp);
+        let subdir_name = format!("{prefix}_{timestamp}");
         let temp_dir = temp_dir.subdir(PathBuf::from(subdir_name));
         temp_dir.create(true).await?;
         Ok(temp_dir)

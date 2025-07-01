@@ -88,15 +88,15 @@ pub fn color_text(text: &str, color: Colors) -> String {
         Colors::Cyan => "36",
         Colors::White => "37",
     };
-    format!("\x1b[{}m{}\x1b[0m", color_code, text)
+    format!("\x1b[{color_code}m{text}\x1b[0m")
 }
 
 pub fn bold_text(text: &str) -> String {
-    format!("\x1b[1m{}\x1b[0m", text)
+    format!("\x1b[1m{text}\x1b[0m")
 }
 
 pub fn color_text_rgb(text: &str, r: u8, g: u8, b: u8) -> String {
-    format!("\x1b[38;2;{};{};{}m{}\x1b[0m", r, g, b, text)
+    format!("\x1b[38;2;{r};{g};{b}m{text}\x1b[0m")
 }
 
 pub fn print_title(title: &str) {
@@ -107,16 +107,16 @@ fn print_boxed_title(title: &str) {
     let width = title.len() + 4;
     let border = "═".repeat(width);
 
-    println!("╔{}╗", border);
-    println!("║  {}  ║", title);
-    println!("╚{}╝", border);
+    println!("╔{border}╗");
+    println!("║  {title}  ║");
+    println!("╚{border}╝");
 }
 
 pub fn print_err_msg(err: Option<String>) {
     println!("Our apologies, but an error occurred during your installation :/ Please send us an email at ben@miruml.com for immediate support.\n");
 
     if let Some(e) = err {
-        println!("Error: {}\n", e);
+        println!("Error: {e}\n");
     }
 }
 

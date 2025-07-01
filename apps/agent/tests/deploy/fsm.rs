@@ -17,15 +17,11 @@ pub mod next_action {
     fn validate_eq_wait_time(expected: TimeDelta, actual: TimeDelta, tol: TimeDelta) {
         assert!(
             expected - actual > -tol,
-            "expected wait time {} is not equal to actual wait time {}",
-            expected,
-            actual
+            "expected wait time {expected} is not equal to actual wait time {actual}",
         );
         assert!(
             expected - actual < tol,
-            "expected wait time {} is not equal to actual wait time {}",
-            expected,
-            actual
+            "expected wait time {expected} is not equal to actual wait time {actual}",
         );
     }
 
@@ -417,9 +413,7 @@ pub mod transitions {
         };
         assert!(
             expected == actual,
-            "expected:\n{:?}\n actual:\n{:?}\n",
-            expected,
-            actual
+            "expected:\n{expected:?}\n actual:\n{actual:?}\n",
         );
 
         // check the cooldown
@@ -474,9 +468,7 @@ pub mod transitions {
         };
         assert!(
             expected == actual,
-            "expected:\n{:?}\n actual:\n{:?}\n",
-            expected,
-            actual
+            "expected:\n{expected:?}\n actual:\n{actual:?}\n",
         );
 
         // check the cooldown
@@ -549,9 +541,7 @@ pub mod transitions {
         };
         assert!(
             expected == actual,
-            "expected:\n{:?}\n actual:\n{:?}\n",
-            expected,
-            actual
+            "expected:\n{expected:?}\n actual:\n{actual:?}\n",
         );
 
         // check the cooldown

@@ -261,7 +261,7 @@ where
             Some(entry) => Ok(entry),
             None => Err(CacheErr::CacheElementNotFound(Box::new(
                 CacheElementNotFound {
-                    msg: format!("Unable to find cache entry with filter: '{}'", filter_name),
+                    msg: format!("Unable to find cache entry with filter: '{filter_name}'"),
                     trace: trace!(),
                 },
             ))),
@@ -277,7 +277,7 @@ where
             Some(value) => Ok(value),
             None => Err(CacheErr::CacheElementNotFound(Box::new(
                 CacheElementNotFound {
-                    msg: format!("Unable to find cache entry with filter: '{}'", filter_name),
+                    msg: format!("Unable to find cache entry with filter: '{filter_name}'"),
                     trace: trace!(),
                 },
             ))),

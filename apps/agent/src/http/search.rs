@@ -50,7 +50,7 @@ where
 {
     let mut iter = clauses.into_iter().peekable();
     iter.peek()?;
-    Some(join(iter, &format!(" {} ", op)))
+    Some(join(iter, &format!(" {op} ")))
 }
 
 pub fn join<I, T>(values: I, sep: &str) -> String
@@ -61,7 +61,7 @@ where
     let mut result = String::new();
     let mut iter = values.into_iter().peekable();
     while let Some(v) = iter.next() {
-        write!(&mut result, "{}", v).unwrap();
+        write!(&mut result, "{v}").unwrap();
         if iter.peek().is_some() {
             result.push_str(sep);
         }

@@ -2,8 +2,6 @@
 use std::collections::HashSet;
 
 // internal crates
-use config_agent::filesys::{dir::Dir, path::PathExt};
-use config_agent::logs::{init, LogOptions};
 use config_agent::models::config_instance::{
     ActivityStatus, ConfigInstance, ErrorStatus, Status, TargetStatus,
 };
@@ -450,7 +448,6 @@ fn serialize_deserialize_config_instance() {
 
 #[tokio::test]
 async fn deserialize_config_instance() {
-    let dir = Dir::create_temp_dir("rollback").await.unwrap();
     // valid deserialization
     let expected = ConfigInstance {
         id: "123".to_string(),

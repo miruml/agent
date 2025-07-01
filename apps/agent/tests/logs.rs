@@ -39,5 +39,5 @@ fn deserialize_log_level() {
         assert_eq!(deserialized, test_case.expected);
     }
 
-    assert!(variants.is_empty(), "variants: {:?}", variants);
+    assert!(variants.is_empty(), "variants: {variants:?}");
 }

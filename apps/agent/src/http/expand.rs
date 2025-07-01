@@ -12,9 +12,9 @@ where
     let mut query = String::new();
     for (i, expansion) in iter.enumerate() {
         if i == 0 {
-            query.push_str(&format!("expand[]={}", expansion));
+            query.push_str(&format!("expand[]={expansion}"));
         } else {
-            query.push_str(&format!("&expand[]={}", expansion));
+            query.push_str(&format!("&expand[]={expansion}"));
         }
     }
     Some(query)

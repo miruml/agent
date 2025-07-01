@@ -12,5 +12,5 @@ pub fn hash_str(s: &str) -> String {
 
 pub fn hash_bytes(bytes: &[u8]) -> String {
     let hash = Sha256::digest(bytes);
-    format!("{:x}", hash)
+    format!("{hash:x}")
 }

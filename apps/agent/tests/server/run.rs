@@ -159,10 +159,10 @@ async fn prune_config_schema_digest_cache() {
     for i in 0..10 {
         cache
             .write(
-                format!("test{}", i),
+                format!("test{i}"),
                 ConfigSchemaDigests {
-                    raw: format!("test{}", i),
-                    resolved: format!("test{}", i),
+                    raw: format!("test{i}"),
+                    resolved: format!("test{i}"),
                 },
                 |_, _| false,
                 false,
@@ -208,13 +208,13 @@ async fn prune_config_schema_cache() {
     for i in 0..10 {
         cache
             .write(
-                format!("test{}", i),
+                format!("test{i}"),
                 ConfigSchema {
-                    id: format!("test{}", i),
+                    id: format!("test{i}"),
                     version: 1,
-                    digest: format!("test{}", i),
-                    config_type_id: format!("test{}", i),
-                    config_type_slug: Some(format!("test{}", i)),
+                    digest: format!("test{i}"),
+                    config_type_id: format!("test{i}"),
+                    config_type_slug: Some(format!("test{i}")),
                     created_at: Utc::now().to_rfc3339(),
                     created_by_id: None,
                 },
@@ -262,9 +262,9 @@ async fn prune_config_instance_metadata_cache() {
     for i in 0..10 {
         cache
             .write(
-                format!("test{}", i),
+                format!("test{i}"),
                 ConfigInstance {
-                    id: format!("test{}", i),
+                    id: format!("test{i}"),
                     target_status: TargetStatus::Created,
                     activity_status: ActivityStatus::Created,
                     error_status: ErrorStatus::None,
@@ -275,7 +275,7 @@ async fn prune_config_instance_metadata_cache() {
                     updated_by_id: None,
                     updated_at: Utc::now(),
                     device_id: "test".to_string(),
-                    config_schema_id: format!("test{}", i),
+                    config_schema_id: format!("test{i}"),
                     attempts: 0,
                     cooldown_ends_at: Utc::now(),
                 },
@@ -323,7 +323,7 @@ async fn prune_config_instance_data_cache() {
     for i in 0..10 {
         cache
             .write(
-                format!("test{}", i),
+                format!("test{i}"),
                 json!({ "test": i }),
                 |_, _| false,
                 false,

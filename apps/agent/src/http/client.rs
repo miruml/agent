@@ -102,7 +102,7 @@ impl HTTPClient {
     fn add_token_to_headers(&self, headers: &mut HeaderMap, token: &str) -> Result<(), HTTPErr> {
         headers.insert(
             AUTHORIZATION,
-            HeaderValue::from_str(&format!("Bearer {}", token)).map_err(|e| {
+            HeaderValue::from_str(&format!("Bearer {token}")).map_err(|e| {
                 HTTPErr::InvalidHeaderValueErr(Box::new(InvalidHeaderValueErr {
                     msg: e.to_string(),
                     source: e,
