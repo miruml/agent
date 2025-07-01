@@ -35,6 +35,42 @@ macro_rules! concurrent_cache_tests {
             }
         }
 
+        pub mod entry_map {
+            use super::*;
+
+            #[tokio::test]
+            async fn test_entry_map() {
+                $crate::cache::concurrent::entry_map::entry_map_impl($spawn_cache).await;
+            }
+        }
+
+        pub mod value_map {
+            use super::*;
+
+            #[tokio::test]
+            async fn test_value_map() {
+                $crate::cache::concurrent::value_map::value_map_impl($spawn_cache).await;
+            }
+        }
+
+        pub mod entries {
+            use super::*;
+
+            #[tokio::test]
+            async fn test_entries() {
+                $crate::cache::concurrent::entries::entries_impl($spawn_cache).await;
+            }
+        }
+
+        pub mod values {
+            use super::*;
+
+            #[tokio::test]
+            async fn test_values() {
+                $crate::cache::concurrent::values::values_impl($spawn_cache).await;
+            }
+        }
+
         pub mod read_entry_optional {
             use super::*;
 
@@ -44,13 +80,8 @@ macro_rules! concurrent_cache_tests {
             }
 
             #[tokio::test]
-            async fn update_last_accessed_false() {
-                $crate::cache::concurrent::read_entry_optional::update_last_accessed_false_impl($spawn_cache).await;
-            }
-
-            #[tokio::test]
-            async fn update_last_accessed_true() {
-                $crate::cache::concurrent::read_entry_optional::update_last_accessed_true_impl($spawn_cache).await;
+            async fn exists() {
+                $crate::cache::concurrent::read_entry_optional::exists_impl($spawn_cache).await;
             }
         }
 
@@ -63,13 +94,8 @@ macro_rules! concurrent_cache_tests {
             }
 
             #[tokio::test]
-            async fn update_last_accessed_false() {
-                $crate::cache::concurrent::read_entry::update_last_accessed_false_impl($spawn_cache).await;
-            }
-
-            #[tokio::test]
-            async fn update_last_accessed_true() {
-                $crate::cache::concurrent::read_entry::update_last_accessed_true_impl($spawn_cache).await;
+            async fn exists() {
+                $crate::cache::concurrent::read_entry::exists_impl($spawn_cache).await;
             }
         }
 
@@ -278,6 +304,123 @@ pub mod size {
     }
 }
 
+pub mod entry_map {
+    use super::*;
+
+    pub async fn entry_map_impl<F, Fut, SingleThreadCacheT>(new_cache: F)
+    where
+        F: Fn() -> Fut + Clone,
+        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        SingleThreadCacheT: SingleThreadCache<String, String>,
+    {
+        let (cache, _) = new_cache().await;
+        let result = cache.entry_map().await.unwrap();
+        assert_eq!(result.len(), 0);
+
+        // create 2 entries
+        let key1 = "key1".to_string();
+        let value1 = "value1".to_string();
+        cache.write(key1.clone(), value1.clone(), |_, _| true, false).await.unwrap();
+        let key2 = "key2".to_string();
+        let value2 = "value2".to_string();
+        cache.write(key2.clone(), value2.clone(), |_, _| true, false).await.unwrap();
+
+        let result = cache.entry_map().await.unwrap();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result.get(&key1).map(|e| e.value.clone()), Some(value1.clone()));
+        assert_eq!(result.get(&key2).map(|e| e.value.clone()), Some(value2.clone()));
+    }
+}
+
+pub mod value_map {
+    use super::*;
+
+    pub async fn value_map_impl<F, Fut, SingleThreadCacheT>(new_cache: F)
+    where
+        F: Fn() -> Fut + Clone,
+        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        SingleThreadCacheT: SingleThreadCache<String, String>,
+    {
+        let (cache, _) = new_cache().await;
+        let result = cache.value_map().await.unwrap();
+        assert_eq!(result.len(), 0);
+
+        // create 2 entries
+        let key1 = "key1".to_string();
+        let value1 = "value1".to_string();
+        cache.write(key1.clone(), value1.clone(), |_, _| true, false).await.unwrap();
+        let key2 = "key2".to_string();
+        let value2 = "value2".to_string();
+        cache.write(key2.clone(), value2.clone(), |_, _| true, false).await.unwrap();
+
+        let result = cache.value_map().await.unwrap();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result.get(&key1), Some(&value1));
+        assert_eq!(result.get(&key2), Some(&value2));
+    }
+}
+
+pub mod entries {
+    use super::*;
+
+    pub async fn entries_impl<F, Fut, SingleThreadCacheT>(new_cache: F)
+    where
+        F: Fn() -> Fut + Clone,
+        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        SingleThreadCacheT: SingleThreadCache<String, String>,
+    {
+        let (cache, _) = new_cache().await;
+        let result = cache.entries().await.unwrap();
+        assert_eq!(result.len(), 0);
+
+        // create 2 entries
+        let key1 = "key1".to_string();
+        let value1 = "value1".to_string();
+        cache.write(key1.clone(), value1.clone(), |_, _| true, false).await.unwrap();
+        let key2 = "key2".to_string();
+        let value2 = "value2".to_string();
+        cache.write(key2.clone(), value2.clone(), |_, _| true, false).await.unwrap();
+
+        let mut result = cache.entries().await.unwrap();
+        result.sort();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].key, key1);
+        assert_eq!(result[0].value, value1);
+        assert_eq!(result[1].key, key2);
+        assert_eq!(result[1].value, value2);
+    }
+}
+
+pub mod values {
+    use super::*;
+
+    pub async fn values_impl<F, Fut, SingleThreadCacheT>(new_cache: F)
+    where
+        F: Fn() -> Fut + Clone,
+        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        SingleThreadCacheT: SingleThreadCache<String, String>,
+    {
+        let (cache, _) = new_cache().await;
+        let result = cache.values().await.unwrap();
+        assert_eq!(result.len(), 0);
+
+        // create 2 entries
+        let key1 = "key1".to_string();
+        let value1 = "value1".to_string();
+        cache.write(key1.clone(), value1.clone(), |_, _| true, false).await.unwrap();
+        let key2 = "key2".to_string();
+        let value2 = "value2".to_string();
+        cache.write(key2.clone(), value2.clone(), |_, _| true, false).await.unwrap();
+
+        let mut result = cache.values().await.unwrap();
+        result.sort();
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0], value1);
+        assert_eq!(result[1], value2);
+    }
+}
+
+
 pub mod read_entry_optional {
     use super::*;
 
@@ -291,13 +434,13 @@ pub mod read_entry_optional {
     {
         let (cache, _) = spawn_cache().await;
         let result = cache
-            .read_entry_optional("1234567890".to_string(), false)
+            .read_entry_optional("1234567890".to_string())
             .await
             .unwrap();
         assert!(result.is_none());
     }
 
-    pub async fn update_last_accessed_true_impl<F, Fut, SingleThreadCacheT>(
+    pub async fn exists_impl<F, Fut, SingleThreadCacheT>(
         spawn_cache: F,
     )
     where
@@ -320,7 +463,7 @@ pub mod read_entry_optional {
         // read the entry
         let before_read = Utc::now();
         let read_entry = cache
-            .read_entry_optional(key.clone(), true)
+            .read_entry_optional(key.clone())
             .await
             .unwrap()
             .unwrap();
@@ -337,43 +480,6 @@ pub mod read_entry_optional {
             created_at: read_entry.created_at,
             last_accessed: read_entry.last_accessed,
             is_dirty: false,
-        };
-        assert_eq!(read_entry, expected_entry);
-    }
-
-    pub async fn update_last_accessed_false_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
-    where
-        F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
-        SingleThreadCacheT: SingleThreadCache<String, String>,
-    {
-        let (cache, _) = spawn_cache().await;
-        let key = "key".to_string();
-        let value = "value".to_string();
-        let before_write = Utc::now();
-        cache
-            .write(key.clone(), value.clone(), |_, _| true, false)
-            .await
-            .unwrap();
-        let read_entry = cache
-            .read_entry_optional(key.clone(), false)
-            .await
-            .unwrap()
-            .unwrap();
-
-        // check the timestamps
-        assert!(read_entry.created_at > before_write);
-        assert_eq!(read_entry.last_accessed, read_entry.created_at);
-
-        // check the values
-        let expected_entry = CacheEntry {
-            key,
-            value,
-            created_at: read_entry.created_at,
-            last_accessed: read_entry.last_accessed,
-            is_dirty: true,
         };
         assert_eq!(read_entry, expected_entry);
     }
@@ -393,14 +499,14 @@ pub mod read_entry {
         let (cache, _) = spawn_cache().await;
         assert!(matches!(
             cache
-                .read_entry("1234567890".to_string(), false)
+                .read_entry("1234567890".to_string())
                 .await
                 .unwrap_err(),
             CacheErr::CacheElementNotFound { .. }
         ));
     }
 
-    pub async fn update_last_accessed_true_impl<F, Fut, SingleThreadCacheT>(
+    pub async fn exists_impl<F, Fut, SingleThreadCacheT>(
         spawn_cache: F,
     )
     where
@@ -423,7 +529,7 @@ pub mod read_entry {
         // read the entry
         let before_read = Utc::now();
         let read_entry = cache
-            .read_entry(key.clone(), true)
+            .read_entry(key.clone())
             .await
             .unwrap();
 
@@ -439,42 +545,6 @@ pub mod read_entry {
             created_at: read_entry.created_at,
             last_accessed: read_entry.last_accessed,
             is_dirty: false,
-        };
-        assert_eq!(read_entry, expected_entry);
-    }
-
-    pub async fn update_last_accessed_false_impl<F, Fut, SingleThreadCacheT>(
-        spawn_cache: F,
-    )
-    where
-        F: Fn() -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
-        SingleThreadCacheT: SingleThreadCache<String, String>,
-    {
-        let (cache, _) = spawn_cache().await;
-        let key = "key".to_string();
-        let value = "value".to_string();
-        let before_write = Utc::now();
-        cache
-            .write(key.clone(), value.clone(), |_, _| true, false)
-            .await
-            .unwrap();
-        let read_entry = cache
-            .read_entry(key.clone(), false)
-            .await
-            .unwrap();
-
-        // check the timestamps
-        assert!(read_entry.created_at > before_write);
-        assert_eq!(read_entry.last_accessed, read_entry.created_at);
-
-        // check the values
-        let expected_entry = CacheEntry {
-            key,
-            value,
-            created_at: read_entry.created_at,
-            last_accessed: read_entry.last_accessed,
-            is_dirty: true,
         };
         assert_eq!(read_entry, expected_entry);
     }
@@ -513,12 +583,13 @@ pub mod read_optional {
             .await
             .unwrap();
         let before_read = Utc::now();
-        let read_value = cache.read_optional(key.clone()).await.unwrap().unwrap();
+        let read_value = cache.read(key.clone()).await.unwrap();
         assert_eq!(read_value, value);
 
         // check the last accessed time was properly set
         let after_read = Utc::now();
-        let entry = cache.read_entry(key.clone(), false).await.unwrap();
+        let entries = cache.entries().await.unwrap();
+        let entry = entries.iter().find(|e| e.key == key).unwrap();
         assert!(entry.last_accessed > before_read);
         assert!(entry.last_accessed < after_read);
     }
@@ -569,7 +640,8 @@ pub mod read {
 
         // check the last accessed time was properly set
         let after_read = Utc::now();
-        let entry = cache.read_entry(key.clone(), false).await.unwrap();
+        let entries = cache.entries().await.unwrap();
+        let entry = entries.iter().find(|e| e.key == key).unwrap();
         assert!(entry.last_accessed > before_read);
         assert!(entry.last_accessed < after_read);
     }
@@ -596,7 +668,8 @@ pub mod write {
             .unwrap();
 
         // check the value
-        let read_entry = cache.read_entry(key.clone(), false).await.unwrap();
+        let entries = cache.entry_map().await.unwrap();
+        let read_entry = entries.get(&key).unwrap();
         assert_eq!(read_entry.value, value);
 
         // check the is_dirty flag
@@ -625,7 +698,8 @@ pub mod write {
             .unwrap();
 
         // check the value
-        let read_entry = cache.read_entry(key.clone(), false).await.unwrap();
+        let entries = cache.entry_map().await.unwrap();
+        let read_entry = entries.get(&key).unwrap();
         assert_eq!(read_entry.value, value);
 
         // check the is_dirty flag
@@ -686,7 +760,8 @@ pub mod write {
             .unwrap();
 
         // check the value
-        let read_entry = cache.read_entry(key.clone(), false).await.unwrap();
+        let entries = cache.entry_map().await.unwrap();
+        let read_entry = entries.get(&key).unwrap();
         assert_eq!(read_entry.value, value);
 
         // check the is_dirty flag
@@ -839,6 +914,8 @@ pub mod find_entries_where {
             cache.write(key, value, |_, _| true, false).await.unwrap();
         }
 
+        let after_write = Utc::now();
+
         // no entries found
         let found = cache.find_entries_where(|entry| entry.key == "key10").await.unwrap();
         assert!(found.is_empty());
@@ -847,6 +924,9 @@ pub mod find_entries_where {
         let found = cache.find_entries_where(|entry| entry.key == "key5").await.unwrap();
         assert_eq!(found.len(), 1);
         assert_eq!(found[0].key, "key5");
+
+        // check the last accessed time was properly set
+        assert!(found[0].last_accessed > after_write);
 
         // multiple entries found
         let found = cache.find_entries_where(|entry| entry.key != "key5").await.unwrap();
@@ -874,6 +954,8 @@ pub mod find_where {
             cache.write(key, value, |_, _| true, false).await.unwrap();
         }
 
+        let after_write = Utc::now();
+
         // no entries found
         let found = cache.find_where(|value| value == "value10").await.unwrap();
         assert!(found.is_empty());
@@ -882,6 +964,11 @@ pub mod find_where {
         let found = cache.find_where(|value| value == "value5").await.unwrap();
         assert_eq!(found.len(), 1);
         assert_eq!(found[0], "value5");
+
+        // check the last accessed time was properly set
+        let entries = cache.entries().await.unwrap();
+        let entry = entries.iter().find(|e| e.value == "value5").unwrap();
+        assert!(entry.last_accessed > after_write);
 
         // multiple entries found
         let found = cache.find_where(|value| value != "value5").await.unwrap();
@@ -909,6 +996,8 @@ pub mod find_one_entry_optional {
             cache.write(key, value, |_, _| true, false).await.unwrap();
         }
 
+        let after_write = Utc::now();
+
         // no entries found
         let found = cache.find_one_entry_optional("key10", |entry| entry.key == "key10").await.unwrap();
         assert!(found.is_none());
@@ -916,7 +1005,10 @@ pub mod find_one_entry_optional {
         // one entry found
         let found = cache.find_one_entry_optional("key5", |entry| entry.key == "key5").await.unwrap();
         assert!(found.is_some());
-        assert_eq!(found.unwrap().key, "key5");
+        assert_eq!(found.clone().unwrap().key, "key5");
+
+        // check the last accessed time was properly set
+        assert!(found.unwrap().last_accessed > after_write);
 
         // multiple entries found
         let err = cache.find_one_entry_optional("not key5", |entry| entry.key != "key5").await.unwrap_err();
@@ -944,6 +1036,8 @@ pub mod find_one_optional {
             cache.write(key, value, |_, _| true, false).await.unwrap();
         }
 
+        let after_write = Utc::now();
+
         // no entries found
         let found = cache.find_one_optional("value10", |value| value == "value10").await.unwrap();
         assert!(found.is_none());
@@ -952,6 +1046,11 @@ pub mod find_one_optional {
         let found = cache.find_one_optional("value5", |value| value == "value5").await.unwrap();
         assert!(found.is_some());
         assert_eq!(found.unwrap(), "value5");
+
+        // check the last accessed time was properly set
+        let entries = cache.entries().await.unwrap();
+        let entry = entries.iter().find(|e| e.value == "value5").unwrap();
+        assert!(entry.last_accessed > after_write);
 
         // multiple entries found
         let err = cache.find_one_optional("not value5", |value| value != "value5").await.unwrap_err();
@@ -983,6 +1082,8 @@ pub mod find_one_entry {
             cache.write(key, value, |_, _| true, false).await.unwrap();
         }
 
+        let after_write = Utc::now();
+
         // no entries found
         let error = cache.find_one_entry("key10", |entry| entry.key == "key10").await.unwrap_err();
         assert!(matches!(error, CacheErr::CacheElementNotFound { .. }));
@@ -990,6 +1091,9 @@ pub mod find_one_entry {
         // one entry found
         let found = cache.find_one_entry("key5", |entry| entry.key == "key5").await.unwrap();
         assert_eq!(found.key, "key5");
+
+        // check the last accessed time was properly set
+        assert!(found.last_accessed > after_write);
 
         // multiple entries found
         let err = cache.find_one_entry("not key5", |entry| entry.key != "key5").await.unwrap_err();
@@ -1017,6 +1121,8 @@ pub mod find_one {
             cache.write(key, value, |_, _| true, false).await.unwrap();
         }
 
+        let after_write = Utc::now();
+
         // no entries found
         let error = cache.find_one("value10", |value| value == "value10").await.unwrap_err();
         assert!(matches!(error, CrudErr::CacheErr(ref e) if matches!(e.source, CacheErr::CacheElementNotFound { .. })));
@@ -1024,6 +1130,11 @@ pub mod find_one {
         // one entry found
         let found = cache.find_one("value5", |value| value == "value5").await.unwrap();
         assert_eq!(found, "value5");
+
+        // check the last accessed time was properly set
+        let entries = cache.entries().await.unwrap();
+        let entry = entries.iter().find(|e| e.value == "value5").unwrap();
+        assert!(entry.last_accessed > after_write);
 
         // multiple entries found
         let err = cache.find_one("not value5", |value| value != "value5").await.unwrap_err();
@@ -1052,12 +1163,6 @@ pub mod get_dirty_entries {
         // get dirty entries
         let dirty_entries = cache.get_dirty_entries().await.unwrap();
         assert_eq!(dirty_entries.len(), 10);
-        for (i, dirty_entry) in dirty_entries.iter().enumerate() {
-            let key = format!("key{}", i);
-            let value = format!("value{}", i);
-            assert_eq!(dirty_entry.key, key);
-            assert_eq!(dirty_entry.value, value);
-        }
 
         // add 10 more entries which are not dirty
         for i in 10..20 {
@@ -1069,11 +1174,5 @@ pub mod get_dirty_entries {
         // dirty entries should be the same as before
         let dirty_entries = cache.get_dirty_entries().await.unwrap();
         assert_eq!(dirty_entries.len(), 10);
-        for (i, dirty_entry) in dirty_entries.iter().enumerate() {
-            let key = format!("key{}", i);
-            let value = format!("value{}", i);
-            assert_eq!(dirty_entry.key, key);
-            assert_eq!(dirty_entry.value, value);
-        }
     }
 }

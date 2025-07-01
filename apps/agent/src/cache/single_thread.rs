@@ -13,7 +13,7 @@ use crate::cache::{
 use crate::trace;
 
 // external crates
-use chrono::Utc;
+use chrono::{Utc, DateTime};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use tracing::info;
@@ -57,10 +57,19 @@ where
     async fn value_map(&self) -> Result<HashMap<K, V>, CacheErr>;
 
 // -------------------------------- TRAIT METHODS ---------------------------------- //
+    async fn set_last_accessed(
+        &mut self,
+        entry: &mut CacheEntry<K, V>,
+        last_accessed: DateTime<Utc>,
+    ) -> Result<(), CacheErr> {
+        entry.last_accessed = last_accessed;
+        self.write_entry_impl(entry, true).await?;
+        Ok(())
+    }
+
     async fn read_entry_optional(
         &mut self,
         key: &K,
-        update_last_accessed: bool,
     ) -> Result<Option<CacheEntry<K, V>>, CacheErr> {
         let mut entry = match self.read_entry_impl(key).await? {
             Some(entry) => entry,
@@ -68,10 +77,7 @@ where
         };
 
         // update the last accessed time
-        if update_last_accessed {
-            entry.last_accessed = Utc::now();
-            self.write_entry(&entry, true).await?;
-        }
+        self.set_last_accessed(&mut entry, Utc::now()).await?;
 
         Ok(Some(entry))
     }
@@ -79,9 +85,8 @@ where
     async fn read_entry(
         &mut self,
         key: &K,
-        update_last_accessed: bool,
     ) -> Result<CacheEntry<K, V>, CacheErr> {
-        let result = self.read_entry_optional(key, update_last_accessed).await?;
+        let result = self.read_entry_optional(key).await?;
         match result {
             Some(entry) => Ok(entry),
             None => Err(CacheErr::CacheElementNotFound(Box::new(CacheElementNotFound {
@@ -92,7 +97,7 @@ where
     }
 
     async fn read_optional(&mut self, key: &K) -> Result<Option<V>, CacheErr> {
-        let entry = self.read_entry_optional(key, true).await?;
+        let entry = self.read_entry_optional(key).await?;
         match entry {
             Some(entry) => Ok(Some(entry.value)),
             None => Ok(None),
@@ -100,7 +105,7 @@ where
     }
 
     async fn read(&mut self, key: &K) -> Result<V, CacheErr> {
-        Ok(self.read_entry(key, true).await?.value)
+        Ok(self.read_entry(key).await?.value)
     }
 
     async fn write_entry(
@@ -123,7 +128,7 @@ where
         F: Fn(Option<&CacheEntry<K, V>>, &V) -> bool + Send + Sync,
     {
         // if the entry already exists, keep the original created_at time
-        let (created_at, last_accessed, is_dirty) = match self.read_entry_optional(&key, false).await? {
+        let (created_at, last_accessed, is_dirty) = match self.read_entry_optional(&key).await? {
             Some(existing_entry) => (
                 existing_entry.created_at,
                 Utc::now(),
@@ -180,38 +185,45 @@ where
     }
 
     async fn find_entries_where<F>(
-        &self,
+        &mut self,
         filter: F,
     ) -> Result<Vec<CacheEntry<K, V>>, CacheErr>
     where
         F: Fn(&CacheEntry<K, V>) -> bool,
     {
         let entries = self.entries().await?;
-        let filtered_entries = entries
+        let mut filtered_entries: Vec<CacheEntry<K, V>> = entries
             .into_iter()
             .filter(|entry| filter(entry))
             .collect();
+
+        // update the last accessed time
+        for entry in filtered_entries.iter_mut() {
+            self.set_last_accessed(entry, Utc::now()).await?;
+        }
+
         Ok(filtered_entries)
     }
 
     async fn find_where<F>(
-        &self,
+        &mut self,
         filter: F,
     ) -> Result<Vec<V>, CacheErr>
     where
         F: Fn(&V) -> bool,
     {
-        let entries = self.entries().await?;
-        let filtered_entries = entries
+        let entries = self.find_entries_where(
+            |entry| filter(&entry.value),
+        ).await?;
+        let values = entries
             .into_iter()
-            .filter(|entry| filter(&entry.value))
             .map(|entry| entry.value)
             .collect();
-        Ok(filtered_entries)
+        Ok(values)
     }
 
     async fn find_one_entry_optional<F>(
-        &self,
+        &mut self,
         filter_name: &str,
         filter: F,
     ) -> Result<Option<CacheEntry<K, V>>, CacheErr>
@@ -231,7 +243,7 @@ where
     }
 
     async fn find_one_optional<F>(
-        &self,
+        &mut self,
         filter_name: &str,
         filter: F,
     ) -> Result<Option<V>, CacheErr>
@@ -251,14 +263,17 @@ where
     }
 
     async fn find_one_entry<F>(
-        &self,
+        &mut self,
         filter_name: &str,
         filter: F,
     ) -> Result<CacheEntry<K, V>, CacheErr>
     where
         F: Fn(&CacheEntry<K, V>) -> bool,
     {
-        let entry = self.find_one_entry_optional(filter_name, filter).await?;
+        let entry = self.find_one_entry_optional(
+            filter_name,
+            filter,
+        ).await?;
         match entry {
             Some(entry) => Ok(entry),
             None => Err(CacheErr::CacheElementNotFound(Box::new(CacheElementNotFound {
@@ -269,7 +284,7 @@ where
     }
 
     async fn find_one<F>(
-        &self,
+        &mut self,
         filter_name: &str,
         filter: F,
     ) -> Result<V, CacheErr>

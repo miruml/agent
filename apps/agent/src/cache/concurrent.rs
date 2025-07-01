@@ -1,4 +1,5 @@
 // standard library
+use std::collections::HashMap;
 use std::fmt::Debug;
 
 // internal crates
@@ -43,12 +44,10 @@ where
     },
     ReadEntryOptional {
         key: K,
-        update_last_accessed: bool,
         respond_to: oneshot::Sender<Result<Option<CacheEntry<K, V>>, CacheErr>>,
     },
     ReadEntry {
         key: K,
-        update_last_accessed: bool,
         respond_to: oneshot::Sender<Result<CacheEntry<K, V>, CacheErr>>,
     },
     ReadOptional {
@@ -76,6 +75,18 @@ where
     },
     Size {
         respond_to: oneshot::Sender<Result<usize, CacheErr>>,
+    },
+    Entries {
+        respond_to: oneshot::Sender<Result<Vec<CacheEntry<K, V>>, CacheErr>>,
+    },
+    Values {
+        respond_to: oneshot::Sender<Result<Vec<V>, CacheErr>>,
+    },
+    EntryMap {
+        respond_to: oneshot::Sender<Result<HashMap<K, CacheEntry<K, V>>, CacheErr>>,
+    },
+    ValueMap {
+        respond_to: oneshot::Sender<Result<HashMap<K, V>, CacheErr>>,
     },
     FindEntriesWhere {
         filter: QueryEntryFilter<K, V>,
@@ -138,12 +149,11 @@ where
                 }
                 WorkerCommand::ReadEntryOptional {
                     key,
-                    update_last_accessed,
                     respond_to,
                 } => {
                     let result = self
                         .cache
-                        .read_entry_optional(&key, update_last_accessed)
+                        .read_entry_optional(&key)
                         .await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to read optional cache entry: {:?}", e);
@@ -151,10 +161,9 @@ where
                 }
                 WorkerCommand::ReadEntry {
                     key,
-                    update_last_accessed,
                     respond_to,
                 } => {
-                    let result = self.cache.read_entry(&key, update_last_accessed).await;
+                    let result = self.cache.read_entry(&key).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to read cache entry: {:?}", e);
                     }
@@ -204,11 +213,37 @@ where
                         error!("Actor failed to get cache size: {:?}", e);
                     }
                 }
+                WorkerCommand::Entries { respond_to } => {
+                    let result = self.cache.entries().await;
+                    if let Err(e) = respond_to.send(result) {
+                        error!("Actor failed to get cache entries: {:?}", e);
+                    }
+                }
+                WorkerCommand::Values { respond_to } => {
+                    let result = self.cache.values().await;
+                    if let Err(e) = respond_to.send(result) {
+                        error!("Actor failed to get cache values: {:?}", e);
+                    }
+                }
+                WorkerCommand::EntryMap { respond_to } => {
+                    let result = self.cache.entry_map().await;
+                    if let Err(e) = respond_to.send(result) {
+                        error!("Actor failed to get cache entry map: {:?}", e);
+                    }
+                }
+                WorkerCommand::ValueMap { respond_to } => { 
+                    let result = self.cache.value_map().await;
+                    if let Err(e) = respond_to.send(result) {
+                        error!("Actor failed to get cache value map: {:?}", e);
+                    }
+                }
                 WorkerCommand::FindEntriesWhere {
                     filter,
                     respond_to,
                 } => {
-                    let result = self.cache.find_entries_where(filter).await;
+                    let result = self.cache.find_entries_where(
+                        filter,
+                    ).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to find all cache entries: {:?}", e);
                     }
@@ -217,7 +252,9 @@ where
                     filter,
                     respond_to,
                 } => {
-                    let result = self.cache.find_where(filter).await;
+                    let result = self.cache.find_where(
+                        filter,
+                    ).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to find all cache entries: {:?}", e);
                     }
@@ -227,7 +264,10 @@ where
                     filter,
                     respond_to,
                 } => {
-                    let result = self.cache.find_one_entry_optional(filter_name, filter).await;
+                    let result = self.cache.find_one_entry_optional(
+                        filter_name,
+                        filter,
+                    ).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to find one cache entry: {:?}", e);
                     }
@@ -237,7 +277,10 @@ where
                     filter,
                     respond_to,
                 } => {
-                    let result = self.cache.find_one_optional(filter_name, filter).await;
+                    let result = self.cache.find_one_optional(
+                        filter_name,
+                        filter,
+                    ).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to find one cache entry: {:?}", e);
                     }
@@ -247,7 +290,10 @@ where
                     filter,
                     respond_to,
                 } => {
-                    let result = self.cache.find_one_entry(filter_name, filter).await;
+                    let result = self.cache.find_one_entry(
+                        filter_name,
+                        filter,
+                    ).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to find one cache entry: {:?}", e);
                     }
@@ -257,7 +303,10 @@ where
                     filter,
                     respond_to,
                 } => {
-                    let result = self.cache.find_one(filter_name, filter).await;
+                    let result = self.cache.find_one(
+                        filter_name,
+                        filter,
+                    ).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to find one cache entry: {:?}", e);
                     }
@@ -327,13 +376,11 @@ where
     pub async fn read_entry_optional(
         &self,
         key: K,
-        update_last_accessed: bool,
     ) -> Result<Option<CacheEntry<K, V>>, CacheErr> {
         let (send, recv) = oneshot::channel();
         self.sender
             .send(WorkerCommand::ReadEntryOptional {
                 key,
-                update_last_accessed,
                 respond_to: send,
             })
             .await
@@ -354,13 +401,11 @@ where
     pub async fn read_entry(
         &self,
         key: K,
-        update_last_accessed: bool,
     ) -> Result<CacheEntry<K, V>, CacheErr> {
         let (send, recv) = oneshot::channel();
         self.sender
             .send(WorkerCommand::ReadEntry {
                 key,
-                update_last_accessed,
                 respond_to: send,
             })
             .await
@@ -504,6 +549,82 @@ where
         let (send, recv) = oneshot::channel();
         self.sender
             .send(WorkerCommand::Size { respond_to: send })
+            .await
+            .map_err(|e| {
+                CacheErr::SendActorMessageErr(Box::new(SendActorMessageErr {
+                    source: Box::new(e),
+                    trace: trace!(),
+                }))
+            })?;
+        recv.await.map_err(|e| {
+            CacheErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
+                source: Box::new(e),
+                trace: trace!(),
+            }))
+        })?
+    }
+
+    pub async fn entries(&self) -> Result<Vec<CacheEntry<K, V>>, CacheErr> {
+        let (send, recv) = oneshot::channel();
+        self.sender
+            .send(WorkerCommand::Entries { respond_to: send })
+            .await
+            .map_err(|e| {
+                CacheErr::SendActorMessageErr(Box::new(SendActorMessageErr {
+                    source: Box::new(e),
+                    trace: trace!(),
+                }))
+            })?;
+        recv.await.map_err(|e| {
+            CacheErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
+                source: Box::new(e),
+                trace: trace!(),
+            }))
+        })?
+    }
+
+    pub async fn values(&self) -> Result<Vec<V>, CacheErr> {
+        let (send, recv) = oneshot::channel();
+        self.sender
+            .send(WorkerCommand::Values { respond_to: send })
+            .await
+            .map_err(|e| {
+                CacheErr::SendActorMessageErr(Box::new(SendActorMessageErr {
+                    source: Box::new(e),
+                    trace: trace!(),
+                }))
+            })?;
+        recv.await.map_err(|e| {
+            CacheErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
+                source: Box::new(e),
+                trace: trace!(),
+            }))
+        })?
+    }
+
+    pub async fn entry_map(&self) -> Result<HashMap<K, CacheEntry<K, V>>, CacheErr> {
+        let (send, recv) = oneshot::channel();
+        self.sender
+            .send(WorkerCommand::EntryMap { respond_to: send })
+            .await
+            .map_err(|e| {
+                CacheErr::SendActorMessageErr(Box::new(SendActorMessageErr {
+                    source: Box::new(e),
+                    trace: trace!(),
+                }))
+            })?;
+        recv.await.map_err(|e| {
+            CacheErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
+                source: Box::new(e),
+                trace: trace!(),
+            }))
+        })?
+    }
+
+    pub async fn value_map(&self) -> Result<HashMap<K, V>, CacheErr> {
+        let (send, recv) = oneshot::channel();
+        self.sender
+            .send(WorkerCommand::ValueMap { respond_to: send })
             .await
             .map_err(|e| {
                 CacheErr::SendActorMessageErr(Box::new(SendActorMessageErr {
@@ -722,7 +843,10 @@ where
     K: ConcurrentCacheKey,
     V: ConcurrentCacheValue,
 {
-    async fn find_where<F>(&self, filter: F) -> Result<Vec<V>, CrudErr>
+    async fn find_where<F>(
+        &self,
+        filter: F,
+    ) -> Result<Vec<V>, CrudErr>
     where
         F: Fn(&V) -> bool + Send + Sync + 'static,
     {
@@ -740,7 +864,10 @@ where
     where
         F: Fn(&V) -> bool + Send + Sync + 'static,
     {
-        self.find_one_optional_impl(filter_name, filter).await.map_err(|e| CrudErr::CacheErr(Box::new(CrudCacheErr {
+        self.find_one_optional_impl(
+            filter_name,
+            filter,
+        ).await.map_err(|e| CrudErr::CacheErr(Box::new(CrudCacheErr {
             source: e,
             trace: trace!(),
         })))
@@ -754,7 +881,10 @@ where
     where
         F: Fn(&V) -> bool + Send + Sync + 'static,
     {
-        self.find_one_impl(filter_name, filter).await.map_err(|e| CrudErr::CacheErr(Box::new(CrudCacheErr {
+        self.find_one_impl(
+            filter_name,
+            filter,
+        ).await.map_err(|e| CrudErr::CacheErr(Box::new(CrudCacheErr {
             source: e,
             trace: trace!(),
         })))
