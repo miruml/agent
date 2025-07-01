@@ -78,7 +78,7 @@ async fn fetch_unremoved_instances<HTTPClientT: ConfigInstancesExt>(
 
     let filters = ConfigInstanceFiltersBuilder::new(
         device_id.to_string(),
-    ).with_activity_status_filters(ActivityStatusFilter {
+    ).with_activity_status_filter(ActivityStatusFilter {
         not: true,
         op: SearchOperator::Equals,
         val: vec![ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_REMOVED],
@@ -150,7 +150,7 @@ async fn fetch_instances_with_expanded_instance_data<HTTPClientT: ConfigInstance
     // read the unknown config instances from the server with instance data expanded
     let filters = ConfigInstanceFiltersBuilder::new(
         device_id.to_string(),
-    ).with_id_filters(IDFilter {
+    ).with_id_filter(IDFilter {
         not: false,
         op: SearchOperator::Equals,
         val: ids,

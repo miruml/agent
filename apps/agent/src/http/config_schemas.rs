@@ -6,6 +6,7 @@ use crate::crypt::sha256;
 use crate::http::client::HTTPClient;
 use crate::http::errors::HTTPErr;
 use crate::http::pagination::Pagination;
+use crate::http::query::build_query_params;
 use crate::http::search::{
     LogicalOperator, SearchOperator, format_search_clause, format_search_group,
 };
@@ -76,7 +77,11 @@ impl ConfigSchemasExt for HTTPClient {
         let pagination = Pagination {
             limit: 1, offset: 0,
         };
-        let query_params = build_query_params(search_query, &pagination);
+        let query_params = build_query_params(
+            search_query.as_deref(),
+            None,
+            &pagination,
+        );
 
         let cfg_schemas = self.list_config_schemas(
             &query_params,
@@ -147,34 +152,11 @@ impl ConfigSchemasExt for Arc<HTTPClient> {
     }
 }
 
-// ================================ QUERY PARAMS ================================ //
-fn build_query_params(
-    search_query: Option<String>,
-    pagination: &Pagination,
-) -> String {
-    let query = format!(
-        "?limit={}&offset={}",
-        pagination.limit,
-        pagination.offset,
-    );
-    if let Some(search_query) = search_query {
-        format!("{}&search={}", query, search_query)
-    } else {
-        query
-    }
-}
-
 // ================================ SEARCH FILTERS ================================ //
 #[derive(Debug, Clone)]
 pub struct ConfigSchemaFilters {
     pub digests: Option<DigestFilter>,
     pub config_type_slugs: Option<ConfigTypeSlugFilter>,
-}
-
-impl ConfigSchemaFilters {
-    pub fn has_filters(&self) -> bool {
-        self.digests.is_some() || self.config_type_slugs.is_some()
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -191,7 +173,7 @@ pub struct ConfigTypeSlugFilter {
     pub val: Vec<String>,
 }
 
-fn build_search_query(filters: ConfigSchemaFilters) -> Option<String> {
+pub fn build_search_query(filters: ConfigSchemaFilters) -> Option<String> {
     let mut clauses: Vec<String> = Vec::new();
     if let Some(digests) = filters.digests {
         clauses.push(format_search_clause(

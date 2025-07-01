@@ -7,6 +7,7 @@ use crate::http::client::HTTPClient;
 use crate::http::errors::HTTPErr;
 use crate::http::expand::format_expand_query;
 use crate::http::pagination::{MAX_PAGINATE_LIMIT, Pagination};
+use crate::http::query::build_query_params;
 use crate::http::search::{
     LogicalOperator, SearchOperator, format_search_clause, format_search_group,
 };
@@ -19,8 +20,6 @@ use openapi_client::models::{
     ConfigInstanceTargetStatus,
     UpdateConfigInstanceRequest,
 };
-
-// external crates
 
 #[allow(async_fn_in_trait)]
 pub trait ConfigInstancesExt: Send + Sync {
@@ -179,26 +178,6 @@ impl ConfigInstancesExt for Arc<HTTPClient> {
     }
 }
 
-// ================================ QUERY PARAMS ================================ //
-fn build_query_params(
-    search_query: Option<&str>,
-    expand_query: Option<&str>,
-    pagination: &Pagination,
-) -> String
-{
-    let mut query_params = format!(
-        "?limit={}&offset={}",
-        pagination.limit, pagination.offset,
-    );
-    if let Some(search_query) = search_query {
-        query_params.push_str(&format!("&{}", search_query));
-    }
-    if let Some(expand_query) = expand_query {
-        query_params.push_str(&format!("&{}", expand_query));
-    }
-    query_params
-}
-
 // ================================ SEARCH FILTERS ================================ //
 pub struct ConfigInstanceFilters {
     pub device_id: String,
@@ -225,28 +204,28 @@ impl ConfigInstanceFiltersBuilder {
         } }
     }
 
-    pub fn with_id_filters(mut self, id_filters: IDFilter) -> Self {
-        self.filters.ids = Some(id_filters);
+    pub fn with_id_filter(mut self, id_filter: IDFilter) -> Self {
+        self.filters.ids = Some(id_filter);
         self
     }
 
-    pub fn with_config_schema_id_filters(mut self, config_schema_id_filters: ConfigSchemaIDFilter) -> Self {
-        self.filters.config_schema_ids = Some(config_schema_id_filters);
+    pub fn with_config_schema_id_filter(mut self, config_schema_id_filter: ConfigSchemaIDFilter) -> Self {
+        self.filters.config_schema_ids = Some(config_schema_id_filter);
         self
     }
 
-    pub fn with_target_status_filters(mut self, target_status_filters: TargetStatusFilter) -> Self {
-        self.filters.target_statuses = Some(target_status_filters);
+    pub fn with_target_status_filter(mut self, target_status_filter: TargetStatusFilter) -> Self {
+        self.filters.target_statuses = Some(target_status_filter);
         self
     }
 
-    pub fn with_activity_status_filters(mut self, activity_status_filters: ActivityStatusFilter) -> Self {
-        self.filters.activity_statuses = Some(activity_status_filters);
+    pub fn with_activity_status_filter(mut self, activity_status_filter: ActivityStatusFilter) -> Self {
+        self.filters.activity_statuses = Some(activity_status_filter);
         self
     }
 
-    pub fn with_error_status_filters(mut self, error_status_filters: ErrorStatusFilter) -> Self {
-        self.filters.error_statuses = Some(error_status_filters);
+    pub fn with_error_status_filter(mut self, error_status_filter: ErrorStatusFilter) -> Self {
+        self.filters.error_statuses = Some(error_status_filter);
         self
     }
 
@@ -285,7 +264,7 @@ pub struct ErrorStatusFilter {
     pub val: Vec<ConfigInstanceErrorStatus>,
 }
 
-fn build_search_query(filters: ConfigInstanceFilters) -> Option<String> {
+pub fn build_search_query(filters: ConfigInstanceFilters) -> Option<String> {
     // build the search query
     let mut clauses: Vec<String> = Vec::new();
     if let Some(ids) = filters.ids {

@@ -7,4 +7,5 @@ pub mod errors;
 pub mod expand;
 pub mod pagination;
 pub mod prelude;
+pub mod query;
 pub mod search;
