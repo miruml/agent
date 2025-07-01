@@ -9,7 +9,7 @@ pub mod logs;
 pub mod models;
 pub mod mock;
 pub mod server;
-// pub mod services;
+pub mod services;
 pub mod storage;
 pub mod sync;
 pub mod test_utils;

@@ -3,11 +3,11 @@ use std::time::{Duration, Instant};
 
 // internal crates
 use config_agent::crypt::sha256;
+use config_agent::crud::prelude::*;
 use config_agent::filesys::dir::Dir;
 use config_agent::http::client::HTTPClient;
 use config_agent::http::errors::{HTTPErr, MockErr};
 use config_agent::services::config_schemas::hash;
-use config_agent::services::errors::{ServiceErr, ServiceHTTPErr};
 use config_agent::storage::digests::{ConfigSchemaDigestCache, ConfigSchemaDigests};
 use config_agent::trace;
 use openapi_client::models::SchemaDigestResponse;
@@ -20,6 +20,8 @@ use crate::http::mock::MockConfigSchemasClient;
 use serde_json::json;
 
 pub mod errors {
+    use config_agent::errors::MiruError;
+
     use super::*;
 
     #[tokio::test]
@@ -27,15 +29,15 @@ pub mod errors {
         let dir = Dir::create_temp_dir("pulled_from_server_resp")
             .await
             .unwrap();
-        let (cache, _) = ConfigSchemaDigestCache::spawn(dir);
+        let (cache, _) = ConfigSchemaDigestCache::spawn(32, dir.file("cache.json")).await.unwrap();
 
         // create the mock
         let mut mock_client = MockConfigSchemasClient::default();
         let server_resp = || -> Result<SchemaDigestResponse, HTTPErr> {
-            Err(HTTPErr::MockErr(MockErr {
+            Err(HTTPErr::MockErr(Box::new(MockErr {
                 is_network_connection_error: true,
                 trace: trace!(),
-            }))
+            })))
         };
         mock_client.set_hash_schema(server_resp);
 
@@ -53,17 +55,8 @@ pub mod errors {
         };
 
         // run the test
-        let result = hash::hash_schema(&args, &cache, &mock_client, "doesntmatter").await;
-        assert!(matches!(
-            result,
-            Err(ServiceErr::HTTPErr(ServiceHTTPErr {
-                source: HTTPErr::MockErr(MockErr {
-                    is_network_connection_error: true,
-                    trace: _,
-                }),
-                trace: _,
-            }))
-        ));
+        let result = hash::hash_schema(&args, &cache, &mock_client, "doesntmatter").await.unwrap_err();
+        assert!(result.is_network_connection_error());
     }
 }
 
@@ -77,7 +70,7 @@ pub mod success {
         let dir = Dir::create_temp_dir("pulled_from_server_resp")
             .await
             .unwrap();
-        let (cache, _) = ConfigSchemaDigestCache::spawn(dir);
+        let (cache, _) = ConfigSchemaDigestCache::spawn(32, dir.file("cache.json")).await.unwrap();
 
         // define the schema
         let schema = json!({
@@ -100,7 +93,7 @@ pub mod success {
             resolved: resolved_digest.to_string(),
         };
         cache
-            .write(raw_digest.clone(), digests, false)
+            .write(raw_digest.clone(), digests, |_,_| false, false)
             .await
             .unwrap();
 
@@ -128,7 +121,7 @@ pub mod success {
         let dir = Dir::create_temp_dir("pulled_from_server_resp")
             .await
             .unwrap();
-        let (cache, _) = ConfigSchemaDigestCache::spawn(dir);
+        let (cache, _) = ConfigSchemaDigestCache::spawn(32, dir.file("cache.json")).await.unwrap();
 
         // create the mock
         let mut mock_client = MockConfigSchemasClient::default();
@@ -157,7 +150,6 @@ pub mod success {
         // run the test
         let start = Instant::now();
         let result = hash::hash_schema(&args, &cache, &mock_client, "doesntmatter").await;
-        println!("result: {:?}", result);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), resolved_digest);
         let duration = start.elapsed();

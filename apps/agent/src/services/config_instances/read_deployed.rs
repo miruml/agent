@@ -16,7 +16,7 @@ use crate::models::config_instance::{
     ConfigInstance,
 };
 use crate::services::errors::{
-    ServiceErr, ServiceHTTPErr, ServiceCrudErr, DeployedConfigInstanceNotFound, ServiceSyncErr
+    ServiceErr, ServiceHTTPErr, ServiceCrudErr, DeployedConfigInstanceNotFound, ServiceSyncErr, ConfigSchemaNotFound
 };
 use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
 use crate::storage::config_schemas::ConfigSchemaCache;
@@ -68,9 +68,7 @@ pub async fn read_deployed<
 ) -> Result<BaseConfigInstance, ServiceErr> {
 
     let (config_schema_id_result, sync_result) = tokio::join!(
-        // thread 1: 
         fetch_config_schema_id(args, http_client, schema_cache, token),
-        // thread 2: 
         sync_with_backend(syncer, cfg_inst_cache.clone(), cfg_inst_data_cache.clone())
     );
 
@@ -83,18 +81,41 @@ pub async fn read_deployed<
         }
     }
 
+    let entries = cfg_inst_cache.find_entries_where(|_| { true }).await.unwrap();
+    println!("entries: {:?}", entries);
+
     // read the config instance metadata from the cache
+    let config_schema_id_cloned = config_schema_id.clone();
     let result = cfg_inst_cache.find_one_optional(
         "filter by config schema and activity status",
         move |cfg_inst| {
-            matches_config_schema_and_activity_status(cfg_inst, &config_schema_id, ActivityStatus::Deployed)
+            matches_config_schema_and_activity_status(
+                cfg_inst,
+                &config_schema_id_cloned,
+                ActivityStatus::Deployed,
+            )
         }
-    ).await.map_err(|e| {
-        ServiceErr::CrudErr(Box::new(ServiceCrudErr {
-            source: e,
-            trace: trace!(),
-        }))
-    })?;
+    ).await;
+
+    let result = match result {
+        Ok(metadata) => metadata,
+        Err(e) => {
+            if e.is_network_connection_error() {
+                return Err(ServiceErr::DeployedConfigInstanceNotFound(Box::new(DeployedConfigInstanceNotFound {
+                    config_schema_id: config_schema_id.clone(),
+                    config_type_slug: args.config_type_slug().to_string(),
+                    config_schema_digest: args.config_schema_digest().to_string(),
+                    network_connection_error: true,
+                    trace: trace!(),
+                })));
+            } else {
+                return Err(ServiceErr::CrudErr(Box::new(ServiceCrudErr {
+                    source: e,
+                    trace: trace!(),
+                })));
+            }
+        }
+    };
 
     // if we can't find the *metadata*, the deployed config instance doesn't exist or
     // couldn't be retrieved from the server due to a network connection error
@@ -102,8 +123,10 @@ pub async fn read_deployed<
         Some(metadata) => metadata,
         None => {
             return Err(ServiceErr::DeployedConfigInstanceNotFound(Box::new(DeployedConfigInstanceNotFound {
+                config_schema_id: config_schema_id.clone(),
                 config_type_slug: args.config_type_slug().to_string(),
                 config_schema_digest: args.config_schema_digest().to_string(),
+                network_connection_error: false,
                 trace: trace!(),
             })));
         }
@@ -162,17 +185,29 @@ async fn fetch_config_schema_id<
             val: vec![args.config_type_slug().to_string()],
         }),
     };
-    let cfg_schema = http_client.find_one_config_schema(
+    let result = http_client.find_one_config_schema(
         filters,
         token,
-    ).await.map_err(|e| {
-        ServiceErr::HTTPErr(Box::new(ServiceHTTPErr {
-            source: e,
-            trace: trace!(),
-        }))
-    })?;
+    ).await;
 
-    Ok(cfg_schema.id)
+    match result {
+        Ok(cfg_schema) => Ok(cfg_schema.id),
+        Err(e) => {
+            if e.is_network_connection_error() {
+                Err(ServiceErr::ConfigSchemaNotFound(Box::new(ConfigSchemaNotFound {
+                    digest: args.config_schema_digest().to_string(),
+                    config_type_slug: args.config_type_slug().to_string(),
+                    network_connection_error: true,
+                    trace: trace!(),
+                })))
+            } else {
+                Err(ServiceErr::HTTPErr(Box::new(ServiceHTTPErr {
+                    source: e,
+                    trace: trace!(),
+                })))
+            }
+        }
+    }
 }
 
 async fn sync_with_backend(
@@ -186,18 +221,20 @@ async fn sync_with_backend(
             trace: trace!(),
         }))
     })?;
-    if last_synced_at > Utc::now() - TimeDelta::seconds(30) {
-        syncer.sync(
-            cfg_inst_cache,
-            cfg_inst_data_cache,
-            true,
-        ).await.map_err(|e| {
-            ServiceErr::SyncErr(Box::new(ServiceSyncErr {
-                source: e,
-                trace: trace!(),
-            }))
-        })?;
+
+    // don't sync if the last sync was less than 5 seconds ago
+    if last_synced_at > Utc::now() - TimeDelta::seconds(5) {
+        return Ok(())
     }
 
-    Ok(())
+    syncer.sync(
+        cfg_inst_cache,
+        cfg_inst_data_cache,
+        true,
+    ).await.map_err(|e| {
+        ServiceErr::SyncErr(Box::new(ServiceSyncErr {
+            source: e,
+            trace: trace!(),
+        }))
+    })
 }

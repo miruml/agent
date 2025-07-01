@@ -5,8 +5,8 @@ use crate::errors::MiruError;
 use crate::server::errors::{ServerAuthErr, ServerErr, ServerServiceErr};
 use crate::server::state::ServerState;
 use crate::services::config_instances::{
-    deployed,
-    deployed::ReadDeployedArgs,
+    read_deployed,
+    read_deployed::ReadDeployedArgs,
 };
 use crate::services::config_schemas::{hash, hash::HashSchemaArgsI};
 use crate::trace;
@@ -88,7 +88,7 @@ pub async fn read_deployed_config_instance(
             config_schema_digest: query.config_schema_digest,
         };
 
-        deployed::read_deployed(
+        read_deployed::read_deployed(
             &args,
             &state.syncer,
             state.cfg_inst_metadata_cache.clone(),
