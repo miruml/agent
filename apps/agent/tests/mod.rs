@@ -8,6 +8,7 @@ pub mod http;
 pub mod logs;
 pub mod mock;
 pub mod models;
+pub mod mqtt;
 pub mod server;
 pub mod services;
 pub mod storage;

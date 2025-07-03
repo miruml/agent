@@ -76,7 +76,7 @@ impl MiruError for TimeoutErr {
     }
 
     fn is_network_connection_error(&self) -> bool {
-        false
+        true
     }
 
     fn params(&self) -> Option<serde_json::Value> {

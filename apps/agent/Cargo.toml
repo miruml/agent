@@ -18,6 +18,7 @@ openapi-client = { workspace = true }
 openapi-server = { workspace = true }
 openssl = { workspace = true }
 reqwest = { workspace = true }
+rumqttc = { workspace = true }
 secrecy = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
