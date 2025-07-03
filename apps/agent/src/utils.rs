@@ -9,7 +9,7 @@ pub const PATH_DELIMITER: &str = "__SEP__";
 pub const GIT_RELEASE_TAG_KEY: Option<&str> = option_env!("MIRU_AGENT_GIT_RELEASE_TAG");
 pub const GIT_COMMIT_HASH_KEY: Option<&str> = option_env!("MIRU_AGENT_GIT_COMMIT_HASH");
 
-pub fn time_delta_to_duration(time_delta: chrono::TimeDelta) -> std::time::Duration {
+pub fn as_duration(time_delta: chrono::TimeDelta) -> std::time::Duration {
     if time_delta.num_milliseconds() <= 0 {
         std::time::Duration::from_secs(0)
     } else {

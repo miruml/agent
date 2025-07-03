@@ -2,6 +2,7 @@
 use std::fmt;
 
 // internal crates
+use crate::cache::errors::CacheErr;
 use crate::crypt::errors::CryptErr;
 use crate::errors::{Code, HTTPCode, MiruError, Trace};
 use crate::filesys::errors::FileSysErr;
@@ -33,6 +34,36 @@ impl MiruError for AgentNotActivatedErr {
 impl fmt::Display for AgentNotActivatedErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "agent is not activated: {}", self.msg)
+    }
+}
+
+#[derive(Debug)]
+pub struct StorageCacheErr {
+    pub source: CacheErr,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for StorageCacheErr {
+    fn code(&self) -> Code {
+        self.source.code()
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        self.source.http_status()
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        self.source.is_network_connection_error()
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        self.source.params()
+    }
+}
+
+impl fmt::Display for StorageCacheErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "cache error: {}", self.source)
     }
 }
 
@@ -127,11 +158,43 @@ impl fmt::Display for JoinHandleErr {
 }
 
 #[derive(Debug)]
+pub struct PruneCacheErrs {
+    pub sources: Vec<CacheErr>,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for PruneCacheErrs {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for PruneCacheErrs {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "failed to prune caches: {:?}", self.sources)
+    }
+}
+
+#[derive(Debug)]
 pub enum StorageErr {
     // storage errors
     AgentNotActivatedErr(Box<AgentNotActivatedErr>),
+    PruneCacheErrs(Box<PruneCacheErrs>),
 
     // internal crate errors
+    CacheErr(Box<StorageCacheErr>),
     CryptErr(Box<StorageCryptErr>),
     FileSysErr(Box<StorageFileSysErr>),
 
@@ -143,6 +206,8 @@ macro_rules! forward_error_method {
     ($self:ident, $method:ident $(, $arg:expr)?) => {
         match $self {
             Self::AgentNotActivatedErr(e) => e.$method($($arg)?),
+            Self::PruneCacheErrs(e) => e.$method($($arg)?),
+            Self::CacheErr(e) => e.$method($($arg)?),
             Self::CryptErr(e) => e.$method($($arg)?),
             Self::FileSysErr(e) => e.$method($($arg)?),
             Self::JoinHandleErr(e) => e.$method($($arg)?),

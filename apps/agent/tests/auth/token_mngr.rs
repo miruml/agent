@@ -4,9 +4,12 @@ use std::sync::Arc;
 // internal crates
 use crate::http::mock::MockAuthClient;
 use config_agent::auth::errors::AuthErr;
-use config_agent::auth::token_mngr::{
-    determine_refresh_loop_sleep_duration, run_refresh_loop, SingleThreadTokenManager, TokenFile,
-    TokenManager, Worker,
+use config_agent::auth::{
+    token_mngr::{
+        determine_refresh_loop_sleep_duration, run_refresh_loop, SingleThreadTokenManager,
+        TokenFile, TokenManager, Worker,
+    },
+    token::Token,
 };
 use config_agent::crypt::rsa;
 use config_agent::filesys::{cached_file::CachedFile, dir::Dir, file::File};

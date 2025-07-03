@@ -27,12 +27,25 @@ impl Default for ConnectAddress {
     fn default() -> Self {
         Self {
             broker: "mqtt.miruml.com".to_string(),
-            port: 1883,
+            port: 8883,
         }
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Credentials {
+    pub username: String,
+    pub password: String,
+}
+
+impl Credentials {
+    pub fn new(username: String, password: String) -> Self {
+        Self { username, password }
+    }
+}
+
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Timeouts {
     pub publish: Duration,
     pub subscribe: Duration,
@@ -54,8 +67,7 @@ impl Default for Timeouts {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Options {
     pub connect_address: ConnectAddress,
-    pub username: String,
-    pub password: String,
+    pub credentials: Credentials,
     pub client_id: String,
     pub keep_alive: Duration,
     pub timeouts: Timeouts,
@@ -65,8 +77,7 @@ pub struct Options {
 impl Options {
     pub fn new(
         connect_address: ConnectAddress,
-        username: String,
-        password: String,
+        credentials: Credentials,
         client_id: String,
         keep_alive: Duration,
         timeouts: Timeouts,
@@ -74,8 +85,7 @@ impl Options {
     ) -> Self {
         Self {
             connect_address,
-            username,
-            password,
+            credentials,
             client_id,
             keep_alive,
             timeouts,
@@ -89,13 +99,12 @@ pub struct OptionsBuilder {
 }
 
 impl OptionsBuilder {
-    pub fn new(username: String, password: String, client_id: String) -> Self {
+    pub fn new(credentials: Credentials) -> Self {
         Self {
             options: Options {
                 connect_address: ConnectAddress::default(),
-                username,
-                password,
-                client_id,
+                client_id: credentials.username.clone(),
+                credentials,
                 keep_alive: Duration::from_secs(60),
                 timeouts: Timeouts::default(),
                 capacity: 64,
@@ -108,13 +117,8 @@ impl OptionsBuilder {
         self
     }
 
-    pub fn with_username(mut self, username: String) -> Self {
-        self.options.username = username;
-        self
-    }
-
-    pub fn with_password(mut self, password: String) -> Self {
-        self.options.password = password;
+    pub fn with_credentials(mut self, credentials: Credentials) -> Self {
+        self.options.credentials = credentials;
         self
     }
 
@@ -135,29 +139,31 @@ impl OptionsBuilder {
 
 // =================================== CLIENT ======================================= //
 pub struct MQTTClient {
-    pub(crate) client: AsyncClient,
-    pub(crate) eventloop: EventLoop,
+    pub client: AsyncClient,
     pub(crate) timeouts: Timeouts,
 }
 
 impl MQTTClient {
-    pub async fn new(options: Options) -> Self {
+
+    pub async fn new(options: &Options) -> (Self, EventLoop) {
         let mut mqtt_options = MqttOptions::new(
-            options.client_id,
-            options.connect_address.broker,
+            &options.client_id,
+            &options.connect_address.broker,
             options.connect_address.port,
         );
 
         mqtt_options.set_keep_alive(options.keep_alive);
-        mqtt_options.set_credentials(options.username, options.password);
+        mqtt_options.set_credentials(
+            &options.credentials.username,
+            &options.credentials.password,
+        );
 
         let (client, eventloop) = AsyncClient::new(mqtt_options, options.capacity);
 
-        Self {
+        (Self {
             client,
-            eventloop,
             timeouts: options.timeouts,
-        }
+        }, eventloop)
     }
 
     pub async fn publish(
@@ -244,13 +250,36 @@ impl MQTTClient {
 
         Ok(())
     }
+}
 
-    pub async fn poll(&mut self) -> Result<Event, MQTTError> {
-        self.eventloop.poll().await.map_err(|e| {
-            MQTTError::PollErr(Box::new(PollErr {
-                source: e,
-                trace: trace!(),
-            }))
-        })
-    }
+pub async fn poll(eventloop: &mut EventLoop) -> Result<Event, MQTTError> {
+    eventloop.poll().await.map_err(|e| {
+        match e {
+            // poor network connection errors
+            rumqttc::ConnectionError::NetworkTimeout |
+            rumqttc::ConnectionError::FlushTimeout |
+            rumqttc::ConnectionError::NotConnAck(_) => {
+                MQTTError::NetworkConnectionErr(Box::new(NetworkConnectionErr {
+                    source: e,
+                    trace: trace!(),
+                }))
+            }
+
+            // mqtt broker rejected the authentication
+            rumqttc::ConnectionError::ConnectionRefused(_) => {
+                MQTTError::AuthenticationErr(Box::new(AuthenticationErr {
+                    source: e,
+                    trace: trace!(),
+                }))
+            }
+
+            // all other errors
+            _ => {
+                MQTTError::PollErr(Box::new(PollErr {
+                    source: e,
+                    trace: trace!(),
+                }))
+            }
+        }
+    })
 }

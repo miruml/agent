@@ -2,7 +2,12 @@ use config_agent::errors::MiruError;
 // internal crates
 use config_agent::filesys::{dir::Dir, path::PathExt};
 use config_agent::logs::{init, LogOptions};
-use config_agent::mqtt::client::{ConnectAddress, MQTTClient, OptionsBuilder};
+use config_agent::mqtt::client::{
+    ConnectAddress,
+    Credentials,
+    MQTTClient,
+    OptionsBuilder,
+};
 
 // external crates
 use rumqttc::{Event, Incoming};
@@ -23,9 +28,7 @@ async fn test_mqtt_client() {
     let device_id = "dvc_123_test";
     let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJkZXZpY2UiLCJleHAiOjE3NTE1ODMzOTgsImlhdCI6MTc1MTQ5Njk5OCwiaXNzIjoibWlydSIsInN1YiI6ImR2Y18xMjNfdGVzdCJ9.zK2wU7L7NEuC4zcxAoX58Fi2ozTx-4iU1gV2gQyLI9w";
     let options = OptionsBuilder::new(
-        device_id.to_string(),
-        token.to_string(),
-        device_id.to_string(),
+        Credentials::new(device_id.to_string(), token.to_string()),
     )
     .with_connect_address(ConnectAddress {
         broker: "dev.mqtt.miruml.com".to_string(),
@@ -62,9 +65,11 @@ async fn test_mqtt_client() {
 
 #[tokio::test]
 async fn test_mqtt_client_invalid_broker_url() {
-    let username = "test".to_string();
-    let password = "test".to_string();
-    let options = OptionsBuilder::new(username.clone(), password, username)
+    let credentials = Credentials::new(
+        "test".to_string(),
+        "test".to_string(),
+    );
+    let options = OptionsBuilder::new(credentials)
         .with_connect_address(ConnectAddress {
             broker: "arglebargle.com".to_string(),
             port: 1883,
@@ -80,9 +85,11 @@ async fn test_mqtt_client_invalid_broker_url() {
 
 #[tokio::test]
 async fn test_mqtt_client_invalid_username_or_password() {
-    let username = "username".to_string();
-    let password = "password".to_string();
-    let options = OptionsBuilder::new(username.clone(), password, username)
+    let credentials = Credentials::new(
+        "username".to_string(),
+        "password".to_string(),
+    );
+    let options = OptionsBuilder::new(credentials)
         .with_connect_address(ConnectAddress {
             broker: "dev.mqtt.miruml.com".to_string(),
             port: 1883,

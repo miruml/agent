@@ -191,6 +191,43 @@ impl fmt::Display for SyncStorageErr {
 }
 
 #[derive(Debug)]
+pub struct SyncErrors {
+    pub source: Vec<SyncErr>,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for SyncErrors {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        // is only a network connection error if all errors are network connection
+        // errors
+        for err in self.source.iter() {
+            if !err.is_network_connection_error() {
+                return false;
+            }
+        }
+        true
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for SyncErrors {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Sync error: {:?}", self.source)
+    }
+}
+
+#[derive(Debug)]
 pub struct ConfigInstanceDataNotFoundErr {
     pub instance_id: String,
     pub trace: Box<Trace>,

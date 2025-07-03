@@ -10,6 +10,66 @@ use crate::errors::{Code, HTTPCode, MiruError};
 use tracing::{debug, error, info, trace, warn};
 
 #[derive(Debug)]
+pub struct AuthenticationErr {
+    pub source: rumqttc::ConnectionError,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for AuthenticationErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for AuthenticationErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Failed to authenticate to MQTT broker: {}", self.source)
+    }
+}
+
+#[derive(Debug)]
+pub struct NetworkConnectionErr {
+    pub source: rumqttc::ConnectionError,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for NetworkConnectionErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        true
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for NetworkConnectionErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Failed to connect to MQTT broker: {}", self.source)
+    }
+}
+
+#[derive(Debug)]
 pub struct PollErr {
     pub source: rumqttc::ConnectionError,
     pub trace: Box<Trace>,
@@ -25,16 +85,7 @@ impl MiruError for PollErr {
     }
 
     fn is_network_connection_error(&self) -> bool {
-        match self.source {
-            // network connection errors
-            rumqttc::ConnectionError::NetworkTimeout => true,
-            rumqttc::ConnectionError::FlushTimeout => true,
-            rumqttc::ConnectionError::NotConnAck(_) => true,
-
-            // non-network connection errors
-            rumqttc::ConnectionError::ConnectionRefused(_) => false,
-            _ => false,
-        }
+        false
     }
 
     fn params(&self) -> Option<serde_json::Value> {
@@ -110,6 +161,8 @@ impl fmt::Display for PublishErr {
 
 #[derive(Debug)]
 pub enum MQTTError {
+    AuthenticationErr(Box<AuthenticationErr>),
+    NetworkConnectionErr(Box<NetworkConnectionErr>),
     TimeoutErr(Box<TimeoutErr>),
     PollErr(Box<PollErr>),
     PublishErr(Box<PublishErr>),
@@ -118,6 +171,8 @@ pub enum MQTTError {
 macro_rules! forward_error_method {
     ($self:ident, $method:ident $(, $arg:expr)?) => {
         match $self {
+            MQTTError::AuthenticationErr(e) => e.$method($($arg)?),
+            MQTTError::NetworkConnectionErr(e) => e.$method($($arg)?),
             MQTTError::TimeoutErr(e) => e.$method($($arg)?),
             MQTTError::PollErr(e) => e.$method($($arg)?),
             MQTTError::PublishErr(e) => e.$method($($arg)?),

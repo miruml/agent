@@ -1,10 +1,10 @@
 // internal crates
+use crate::auth::token::Token;
 use crate::crypt::rsa;
 use crate::models::agent::Agent;
 use crate::storage::{
     errors::{StorageCryptErr, StorageErr, StorageFileSysErr},
     layout::StorageLayout,
-    token::Token,
 };
 use crate::trace;
 

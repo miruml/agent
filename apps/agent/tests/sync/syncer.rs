@@ -4,7 +4,10 @@ use std::sync::Arc;
 // internal crates
 use crate::auth::token_mngr::spawn as spawn_token_manager;
 use crate::http::mock::{MockAuthClient, MockConfigInstancesClient};
-use config_agent::auth::token_mngr::{TokenFile, TokenManager};
+use config_agent::auth::{
+    token_mngr::{TokenFile, TokenManager},
+    token::Token,
+};
 use config_agent::crud::prelude::*;
 use config_agent::deploy::fsm;
 use config_agent::filesys::dir::Dir;
@@ -14,7 +17,6 @@ use config_agent::http::{
 };
 use config_agent::models::config_instance::ActivityStatus;
 use config_agent::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
-use config_agent::storage::token::Token;
 use config_agent::sync::{
     errors::SyncErr,
     syncer::{SingleThreadSyncer, Syncer, Worker},

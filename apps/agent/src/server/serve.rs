@@ -30,8 +30,19 @@ use tower_http::{
 };
 use tracing::Level;
 
+#[derive(Debug)]
+pub struct ServerOptions {
+    pub socket_file: File,
+}
+
+impl Default for ServerOptions {
+    fn default() -> Self {
+        Self { socket_file: File::new("/run/miru/miru.sock") }
+    }
+}
+
 pub(crate) async fn serve(
-    socket_file: &File,
+    options: &ServerOptions,
     state: Arc<ServerState>,
     shutdown_signal: impl Future<Output = ()> + Send + 'static,
 ) -> Result<JoinHandle<Result<(), ServerErr>>, ServerErr> {
@@ -57,7 +68,7 @@ pub(crate) async fn serve(
                     move |req: axum::extract::Request, next: axum::middleware::Next| {
                         let state = state_for_middleware.clone();
                         async move {
-                            state.record_activity();
+                            state.activity_tracker.touch();
                             next.run(req).await
                         }
                     },
@@ -77,9 +88,12 @@ pub(crate) async fn serve(
         .with_state(state);
 
     // obtain the unix socket file listener
-    let listener = acquire_unix_socket_listener(socket_file, async move {
-        create_unix_socket_listener(socket_file).await
-    })
+    let listener = acquire_unix_socket_listener(
+        &options.socket_file,
+        async move {
+            create_unix_socket_listener(&options.socket_file).await
+        },
+    )
     .await?;
 
     // serve with graceful shutdown

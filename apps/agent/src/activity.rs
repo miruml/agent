@@ -1,0 +1,48 @@
+// standard library
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+// external crates
+use tracing::error;
+
+#[derive(Clone, Debug)]
+pub struct ActivityTracker {
+    last_activity: Arc<AtomicU64>,
+}
+
+impl Default for ActivityTracker {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ActivityTracker {
+    pub fn new() -> Self {
+        Self {
+            last_activity: Arc::new(AtomicU64::new(
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs(),
+            )),
+        }
+    }
+
+    pub fn last_touch(&self) -> SystemTime {
+        SystemTime::UNIX_EPOCH + Duration::from_secs(
+            self.last_activity.load(Ordering::Relaxed)
+        )
+    }
+
+    pub fn touch(&self) {
+        let now = match SystemTime::now().duration_since(UNIX_EPOCH) {
+            Ok(duration) => duration.as_secs(),
+            Err(e) => {
+                error!("Failed to record activity: {:?}", e);
+                return;
+            },
+        };
+        self.last_activity.store(now, Ordering::Relaxed);
+    }
+}

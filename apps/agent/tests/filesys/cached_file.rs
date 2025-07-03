@@ -1,6 +1,6 @@
 // internal crates
 use config_agent::filesys::{cached_file::CachedFile, dir::Dir, errors::FileSysErr, path::PathExt};
-use config_agent::storage::token::Token;
+use config_agent::auth::token::Token;
 
 // external crates
 use chrono::{Duration, Utc};

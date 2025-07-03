@@ -5,7 +5,7 @@ use crate::mqtt::errors::MQTTError;
 // external crates
 use rumqttc::QoS;
 
-type SyncDevice = openapi_client::models::SyncDevice;
+pub type SyncDevice = openapi_client::models::SyncDevice;
 
 impl MQTTClient {
     pub async fn publish_device_sync(&self, device_id: &str) -> Result<(), MQTTError> {

@@ -1,7 +1,7 @@
 // internal
+use config_agent::app::run::{run, AppOptions};
 use config_agent::logs::{init, LogOptions};
 use config_agent::models::agent::Agent;
-use config_agent::server::run::{run, RunServerOptions};
 use config_agent::storage::agent::assert_activated;
 use config_agent::storage::layout::StorageLayout;
 use config_agent::utils::{has_version_flag, version_info};
@@ -46,7 +46,7 @@ async fn main() {
     }
 
     // run the server
-    let options = RunServerOptions {
+    let options = AppOptions {
         backend_base_url: agent.backend_base_url,
         ..Default::default()
     };

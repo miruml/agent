@@ -23,7 +23,7 @@ use crate::trace;
 use openapi_server::models::BaseConfigInstance;
 
 // external crates
-use chrono::{TimeDelta, Utc};
+use chrono::TimeDelta;
 use serde::Deserialize;
 use tracing::error;
 
@@ -63,7 +63,7 @@ pub async fn read_deployed<ReadDeployedArgsT: ReadDeployedArgsI, HTTPClientT: Co
 ) -> Result<BaseConfigInstance, ServiceErr> {
     let (config_schema_id_result, sync_result) = tokio::join!(
         fetch_config_schema_id(args, http_client, schema_cache, token),
-        sync_with_backend(syncer, cfg_inst_cache.clone(), cfg_inst_data_cache.clone())
+        sync_with_backend(syncer)
     );
 
     let config_schema_id = config_schema_id_result?;
@@ -214,30 +214,15 @@ async fn fetch_config_schema_id<
     }
 }
 
-async fn sync_with_backend(
-    syncer: &Syncer,
-    cfg_inst_cache: Arc<ConfigInstanceCache>,
-    cfg_inst_data_cache: Arc<ConfigInstanceDataCache>,
-) -> Result<(), ServiceErr> {
-    let last_synced_at = syncer.get_last_synced_at().await.map_err(|e| {
-        ServiceErr::SyncErr(Box::new(ServiceSyncErr {
-            source: e,
-            trace: trace!(),
-        }))
-    })?;
-
-    // don't sync if the last sync was less than 5 seconds ago
-    if last_synced_at > Utc::now() - TimeDelta::seconds(5) {
-        return Ok(());
-    }
-
-    syncer
-        .sync(cfg_inst_cache, cfg_inst_data_cache, true)
-        .await
+async fn sync_with_backend(syncer: &Syncer) -> Result<(), ServiceErr> {
+    let cooldown = TimeDelta::seconds(15);
+    syncer.sync(cooldown).await
         .map_err(|e| {
             ServiceErr::SyncErr(Box::new(ServiceSyncErr {
                 source: e,
                 trace: trace!(),
             }))
-        })
+        })?;
+
+    Ok(())
 }

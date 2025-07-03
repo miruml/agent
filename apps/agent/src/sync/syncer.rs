@@ -5,7 +5,6 @@ use std::sync::Arc;
 use crate::auth::token_mngr::TokenManager;
 use crate::crud::prelude::*;
 use crate::deploy::{apply::apply, fsm};
-use crate::errors::MiruError;
 use crate::filesys::dir::Dir;
 use crate::http::{client::HTTPClient, config_instances::ConfigInstancesExt};
 use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
@@ -17,7 +16,7 @@ use crate::sync::push::push_config_instances;
 use crate::trace;
 
 // external crates
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, TimeDelta, Utc};
 use tokio::sync::{
     mpsc,
     mpsc::{Receiver, Sender},
@@ -31,6 +30,8 @@ pub struct SingleThreadSyncer<HTTPClientT: ConfigInstancesExt> {
     device_id: String,
     http_client: Arc<HTTPClientT>,
     token_mngr: Arc<TokenManager>,
+    cfg_inst_cache: Arc<ConfigInstanceCache>,
+    cfg_inst_data_cache: Arc<ConfigInstanceDataCache>,
     deployment_dir: Dir,
     fsm_settings: fsm::Settings,
     last_synced_at: DateTime<Utc>,
@@ -41,6 +42,8 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
         device_id: String,
         http_client: Arc<HTTPClientT>,
         token_mngr: Arc<TokenManager>,
+        cfg_inst_cache: Arc<ConfigInstanceCache>,
+        cfg_inst_data_cache: Arc<ConfigInstanceDataCache>,
         deployment_dir: Dir,
         fsm_settings: fsm::Settings,
     ) -> Self {
@@ -48,6 +51,8 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
             device_id,
             http_client,
             token_mngr,
+            cfg_inst_cache,
+            cfg_inst_data_cache,
             deployment_dir,
             fsm_settings,
             last_synced_at: DateTime::<Utc>::UNIX_EPOCH,
@@ -58,12 +63,11 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
         self.last_synced_at
     }
 
-    async fn sync(
-        &mut self,
-        cfg_inst_cache: &ConfigInstanceCache,
-        cfg_inst_data_cache: &ConfigInstanceDataCache,
-        ignore_network_errors: bool,
-    ) -> Result<(), SyncErr> {
+    async fn sync(&mut self, cooldown: TimeDelta) -> Result<(), SyncErr> {
+        if cooldown > Utc::now() - self.last_synced_at {
+            return Ok(());
+        }
+
         self.last_synced_at = Utc::now();
 
         let token = self.token_mngr.get_token().await.map_err(|e| {
@@ -73,10 +77,12 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
             }))
         })?;
 
+        let mut errors = Vec::new();
+
         // pull config instances from server
         let result = pull_config_instances(
-            cfg_inst_cache,
-            cfg_inst_data_cache,
+            self.cfg_inst_cache.as_ref(),
+            self.cfg_inst_data_cache.as_ref(),
             self.http_client.as_ref(),
             &self.device_id,
             &token.token,
@@ -85,15 +91,12 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
         match result {
             Ok(_) => (),
             Err(e) => {
-                error!("Error pulling config instances: {:?}", e);
-                if !ignore_network_errors || !e.is_network_connection_error() {
-                    return Err(e);
-                }
+                errors.push(e);
             }
         };
 
         // read the config instances which need to be applied
-        let cfg_insts_to_apply = cfg_inst_cache
+        let cfg_insts_to_apply = self.cfg_inst_cache
             .find_where(|instance| fsm::is_action_required(fsm::next_action(instance, true)))
             .await
             .map_err(|e| {
@@ -110,8 +113,8 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
         // apply deployments
         apply(
             cfg_insts_to_apply,
-            cfg_inst_cache,
-            cfg_inst_data_cache,
+            self.cfg_inst_cache.as_ref(),
+            self.cfg_inst_data_cache.as_ref(),
             &self.deployment_dir,
             &self.fsm_settings,
         )
@@ -125,14 +128,16 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
 
         // push config instances to server
         let result =
-            push_config_instances(cfg_inst_cache, self.http_client.as_ref(), &token.token).await;
+            push_config_instances(
+                self.cfg_inst_cache.as_ref(),
+                self.http_client.as_ref(),
+                &token.token,
+            )
+            .await;
         match result {
             Ok(_) => (),
             Err(e) => {
-                error!("Error pushing config instances: {:?}", e);
-                if !ignore_network_errors || !e.is_network_connection_error() {
-                    return Err(e);
-                }
+                errors.push(e);
             }
         };
 
@@ -147,9 +152,7 @@ pub enum WorkerCommand {
     },
     Sync {
         respond_to: oneshot::Sender<Result<(), SyncErr>>,
-        cfg_inst_cache: Arc<ConfigInstanceCache>,
-        cfg_inst_data_cache: Arc<ConfigInstanceDataCache>,
-        ignore_network_errors: bool,
+        cooldown: TimeDelta,
     },
     GetLastSyncedAt {
         respond_to: oneshot::Sender<Result<DateTime<Utc>, SyncErr>>,
@@ -179,18 +182,11 @@ impl<HTTPClientT: ConfigInstancesExt + Send> Worker<HTTPClientT> {
                 }
                 WorkerCommand::Sync {
                     respond_to,
-                    cfg_inst_cache,
-                    cfg_inst_data_cache,
-                    ignore_network_errors,
+                    cooldown,
                 } => {
-                    let result = self
-                        .syncer
-                        .sync(
-                            cfg_inst_cache.as_ref(),
-                            cfg_inst_data_cache.as_ref(),
-                            ignore_network_errors,
-                        )
-                        .await;
+                    let result = self.syncer.sync(
+                        cooldown,
+                    ).await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to send sync response: {:?}", e);
                     }
@@ -217,6 +213,8 @@ impl Syncer {
         device_id: String,
         http_client: Arc<HTTPClient>,
         token_mngr: Arc<TokenManager>,
+        cfg_inst_cache: Arc<ConfigInstanceCache>,
+        cfg_inst_data_cache: Arc<ConfigInstanceDataCache>,
         deployment_dir: Dir,
         fsm_settings: fsm::Settings,
     ) -> Result<(Self, JoinHandle<()>), SyncErr> {
@@ -226,6 +224,8 @@ impl Syncer {
                 device_id,
                 http_client,
                 token_mngr,
+                cfg_inst_cache,
+                cfg_inst_data_cache,
                 deployment_dir,
                 fsm_settings,
             ),
@@ -262,17 +262,13 @@ impl Syncer {
 
     pub async fn sync(
         &self,
-        cfg_inst_cache: Arc<ConfigInstanceCache>,
-        cfg_inst_data_cache: Arc<ConfigInstanceDataCache>,
-        ignore_network_errors: bool,
+        cooldown: TimeDelta,
     ) -> Result<(), SyncErr> {
         let (send, recv) = oneshot::channel();
         self.sender
             .send(WorkerCommand::Sync {
                 respond_to: send,
-                cfg_inst_cache,
-                cfg_inst_data_cache,
-                ignore_network_errors,
+                cooldown,
             })
             .await
             .map_err(|e| {
