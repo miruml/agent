@@ -24,6 +24,12 @@ pub enum ConfigInstanceOrderBy {
     CONFIG_INSTANCE_ORDER_BY_ACTIVITY_STATUS,
     #[serde(rename = "error_status")]
     CONFIG_INSTANCE_ORDER_BY_ERROR_STATUS,
+    #[serde(rename = "config_type_id")]
+    CONFIG_INSTANCE_ORDER_BY_CONFIG_TYPE_ID,
+    #[serde(rename = "config_schema_id")]
+    CONFIG_INSTANCE_ORDER_BY_CONFIG_SCHEMA_ID,
+    #[serde(rename = "device_id")]
+    CONFIG_INSTANCE_ORDER_BY_DEVICE_ID,
 
 }
 
@@ -35,6 +41,9 @@ impl std::fmt::Display for ConfigInstanceOrderBy {
             Self::CONFIG_INSTANCE_ORDER_BY_TARGET_STATUS => write!(f, "target_status"),
             Self::CONFIG_INSTANCE_ORDER_BY_ACTIVITY_STATUS => write!(f, "activity_status"),
             Self::CONFIG_INSTANCE_ORDER_BY_ERROR_STATUS => write!(f, "error_status"),
+            Self::CONFIG_INSTANCE_ORDER_BY_CONFIG_TYPE_ID => write!(f, "config_type_id"),
+            Self::CONFIG_INSTANCE_ORDER_BY_CONFIG_SCHEMA_ID => write!(f, "config_schema_id"),
+            Self::CONFIG_INSTANCE_ORDER_BY_DEVICE_ID => write!(f, "device_id"),
         }
     }
 }

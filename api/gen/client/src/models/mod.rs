@@ -86,6 +86,8 @@ pub mod patch_comment_list;
 pub use self::patch_comment_list::PatchCommentList;
 pub mod schema_digest_response;
 pub use self::schema_digest_response::SchemaDigestResponse;
+pub mod sync_device;
+pub use self::sync_device::SyncDevice;
 pub mod tag;
 pub use self::tag::Tag;
 pub mod tag_list;

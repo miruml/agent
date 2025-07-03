@@ -22,6 +22,10 @@ pub enum ConfigInstanceExpand {
     CONFIG_INSTANCE_EXPAND_INSTANCE,
     #[serde(rename = "patch")]
     CONFIG_INSTANCE_EXPAND_PATCH,
+    #[serde(rename = "config_schema")]
+    CONFIG_INSTANCE_EXPAND_CONFIG_SCHEMA,
+    #[serde(rename = "device")]
+    CONFIG_INSTANCE_EXPAND_DEVICE,
 
 }
 
@@ -32,6 +36,8 @@ impl std::fmt::Display for ConfigInstanceExpand {
             Self::CONFIG_INSTANCE_EXPAND_UPDATED_BY => write!(f, "updated_by"),
             Self::CONFIG_INSTANCE_EXPAND_INSTANCE => write!(f, "instance"),
             Self::CONFIG_INSTANCE_EXPAND_PATCH => write!(f, "patch"),
+            Self::CONFIG_INSTANCE_EXPAND_CONFIG_SCHEMA => write!(f, "config_schema"),
+            Self::CONFIG_INSTANCE_EXPAND_DEVICE => write!(f, "device"),
         }
     }
 }

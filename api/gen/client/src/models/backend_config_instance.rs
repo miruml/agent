@@ -49,10 +49,14 @@ pub struct BackendConfigInstance {
     pub updated_by: Option<Box<models::User>>,
     #[serde(rename = "patch", deserialize_with = "Option::deserialize")]
     pub patch: Option<Box<models::Patch>>,
+    #[serde(rename = "config_schema", deserialize_with = "Option::deserialize")]
+    pub config_schema: Option<Box<models::ConfigSchema>>,
+    #[serde(rename = "device", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
+    pub device: Option<Option<Box<models::Device>>>,
 }
 
 impl BackendConfigInstance {
-    pub fn new(object: Object, id: String, target_status: models::ConfigInstanceTargetStatus, status: models::ConfigInstanceStatus, activity_status: models::ConfigInstanceActivityStatus, error_status: models::ConfigInstanceErrorStatus, relative_filepath: Option<String>, patch_id: Option<String>, created_by_id: Option<String>, created_at: String, updated_by_id: Option<String>, updated_at: String, device_id: String, config_schema_id: String, instance: Option<serde_json::Value>, created_by: Option<models::User>, updated_by: Option<models::User>, patch: Option<models::Patch>) -> BackendConfigInstance {
+    pub fn new(object: Object, id: String, target_status: models::ConfigInstanceTargetStatus, status: models::ConfigInstanceStatus, activity_status: models::ConfigInstanceActivityStatus, error_status: models::ConfigInstanceErrorStatus, relative_filepath: Option<String>, patch_id: Option<String>, created_by_id: Option<String>, created_at: String, updated_by_id: Option<String>, updated_at: String, device_id: String, config_schema_id: String, instance: Option<serde_json::Value>, created_by: Option<models::User>, updated_by: Option<models::User>, patch: Option<models::Patch>, config_schema: Option<models::ConfigSchema>) -> BackendConfigInstance {
         BackendConfigInstance {
             object,
             id,
@@ -72,6 +76,8 @@ impl BackendConfigInstance {
             created_by: if let Some(x) = created_by {Some(Box::new(x))} else {None},
             updated_by: if let Some(x) = updated_by {Some(Box::new(x))} else {None},
             patch: if let Some(x) = patch {Some(Box::new(x))} else {None},
+            config_schema: if let Some(x) = config_schema {Some(Box::new(x))} else {None},
+            device: None,
         }
     }
 }

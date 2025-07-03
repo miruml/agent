@@ -27,6 +27,7 @@ All URIs are relative to *https://configs.dev.api.miruml.com/agent/v1*
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
 *ConfigInstancesApi* | [**create_config_instance**](docs/ConfigInstancesApi.md#create_config_instance) | **POST** /config_instances | Create a config instance
+*ConfigInstancesApi* | [**get_config_instance**](docs/ConfigInstancesApi.md#get_config_instance) | **GET** /config_instances/{config_instance_id} | Get a config instance
 *ConfigInstancesApi* | [**list_config_instances**](docs/ConfigInstancesApi.md#list_config_instances) | **GET** /config_instances | List config instances in a workspace
 *ConfigInstancesApi* | [**update_config_instance**](docs/ConfigInstancesApi.md#update_config_instance) | **PATCH** /config_instances/{config_instance_id} | Update a config instance
 *ConfigSchemasApi* | [**create_config_schema**](docs/ConfigSchemasApi.md#create_config_schema) | **POST** /config_schemas | Create a config schema
@@ -36,6 +37,7 @@ Class | Method | HTTP request | Description
 *DevicesApi* | [**activate_device**](docs/DevicesApi.md#activate_device) | **POST** /devices/{device_id}/activate | Activate a device
 *DevicesApi* | [**issue_device_token**](docs/DevicesApi.md#issue_device_token) | **POST** /devices/{device_id}/issue_token | Issue a device token
 *ErrorsApi* | [**get_error**](docs/ErrorsApi.md#get_error) | **GET** /example-error | Get an error
+*MqttApi* | [**sync_device**](docs/MqttApi.md#sync_device) | **GET** /cmd/devices/{device_id}/sync | Trigger a device sync
 
 
 ## Documentation For Models
@@ -84,6 +86,7 @@ Class | Method | HTTP request | Description
  - [PatchComment](docs/PatchComment.md)
  - [PatchCommentList](docs/PatchCommentList.md)
  - [SchemaDigestResponse](docs/SchemaDigestResponse.md)
+ - [SyncDevice](docs/SyncDevice.md)
  - [Tag](docs/Tag.md)
  - [TagList](docs/TagList.md)
  - [TagType](docs/TagType.md)

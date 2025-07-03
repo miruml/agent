@@ -26,6 +26,8 @@ pub enum ConfigInstanceSearch {
     CONFIG_INSTANCE_SEARCH_DEVICE_ID,
     #[serde(rename = "config_schema_id")]
     CONFIG_INSTANCE_SEARCH_CONFIG_SCHEMA_ID,
+    #[serde(rename = "config_type_id")]
+    CONFIG_INSTANCE_SEARCH_CONFIG_TYPE_ID,
 
 }
 
@@ -38,6 +40,7 @@ impl std::fmt::Display for ConfigInstanceSearch {
             Self::CONFIG_INSTANCE_SEARCH_ERROR_STATUS => write!(f, "error_status"),
             Self::CONFIG_INSTANCE_SEARCH_DEVICE_ID => write!(f, "device_id"),
             Self::CONFIG_INSTANCE_SEARCH_CONFIG_SCHEMA_ID => write!(f, "config_schema_id"),
+            Self::CONFIG_INSTANCE_SEARCH_CONFIG_TYPE_ID => write!(f, "config_type_id"),
         }
     }
 }

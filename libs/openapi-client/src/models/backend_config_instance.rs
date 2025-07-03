@@ -49,6 +49,15 @@ pub struct BackendConfigInstance {
     pub updated_by: Option<Box<models::User>>,
     #[serde(rename = "patch", deserialize_with = "Option::deserialize")]
     pub patch: Option<Box<models::Patch>>,
+    #[serde(rename = "config_schema", deserialize_with = "Option::deserialize")]
+    pub config_schema: Option<Box<models::ConfigSchema>>,
+    #[serde(
+        rename = "device",
+        default,
+        with = "::serde_with::rust::double_option",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub device: Option<Option<Box<models::Device>>>,
 }
 
 impl BackendConfigInstance {
@@ -71,6 +80,7 @@ impl BackendConfigInstance {
         created_by: Option<models::User>,
         updated_by: Option<models::User>,
         patch: Option<models::Patch>,
+        config_schema: Option<models::ConfigSchema>,
     ) -> BackendConfigInstance {
         BackendConfigInstance {
             object,
@@ -103,6 +113,12 @@ impl BackendConfigInstance {
             } else {
                 None
             },
+            config_schema: if let Some(x) = config_schema {
+                Some(Box::new(x))
+            } else {
+                None
+            },
+            device: None,
         }
     }
 }

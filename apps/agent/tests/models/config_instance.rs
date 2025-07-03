@@ -545,6 +545,8 @@ fn config_instance_from_backend() {
             created_by: None,
             updated_by: None,
             patch: None,
+            config_schema: None,
+            device: None,
         },
         expected: ConfigInstance {
             id: "cfg_inst_123".to_string(),

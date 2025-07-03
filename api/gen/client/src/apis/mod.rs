@@ -115,5 +115,6 @@ pub mod config_instances_api;
 pub mod config_schemas_api;
 pub mod devices_api;
 pub mod errors_api;
+pub mod mqtt_api;
 
 pub mod configuration;

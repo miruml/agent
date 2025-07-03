@@ -5,10 +5,7 @@ pub fn build_query_params(
     expand_query: Option<&str>,
     pagination: &Pagination,
 ) -> String {
-    let mut query_params = format!(
-        "?limit={}&offset={}",
-        pagination.limit, pagination.offset
-    );
+    let mut query_params = format!("?limit={}&offset={}", pagination.limit, pagination.offset);
     if let Some(search_query) = search_query {
         query_params.push_str(&format!("&{search_query}"));
     }

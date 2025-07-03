@@ -22,6 +22,8 @@ Name | Type | Description | Notes
 **created_by** | Option<[**models::User**](User.md)> |  | 
 **updated_by** | Option<[**models::User**](User.md)> |  | 
 **patch** | Option<[**models::Patch**](Patch.md)> |  | 
+**config_schema** | Option<[**models::ConfigSchema**](ConfigSchema.md)> |  | 
+**device** | Option<[**models::Device**](Device.md)> |  | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

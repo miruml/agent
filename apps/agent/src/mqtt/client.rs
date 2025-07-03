@@ -6,9 +6,9 @@ use crate::mqtt::errors::*;
 use crate::trace;
 
 // external crates
-use tokio::time::timeout;
-use rumqttc::{AsyncClient, EventLoop, MqttOptions, QoS, Event};
+use rumqttc::{AsyncClient, Event, EventLoop, MqttOptions, QoS};
 use serde::{Deserialize, Serialize};
+use tokio::time::timeout;
 
 // ================================== OPTIONS ====================================== //
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -19,10 +19,7 @@ pub struct ConnectAddress {
 
 impl ConnectAddress {
     pub fn new(broker: String, port: u16) -> Self {
-        Self {
-            broker,
-            port,
-        }
+        Self { broker, port }
     }
 }
 
@@ -30,7 +27,7 @@ impl Default for ConnectAddress {
     fn default() -> Self {
         Self {
             broker: "mqtt.miruml.com".to_string(),
-            port: 1883
+            port: 1883,
         }
     }
 }
@@ -45,7 +42,7 @@ pub struct Timeouts {
 
 impl Default for Timeouts {
     fn default() -> Self {
-        Self { 
+        Self {
             publish: Duration::from_secs(3),
             subscribe: Duration::from_secs(3),
             unsubscribe: Duration::from_secs(3),
@@ -150,16 +147,17 @@ impl MQTTClient {
             options.connect_address.broker,
             options.connect_address.port,
         );
-        
+
         mqtt_options.set_keep_alive(options.keep_alive);
         mqtt_options.set_credentials(options.username, options.password);
 
-        let (client, eventloop) = AsyncClient::new(
-            mqtt_options,
-            options.capacity
-        );
+        let (client, eventloop) = AsyncClient::new(mqtt_options, options.capacity);
 
-        Self { client, eventloop, timeouts: options.timeouts }
+        Self {
+            client,
+            eventloop,
+            timeouts: options.timeouts,
+        }
     }
 
     pub async fn publish(
@@ -171,82 +169,88 @@ impl MQTTClient {
     ) -> Result<(), MQTTError> {
         timeout(
             self.timeouts.publish,
-            self.client.publish(topic, qos, retained, payload)
-        ).await
-        .map_err(|_| MQTTError::TimeoutErr(Box::new(TimeoutErr {
-            msg: "Publish timeout".to_string(),
-            trace: trace!(),
-        })))?
-        .map_err(|e| MQTTError::PublishErr(Box::new(PublishErr {
-            source: e,
-            trace: trace!(),
-        })))?;
+            self.client.publish(topic, qos, retained, payload),
+        )
+        .await
+        .map_err(|_| {
+            MQTTError::TimeoutErr(Box::new(TimeoutErr {
+                msg: "Publish timeout".to_string(),
+                trace: trace!(),
+            }))
+        })?
+        .map_err(|e| {
+            MQTTError::PublishErr(Box::new(PublishErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
 
         Ok(())
     }
 
-    pub async fn subscribe(
-        &self,
-        topic: &str,
-        qos: QoS,
-    ) -> Result<(), MQTTError> {
-        timeout(
-            self.timeouts.subscribe,
-            self.client.subscribe(topic, qos)
-        ).await
-        .map_err(|_| MQTTError::TimeoutErr(Box::new(TimeoutErr {
-            msg: "Subscribe timeout".to_string(),
-            trace: trace!(),
-        })))?
-        .map_err(|e| MQTTError::PublishErr(Box::new(PublishErr {
-            source: e,
-            trace: trace!(),
-        })))?;
+    pub async fn subscribe(&self, topic: &str, qos: QoS) -> Result<(), MQTTError> {
+        timeout(self.timeouts.subscribe, self.client.subscribe(topic, qos))
+            .await
+            .map_err(|_| {
+                MQTTError::TimeoutErr(Box::new(TimeoutErr {
+                    msg: "Subscribe timeout".to_string(),
+                    trace: trace!(),
+                }))
+            })?
+            .map_err(|e| {
+                MQTTError::PublishErr(Box::new(PublishErr {
+                    source: e,
+                    trace: trace!(),
+                }))
+            })?;
 
         Ok(())
     }
 
-    pub async fn unsubscribe(
-        &self,
-        topic: &str,
-    ) -> Result<(), MQTTError> {
-        timeout(
-            self.timeouts.unsubscribe,
-            self.client.unsubscribe(topic)
-        ).await
-        .map_err(|_| MQTTError::TimeoutErr(Box::new(TimeoutErr {
-            msg: "Unsubscribe timeout".to_string(),
-            trace: trace!(),
-        })))?
-        .map_err(|e| MQTTError::PublishErr(Box::new(PublishErr {
-            source: e,
-            trace: trace!(),
-        })))?;
+    pub async fn unsubscribe(&self, topic: &str) -> Result<(), MQTTError> {
+        timeout(self.timeouts.unsubscribe, self.client.unsubscribe(topic))
+            .await
+            .map_err(|_| {
+                MQTTError::TimeoutErr(Box::new(TimeoutErr {
+                    msg: "Unsubscribe timeout".to_string(),
+                    trace: trace!(),
+                }))
+            })?
+            .map_err(|e| {
+                MQTTError::PublishErr(Box::new(PublishErr {
+                    source: e,
+                    trace: trace!(),
+                }))
+            })?;
 
         Ok(())
     }
 
     pub async fn disconnect(&self) -> Result<(), MQTTError> {
-        timeout(
-            self.timeouts.disconnect,
-            self.client.disconnect()
-        ).await
-        .map_err(|_| MQTTError::TimeoutErr(Box::new(TimeoutErr {
-            msg: "Disconnect timeout".to_string(),
-            trace: trace!(),
-        })))?
-        .map_err(|e| MQTTError::PublishErr(Box::new(PublishErr {
-            source: e,
-            trace: trace!(),
-        })))?;
+        timeout(self.timeouts.disconnect, self.client.disconnect())
+            .await
+            .map_err(|_| {
+                MQTTError::TimeoutErr(Box::new(TimeoutErr {
+                    msg: "Disconnect timeout".to_string(),
+                    trace: trace!(),
+                }))
+            })?
+            .map_err(|e| {
+                MQTTError::PublishErr(Box::new(PublishErr {
+                    source: e,
+                    trace: trace!(),
+                }))
+            })?;
 
         Ok(())
     }
 
     pub async fn poll(&mut self) -> Result<Event, MQTTError> {
-        self.eventloop.poll().await.map_err(|e| MQTTError::PollErr(Box::new(PollErr {
-            source: e,
-            trace: trace!(),
-        })))
+        self.eventloop.poll().await.map_err(|e| {
+            MQTTError::PollErr(Box::new(PollErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })
     }
 }

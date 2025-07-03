@@ -42,6 +42,7 @@ docs/HashSchemaSerializedRequest.md
 docs/HashSerializedConfigSchemaFormat.md
 docs/IssueDeviceClaims.md
 docs/IssueDeviceTokenRequest.md
+docs/MqttApi.md
 docs/Override.md
 docs/OverrideKeyValuePair.md
 docs/OverrideKeyValuePairList.md
@@ -51,6 +52,7 @@ docs/Patch.md
 docs/PatchComment.md
 docs/PatchCommentList.md
 docs/SchemaDigestResponse.md
+docs/SyncDevice.md
 docs/Tag.md
 docs/TagList.md
 docs/TagType.md
@@ -66,6 +68,7 @@ src/apis/configuration.rs
 src/apis/devices_api.rs
 src/apis/errors_api.rs
 src/apis/mod.rs
+src/apis/mqtt_api.rs
 src/lib.rs
 src/models/activate_device_request.rs
 src/models/backend_config_instance.rs
@@ -112,6 +115,7 @@ src/models/patch.rs
 src/models/patch_comment.rs
 src/models/patch_comment_list.rs
 src/models/schema_digest_response.rs
+src/models/sync_device.rs
 src/models/tag.rs
 src/models/tag_list.rs
 src/models/tag_type.rs

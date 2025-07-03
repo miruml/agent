@@ -1,24 +1,20 @@
 use config_agent::errors::MiruError;
 // internal crates
 use config_agent::filesys::{dir::Dir, path::PathExt};
-use config_agent::logs::{LogOptions, init};
-use config_agent::mqtt::client::{
-    MQTTClient,
-    OptionsBuilder,
-    ConnectAddress,
-};
+use config_agent::logs::{init, LogOptions};
+use config_agent::mqtt::client::{ConnectAddress, MQTTClient, OptionsBuilder};
 
 // external crates
 use rumqttc::{Event, Incoming};
 use std::time::Duration;
-use tracing::{info, error};
 use tokio::time;
+use tracing::{error, info};
 
 #[ignore]
 #[tokio::test]
 async fn test_mqtt_client() {
     let dir = Dir::create_temp_dir("mqtt_client_test").await.unwrap();
-    let _  = init(LogOptions{
+    let _ = init(LogOptions {
         stdout: true,
         log_dir: dir.path().to_path_buf(),
         ..Default::default()
@@ -39,6 +35,8 @@ async fn test_mqtt_client() {
 
     // create the client and subscribe to the device sync topic
     let mut client = MQTTClient::new(options).await;
+
+    client.publish_device_sync(device_id).await.unwrap();
 
     client.subscribe_device_sync(device_id).await.unwrap();
 

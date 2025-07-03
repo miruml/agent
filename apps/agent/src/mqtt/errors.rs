@@ -9,7 +9,6 @@ use crate::errors::{Code, HTTPCode, MiruError};
 #[allow(unused_imports)]
 use tracing::{debug, error, info, trace, warn};
 
-
 #[derive(Debug)]
 pub struct PollErr {
     pub source: rumqttc::ConnectionError,
@@ -75,11 +74,7 @@ impl MiruError for TimeoutErr {
 
 impl fmt::Display for TimeoutErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "Request timed out: {}",
-            self.msg
-        )
+        write!(f, "Request timed out: {}", self.msg)
     }
 }
 

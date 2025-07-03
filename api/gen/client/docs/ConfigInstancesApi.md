@@ -5,6 +5,7 @@ All URIs are relative to *https://configs.dev.api.miruml.com/agent/v1*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**create_config_instance**](ConfigInstancesApi.md#create_config_instance) | **POST** /config_instances | Create a config instance
+[**get_config_instance**](ConfigInstancesApi.md#get_config_instance) | **GET** /config_instances/{config_instance_id} | Get a config instance
 [**list_config_instances**](ConfigInstancesApi.md#list_config_instances) | **GET** /config_instances | List config instances in a workspace
 [**update_config_instance**](ConfigInstancesApi.md#update_config_instance) | **PATCH** /config_instances/{config_instance_id} | Update a config instance
 
@@ -33,6 +34,35 @@ Name | Type | Description  | Required | Notes
 ### HTTP request headers
 
 - **Content-Type**: application/json
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## get_config_instance
+
+> models::BackendConfigInstance get_config_instance(config_instance_id, expand_left_square_bracket_right_square_bracket)
+Get a config instance
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**config_instance_id** | **String** | The unique identifier of the config instance | [required] |
+**expand_left_square_bracket_right_square_bracket** | Option<[**Vec<models::ConfigInstanceExpand>**](models::ConfigInstanceExpand.md)> |  |  |
+
+### Return type
+
+[**models::BackendConfigInstance**](BackendConfigInstance.md)
+
+### Authorization
+
+[ClerkAuth](../README.md#ClerkAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
