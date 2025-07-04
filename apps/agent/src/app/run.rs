@@ -7,7 +7,7 @@ use std::time::{Duration, SystemTime};
 // internal crates
 use crate::activity::ActivityTracker;
 use crate::app::state::AppState;
-use crate::auth::token_mngr::TokenManager;
+use crate::auth::token_mngr::{TokenManager, TokenManagerExt};
 use crate::deploy::fsm;
 use crate::http::client::HTTPClient;
 use crate::server::{
@@ -175,7 +175,7 @@ async fn await_idle_timeout(
 ) -> Result<(), ServerErr> {
     loop {
         tokio::time::sleep(poll_interval).await;
-        let last_activity = activity_tracker.last_touch();
+        let last_activity = SystemTime::UNIX_EPOCH + Duration::from_secs(activity_tracker.last_touched());
         match SystemTime::now().duration_since(last_activity) {
             Ok(duration) if duration > idle_timeout => {
                 info!("Server idle timeout reached, shutting down...");
@@ -205,7 +205,7 @@ async fn init(
 
     init_token_refresh_worker(
         app_state.token_mngr.clone(),
-        options.token_refresh_worker,
+        options.token_refresh_worker.clone(),
         shutdown_manager,
         shutdown_tx.subscribe(),
     ).await?;
@@ -270,7 +270,8 @@ async fn init_token_refresh_worker(
     let token_refresh_handle = tokio::spawn(async move {
         run_token_refresh_worker(
             &options,
-            token_mngr,
+            token_mngr.as_ref(),
+            |wait| tokio::time::sleep(wait),
             Box::pin(async move {
                 let _ = shutdown_rx.recv().await;
             }),
@@ -310,12 +311,11 @@ async fn init_backend_sync_worker(
     let device_id = app_state.device_id.clone();
     let token_mngr = app_state.token_mngr.clone();
     let syncer = app_state.syncer.clone();
-    let options = options.clone();
     
     let backend_sync_handle = tokio::spawn(async move {
         run_backend_sync_worker(
-            device_id,
-            options,
+            device_id.as_ref(),
+            &options,
             token_mngr.as_ref(),
             syncer.as_ref(),
             Box::pin(async move {

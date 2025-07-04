@@ -2,7 +2,7 @@
 use std::sync::Arc;
 
 // internal crates
-use crate::auth::token_mngr::TokenManager;
+use crate::auth::token_mngr::{TokenManager, TokenManagerExt};
 use crate::crud::prelude::*;
 use crate::deploy::{apply::apply, fsm};
 use crate::filesys::dir::Dir;

@@ -1,83 +1,44 @@
 // standard library
 use std::sync::Arc;
+use std::time::Duration;
 
 // internal crates
-use crate::http::mock::MockAuthClient;
 use config_agent::auth::{
-    token_mngr::{
-        TokenFile, TokenManager,
-    },
     token::Token,
+    errors::*,
 };
-use config_agent::crypt::rsa;
-use config_agent::filesys::dir::Dir;
-use openapi_client::models::TokenResponse;
+use config_agent::workers::cooldown::CooldownOptions;
 use config_agent::workers::token_refresh::{
     TokenRefreshWorkerOptions,
     run_token_refresh_worker,
-    calc_refresh_delay,
+    calc_refresh_wait,
 };
+use config_agent::utils::calc_exp_backoff;
+use config_agent::trace;
 
-use crate::auth::token_mngr::spawn as spawn_token_mngr;
+use crate::auth::mock::MockTokenManager;
+use crate::mock::SleepController;
 
 // external crates
+use chrono::{TimeDelta, Utc};
 
-use chrono::{Duration, Utc};
-use tokio::task::JoinHandle;
-
-
-async fn create_token_manager(dir: &Dir, token: Option<Token>) -> (TokenManager, JoinHandle<()>) {
-    // prepare the token manager args
-    let token_file = dir.file("token.json");
-    let cached_token_file =
-        TokenFile::new_with_default(token_file.clone(), token.unwrap_or_default())
-            .await
-            .unwrap();
-    let private_key_file = dir.file("private_key.pem");
-    let public_key_file = dir.file("public_key.pem");
-    rsa::gen_key_pair(4096, &private_key_file, &public_key_file, true)
-        .await
-        .unwrap();
-
-    // prepare the mock http client
-    let expires_at = Utc::now() + Duration::days(1);
-    let resp = TokenResponse {
-        token: "token".to_string(),
-        expires_at: expires_at.to_rfc3339(),
-    };
-    let resp_clone = resp.clone();
-    let mock_http_client = MockAuthClient {
-        issue_device_token_result: Box::new(move || Ok(resp_clone.clone())),
-        ..Default::default()
-    };
-
-    // spawn the token manager
-    let (token_mngr, worker_handle) = spawn_token_mngr(
-        32,
-        "device_id".to_string(),
-        Arc::new(mock_http_client),
-        cached_token_file,
-        private_key_file,
-    )
-    .unwrap();
-
-    (token_mngr, worker_handle)
-}
 
 pub mod run_refresh_token_worker {
     use super::*;
 
     #[tokio::test]
-    async fn run_and_shutdown() {
-        // testing this is actually pretty difficult because it's an infinite loop
-        // so we'll just test that it can be spawned and shutdown
-
+    async fn success() {
         // create the token manager
-        let dir = Dir::create_temp_dir("testing").await.unwrap();
-        let (token_mngr, worker_handle) = create_token_manager(&dir, None).await;
-        let token_mngr = Arc::new(token_mngr);
+        let token = Token {
+            token: "token".to_string(),
+            expires_at: Utc::now(),
+        };
+        let token_mngr = Arc::new(MockTokenManager::new(token));
 
-        // run the refresh loop with shutdown signal
+        // create a controllable sleep function
+        let sleep_ctrl = Arc::new(SleepController::new());
+        
+        // create the shutdown signal
         let (shutdown_tx, _shutdown_rx): (tokio::sync::broadcast::Sender<()>, _) =
             tokio::sync::broadcast::channel(1);
         let mut shutdown_rx = shutdown_tx.subscribe();
@@ -85,76 +46,397 @@ pub mod run_refresh_token_worker {
             let _ = shutdown_rx.recv().await;
         };
 
-        // run the refresh loop
+        // set the cooldown options
+        let refresh_advance_secs = 10 * 60; // 10 minutes
+        let cooldown = CooldownOptions {
+            base_secs: 30,
+            ..Default::default()
+        };
+
+        // run the worker
         let token_mngr_for_spawn = token_mngr.clone();
+        let sleep_ctrl_for_spawn = sleep_ctrl.clone();
+        let options = TokenRefreshWorkerOptions {
+            refresh_advance_secs,
+            polling: cooldown,
+        };
         let token_refresh_handle = tokio::spawn(async move {
             run_token_refresh_worker(
-                &TokenRefreshWorkerOptions::default(),
-                token_mngr_for_spawn,
+                &options,
+                token_mngr_for_spawn.as_ref(),
+                sleep_ctrl_for_spawn.sleep_fn(),
                 Box::pin(shutdown_signal),
             )
             .await;
         });
 
+        // these sleeps should wait for the number of base secs since the token is
+        // expired
+        let mut expected_get_token_calls = 0;
+        let mut expected_refresh_token_calls = 0;
+        for _ in 0..10 {
+            sleep_ctrl.await_sleep().await;
+            let last_sleep = sleep_ctrl.get_last_sleep().unwrap();
+            assert_eq!(last_sleep.as_secs(), cooldown.base_secs as u64);
+            expected_get_token_calls += 1;
+            expected_refresh_token_calls += 1;
+            assert_eq!(token_mngr.num_get_token_calls(), expected_get_token_calls);
+            assert_eq!(token_mngr.num_refresh_token_calls(), expected_refresh_token_calls);
+            sleep_ctrl.release().await;
+        }
+
+        // these sleeps should wait until token exp - refresh_advance_secs since we set
+        // the token to expire in 100 minutes
+        let token_exp_duration = TimeDelta::minutes(100);
+        token_mngr.set_token(Token {
+            token: "token".to_string(),
+            expires_at: Utc::now() + token_exp_duration,
+        });
+        sleep_ctrl.release().await;
+        for _ in 0..10 {
+            sleep_ctrl.await_sleep().await;
+            let last_sleep = sleep_ctrl.get_last_sleep().unwrap();
+            let expected_sleep_secs = token_exp_duration.num_seconds() - refresh_advance_secs;
+            assert!(last_sleep.as_secs() <= expected_sleep_secs as u64);
+            assert!(last_sleep.as_secs() >= expected_sleep_secs as u64 - 2);
+            expected_get_token_calls += 1;
+            expected_refresh_token_calls += 1;
+            assert_eq!(token_mngr.num_get_token_calls(), expected_get_token_calls);
+            assert_eq!(token_mngr.num_refresh_token_calls(), expected_refresh_token_calls);
+            sleep_ctrl.release().await;
+        }
+        
         // shutdown the token manager and refresh loop
         shutdown_tx.send(()).unwrap();
-        token_mngr.shutdown().await.unwrap();
-        worker_handle.await.unwrap();
+        token_refresh_handle.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn network_error() {
+        // create the token manager
+        let token = Token {
+            token: "token".to_string(),
+            expires_at: Utc::now(),
+        };
+        let token_mngr = MockTokenManager::new(token);
+        token_mngr.set_refresh_token(Box::new(|| Err(AuthErr::MockError(Box::new(MockError {
+            is_network_connection_error: true,
+            trace: trace!(),
+        })))));
+        let token_mngr = Arc::new(token_mngr);
+
+        // create a controllable sleep function
+        let sleep_ctrl = Arc::new(SleepController::new());
+        
+        // create the shutdown signal
+        let (shutdown_tx, _shutdown_rx): (tokio::sync::broadcast::Sender<()>, _) =
+            tokio::sync::broadcast::channel(1);
+        let mut shutdown_rx = shutdown_tx.subscribe();
+        let shutdown_signal = async move {
+            let _ = shutdown_rx.recv().await;
+        };
+
+        // set the cooldown options
+        let refresh_advance_secs = 10 * 60; // 10 minutes
+        let cooldown = CooldownOptions {
+            base_secs: 30,
+            ..Default::default()
+        };
+
+        // run the worker
+        let token_mngr_for_spawn = token_mngr.clone();
+        let sleep_ctrl_for_spawn = sleep_ctrl.clone();
+        let options = TokenRefreshWorkerOptions {
+            refresh_advance_secs,
+            polling: cooldown,
+        };
+        let token_refresh_handle = tokio::spawn(async move {
+            run_token_refresh_worker(
+                &options,
+                token_mngr_for_spawn.as_ref(),
+                sleep_ctrl_for_spawn.sleep_fn(),
+                Box::pin(shutdown_signal),
+            )
+            .await;
+        });
+
+        // all sleeps should wait the base number of seconds
+        let mut expected_get_token_calls = 0;
+        let mut expected_refresh_token_calls = 0;
+        for _ in 0..10 {
+            sleep_ctrl.release().await;
+            sleep_ctrl.await_sleep().await;
+            let last_sleep = sleep_ctrl.get_last_sleep().unwrap();
+            let expected_sleep_secs = cooldown.base_secs;
+            assert_eq!(last_sleep.as_secs(), expected_sleep_secs as u64);
+            expected_get_token_calls += 1;
+            expected_refresh_token_calls += 1;
+            assert_eq!(token_mngr.num_get_token_calls(), expected_get_token_calls);
+            assert_eq!(token_mngr.num_refresh_token_calls(), expected_refresh_token_calls);
+        }
+        
+        // shutdown the token manager and refresh loop
+        shutdown_tx.send(()).unwrap();
+        token_refresh_handle.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn non_network_error() {
+        // create the token manager
+        let token = Token {
+            token: "token".to_string(),
+            expires_at: Utc::now(),
+        };
+        let token_mngr = MockTokenManager::new(token);
+        token_mngr.set_refresh_token(Box::new(|| Err(AuthErr::MockError(Box::new(MockError {
+            is_network_connection_error: false,
+            trace: trace!(),
+        })))));
+        let token_mngr = Arc::new(token_mngr);
+
+        // create a controllable sleep function
+        let sleep_ctrl = Arc::new(SleepController::new());
+        
+        // create the shutdown signal
+        let (shutdown_tx, _shutdown_rx): (tokio::sync::broadcast::Sender<()>, _) =
+            tokio::sync::broadcast::channel(1);
+        let mut shutdown_rx = shutdown_tx.subscribe();
+        let shutdown_signal = async move {
+            let _ = shutdown_rx.recv().await;
+        };
+
+        // set the cooldown options
+        let refresh_advance_secs = 10 * 60; // 10 minutes
+        let cooldown = CooldownOptions {
+            base_secs: 30,
+            ..Default::default()
+        };
+
+        // run the worker
+        let token_mngr_for_spawn = token_mngr.clone();
+        let sleep_ctrl_for_spawn = sleep_ctrl.clone();
+        let options = TokenRefreshWorkerOptions {
+            refresh_advance_secs,
+            polling: cooldown,
+        };
+        let token_refresh_handle = tokio::spawn(async move {
+            run_token_refresh_worker(
+                &options,
+                token_mngr_for_spawn.as_ref(),
+                sleep_ctrl_for_spawn.sleep_fn(),
+                Box::pin(shutdown_signal),
+            )
+            .await;
+        });
+
+        // sleeps should wait according to the exp backoff
+        let mut expected_get_token_calls = 0;
+        let mut expected_refresh_token_calls = 0;
+        for i in 0..10 {
+            sleep_ctrl.release().await;
+            sleep_ctrl.await_sleep().await;
+            let last_sleep = sleep_ctrl.get_last_sleep().unwrap();
+            let expected_sleep_secs = calc_exp_backoff(
+                cooldown.base_secs,
+                cooldown.growth_factor,
+                i + 1,
+                cooldown.max_secs,
+            );
+            assert_eq!(last_sleep.as_secs(), expected_sleep_secs as u64);
+            expected_get_token_calls += 1;
+            expected_refresh_token_calls += 1;
+            assert_eq!(token_mngr.num_get_token_calls(), expected_get_token_calls);
+            assert_eq!(token_mngr.num_refresh_token_calls(), expected_refresh_token_calls);
+        }
+        
+        // shutdown the token manager and refresh loop
+        shutdown_tx.send(()).unwrap();
+        token_refresh_handle.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn non_network_error_recovery() {
+        // create the token manager
+        let token = Token {
+            token: "token".to_string(),
+            expires_at: Utc::now(),
+        };
+        let token_mngr = Arc::new(MockTokenManager::new(token));
+        token_mngr.set_refresh_token(Box::new(|| Err(AuthErr::MockError(Box::new(MockError {
+            is_network_connection_error: false,
+            trace: trace!(),
+        })))));
+
+        // create a controllable sleep function
+        let sleep_ctrl = Arc::new(SleepController::new());
+        
+        // create the shutdown signal
+        let (shutdown_tx, _shutdown_rx): (tokio::sync::broadcast::Sender<()>, _) =
+            tokio::sync::broadcast::channel(1);
+        let mut shutdown_rx = shutdown_tx.subscribe();
+        let shutdown_signal = async move {
+            let _ = shutdown_rx.recv().await;
+        };
+
+        // set the cooldown options
+        let refresh_advance_secs = 10 * 60; // 10 minutes
+        let cooldown = CooldownOptions {
+            base_secs: 30,
+            ..Default::default()
+        };
+
+        // run the worker
+        let token_mngr_for_spawn = token_mngr.clone();
+        let sleep_ctrl_for_spawn = sleep_ctrl.clone();
+        let options = TokenRefreshWorkerOptions {
+            refresh_advance_secs,
+            polling: cooldown,
+        };
+        let token_refresh_handle = tokio::spawn(async move {
+            run_token_refresh_worker(
+                &options,
+                token_mngr_for_spawn.as_ref(),
+                sleep_ctrl_for_spawn.sleep_fn(),
+                Box::pin(shutdown_signal),
+            )
+            .await;
+        });
+
+        // sleeps should wait according to the exp backoff
+        let mut expected_get_token_calls = 0;
+        let mut expected_refresh_token_calls = 0;
+        for i in 0..10 {
+            sleep_ctrl.release().await;
+            sleep_ctrl.await_sleep().await;
+            let last_sleep = sleep_ctrl.get_last_sleep().unwrap();
+            let expected_sleep_secs = calc_exp_backoff(
+                cooldown.base_secs,
+                cooldown.growth_factor,
+                i + 1,
+                cooldown.max_secs,
+            );
+            assert_eq!(last_sleep.as_secs(), expected_sleep_secs as u64);
+            expected_get_token_calls += 1;
+            expected_refresh_token_calls += 1;
+            assert_eq!(token_mngr.num_get_token_calls(), expected_get_token_calls);
+            assert_eq!(token_mngr.num_refresh_token_calls(), expected_refresh_token_calls);
+        }
+
+        token_mngr.set_refresh_token(Box::new(|| Ok(())));
+
+        // all sleeps should wait the base number of seconds after recovery
+        sleep_ctrl.release().await;
+        for _ in 0..10 {
+            sleep_ctrl.release().await;
+            sleep_ctrl.await_sleep().await;
+            let last_sleep = sleep_ctrl.get_last_sleep().unwrap();
+            let expected_sleep_secs = cooldown.base_secs;
+            assert_eq!(last_sleep.as_secs(), expected_sleep_secs as u64);
+            expected_get_token_calls += 1;
+            expected_refresh_token_calls += 1;
+            assert_eq!(token_mngr.num_get_token_calls(), expected_get_token_calls);
+            assert_eq!(token_mngr.num_refresh_token_calls(), expected_refresh_token_calls);
+        }
+        
+        // shutdown the token manager and refresh loop
+        shutdown_tx.send(()).unwrap();
         token_refresh_handle.await.unwrap();
     }
 }
 
-pub mod calc_refresh_delay {
+pub mod calc_refresh_wait {
     use super::*;
 
     #[tokio::test]
     async fn expired_in_past() {
-        let dir = Dir::create_temp_dir("testing").await.unwrap();
-        let token = Token {
+        let token = Token { 
             token: "token".to_string(),
-            expires_at: Utc::now() - Duration::minutes(60),
+            expires_at: Utc::now() - TimeDelta::minutes(60),
         };
-        let (token_mngr, _) = create_token_manager(&dir, Some(token)).await;
+        let token_mngr = MockTokenManager::new(token);
 
-        let ten_minutes = tokio::time::Duration::from_secs(10 * 60);
-        let cooldown = tokio::time::Duration::from_secs(30);
-        let sleep_duration = calc_refresh_delay(&token_mngr, ten_minutes, cooldown).await;
-        assert_eq!(sleep_duration, cooldown);
+        let refresh_advance = 10 * 60; // 10 minutes
+        let cooldown = CooldownOptions {
+            base_secs: 30,
+            ..Default::default()
+        };
+
+        for i in 0..10 {
+            let err_streak = i;
+            let actual = calc_refresh_wait(
+                &token_mngr,
+                refresh_advance,
+                err_streak,
+                cooldown,
+            )
+            .await;
+            let expected_secs = calc_exp_backoff(
+                cooldown.base_secs,
+                cooldown.growth_factor,
+                err_streak,
+                cooldown.max_secs,
+            );
+            let expected = Duration::from_secs(expected_secs as u64);
+            assert_eq!(expected, actual);
+        }
     }
 
     #[tokio::test]
     async fn expires_less_than_10_minutes() {
-        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let token = Token {
             token: "token".to_string(),
-            expires_at: Utc::now() + Duration::minutes(9),
+            expires_at: Utc::now() + TimeDelta::minutes(9),
         };
-        let (token_mngr, _) = create_token_manager(&dir, Some(token)).await;
+        let token_mngr = MockTokenManager::new(token);
 
-        let ten_minutes = tokio::time::Duration::from_secs(10 * 60);
-        let cooldown = tokio::time::Duration::from_secs(30);
-        let sleep_duration =
-            calc_refresh_delay(&token_mngr, ten_minutes, cooldown).await;
-        assert_eq!(sleep_duration, cooldown);
+        let refresh_advance = 10 * 60; // 10 minutes
+        let cooldown = CooldownOptions {
+            base_secs: 30,
+            ..Default::default()
+        };
+
+        for i in 0..10 {
+            let err_streak = i;
+            let sleep_duration = calc_refresh_wait(
+                &token_mngr,
+                refresh_advance,
+                err_streak,
+                cooldown,
+            )
+            .await;
+            let expected_secs = calc_exp_backoff(
+                cooldown.base_secs,
+                cooldown.growth_factor,
+                err_streak,
+                cooldown.max_secs,
+            );
+            let expected = Duration::from_secs(expected_secs as u64);
+            assert_eq!(sleep_duration, expected);
+        }
     }
 
     #[tokio::test]
     async fn expires_more_than_10_minutes() {
-        let dir = Dir::create_temp_dir("testing").await.unwrap();
         let token = Token {
             token: "token".to_string(),
-            expires_at: Utc::now() + Duration::minutes(35),
+            expires_at: Utc::now() + TimeDelta::minutes(35),
         };
-        let (token_mngr, _) = create_token_manager(&dir, Some(token)).await;
+        let token_mngr = MockTokenManager::new(token);
 
-        let ten_minutes = tokio::time::Duration::from_secs(10 * 60);
-        let cooldown = tokio::time::Duration::from_secs(30);
-        let sleep_duration = calc_refresh_delay(&token_mngr, ten_minutes, cooldown).await;
+        let refresh_advance = 10 * 60; // 10 minutes
+        let cooldown = CooldownOptions {
+            base_secs: 30,
+            ..Default::default()
+        };
 
         // expect to wait until 10 minutes before expiration (25 minutes)
-        let expected = tokio::time::Duration::from_secs(25 * 60);
-        assert!(sleep_duration < expected);
-        assert!(sleep_duration > expected - tokio::time::Duration::from_secs(5));
+        for i in 0..10 {
+            let err_streak = i;
+            let actual = calc_refresh_wait(&token_mngr, refresh_advance, err_streak, cooldown).await;
+            let expected = Duration::from_secs(25 * 60);
+            assert!(actual < expected);
+            assert!(actual > expected - Duration::from_secs(5));
+        }
     }
 }
 

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 // internal crates
+use crate::auth::token_mngr::TokenManagerExt;
 use crate::errors::MiruError;
 use crate::server::errors::{ServerAuthErr, ServerErr, ServerServiceErr};
 use crate::server::state::ServerState;

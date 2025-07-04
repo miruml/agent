@@ -1,17 +1,17 @@
 // std crates
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 // internal crates
+use config_agent::app::state::AppState;
+use config_agent::auth::token::Token;
 use config_agent::deploy::fsm;
 use config_agent::filesys::dir::Dir;
 use config_agent::filesys::errors::FileSysErr;
 use config_agent::http::client::HTTPClient;
 use config_agent::models::agent::Agent;
+use config_agent::storage::caches::CacheCapacities;
 use config_agent::server::errors::ServerErr;
-use config_agent::server::state::ServerState;
 use config_agent::storage::layout::StorageLayout;
-use config_agent::storage::token::Token;
 
 // external crates
 use chrono::Utc;
@@ -23,8 +23,9 @@ pub mod new {
     async fn fail_missing_private_key_file() {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
         let layout = StorageLayout::new(dir);
-        let result = ServerState::new(
-            layout,
+        let result = AppState::init(
+            &layout,
+            CacheCapacities::default(),
             Arc::new(HTTPClient::new("doesntmatter").await),
             fsm::Settings::default(),
         )
@@ -53,8 +54,9 @@ pub mod new {
             .await
             .unwrap();
 
-        let result = ServerState::new(
-            layout,
+        let result = AppState::init(
+            &layout,
+            CacheCapacities::default(),
             Arc::new(HTTPClient::new("doesntmatter").await),
             fsm::Settings::default(),
         )
@@ -83,8 +85,9 @@ pub mod new {
             };
         token_file.write_json(&token, false, false).await.unwrap();
 
-        let (state, _) = ServerState::new(
-            layout.clone(),
+        let (state, _) = AppState::init(
+            &layout,
+            CacheCapacities::default(),
             Arc::new(HTTPClient::new("doesntmatter").await),
             fsm::Settings::default(),
         )
@@ -92,8 +95,8 @@ pub mod new {
         .unwrap();
 
         // check last activity
-        assert!(state.last_activity.load(Ordering::Relaxed) <= Utc::now().timestamp() as u64);
-        assert!(state.last_activity.load(Ordering::Relaxed) >= begin_test as u64);
+        assert!(state.activity_tracker.last_touched() <= Utc::now().timestamp() as u64);
+        assert!(state.activity_tracker.last_touched() >= begin_test as u64);
     }
 
     #[tokio::test]
@@ -114,8 +117,9 @@ pub mod new {
         let agent = Agent::default();
         agent_file.write_json(&agent, false, false).await.unwrap();
 
-        let (state, _) = ServerState::new(
-            layout.clone(),
+        let (state, _) = AppState::init(
+            &layout,
+            CacheCapacities::default(),
             Arc::new(HTTPClient::new("doesntmatter").await),
             fsm::Settings::default(),
         )
@@ -128,8 +132,8 @@ pub mod new {
         assert_eq!(token.token, Token::default().token);
 
         // check last activity
-        assert!(state.last_activity.load(Ordering::Relaxed) <= Utc::now().timestamp() as u64);
-        assert!(state.last_activity.load(Ordering::Relaxed) >= begin_test as u64);
+        assert!(state.activity_tracker.last_touched() <= Utc::now().timestamp() as u64);
+        assert!(state.activity_tracker.last_touched() >= begin_test as u64);
     }
 }
 
@@ -153,8 +157,9 @@ pub mod shutdown {
         let agent = Agent::default();
         agent_file.write_json(&agent, false, false).await.unwrap();
 
-        let (state, state_handle) = ServerState::new(
-            layout.clone(),
+        let (state, state_handle) = AppState::init(
+            &layout,
+            CacheCapacities::default(),
             Arc::new(HTTPClient::new("doesntmatter").await),
             fsm::Settings::default(),
         )
@@ -162,39 +167,5 @@ pub mod shutdown {
         .unwrap();
         state.shutdown().await.unwrap();
         state_handle.await;
-    }
-}
-
-pub mod record_activity {
-    use super::*;
-
-    #[tokio::test]
-    async fn success_record_activity() {
-        let dir = Dir::create_temp_dir("testing").await.unwrap();
-        let layout = StorageLayout::new(dir);
-
-        // create a private key file
-        let private_key_file = layout.auth_dir().private_key_file();
-        private_key_file
-            .write_string("test", false, false)
-            .await
-            .unwrap();
-
-        // create the agent file
-        let agent_file = layout.agent_file();
-        let agent = Agent::default();
-        agent_file.write_json(&agent, false, false).await.unwrap();
-
-        let (state, _) = ServerState::new(
-            layout.clone(),
-            Arc::new(HTTPClient::new("doesntmatter").await),
-            fsm::Settings::default(),
-        )
-        .await
-        .unwrap();
-        let before_record = Utc::now().timestamp();
-        std::thread::sleep(std::time::Duration::from_secs(1));
-        state.record_activity();
-        assert!(state.last_activity.load(Ordering::Relaxed) > before_record as u64);
     }
 }

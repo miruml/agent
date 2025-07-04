@@ -218,6 +218,37 @@ impl fmt::Display for ReceiveActorMessageErr {
 }
 
 #[derive(Debug)]
+pub struct MockError {
+    pub is_network_connection_error: bool,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for MockError {  
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        self.is_network_connection_error
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for MockError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "mock error (is network connection error: {})", self.is_network_connection_error)
+    }
+}
+
+
+#[derive(Debug)]
 pub enum AuthErr {
     // auth errors
     TimestampConversionErr(Box<TimestampConversionErr>),
@@ -231,6 +262,9 @@ pub enum AuthErr {
     SerdeErr(Box<SerdeErr>),
     SendActorMessageErr(Box<SendActorMessageErr>),
     ReceiveActorMessageErr(Box<ReceiveActorMessageErr>),
+
+    // mock errors
+    MockError(Box<MockError>),
 }
 
 macro_rules! forward_error_method {
@@ -243,6 +277,7 @@ macro_rules! forward_error_method {
             Self::TimestampConversionErr(e) => e.$method($($arg)?),
             Self::SendActorMessageErr(e) => e.$method($($arg)?),
             Self::ReceiveActorMessageErr(e) => e.$method($($arg)?),
+            Self::MockError(e) => e.$method($($arg)?),
         }
     };
 }

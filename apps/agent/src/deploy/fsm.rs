@@ -61,8 +61,8 @@ pub fn is_action_required(action: NextAction) -> bool {
 #[derive(Debug, Clone, Copy)]
 pub struct Settings {
     pub max_attempts: u32,
-    pub exp_backoff_base_secs: u32,
-    pub max_cooldown_secs: u32,
+    pub exp_backoff_base_secs: i64,
+    pub max_cooldown_secs: i64,
 }
 
 impl Default for Settings {
@@ -222,6 +222,6 @@ fn get_error_options(
         activity_status: None,
         error_status: new_error_status,
         attempts: Some(attempts),
-        cooldown: Some(TimeDelta::seconds(cooldown as i64)),
+        cooldown: Some(TimeDelta::seconds(cooldown)),
     }
 }

@@ -31,6 +31,6 @@ pub fn version_info() -> serde_json::Value {
     })
 }
 
-pub fn calc_exp_backoff(base: u32, growth_factor: u32, exp: u32, max: u32) -> u32 {
+pub fn calc_exp_backoff(base: i64, growth_factor: i64, exp: u32, max: i64) -> i64 {
     min(base.saturating_mul(growth_factor.saturating_pow(exp)), max)
 }

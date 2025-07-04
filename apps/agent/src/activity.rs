@@ -1,7 +1,7 @@
 // standard library
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 // external crates
 use tracing::error;
@@ -29,10 +29,8 @@ impl ActivityTracker {
         }
     }
 
-    pub fn last_touch(&self) -> SystemTime {
-        SystemTime::UNIX_EPOCH + Duration::from_secs(
-            self.last_activity.load(Ordering::Relaxed)
-        )
+    pub fn last_touched(&self) -> u64 {
+        self.last_activity.load(Ordering::Relaxed)
     }
 
     pub fn touch(&self) {

@@ -1,3 +1,4 @@
+pub mod app;
 pub mod auth;
 pub mod cache;
 pub mod crud;
@@ -9,7 +10,7 @@ pub mod logs;
 pub mod mock;
 pub mod models;
 pub mod mqtt;
-// pub mod server;
+pub mod server;
 pub mod services;
 pub mod storage;
 pub mod sync;

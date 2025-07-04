@@ -7,7 +7,7 @@ use config_agent::auth::{
     errors::AuthErr,
     token_mngr::{
         SingleThreadTokenManager,
-        TokenFile, TokenManager, Worker,
+        TokenFile, TokenManager, TokenManagerExt, Worker,
     },
     token::Token,
 };

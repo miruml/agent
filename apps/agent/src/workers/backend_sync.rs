@@ -2,10 +2,11 @@
 use std::future::Future;
 use std::pin::Pin;
 use std::time::Duration;
+use std::cmp::max;
 
 // internal modules
 use crate::auth::{
-    token_mngr::TokenManager,
+    token_mngr::TokenManagerExt,
     token::Token,
 };
 use crate::mqtt::errors::*;
@@ -19,29 +20,12 @@ use crate::mqtt::client::{
 use crate::mqtt::device::SyncDevice;
 use crate::sync::syncer::Syncer;
 use crate::utils::calc_exp_backoff;
+use crate::workers::cooldown::CooldownOptions;
 
 // external crates
 use chrono::TimeDelta;
 use rumqttc::{Event, Incoming, EventLoop};
 use tracing::{error, info};
-
-
-#[derive(Debug, Clone)]
-pub struct CooldownOptions {
-    pub base_secs: u32,
-    pub growth_factor: u32,
-    pub max_secs: u32,
-}
-
-impl Default for CooldownOptions {
-    fn default() -> Self {
-        Self {
-            base_secs: 15,
-            growth_factor: 2,
-            max_secs: 12 * 60 * 60, // 12 hours
-        }
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct BackendSyncWorkerOptions {
@@ -56,10 +40,15 @@ impl Default for BackendSyncWorkerOptions {
     fn default() -> Self {
         Self {
             poll_secs: 12 * 60 * 60, // 12 hours
-            sync_cooldown: CooldownOptions::default(),
+            sync_cooldown: CooldownOptions {
+                base_secs: 15,
+                growth_factor: 2,
+                max_secs: 12 * 60 * 60, // 12 hours
+            },
             mqtt_cooldown: CooldownOptions {
                 base_secs: 1,
-                ..Default::default()
+                growth_factor: 2,
+                max_secs: 12 * 60 * 60, // 12 hours
             },
             mqtt_enabled: true,
             mqtt_broker_address: ConnectAddress::default(),
@@ -67,59 +56,56 @@ impl Default for BackendSyncWorkerOptions {
     }
 }
 
-pub async fn run_backend_sync_worker(
-    device_id: String,
-    options: BackendSyncWorkerOptions,
-    token_mngr: &TokenManager,
+pub async fn run_backend_sync_worker<TokenManagerT: TokenManagerExt>(
+    device_id: &str,
+    options: &BackendSyncWorkerOptions,
+    token_mngr: &TokenManagerT,
     syncer: &Syncer,
     mut shutdown_signal: Pin<Box<impl Future<Output = ()> + Send + 'static>>,
 ) {
+    if options.mqtt_enabled {
+        tokio::select! {
+            _ = shutdown_signal.as_mut() => {
+                info!("Backend sync worker shutdown complete");
+            }
+            // these don't return but we do need to run them in the background
+            _ = run_polling_sync(options, syncer) => {}
+            _ = run_mqtt_sync(device_id, options, token_mngr, syncer) => {}
+        }
+    } else {
+        tokio::select! {
+            _ = shutdown_signal.as_mut() => {
+                info!("Backend sync worker shutdown complete");
+            }
+            // this doesn't return but we do need to run it in the background
+            _ = run_polling_sync(options, syncer) => {}
+        }
+    }
+}
+
+// ================================ POLLING SYNC =================================== //
+pub async fn run_polling_sync(options: &BackendSyncWorkerOptions, syncer: &Syncer) {
     let mut sync_err_streak= 0;
 
     loop {
-        let wait = if sync_err_streak > 0 {
-            // wait using the cooldown period
-            let cooldown_secs = calc_exp_backoff(
-                options.sync_cooldown.base_secs,
-                options.sync_cooldown.growth_factor,
-                sync_err_streak,
-                options.sync_cooldown.max_secs
-            );
-            Duration::from_secs(cooldown_secs as u64)
-        } else {
-            // wait using the poll period
-            Duration::from_secs(options.poll_secs as u64)
-        };
+        let cooldown_secs = calc_exp_backoff(
+            options.sync_cooldown.base_secs,
+            options.sync_cooldown.growth_factor,
+            sync_err_streak,
+            options.sync_cooldown.max_secs
+        );
 
-        // ----------------------------- WITHOUT MQTT ------------------------------ //
-        if !options.mqtt_enabled {
-            tokio::select! {
-                _ = shutdown_signal.as_mut() => {
-                    info!("Backend sync worker shutdown complete");
-                    return;
-                }
-                _ = tokio::time::sleep(wait) => {}
-            }
-        // ------------------------------- WITH MQTT ------------------------------- //
-        } else {
-            tokio::select! {
-                _ = shutdown_signal.as_mut() => {
-                    info!("Backend sync worker shutdown complete");
-                    return;
-                }
-                _ = tokio::time::sleep(wait) => {}
-                _ = listen_for_sync_command(&device_id, token_mngr, &options) => {}
-            }
-        }
+        // wait using the poll period
+        let cooldown_duration = Duration::from_secs(cooldown_secs as u64);
+        let poll_duration = Duration::from_secs(options.poll_secs as u64);
+        let wait = max(cooldown_duration, poll_duration);
+        tokio::time::sleep(wait).await;
 
-        // Never sync the device in less time than the base cooldown period. This is to
-        // prevent the mqtt client from sending sync commands (and / or duplicates) too
-        // frequently. This is a separate mechanism from the cooldown period from the
-        // sync error streak, as the mqtt client could invoke a sync command sooner than
-        // the error cooldown period, which we will allow (as long it is no shorter than
-        // the base of course)
-        match syncer.sync(TimeDelta::seconds(options.sync_cooldown.max_secs as i64)).await {
-            Ok(_) => { sync_err_streak = 0; }
+        let min_cooldown = TimeDelta::seconds(cooldown_secs);
+        match syncer.sync(min_cooldown).await {
+            Ok(_) => {
+                sync_err_streak = 0;
+            }
             Err(e) => {
                 error!("error syncing device: {e:?}");
                 sync_err_streak += 1;
@@ -128,11 +114,12 @@ pub async fn run_backend_sync_worker(
     }
 }
 
-// =============================== MQTT LISTENER =================================== //
-async fn listen_for_sync_command(
+// ============================= MQTT SYNC LISTENER ================================ //
+async fn run_mqtt_sync<TokenManagerT: TokenManagerExt>(
     device_id: &str,
-    token_mngr: &TokenManager,
     options: &BackendSyncWorkerOptions,
+    token_mngr: &TokenManagerT,
+    syncer: &Syncer,
 ) -> Result<(), MQTTError> {
 
     // create the mqtt client
@@ -150,14 +137,17 @@ async fn listen_for_sync_command(
         match event {
             Ok(event) => {
                 mqtt_client_err_streak = 0;
-                let is_synced = handle_mqtt_event(&event).await;
-                if !is_synced {
-                    return Ok(());
-                }
+                handle_mqtt_event(
+                    device_id,
+                    &mqtt_client,
+                    &event,
+                    syncer,
+                    &options.sync_cooldown
+                ).await;
             }
             Err(e) => {
                 mqtt_client_err_streak += 1;
-                handle_listener_error(e, token_mngr).await;
+                handle_mqtt_error(e, token_mngr).await;
             }
         }
 
@@ -173,9 +163,9 @@ async fn listen_for_sync_command(
     }
 }
 
-async fn create_mqtt_client(
+async fn create_mqtt_client<TokenManagerT: TokenManagerExt>(
     device_id: &str,
-    token_mngr: &TokenManager,
+    token_mngr: &TokenManagerT,
     broker_address: ConnectAddress,
 ) -> (MQTTClient, EventLoop) {
     // update the mqtt password
@@ -197,15 +187,19 @@ async fn create_mqtt_client(
     MQTTClient::new(&options).await
 }
 
-type IsSynced = bool;
-
-async fn handle_mqtt_event(event: &Event) -> IsSynced {
+pub async fn handle_mqtt_event(
+    device_id: &str,
+    mqtt_client: &MQTTClient,
+    event: &Event,
+    syncer: &Syncer,
+    sync_cooldown_opts: &CooldownOptions,
+) {
 
     // ignore non-publish events
     let publish = match event {
         Event::Incoming(Incoming::Publish(publish)) => publish,
         // non-publish events are not sync requests so device is still considered synced
-        _ => return true,
+        _ => return,
     };
 
     // deserialize the sync request
@@ -216,10 +210,28 @@ async fn handle_mqtt_event(event: &Event) -> IsSynced {
             false
         }
     };
-    is_synced
+    if is_synced {
+        return;
+    }
+
+    // sync the device
+    let min_cooldown = TimeDelta::seconds(sync_cooldown_opts.base_secs);
+    match syncer.sync(min_cooldown).await {
+        Ok(_) => {
+            if let Err(e) = mqtt_client.publish_device_sync(device_id).await {
+                error!("error publishing device sync: {e:?}");
+            }
+        }
+        Err(e) => {
+            error!("error syncing device: {e:?}");
+        }
+    }
 }
 
-async fn handle_listener_error(e: MQTTError, token_mngr: &TokenManager) {
+pub async fn handle_mqtt_error<TokenManagerT: TokenManagerExt>(
+    e: MQTTError,
+    token_mngr: &TokenManagerT
+) {
     match e {
         MQTTError::AuthenticationErr(e) => {
             error!("authentication error while polling backend for sync command via mqtt: {e:?}");

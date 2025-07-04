@@ -533,7 +533,7 @@ pub mod transitions {
             attempts,
             settings.max_cooldown_secs,
         );
-        let expected_cooldown_ends_at = now + TimeDelta::seconds(cooldown as i64);
+        let expected_cooldown_ends_at = now + TimeDelta::seconds(cooldown);
         assert!(
             actual.cooldown_ends_at <= expected_cooldown_ends_at,
             "actual:\n{:?}\n expected:\n{:?}\n",

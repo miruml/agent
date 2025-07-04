@@ -61,7 +61,7 @@ pub mod deploy_with_rollback {
             expected.attempts,
             settings.max_cooldown_secs,
         );
-        let approx_cooldown_ends_at = Utc::now() + TimeDelta::seconds(cooldown as i64);
+        let approx_cooldown_ends_at = Utc::now() + TimeDelta::seconds(cooldown);
         assert!(expected.cooldown_ends_at <= approx_cooldown_ends_at);
         assert!(expected.cooldown_ends_at >= approx_cooldown_ends_at - TimeDelta::seconds(1));
 
@@ -477,7 +477,7 @@ pub mod deploy_with_rollback {
             expected_to_deploy.attempts,
             settings.max_cooldown_secs,
         );
-        let approx_cooldown_ends_at = Utc::now() + TimeDelta::seconds(cooldown as i64);
+        let approx_cooldown_ends_at = Utc::now() + TimeDelta::seconds(cooldown);
         assert!(expected_to_deploy.cooldown_ends_at <= approx_cooldown_ends_at);
         assert!(
             expected_to_deploy.cooldown_ends_at >= approx_cooldown_ends_at - TimeDelta::seconds(1)
@@ -573,7 +573,7 @@ pub mod deploy_with_rollback {
                     instance.attempts,
                     settings.max_cooldown_secs,
                 );
-                let approx_cooldown_ends_at = Utc::now() + TimeDelta::seconds(cooldown as i64);
+                let approx_cooldown_ends_at = Utc::now() + TimeDelta::seconds(cooldown);
                 instance.cooldown_ends_at = deploy_results.to_deploy[i].cooldown_ends_at;
                 assert!(instance.cooldown_ends_at <= approx_cooldown_ends_at);
                 assert!(

@@ -5,7 +5,7 @@ use std::sync::Arc;
 // internal crates
 use crate::activity::ActivityTracker;
 use crate::auth::{
-    token_mngr::TokenManager,
+    token_mngr::{TokenManager, TokenManagerExt},
     token::Token,
 };
 use crate::crypt::jwt;

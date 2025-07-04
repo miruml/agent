@@ -30,6 +30,14 @@ struct IssueTokenClaim {
     pub expiration: i64,
 }
 
+// =================================== TRAIT ======================================= //
+#[allow(async_fn_in_trait)]
+pub trait TokenManagerExt {
+    async fn shutdown(&self) -> Result<(), AuthErr>;
+    async fn get_token(&self) -> Result<Arc<Token>, AuthErr>;
+    async fn refresh_token(&self) -> Result<(), AuthErr>;
+}
+
 // ======================== SINGLE THREADED IMPLEMENTATION ========================= //
 pub struct SingleThreadTokenManager<HTTPClientT: DevicesExt> {
     device_id: String,
@@ -249,8 +257,10 @@ impl TokenManager {
     pub fn new(sender: Sender<WorkerCommand>) -> Self {
         Self { sender }
     }
+}
 
-    pub async fn shutdown(&self) -> Result<(), AuthErr> {
+impl TokenManagerExt for TokenManager {
+    async fn shutdown(&self) -> Result<(), AuthErr> {
         info!("Shutting down token manager...");
         let (send, recv) = oneshot::channel();
         self.sender
@@ -272,7 +282,7 @@ impl TokenManager {
         Ok(())
     }
 
-    pub async fn get_token(&self) -> Result<Arc<Token>, AuthErr> {
+    async fn get_token(&self) -> Result<Arc<Token>, AuthErr> {
         debug!("Requesting token from token manager");
         let (send, recv) = oneshot::channel();
         self.sender
@@ -292,7 +302,7 @@ impl TokenManager {
         })?
     }
 
-    pub async fn refresh_token(&self) -> Result<(), AuthErr> {
+    async fn refresh_token(&self) -> Result<(), AuthErr> {
         debug!("Requesting token refresh from token manager");
         let (send, recv) = oneshot::channel();
         self.sender
@@ -310,5 +320,19 @@ impl TokenManager {
                 trace: trace!(),
             }))
         })?
+    }
+}
+
+impl TokenManagerExt for Arc<TokenManager> {
+    async fn shutdown(&self) -> Result<(), AuthErr> {
+        self.as_ref().shutdown().await
+    }
+
+    async fn get_token(&self) -> Result<Arc<Token>, AuthErr> {
+        self.as_ref().get_token().await
+    }
+
+    async fn refresh_token(&self) -> Result<(), AuthErr> {
+        self.as_ref().refresh_token().await
     }
 }
