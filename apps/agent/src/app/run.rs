@@ -155,10 +155,6 @@ pub async fn run(
                 options.lifecycle.idle_timeout_poll_interval,
             ) => {
                 info!("Idle timeout ({:?}) reached", options.lifecycle.idle_timeout);
-                info!("Pruning filesystem caches...");
-                if let Err(e) = app_state.caches.prune().await {
-                    error!("Failed to prune filesystem caches: {}", e);
-                }
                 info!("Shutting down...");
             }
             _ = await_max_runtime(options.lifecycle.max_runtime) => {
@@ -275,9 +271,9 @@ async fn init_token_refresh_worker(
         run_token_refresh_worker(
             &options,
             token_mngr,
-            async move {
+            Box::pin(async move {
                 let _ = shutdown_rx.recv().await;
-            },
+            }),
         )
         .await;
     });
@@ -322,9 +318,9 @@ async fn init_backend_sync_worker(
             options,
             token_mngr.as_ref(),
             syncer.as_ref(),
-            async move {
+            Box::pin(async move {
                 let _ = shutdown_rx.recv().await;
-            },
+            }),
         )
         .await;
     });

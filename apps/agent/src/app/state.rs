@@ -18,7 +18,7 @@ use crate::storage::{
     caches::{CacheSizes, Caches},
     layout::StorageLayout,
 };
-use crate::sync::syncer::Syncer;
+use crate::sync::syncer::{Syncer, SyncerArgs};
 use crate::trace;
 
 pub type DeviceID = String;
@@ -91,13 +91,15 @@ impl AppState {
         // initialize the syncer
         let (syncer, syncer_handle) = Syncer::spawn(
             64,
-            device_id.clone(),
-            http_client.clone(),
-            token_mngr.clone(),
-            caches.cfg_inst_metadata.clone(),
-            caches.cfg_inst_data.clone(),
-            layout.config_instance_deployment_dir(),
-            fsm_settings,
+            SyncerArgs {
+                device_id: device_id.clone(),
+                http_client: http_client.clone(),
+                token_mngr: token_mngr.clone(),
+                cfg_inst_cache: caches.cfg_inst_metadata.clone(),
+                cfg_inst_data_cache: caches.cfg_inst_data.clone(),
+                deployment_dir: layout.config_instance_deployment_dir(),
+                fsm_settings,
+            },
         )
         .map_err(|e| {
             ServerErr::SyncErr(Box::new(ServerSyncErr {

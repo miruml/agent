@@ -45,6 +45,8 @@ where
 
     async fn prune_invalid_entries(&self) -> Result<(), CacheErr>;
 
+    async fn capacity(&self) -> Result<usize, CacheErr>;
+
     async fn entries(&self) -> Result<Vec<CacheEntry<K, V>>, CacheErr>;
 
     async fn values(&self) -> Result<Vec<V>, CacheErr>;
@@ -106,6 +108,8 @@ where
         entry: &CacheEntry<K, V>,
         overwrite: bool,
     ) -> Result<(), CacheErr> {
+
+        self.prune().await?;
         self.write_entry_impl(entry, overwrite).await?;
         Ok(())
     }
@@ -150,10 +154,12 @@ where
         Ok(())
     }
 
-    async fn prune(&mut self, max_size: usize) -> Result<(), CacheErr> {
+    async fn prune(&mut self) -> Result<(), CacheErr> {
+        let capacity = self.capacity().await?;
+
         // check if there are too many files
         let size = self.size().await?;
-        if size <= max_size {
+        if size <= capacity {
             return Ok(());
         }
 
@@ -161,7 +167,7 @@ where
             "Pruning cache {} from {:?} entries to {:?} entries...",
             std::any::type_name::<V>(),
             size,
-            max_size
+            capacity
         );
 
         // prune the invalid entries first
@@ -170,7 +176,7 @@ where
         // prune by last accessed time
         let mut entries = self.entries().await?;
         entries.sort_by_key(|entry| entry.last_accessed);
-        let num_delete = entries.len() - max_size;
+        let num_delete = entries.len() - capacity;
         for entry in entries.into_iter().take(num_delete) {
             self.delete(&entry.key).await?;
         }

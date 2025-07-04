@@ -15,3 +15,4 @@ pub mod storage;
 pub mod sync;
 pub mod test_utils;
 pub mod utils;
+pub mod workers;

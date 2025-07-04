@@ -29,7 +29,7 @@ pub mod errors {
         let dir = Dir::create_temp_dir("pulled_from_server_resp")
             .await
             .unwrap();
-        let (cache, _) = ConfigSchemaDigestCache::spawn(32, dir.file("cache.json"))
+        let (cache, _) = ConfigSchemaDigestCache::spawn(32, dir.file("cache.json"), 1000)
             .await
             .unwrap();
 
@@ -74,7 +74,7 @@ pub mod success {
         let dir = Dir::create_temp_dir("pulled_from_server_resp")
             .await
             .unwrap();
-        let (cache, _) = ConfigSchemaDigestCache::spawn(32, dir.file("cache.json"))
+        let (cache, _) = ConfigSchemaDigestCache::spawn(32, dir.file("cache.json"), 1000)
             .await
             .unwrap();
 
@@ -127,7 +127,7 @@ pub mod success {
         let dir = Dir::create_temp_dir("pulled_from_server_resp")
             .await
             .unwrap();
-        let (cache, _) = ConfigSchemaDigestCache::spawn(32, dir.file("cache.json"))
+        let (cache, _) = ConfigSchemaDigestCache::spawn(32, dir.file("cache.json"), 1000)
             .await
             .unwrap();
 

@@ -13,7 +13,7 @@ use tokio::task::JoinHandle;
 
 #[macro_export]
 macro_rules! concurrent_cache_tests {
-    ($spawn_cache:expr) => {
+    ($spawn_cache:expr, $spawn_cache_with_capacity:expr) => {
         pub mod shutdown {
             use super::*;
 
@@ -170,17 +170,17 @@ macro_rules! concurrent_cache_tests {
 
             #[tokio::test]
             async fn empty_cache() {
-                $crate::cache::concurrent::prune::empty_cache_impl($spawn_cache).await;
+                $crate::cache::concurrent::prune::empty_cache_impl($spawn_cache_with_capacity).await;
             }
 
             #[tokio::test]
             async fn cache_equal_to_max_size() {
-                $crate::cache::concurrent::prune::cache_equal_to_max_size_impl($spawn_cache).await;
+                $crate::cache::concurrent::prune::cache_equal_to_max_size_impl($spawn_cache_with_capacity).await;
             }
 
             #[tokio::test]
             async fn remove_oldest_entries() {
-                $crate::cache::concurrent::prune::remove_oldest_entries_impl($spawn_cache).await;
+                $crate::cache::concurrent::prune::remove_oldest_entries_impl($spawn_cache_with_capacity).await;
             }
         }
 
@@ -927,7 +927,7 @@ pub mod prune {
 
     pub async fn empty_cache_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
-        F: Fn() -> Fut + Clone,
+        F: Fn(usize) -> Fut + Clone,
         Fut: Future<
             Output = (
                 ConcurrentCache<SingleThreadCacheT, String, String>,
@@ -936,13 +936,13 @@ pub mod prune {
         >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
-        let (cache, _) = spawn_cache().await;
-        cache.prune(10).await.unwrap();
+        let (cache, _) = spawn_cache(10).await;
+        cache.prune().await.unwrap();
     }
 
     pub async fn cache_equal_to_max_size_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
-        F: Fn() -> Fut + Clone,
+        F: Fn(usize) -> Fut + Clone,
         Fut: Future<
             Output = (
                 ConcurrentCache<SingleThreadCacheT, String, String>,
@@ -951,7 +951,7 @@ pub mod prune {
         >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
-        let (cache, _) = spawn_cache().await;
+        let (cache, _) = spawn_cache(10).await;
 
         // create 10 entries
         for i in 0..10 {
@@ -961,7 +961,7 @@ pub mod prune {
         }
 
         // prune the cache
-        cache.prune(10).await.unwrap();
+        cache.prune().await.unwrap();
 
         // the cache should still have all ten entries
         for i in 0..10 {
@@ -973,7 +973,7 @@ pub mod prune {
 
     pub async fn remove_oldest_entries_impl<F, Fut, SingleThreadCacheT>(spawn_cache: F)
     where
-        F: Fn() -> Fut + Clone,
+        F: Fn(usize) -> Fut + Clone,
         Fut: Future<
             Output = (
                 ConcurrentCache<SingleThreadCacheT, String, String>,
@@ -982,7 +982,7 @@ pub mod prune {
         >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
-        let (cache, _) = spawn_cache().await;
+        let (cache, _) = spawn_cache(10).await;
 
         // create 20 entries
         for i in 0..20 {
@@ -992,7 +992,7 @@ pub mod prune {
         }
 
         // prune the cache
-        cache.prune(10).await.unwrap();
+        cache.prune().await.unwrap();
 
         // first 10 entries should be deleted since they are the oldest
         for i in 0..10 {

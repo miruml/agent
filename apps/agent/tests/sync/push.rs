@@ -13,7 +13,7 @@ pub mod push_config_instances_func {
     async fn no_instances() {
         // define the caches
         let dir = Dir::create_temp_dir("apply").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"))
+        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
             .await
             .unwrap();
 
@@ -34,7 +34,7 @@ pub mod push_config_instances_func {
     async fn one_synced_instance() {
         // define the caches
         let dir = Dir::create_temp_dir("apply").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"))
+        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
             .await
             .unwrap();
 
@@ -62,7 +62,7 @@ pub mod push_config_instances_func {
     async fn one_unsynced_instance() {
         // define the caches
         let dir = Dir::create_temp_dir("apply").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"))
+        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
             .await
             .unwrap();
 

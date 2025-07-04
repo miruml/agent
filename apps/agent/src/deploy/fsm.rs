@@ -1,9 +1,7 @@
-// standard crates
-use std::cmp::min;
-
 // internal crates
 use crate::errors::MiruError;
 use crate::models::config_instance::{ActivityStatus, ConfigInstance, ErrorStatus, TargetStatus};
+use crate::utils::calc_exp_backoff;
 
 // external crates
 use chrono::{TimeDelta, Utc};
@@ -214,8 +212,8 @@ fn get_error_options(
 
     // determine the cooldown
     let cooldown = calc_exp_backoff(
-        2,
         settings.exp_backoff_base_secs,
+        2,
         attempts,
         settings.max_cooldown_secs,
     );
@@ -226,8 +224,4 @@ fn get_error_options(
         attempts: Some(attempts),
         cooldown: Some(TimeDelta::seconds(cooldown as i64)),
     }
-}
-
-pub fn calc_exp_backoff(k: u32, base: u32, exp: u32, max: u32) -> u32 {
-    min(k.saturating_mul(base.saturating_pow(exp)), max)
 }

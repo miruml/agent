@@ -71,7 +71,6 @@ where
         respond_to: oneshot::Sender<Result<(), CacheErr>>,
     },
     Prune {
-        max_size: usize,
         respond_to: oneshot::Sender<Result<(), CacheErr>>,
     },
     Size {
@@ -190,11 +189,8 @@ where
                         error!("Actor failed to delete cache entry: {:?}", e);
                     }
                 }
-                WorkerCommand::Prune {
-                    max_size,
-                    respond_to,
-                } => {
-                    let result = self.cache.prune(max_size).await;
+                WorkerCommand::Prune { respond_to } => {
+                    let result = self.cache.prune().await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to prune cache: {:?}", e);
                     }
@@ -493,11 +489,10 @@ where
         })?
     }
 
-    pub async fn prune(&self, max_size: usize) -> Result<(), CacheErr> {
+    pub async fn prune(&self) -> Result<(), CacheErr> {
         let (send, recv) = oneshot::channel();
         self.sender
             .send(WorkerCommand::Prune {
-                max_size,
                 respond_to: send,
             })
             .await

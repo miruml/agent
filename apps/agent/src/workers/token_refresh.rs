@@ -1,5 +1,6 @@
 // standard library
 use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
 
 // internal crates
@@ -34,12 +35,11 @@ impl Default for TokenRefreshWorkerOptions {
 pub async fn run_token_refresh_worker(
     options: &TokenRefreshWorkerOptions,
     token_mngr: Arc<TokenManager>,
-    shutdown_signal: impl Future<Output = ()> + Send + 'static,
+    mut shutdown_signal: Pin<Box<impl Future<Output = ()> + Send + 'static>>,
 ) {
-    let mut shutdown = Box::pin(shutdown_signal);
 
     // we want the first refresh to occur immediately if the token is expired
-    let mut sleep_duration = determine_refresh_loop_sleep_duration(
+    let mut sleep_duration = calc_refresh_delay(
         &token_mngr,
         options.expiration_threshold,
         tokio::time::Duration::from_secs(0),
@@ -49,7 +49,7 @@ pub async fn run_token_refresh_worker(
     loop {
         tokio::select! {
             // exit if the shutdown signal is received
-            _ = shutdown.as_mut() => {
+            _ = shutdown_signal.as_mut() => {
                 info!("Token refresh worker shutdown complete");
                 return;
             }
@@ -73,7 +73,7 @@ pub async fn run_token_refresh_worker(
 
         // determine how long to sleep before refreshing the token.
         sleep_duration =
-            determine_refresh_loop_sleep_duration(
+            calc_refresh_delay(
                 &token_mngr,
                 options.expiration_threshold,
                 options.cooldown,
@@ -103,7 +103,7 @@ async fn refresh_token(
     Ok(())
 }
 
-pub async fn determine_refresh_loop_sleep_duration(
+pub async fn calc_refresh_delay(
     token_mngr: &TokenManager,
     expiration_threshold: tokio::time::Duration,
     cooldown: tokio::time::Duration,

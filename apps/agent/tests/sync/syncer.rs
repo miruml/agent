@@ -19,12 +19,12 @@ use config_agent::models::config_instance::ActivityStatus;
 use config_agent::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
 use config_agent::sync::{
     errors::SyncErr,
-    syncer::{SingleThreadSyncer, Syncer, Worker},
+    syncer::{SingleThreadSyncer, Syncer, Worker, SyncerArgs},
 };
 use config_agent::trace;
 
 // external crates
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, TimeDelta, Utc};
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
 
@@ -56,6 +56,8 @@ pub fn spawn(
     device_id: String,
     http_client: Arc<MockConfigInstancesClient>,
     token_mngr: Arc<TokenManager>,
+    cfg_inst_cache: Arc<ConfigInstanceCache>,
+    cfg_inst_data_cache: Arc<ConfigInstanceDataCache>,
     deployment_dir: Dir,
     fsm_settings: fsm::Settings,
 ) -> Result<(Syncer, JoinHandle<()>), SyncErr> {
@@ -65,6 +67,8 @@ pub fn spawn(
             device_id,
             http_client,
             token_mngr,
+            cfg_inst_cache,
+            cfg_inst_data_cache,
             deployment_dir,
             fsm_settings,
         ),
@@ -83,14 +87,26 @@ pub mod shutdown {
         let auth_client = Arc::new(MockAuthClient::default());
         let (token_mngr, _) = create_token_manager(&dir, auth_client.clone()).await;
 
+        // create the caches
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
+            .await
+            .unwrap();
+        let (cfg_inst_data_cache, _) = ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
+            .await
+            .unwrap();
+
         let http_client = Arc::new(HTTPClient::new("doesntmatter").await);
         let (syncer, worker_handler) = Syncer::spawn(
             32,
-            "device_id".to_string(),
-            http_client.clone(),
-            Arc::new(token_mngr),
-            dir,
-            fsm::Settings::default(),
+            SyncerArgs {
+                device_id: "device_id".to_string(),
+                http_client: http_client.clone(),
+                token_mngr: Arc::new(token_mngr),
+                cfg_inst_cache: Arc::new(cfg_inst_cache),
+                cfg_inst_data_cache: Arc::new(cfg_inst_data_cache),
+                deployment_dir: dir,
+                fsm_settings: fsm::Settings::default(),
+            },
         )
         .unwrap();
 
@@ -122,33 +138,29 @@ pub mod sync {
             })))
         });
 
+        // create the caches
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
+            .await
+            .unwrap();
+        let (cfg_inst_data_cache, _) =
+            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
+                .await
+                .unwrap();
+
+
         let (syncer, _) = spawn(
             32,
             "device_id".to_string(),
             Arc::new(http_client),
             Arc::new(token_mngr),
+            Arc::new(cfg_inst_cache),
+            Arc::new(cfg_inst_data_cache),
             dir.clone(),
             fsm::Settings::default(),
         )
         .unwrap();
 
-        // create the caches
-        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"))
-            .await
-            .unwrap();
-        let (cfg_inst_data_cache, _) =
-            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"))
-                .await
-                .unwrap();
-
-        syncer
-            .sync(
-                Arc::new(cfg_inst_cache),
-                Arc::new(cfg_inst_data_cache),
-                true,
-            )
-            .await
-            .unwrap();
+        syncer.sync(TimeDelta::seconds(1)).await.unwrap();
     }
 
     #[tokio::test]
@@ -171,33 +183,29 @@ pub mod sync {
             })))
         });
 
+        // create the caches
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
+            .await
+            .unwrap();
+        let (cfg_inst_data_cache, _) =
+            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
+                .await
+                .unwrap();
+
         let (syncer, _) = spawn(
             32,
             "device_id".to_string(),
             Arc::new(http_client),
             Arc::new(token_mngr),
+            Arc::new(cfg_inst_cache),
+            Arc::new(cfg_inst_data_cache),
             dir.clone(),
             fsm::Settings::default(),
         )
         .unwrap();
 
-        // create the caches
-        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"))
-            .await
-            .unwrap();
-        let (cfg_inst_data_cache, _) =
-            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"))
-                .await
-                .unwrap();
 
-        syncer
-            .sync(
-                Arc::new(cfg_inst_cache),
-                Arc::new(cfg_inst_data_cache),
-                false,
-            )
-            .await
-            .unwrap_err();
+        syncer.sync(TimeDelta::seconds(1)).await.unwrap_err();
     }
 
     #[tokio::test]
@@ -219,31 +227,30 @@ pub mod sync {
         let new_instance_cloned = new_instance.clone();
         http_client.set_list_all_config_instances(move || Ok(vec![new_instance_cloned.clone()]));
 
-        let (syncer, _) = spawn(
-            32,
-            "device_id".to_string(),
-            Arc::new(http_client),
-            Arc::new(token_mngr),
-            dir.clone(),
-            fsm::Settings::default(),
-        )
-        .unwrap();
-
         // create the caches
-        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"))
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
             .await
             .unwrap();
         let (cfg_inst_data_cache, _) =
-            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"))
+            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
                 .await
                 .unwrap();
         let cfg_inst_cache = Arc::new(cfg_inst_cache);
         let cfg_inst_data_cache = Arc::new(cfg_inst_data_cache);
 
-        syncer
-            .sync(cfg_inst_cache.clone(), cfg_inst_data_cache.clone(), false)
-            .await
-            .unwrap();
+        let (syncer, _) = spawn(
+            32,
+            "device_id".to_string(),
+            Arc::new(http_client),
+            Arc::new(token_mngr),
+            cfg_inst_cache.clone(),
+            cfg_inst_data_cache.clone(),
+            dir.clone(),
+            fsm::Settings::default(),
+        )
+        .unwrap();
+
+        syncer.sync(TimeDelta::seconds(1)).await.unwrap();
 
         // check the metadata cache has the new instance
         let cache_cfg_inst = cfg_inst_cache.read(id.clone()).await.unwrap();
@@ -268,13 +275,24 @@ pub mod get_last_synced_at {
         let auth_client = Arc::new(MockAuthClient::default());
         let (token_mngr, _) = create_token_manager(&dir, auth_client.clone()).await;
 
+        // create the caches
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
+            .await
+            .unwrap();
+        let (cfg_inst_data_cache, _) =
+            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
+                .await
+                .unwrap();
+
         let http_client = Arc::new(MockConfigInstancesClient::default());
         let (syncer, _) = spawn(
             32,
             "device_id".to_string(),
             http_client.clone(),
             Arc::new(token_mngr),
-            dir,
+            Arc::new(cfg_inst_cache),
+            Arc::new(cfg_inst_data_cache),
+            dir.clone(),
             fsm::Settings::default(),
         )
         .unwrap();

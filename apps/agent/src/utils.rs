@@ -1,5 +1,6 @@
 // standard library
 use std::env;
+use std::cmp::min;
 
 // external
 use serde_json::json;
@@ -28,4 +29,8 @@ pub fn version_info() -> serde_json::Value {
         "version": GIT_RELEASE_TAG_KEY.unwrap_or("unknown"),
         "commit": GIT_COMMIT_HASH_KEY.unwrap_or("unknown"),
     })
+}
+
+pub fn calc_exp_backoff(base: u32, growth_factor: u32, exp: u32, max: u32) -> u32 {
+    min(base.saturating_mul(growth_factor.saturating_pow(exp)), max)
 }

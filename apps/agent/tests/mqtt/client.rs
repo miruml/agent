@@ -7,6 +7,7 @@ use config_agent::mqtt::client::{
     Credentials,
     MQTTClient,
     OptionsBuilder,
+    poll,
 };
 
 // external crates
@@ -37,7 +38,7 @@ async fn test_mqtt_client() {
     .build();
 
     // create the client and subscribe to the device sync topic
-    let mut client = MQTTClient::new(options).await;
+    let (client, mut eventloop) = MQTTClient::new(&options).await;
 
     client.publish_device_sync(device_id).await.unwrap();
 
@@ -45,7 +46,7 @@ async fn test_mqtt_client() {
 
     // Poll for events
     loop {
-        let event = client.poll().await;
+        let event = poll(&mut eventloop).await;
         match event {
             Ok(event) => {
                 info!("event: {event:?}");
@@ -77,9 +78,9 @@ async fn test_mqtt_client_invalid_broker_url() {
         .build();
 
     // create the client and subscribe to the device sync topic
-    let mut client = MQTTClient::new(options).await;
+    let (_, mut eventloop) = MQTTClient::new(&options).await;
 
-    let event = client.poll().await.unwrap_err();
+    let event = poll(&mut eventloop).await.unwrap_err();
     assert!(event.is_network_connection_error());
 }
 
@@ -97,8 +98,8 @@ async fn test_mqtt_client_invalid_username_or_password() {
         .build();
 
     // create the client and subscribe to the device sync topic
-    let mut client = MQTTClient::new(options).await;
+    let (_, mut eventloop) = MQTTClient::new(&options).await;
 
-    let event = client.poll().await.unwrap_err();
+    let event = poll(&mut eventloop).await.unwrap_err();
     assert!(!event.is_network_connection_error());
 }

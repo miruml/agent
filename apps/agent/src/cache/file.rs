@@ -25,6 +25,7 @@ where
     V: CacheValue,
 {
     file: File,
+    capacity: usize,
     _phantom: std::marker::PhantomData<K>,
     _phantom2: std::marker::PhantomData<V>,
 }
@@ -34,7 +35,7 @@ where
     K: CacheKey,
     V: CacheValue,
 {
-    pub async fn new(file: File) -> Result<Self, CacheErr> {
+    pub async fn new(file: File, capacity: usize) -> Result<Self, CacheErr> {
         if !file.exists() {
             let empty_cache: HashMap<K, CacheEntry<K, V>> = HashMap::new();
             file.write_json(&empty_cache, true, true)
@@ -49,6 +50,7 @@ where
 
         Ok(Self {
             file,
+            capacity,
             _phantom: std::marker::PhantomData,
             _phantom2: std::marker::PhantomData,
         })
@@ -117,6 +119,10 @@ where
         Ok(cache.len())
     }
 
+    async fn capacity(&self) -> Result<usize, CacheErr> {
+        Ok(self.capacity)
+    }
+
     async fn prune_invalid_entries(&self) -> Result<(), CacheErr> {
         Ok(())
     }
@@ -149,10 +155,14 @@ where
     K: ConcurrentCacheKey,
     V: ConcurrentCacheValue,
 {
-    pub async fn spawn(buffer_size: usize, file: File) -> Result<(Self, JoinHandle<()>), CacheErr> {
+    pub async fn spawn(
+        buffer_size: usize,
+        file: File,
+        capacity: usize,
+    ) -> Result<(Self, JoinHandle<()>), CacheErr> {
         let (sender, receiver) = mpsc::channel::<WorkerCommand<K, V>>(buffer_size);
         let worker = Worker {
-            cache: SingleThreadFileCache::new(file).await?,
+            cache: SingleThreadFileCache::new(file, capacity).await?,
             receiver,
         };
         let worker_handle = tokio::spawn(worker.run());

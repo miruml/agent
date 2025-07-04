@@ -26,6 +26,7 @@ where
     V: CacheValue,
 {
     dir: Dir,
+    capacity: usize,
     _phantom: std::marker::PhantomData<K>,
     _phantom2: std::marker::PhantomData<V>,
 }
@@ -35,7 +36,7 @@ where
     K: CacheKey,
     V: CacheValue,
 {
-    pub async fn new(dir: Dir) -> Result<Self, CacheErr> {
+    pub async fn new(dir: Dir, capacity: usize) -> Result<Self, CacheErr> {
         dir.create_if_absent().await.map_err(|e| {
             CacheErr::FileSysErr(Box::new(CacheFileSysErr {
                 source: e,
@@ -45,6 +46,7 @@ where
 
         Ok(Self {
             dir,
+            capacity,
             _phantom: std::marker::PhantomData,
             _phantom2: std::marker::PhantomData,
         })
@@ -133,6 +135,10 @@ where
         Ok(files.len())
     }
 
+    async fn capacity(&self) -> Result<usize, CacheErr> {
+        Ok(self.capacity)
+    }
+
     async fn prune_invalid_entries(&self) -> Result<(), CacheErr> {
         let files = self.dir.files().await.map_err(|e| {
             CacheErr::FileSysErr(Box::new(CacheFileSysErr {
@@ -195,10 +201,14 @@ where
     K: ConcurrentCacheKey,
     V: ConcurrentCacheValue,
 {
-    pub async fn spawn(buffer_size: usize, dir: Dir) -> Result<(Self, JoinHandle<()>), CacheErr> {
+    pub async fn spawn(
+        buffer_size: usize,
+        dir: Dir,
+        capacity: usize,
+    ) -> Result<(Self, JoinHandle<()>), CacheErr> {
         let (sender, receiver) = mpsc::channel::<WorkerCommand<K, V>>(buffer_size);
         let worker = Worker {
-            cache: SingleThreadDirCache::new(dir).await?,
+            cache: SingleThreadDirCache::new(dir, capacity).await?,
             receiver,
         };
         let worker_handle = tokio::spawn(worker.run());

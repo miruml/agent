@@ -3,6 +3,7 @@ use config_agent::errors::MiruError;
 use config_agent::models::config_instance::{
     ActivityStatus, ConfigInstance, ErrorStatus, TargetStatus,
 };
+use config_agent::utils::calc_exp_backoff;
 
 use crate::mock::MockMiruError;
 
@@ -335,26 +336,6 @@ fn is_action_required() {
 }
 
 // ================================= TRANSITIONS =================================== //
-#[test]
-fn calc_exp_backoff() {
-    // base = 1
-    assert_eq!(fsm::calc_exp_backoff(2, 1, 0, 10), 2);
-    assert_eq!(fsm::calc_exp_backoff(4, 1, 1, 10), 4);
-    assert_eq!(fsm::calc_exp_backoff(11, 1, 2, 10), 10);
-
-    // base = 2
-    assert_eq!(fsm::calc_exp_backoff(1, 2, 0, 10), 1);
-    assert_eq!(fsm::calc_exp_backoff(1, 2, 1, 10), 2);
-    assert_eq!(fsm::calc_exp_backoff(1, 2, 3, 10), 8);
-    assert_eq!(fsm::calc_exp_backoff(1, 2, 4, 10), 10);
-
-    // base = 4
-    assert_eq!(fsm::calc_exp_backoff(3, 4, 0, 56), 3);
-    assert_eq!(fsm::calc_exp_backoff(3, 4, 1, 56), 12);
-    assert_eq!(fsm::calc_exp_backoff(3, 4, 2, 56), 48);
-    assert_eq!(fsm::calc_exp_backoff(3, 4, 3, 56), 56);
-}
-
 pub mod transitions {
     use super::*;
 
@@ -546,9 +527,9 @@ pub mod transitions {
 
         // check the cooldown
         let now = Utc::now();
-        let cooldown = fsm::calc_exp_backoff(
-            2,
+        let cooldown = calc_exp_backoff(
             settings.exp_backoff_base_secs,
+            2,
             attempts,
             settings.max_cooldown_secs,
         );

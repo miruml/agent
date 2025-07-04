@@ -1,12 +1,13 @@
 // internal crates
 use crate::deploy::observer::HistoryObserver;
 use config_agent::cache::file::FileCache;
-use config_agent::deploy::{filesys::deploy_with_rollback, fsm, fsm::Settings, observer::Observer};
+use config_agent::deploy::{filesys::deploy_with_rollback, fsm::Settings, observer::Observer};
 use config_agent::filesys::dir::Dir;
 use config_agent::filesys::path::PathExt;
 use config_agent::models::config_instance::{
     ActivityStatus, ConfigInstance, ErrorStatus, TargetStatus,
 };
+use config_agent::utils::calc_exp_backoff;
 
 // external crates
 use chrono::{TimeDelta, Utc};
@@ -28,7 +29,7 @@ pub mod deploy_with_rollback {
 
         // create the cache but omit the instance data
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json")).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000).await.unwrap();
 
         // deploy the instance
         let settings = Settings::default();
@@ -54,9 +55,9 @@ pub mod deploy_with_rollback {
             cooldown_ends_at: deploy_results.to_deploy[0].cooldown_ends_at,
             ..instance
         };
-        let cooldown = fsm::calc_exp_backoff(
-            2,
+        let cooldown = calc_exp_backoff(
             settings.exp_backoff_base_secs,
+            2,
             expected.attempts,
             settings.max_cooldown_secs,
         );
@@ -84,7 +85,7 @@ pub mod deploy_with_rollback {
 
         // create the instance in the cache
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json")).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000).await.unwrap();
         cache
             .write(instance.id.clone(), json!({"speed": 4}), |_, _| false, true)
             .await
@@ -134,7 +135,7 @@ pub mod deploy_with_rollback {
 
         // create the instance in the cache
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json")).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000).await.unwrap();
         let instance_data = json!({"speed": 4});
         cache
             .write(
@@ -199,7 +200,7 @@ pub mod deploy_with_rollback {
 
         // create the instance in the cache
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json")).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000).await.unwrap();
         let instance_data = json!({"speed": 4});
         cache
             .write(
@@ -261,7 +262,7 @@ pub mod deploy_with_rollback {
 
         // create the instance in the cache
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json")).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000).await.unwrap();
         cache
             .write(instance.id.clone(), json!({"speed": 4}), |_, _| false, true)
             .await
@@ -310,7 +311,7 @@ pub mod deploy_with_rollback {
 
         // create the instance in the cache
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json")).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000).await.unwrap();
         cache
             .write(instance.id.clone(), json!({"speed": 4}), |_, _| false, true)
             .await
@@ -359,7 +360,7 @@ pub mod deploy_with_rollback {
 
         // create the instance in the cache
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json")).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000).await.unwrap();
         let instance_data = json!({"speed": 4});
         cache
             .write(
@@ -429,7 +430,7 @@ pub mod deploy_with_rollback {
 
         // create the cache but the instance data for the to_deploy instance
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json")).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000).await.unwrap();
         let to_remove_data = json!({"speed": 8});
         cache
             .write(
@@ -470,9 +471,9 @@ pub mod deploy_with_rollback {
             cooldown_ends_at: deploy_results.to_deploy[0].cooldown_ends_at,
             ..to_deploy
         };
-        let cooldown = fsm::calc_exp_backoff(
-            2,
+        let cooldown = calc_exp_backoff(
             settings.exp_backoff_base_secs,
+            2,
             expected_to_deploy.attempts,
             settings.max_cooldown_secs,
         );
@@ -526,7 +527,7 @@ pub mod deploy_with_rollback {
 
         // create the cache but the instance data for the to_deploy instance
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json")).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000).await.unwrap();
         for instance in to_remove_instances.iter() {
             cache
                 .write(
@@ -566,9 +567,9 @@ pub mod deploy_with_rollback {
             if i == 0 {
                 instance.error_status = ErrorStatus::Retrying;
                 instance.attempts = 1;
-                let cooldown = fsm::calc_exp_backoff(
-                    2,
+                let cooldown = calc_exp_backoff(
                     settings.exp_backoff_base_secs,
+                    2,
                     instance.attempts,
                     settings.max_cooldown_secs,
                 );

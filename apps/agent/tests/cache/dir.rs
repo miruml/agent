@@ -17,15 +17,19 @@ pub mod concurrent {
 
     type TestCache = DirCache<String, String>;
 
-    async fn spawn_cache() -> (TestCache, JoinHandle<()>) {
+    async fn spawn_cache_with_capacity(capacity: usize) -> (TestCache, JoinHandle<()>) {
         let dir = Dir::create_temp_dir("testing")
             .await
             .unwrap()
             .subdir(PathBuf::from("cache"));
-        TestCache::spawn(32, dir.clone()).await.unwrap()
+        TestCache::spawn(32, dir.clone(), capacity).await.unwrap()
     }
 
-    concurrent_cache_tests!(spawn_cache);
+    async fn spawn_cache() -> (TestCache, JoinHandle<()>) {
+        spawn_cache_with_capacity(1000).await
+    }
+
+    concurrent_cache_tests!(spawn_cache, spawn_cache_with_capacity);
 
     #[tokio::test]
     async fn spawn() {
@@ -33,12 +37,12 @@ pub mod concurrent {
             .await
             .unwrap()
             .subdir(PathBuf::from("cache"));
-        let _ = TestCache::spawn(32, dir.clone()).await.unwrap();
+        let _ = TestCache::spawn(32, dir.clone(), 1000).await.unwrap();
         // the directory should not exist yet
         assert!(dir.exists());
 
         // spawn again should not fail
-        let _ = TestCache::spawn(32, dir.clone()).await.unwrap();
+        let _ = TestCache::spawn(32, dir.clone(), 1000).await.unwrap();
     }
 
     #[tokio::test]
@@ -47,7 +51,7 @@ pub mod concurrent {
             .await
             .unwrap()
             .subdir(PathBuf::from("cache"));
-        let (cache, _) = TestCache::spawn(32, dir.clone()).await.unwrap();
+        let (cache, _) = TestCache::spawn(32, dir.clone(), 10).await.unwrap();
 
         // write invalid json files to files in the cache directory
         let invalid_json_file = dir.file("invalid.json");
@@ -64,7 +68,7 @@ pub mod concurrent {
         }
 
         // prune the cache
-        cache.prune(10).await.unwrap();
+        cache.prune().await.unwrap();
 
         // invalid json file should be deleted
         assert!(!invalid_json_file.exists());
@@ -83,12 +87,16 @@ pub mod single_thread {
 
     type TestCache = SingleThreadDirCache<String, String>;
 
-    async fn new_cache() -> TestCache {
+    async fn new_cache_with_capacity(capacity: usize) -> TestCache {
         let dir = Dir::create_temp_dir("testing")
             .await
             .unwrap()
             .subdir(PathBuf::from("cache"));
-        TestCache::new(dir.clone()).await.unwrap()
+        TestCache::new(dir.clone(), capacity).await.unwrap()
+    }
+
+    async fn new_cache() -> TestCache {
+        new_cache_with_capacity(1000).await
     }
 
     #[tokio::test]
@@ -97,12 +105,12 @@ pub mod single_thread {
             .await
             .unwrap()
             .subdir(PathBuf::from("cache"));
-        let _ = TestCache::new(dir.clone()).await.unwrap();
+        let _ = TestCache::new(dir.clone(), 1000).await.unwrap();
         assert!(dir.exists());
 
         // new should not fail
-        let _ = TestCache::new(dir.clone()).await.unwrap();
+        let _ = TestCache::new(dir.clone(), 1000).await.unwrap();
     }
 
-    single_thread_cache_tests!(new_cache);
+    single_thread_cache_tests!(new_cache, new_cache_with_capacity);
 }

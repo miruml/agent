@@ -202,6 +202,16 @@ impl<HTTPClientT: ConfigInstancesExt + Send> Worker<HTTPClientT> {
     }
 }
 
+pub struct SyncerArgs {
+    pub device_id: String,
+    pub http_client: Arc<HTTPClient>,
+    pub token_mngr: Arc<TokenManager>,
+    pub cfg_inst_cache: Arc<ConfigInstanceCache>,
+    pub cfg_inst_data_cache: Arc<ConfigInstanceDataCache>,
+    pub deployment_dir: Dir,
+    pub fsm_settings: fsm::Settings,
+}
+
 #[derive(Debug)]
 pub struct Syncer {
     sender: Sender<WorkerCommand>,
@@ -210,24 +220,18 @@ pub struct Syncer {
 impl Syncer {
     pub fn spawn(
         buffer_size: usize,
-        device_id: String,
-        http_client: Arc<HTTPClient>,
-        token_mngr: Arc<TokenManager>,
-        cfg_inst_cache: Arc<ConfigInstanceCache>,
-        cfg_inst_data_cache: Arc<ConfigInstanceDataCache>,
-        deployment_dir: Dir,
-        fsm_settings: fsm::Settings,
+        args: SyncerArgs,
     ) -> Result<(Self, JoinHandle<()>), SyncErr> {
         let (sender, receiver) = mpsc::channel(buffer_size);
         let worker = Worker {
             syncer: SingleThreadSyncer::new(
-                device_id,
-                http_client,
-                token_mngr,
-                cfg_inst_cache,
-                cfg_inst_data_cache,
-                deployment_dir,
-                fsm_settings,
+                args.device_id,
+                args.http_client,
+                args.token_mngr,
+                args.cfg_inst_cache,
+                args.cfg_inst_data_cache,
+                args.deployment_dir,
+                args.fsm_settings,
             ),
             receiver,
         };
@@ -260,10 +264,7 @@ impl Syncer {
         Ok(())
     }
 
-    pub async fn sync(
-        &self,
-        cooldown: TimeDelta,
-    ) -> Result<(), SyncErr> {
+    pub async fn sync(&self, cooldown: TimeDelta) -> Result<(), SyncErr> {
         let (send, recv) = oneshot::channel();
         self.sender
             .send(WorkerCommand::Sync {

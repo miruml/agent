@@ -47,7 +47,11 @@ impl Caches {
 
         // config schema digests
         let (cfg_sch_digest_cache, cfg_sch_digest_cache_handle) =
-            ConfigSchemaDigestCache::spawn(64, layout.config_schema_digest_cache())
+            ConfigSchemaDigestCache::spawn(
+                64,
+                layout.config_schema_digest_cache(),
+                sizes.cfg_sch_digest,
+            )
                 .await
                 .map_err(|e| {
                     StorageErr::CacheErr(Box::new(StorageCacheErr {
@@ -59,7 +63,11 @@ impl Caches {
 
         // config schemas
         let (cfg_schema_cache, cfg_schema_cache_handle) =
-            ConfigSchemaCache::spawn(64, layout.config_schema_cache())
+            ConfigSchemaCache::spawn(
+                64,
+                layout.config_schema_cache(),
+                sizes.cfg_schema,
+            )
                 .await
                 .map_err(|e| {
                     StorageErr::CacheErr(Box::new(StorageCacheErr {
@@ -71,7 +79,11 @@ impl Caches {
 
         // config instance metadata
         let (cfg_inst_metadata_cache, cfg_inst_metadata_cache_handle) =
-            ConfigInstanceCache::spawn(64, layout.config_instance_metadata_cache())
+            ConfigInstanceCache::spawn(
+                64,
+                layout.config_instance_metadata_cache(),
+                sizes.cfg_inst_metadata,
+            )
                 .await
                 .map_err(|e| {
                     StorageErr::CacheErr(Box::new(StorageCacheErr {
@@ -83,7 +95,11 @@ impl Caches {
 
         // config instance data
         let (cfg_inst_data_cache, cfg_inst_data_cache_handle) =
-            ConfigInstanceDataCache::spawn(64, layout.config_instance_data_cache())
+            ConfigInstanceDataCache::spawn(
+                64,
+                layout.config_instance_data_cache(),
+                sizes.cfg_inst_data,
+            )
                 .await
                 .map_err(|e| {
                     StorageErr::CacheErr(Box::new(StorageCacheErr {
@@ -112,40 +128,6 @@ impl Caches {
             cfg_schema: cfg_schema_cache,
             sizes,
         }, shutdown_handle))
-    }
-
-    pub async fn prune(&self) -> Result<(), StorageErr> {
-
-        let mut prune_cache_errs = Vec::new();
-
-        let result = self.cfg_sch_digest.prune(self.sizes.cfg_sch_digest).await;
-        if let Err(e) = result {    
-            prune_cache_errs.push(e);
-        }
-
-        let result = self.cfg_inst_metadata.prune(self.sizes.cfg_inst_metadata).await;
-        if let Err(e) = result {
-            prune_cache_errs.push(e);
-        }
-
-        let result = self.cfg_inst_data.prune(self.sizes.cfg_inst_data).await;
-        if let Err(e) = result {
-            prune_cache_errs.push(e);
-        }
-
-        let result = self.cfg_schema.prune(self.sizes.cfg_schema).await;
-        if let Err(e) = result {
-            prune_cache_errs.push(e);
-        }
-
-        if !prune_cache_errs.is_empty() {
-            return Err(StorageErr::PruneCacheErrs(Box::new(PruneCacheErrs {
-                sources: prune_cache_errs,
-                trace: trace!(),
-            })));
-        }
-
-        Ok(())
     }
 
     pub async fn shutdown(&self) -> Result<(), StorageErr> {
