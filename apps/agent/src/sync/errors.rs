@@ -272,6 +272,7 @@ pub enum SyncErr {
     DeployErr(Box<SyncDeployErr>),
     HTTPClientErr(Box<SyncHTTPClientErr>),
     StorageErr(Box<SyncStorageErr>),
+    SyncErrors(Box<SyncErrors>),
 
     ConfigInstanceDataNotFound(Box<ConfigInstanceDataNotFoundErr>),
     SendActorMessageErr(Box<SendActorMessageErr>),
@@ -287,6 +288,8 @@ macro_rules! forward_error_method {
             SyncErr::DeployErr(e) => e.$method($($arg)?),
             SyncErr::HTTPClientErr(e) => e.$method($($arg)?),
             SyncErr::StorageErr(e) => e.$method($($arg)?),
+            SyncErr::SyncErrors(e) => e.$method($($arg)?),
+
             SyncErr::SendActorMessageErr(e) => e.$method($($arg)?),
             SyncErr::ReceiveActorMessageErr(e) => e.$method($($arg)?),
 

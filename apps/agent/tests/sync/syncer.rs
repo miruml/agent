@@ -10,6 +10,7 @@ use config_agent::auth::{
 };
 use config_agent::crud::prelude::*;
 use config_agent::deploy::fsm;
+use config_agent::errors::*;
 use config_agent::filesys::dir::Dir;
 use config_agent::http::{
     client::HTTPClient,
@@ -51,26 +52,30 @@ pub async fn create_token_manager(
     .unwrap()
 }
 
+pub struct TestSyncerArgs {
+    pub device_id: String,
+    pub http_client: Arc<MockConfigInstancesClient>,
+    pub token_mngr: Arc<TokenManager>,
+    pub cfg_inst_cache: Arc<ConfigInstanceCache>,
+    pub cfg_inst_data_cache: Arc<ConfigInstanceDataCache>,
+    pub deployment_dir: Dir,
+    pub fsm_settings: fsm::Settings,
+}
+
 pub fn spawn(
     buffer_size: usize,
-    device_id: String,
-    http_client: Arc<MockConfigInstancesClient>,
-    token_mngr: Arc<TokenManager>,
-    cfg_inst_cache: Arc<ConfigInstanceCache>,
-    cfg_inst_data_cache: Arc<ConfigInstanceDataCache>,
-    deployment_dir: Dir,
-    fsm_settings: fsm::Settings,
+    args: TestSyncerArgs,
 ) -> Result<(Syncer, JoinHandle<()>), SyncErr> {
     let (sender, receiver) = mpsc::channel(buffer_size);
     let worker = Worker::new(
         SingleThreadSyncer::new(
-            device_id,
-            http_client,
-            token_mngr,
-            cfg_inst_cache,
-            cfg_inst_data_cache,
-            deployment_dir,
-            fsm_settings,
+            args.device_id,
+            args.http_client,
+            args.token_mngr,
+            args.cfg_inst_cache,
+            args.cfg_inst_data_cache,
+            args.deployment_dir,
+            args.fsm_settings,
         ),
         receiver,
     );
@@ -119,52 +124,7 @@ pub mod sync {
     use super::*;
 
     #[tokio::test]
-    async fn network_error_ignored() {
-        let dir = Dir::create_temp_dir("spawn").await.unwrap();
-        let auth_client = Arc::new(MockAuthClient::default());
-        let (token_mngr, _) = create_token_manager(&dir, auth_client.clone()).await;
-
-        let mut http_client = MockConfigInstancesClient::default();
-        http_client.set_list_all_config_instances(|| {
-            Err(HTTPErr::MockErr(Box::new(MockErr {
-                is_network_connection_error: true,
-                trace: trace!(),
-            })))
-        });
-        http_client.set_update_config_instance(|| {
-            Err(HTTPErr::MockErr(Box::new(MockErr {
-                is_network_connection_error: true,
-                trace: trace!(),
-            })))
-        });
-
-        // create the caches
-        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
-            .await
-            .unwrap();
-        let (cfg_inst_data_cache, _) =
-            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
-                .await
-                .unwrap();
-
-
-        let (syncer, _) = spawn(
-            32,
-            "device_id".to_string(),
-            Arc::new(http_client),
-            Arc::new(token_mngr),
-            Arc::new(cfg_inst_cache),
-            Arc::new(cfg_inst_data_cache),
-            dir.clone(),
-            fsm::Settings::default(),
-        )
-        .unwrap();
-
-        syncer.sync(TimeDelta::seconds(1)).await.unwrap();
-    }
-
-    #[tokio::test]
-    async fn network_error_not_ignored() {
+    async fn network_error() {
         let dir = Dir::create_temp_dir("spawn").await.unwrap();
         let auth_client = Arc::new(MockAuthClient::default());
         let (token_mngr, _) = create_token_manager(&dir, auth_client.clone()).await;
@@ -194,18 +154,20 @@ pub mod sync {
 
         let (syncer, _) = spawn(
             32,
-            "device_id".to_string(),
-            Arc::new(http_client),
-            Arc::new(token_mngr),
-            Arc::new(cfg_inst_cache),
-            Arc::new(cfg_inst_data_cache),
-            dir.clone(),
-            fsm::Settings::default(),
+            TestSyncerArgs {
+                device_id: "device_id".to_string(),
+                http_client: Arc::new(http_client),
+                token_mngr: Arc::new(token_mngr),
+                cfg_inst_cache: Arc::new(cfg_inst_cache),
+                cfg_inst_data_cache: Arc::new(cfg_inst_data_cache),
+                deployment_dir: dir.clone(),
+                fsm_settings: fsm::Settings::default(),
+            },
         )
         .unwrap();
 
-
-        syncer.sync(TimeDelta::seconds(1)).await.unwrap_err();
+        let error = syncer.sync(TimeDelta::seconds(1)).await.unwrap_err();
+        assert!(error.is_network_connection_error());
     }
 
     #[tokio::test]
@@ -240,13 +202,15 @@ pub mod sync {
 
         let (syncer, _) = spawn(
             32,
-            "device_id".to_string(),
-            Arc::new(http_client),
-            Arc::new(token_mngr),
-            cfg_inst_cache.clone(),
-            cfg_inst_data_cache.clone(),
-            dir.clone(),
-            fsm::Settings::default(),
+            TestSyncerArgs {
+                device_id: "device_id".to_string(),
+                http_client: Arc::new(http_client),
+                token_mngr: Arc::new(token_mngr),
+                cfg_inst_cache: cfg_inst_cache.clone(),
+                cfg_inst_data_cache: cfg_inst_data_cache.clone(),
+                deployment_dir: dir.clone(),
+                fsm_settings: fsm::Settings::default(),
+            },
         )
         .unwrap();
 
@@ -263,6 +227,48 @@ pub mod sync {
         // check that the metadata cache isn't dirty
         let unsynced_entries = cfg_inst_cache.get_dirty_entries().await.unwrap();
         assert_eq!(unsynced_entries.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn in_cooldown() {
+        let dir = Dir::create_temp_dir("spawn").await.unwrap();
+        let auth_client = Arc::new(MockAuthClient::default());
+        let (token_mngr, _) = create_token_manager(&dir, auth_client.clone()).await;
+
+        // create the caches
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
+            .await
+            .unwrap();
+        let (cfg_inst_data_cache, _) =
+            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
+                .await
+                .unwrap();
+
+        let (syncer, _) = spawn(
+            32,
+            TestSyncerArgs {
+                device_id: "device_id".to_string(),
+                http_client: Arc::new(MockConfigInstancesClient::default()),
+                token_mngr: Arc::new(token_mngr),
+                cfg_inst_cache: Arc::new(cfg_inst_cache),
+                cfg_inst_data_cache: Arc::new(cfg_inst_data_cache),
+                deployment_dir: dir.clone(),
+                fsm_settings: fsm::Settings::default(),
+            },
+        )
+        .unwrap();
+
+        let before = Utc::now();
+        syncer.sync(TimeDelta::seconds(1)).await.unwrap();
+        let after = Utc::now();
+
+        assert!(before < syncer.get_last_synced_at().await.unwrap());
+        assert!(syncer.get_last_synced_at().await.unwrap() < after);
+        let prev_synced_at = syncer.get_last_synced_at().await.unwrap();
+
+        // syncing again should not change the last synced at
+        syncer.sync(TimeDelta::seconds(1)).await.unwrap();
+        assert_eq!(syncer.get_last_synced_at().await.unwrap(), prev_synced_at);
     }
 }
 
@@ -284,16 +290,17 @@ pub mod get_last_synced_at {
                 .await
                 .unwrap();
 
-        let http_client = Arc::new(MockConfigInstancesClient::default());
         let (syncer, _) = spawn(
             32,
-            "device_id".to_string(),
-            http_client.clone(),
-            Arc::new(token_mngr),
-            Arc::new(cfg_inst_cache),
-            Arc::new(cfg_inst_data_cache),
-            dir.clone(),
-            fsm::Settings::default(),
+            TestSyncerArgs {
+                device_id: "device_id".to_string(),
+                http_client: Arc::new(MockConfigInstancesClient::default()),
+                token_mngr: Arc::new(token_mngr),
+                cfg_inst_cache: Arc::new(cfg_inst_cache),
+                cfg_inst_data_cache: Arc::new(cfg_inst_data_cache),
+                deployment_dir: dir.clone(),
+                fsm_settings: fsm::Settings::default(),
+            },
         )
         .unwrap();
 
@@ -301,5 +308,12 @@ pub mod get_last_synced_at {
             syncer.get_last_synced_at().await.unwrap(),
             DateTime::<Utc>::UNIX_EPOCH
         );
+
+        let before = Utc::now();
+        syncer.sync(TimeDelta::seconds(1)).await.unwrap();
+        let after = Utc::now();
+
+        assert!(before < syncer.get_last_synced_at().await.unwrap());
+        assert!(syncer.get_last_synced_at().await.unwrap() < after);
     }
 }

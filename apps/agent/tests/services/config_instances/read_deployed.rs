@@ -24,7 +24,7 @@ use config_agent::trace;
 
 // test crates
 use crate::http::mock::{MockAuthClient, MockConfigInstancesClient, MockConfigSchemasClient};
-use crate::sync::syncer::{create_token_manager, spawn};
+use crate::sync::syncer::{create_token_manager, spawn, TestSyncerArgs};
 
 // tokio crates
 use serde_json::json;
@@ -47,13 +47,15 @@ pub async fn create_syncer(
 
     spawn(
         32,
-        "device-id".to_string(),
-        http_client.clone(),
-        Arc::new(token_mngr),
-        Arc::new(cfg_inst_cache),
-        Arc::new(cfg_inst_data_cache),
-        dir.subdir("syncer"),
-        fsm::Settings::default(),
+        TestSyncerArgs {
+            device_id: "device-id".to_string(),
+            http_client: http_client.clone(),
+            token_mngr: Arc::new(token_mngr),
+            cfg_inst_cache: Arc::new(cfg_inst_cache),
+            cfg_inst_data_cache: Arc::new(cfg_inst_data_cache),
+            deployment_dir: dir.subdir("syncer"),
+            fsm_settings: fsm::Settings::default(),
+        },
     )
     .unwrap()
 }

@@ -8,9 +8,7 @@ use crate::deploy::{apply::apply, fsm};
 use crate::filesys::dir::Dir;
 use crate::http::{client::HTTPClient, config_instances::ConfigInstancesExt};
 use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
-use crate::sync::errors::{
-    ReceiveActorMessageErr, SendActorMessageErr, SyncAuthErr, SyncCrudErr, SyncDeployErr, SyncErr,
-};
+use crate::sync::errors::*;
 use crate::sync::pull::pull_config_instances;
 use crate::sync::push::push_config_instances;
 use crate::trace;
@@ -141,7 +139,14 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
             }
         };
 
-        Ok(())
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(SyncErr::SyncErrors(Box::new(SyncErrors {
+                source: errors,
+                trace: trace!(),
+            })))
+        }
     }
 }
 

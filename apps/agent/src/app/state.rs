@@ -15,7 +15,7 @@ use crate::http::client::HTTPClient;
 use crate::models::agent::Agent;
 use crate::server::errors::*;
 use crate::storage::{
-    caches::{CacheSizes, Caches},
+    caches::{CacheCapacities, Caches},
     layout::StorageLayout,
 };
 use crate::sync::syncer::{Syncer, SyncerArgs};
@@ -36,7 +36,7 @@ pub struct AppState {
 impl AppState {
     pub async fn init(
         layout: &StorageLayout,
-        cache_sizes: CacheSizes,
+        cache_capacities: CacheCapacities,
         http_client: Arc<HTTPClient>,
         fsm_settings: fsm::Settings,
     ) -> Result<(Self, impl Future<Output = ()>), ServerErr> {
@@ -64,7 +64,7 @@ impl AppState {
         let device_id = Self::init_device_id(&agent_file, &token_file).await?;
 
         // initialize the caches
-        let (caches, caches_shutdown_handle) = Caches::init(layout, cache_sizes).await.map_err(|e| {
+        let (caches, caches_shutdown_handle) = Caches::init(layout, cache_capacities).await.map_err(|e| {
             ServerErr::StorageErr(Box::new(ServerStorageErr {
                 source: e,
                 trace: trace!(),

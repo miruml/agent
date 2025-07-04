@@ -11,14 +11,14 @@ use crate::storage::errors::*;
 use crate::trace;
 
 #[derive(Copy, Clone, Debug)]
-pub struct CacheSizes {
+pub struct CacheCapacities {
     pub cfg_sch_digest: usize,
     pub cfg_inst_metadata: usize,
     pub cfg_inst_data: usize,
     pub cfg_schema: usize,
 }
 
-impl Default for CacheSizes {
+impl Default for CacheCapacities {
     fn default() -> Self {
         Self {
             cfg_sch_digest: 100,
@@ -29,20 +29,18 @@ impl Default for CacheSizes {
     }
 }
 
-
 #[derive(Clone, Debug)]
 pub struct Caches {
     pub cfg_sch_digest: Arc<ConfigSchemaDigestCache>,
     pub cfg_inst_metadata: Arc<ConfigInstanceCache>,
     pub cfg_inst_data: Arc<ConfigInstanceDataCache>,
     pub cfg_schema: Arc<ConfigSchemaCache>,
-    pub sizes: CacheSizes,
 }
 
 impl Caches {
     pub async fn init(
         layout: &StorageLayout,
-        sizes: CacheSizes,
+        capacities: CacheCapacities,
     ) -> Result<(Caches, impl Future<Output = ()>), StorageErr> {
 
         // config schema digests
@@ -50,7 +48,7 @@ impl Caches {
             ConfigSchemaDigestCache::spawn(
                 64,
                 layout.config_schema_digest_cache(),
-                sizes.cfg_sch_digest,
+                capacities.cfg_sch_digest,
             )
                 .await
                 .map_err(|e| {
@@ -66,7 +64,7 @@ impl Caches {
             ConfigSchemaCache::spawn(
                 64,
                 layout.config_schema_cache(),
-                sizes.cfg_schema,
+                capacities.cfg_schema,
             )
                 .await
                 .map_err(|e| {
@@ -82,7 +80,7 @@ impl Caches {
             ConfigInstanceCache::spawn(
                 64,
                 layout.config_instance_metadata_cache(),
-                sizes.cfg_inst_metadata,
+                capacities.cfg_inst_metadata,
             )
                 .await
                 .map_err(|e| {
@@ -98,7 +96,7 @@ impl Caches {
             ConfigInstanceDataCache::spawn(
                 64,
                 layout.config_instance_data_cache(),
-                sizes.cfg_inst_data,
+                capacities.cfg_inst_data,
             )
                 .await
                 .map_err(|e| {
@@ -121,12 +119,11 @@ impl Caches {
             futures::future::join_all(handles).await;
         };
 
-        Ok((Caches {
+        Ok((Caches{
             cfg_sch_digest: cfg_sch_digest_cache,
             cfg_inst_metadata: cfg_inst_metadata_cache,
             cfg_inst_data: cfg_inst_data_cache,
             cfg_schema: cfg_schema_cache,
-            sizes,
         }, shutdown_handle))
     }
 

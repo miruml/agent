@@ -16,7 +16,7 @@ use crate::server::{
     state::ServerState,
 };
 use crate::storage::{
-    caches::CacheSizes,
+    caches::CacheCapacities,
     layout::StorageLayout,
 };
 use crate::workers::{
@@ -67,7 +67,7 @@ impl Default for LifecycleOptions {
 #[derive(Debug, Default)]
 pub struct StorageOptions {
     pub layout: StorageLayout,
-    pub cache_sizes: CacheSizes,
+    pub cache_capacities: CacheCapacities,
 }
 
 #[derive(Debug)]
@@ -239,7 +239,7 @@ async fn init_app_state(
 
     let (app_state, app_state_handle) = AppState::init(
         &options.storage.layout,
-        options.storage.cache_sizes,
+        options.storage.cache_capacities,
         Arc::new(HTTPClient::new(&options.backend_base_url).await),
         options.fsm_settings,
     )

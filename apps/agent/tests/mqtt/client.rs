@@ -11,12 +11,9 @@ use config_agent::mqtt::client::{
 };
 
 // external crates
-use rumqttc::{Event, Incoming};
-use std::time::Duration;
-use tokio::time;
+use rumqttc::{Event, Incoming, QoS};
 use tracing::{error, info};
 
-#[ignore]
 #[tokio::test]
 async fn test_mqtt_client() {
     let dir = Dir::create_temp_dir("mqtt_client_test").await.unwrap();
@@ -26,13 +23,13 @@ async fn test_mqtt_client() {
         ..Default::default()
     });
 
-    let device_id = "dvc_123_test";
-    let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJkZXZpY2UiLCJleHAiOjE3NTE1ODMzOTgsImlhdCI6MTc1MTQ5Njk5OCwiaXNzIjoibWlydSIsInN1YiI6ImR2Y18xMjNfdGVzdCJ9.zK2wU7L7NEuC4zcxAoX58Fi2ozTx-4iU1gV2gQyLI9w";
+    let username = "username";
+    let password = "password";
     let options = OptionsBuilder::new(
-        Credentials::new(device_id.to_string(), token.to_string()),
+        Credentials::new(username.to_string(), password.to_string()),
     )
     .with_connect_address(ConnectAddress {
-        broker: "dev.mqtt.miruml.com".to_string(),
+        broker: "broker.emqx.io".to_string(),
         port: 1883,
     })
     .build();
@@ -40,32 +37,37 @@ async fn test_mqtt_client() {
     // create the client and subscribe to the device sync topic
     let (client, mut eventloop) = MQTTClient::new(&options).await;
 
-    client.publish_device_sync(device_id).await.unwrap();
+    let topic = "a/unique/topic/string/for/miru";
 
-    client.subscribe_device_sync(device_id).await.unwrap();
+    client.subscribe(topic, QoS::AtLeastOnce).await.unwrap();
 
-    // Poll for events
-    loop {
-        let event = poll(&mut eventloop).await;
-        match event {
-            Ok(event) => {
-                info!("event: {event:?}");
-                if let Event::Incoming(Incoming::Publish(publish)) = event {
-                    if let Ok(text) = std::str::from_utf8(&publish.payload) {
-                        info!("payload as string: {}", text);
-                    }
+    let payload = "test";
+    client.publish(topic, QoS::AtLeastOnce, false, payload.as_bytes()).await.unwrap();
+
+
+    // read the published message
+    let event = poll(&mut eventloop).await;
+    match event {
+        Ok(event) => {
+            info!("event: {event:?}");
+            if let Event::Incoming(Incoming::Publish(publish)) = event {
+                if let Ok(text) = std::str::from_utf8(&publish.payload) {
+                    info!("payload as string: {}", text);
                 }
             }
-            Err(e) => {
-                error!("error: {e:?}");
-            }
         }
-        time::sleep(Duration::from_secs(2)).await;
+        Err(e) => {
+            error!("error: {e:?}");
+        }
     }
+
+    client.unsubscribe(topic).await.unwrap();
+
+    client.disconnect().await.unwrap();
 }
 
 #[tokio::test]
-async fn test_mqtt_client_invalid_broker_url() {
+async fn invalid_broker_url() {
     let credentials = Credentials::new(
         "test".to_string(),
         "test".to_string(),
@@ -85,7 +87,7 @@ async fn test_mqtt_client_invalid_broker_url() {
 }
 
 #[tokio::test]
-async fn test_mqtt_client_invalid_username_or_password() {
+async fn invalid_username_or_password() {
     let credentials = Credentials::new(
         "username".to_string(),
         "password".to_string(),

@@ -132,6 +132,11 @@ macro_rules! single_thread_cache_tests {
             async fn exists_overwrite_true() {
                 $crate::cache::single_thread::write::exists_overwrite_true_impl($spawn_cache).await;
             }
+
+            #[tokio::test]
+            async fn trigger_prune() {
+                $crate::cache::single_thread::write::trigger_prune_impl($spawn_cache_with_capacity).await;
+            }
         }
 
         pub mod delete {
@@ -729,6 +734,30 @@ pub mod write {
         // check the timestamps
         assert!(read_entry.created_at > before_creation);
         assert!(read_entry.last_accessed > read_entry.created_at);
+    }
+
+    pub async fn trigger_prune_impl<F, Fut, SingleThreadCacheT>(new_cache: F)
+    where
+        F: Fn(usize) -> Fut + Clone,
+        Fut: Future<Output = SingleThreadCacheT>,
+        SingleThreadCacheT: SingleThreadCache<String, String>,
+    {
+        let mut cache = new_cache(10).await;
+
+        // create 11 entries
+        for i in 0..11 {
+            let key = format!("key{i}");
+            let value = format!("value{i}");
+            cache.write(key, value, |_, _| true, false).await.unwrap();
+        }
+
+        // each write should trigger a prune
+        for i in 11..20 {
+            let key = format!("key{i}");
+            let value = format!("value{i}");
+            cache.write(key, value, |_, _| true, false).await.unwrap();
+            assert_eq!(cache.size().await.unwrap(), 11);
+        }
     }
 }
 
