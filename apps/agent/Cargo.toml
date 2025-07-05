@@ -6,6 +6,9 @@ rust-version = { workspace = true }
 include = ["src/**/*"]
 build = "build.rs"
 
+[features]
+test = []
+
 [dependencies]
 async-trait = { workspace = true }
 atomicwrites = { workspace = true }

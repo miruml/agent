@@ -5,20 +5,30 @@ use std::sync::{Arc, Mutex};
 // internal crates
 use config_agent::sync::{
     errors::SyncErr,
-    syncer::SyncerExt,
+    syncer::{SyncerExt, SyncState, SyncEvent},
 };
-use config_agent::utils::is_in_cooldown;
 
 // external crates
-use chrono::{DateTime, TimeDelta, Utc};
-use tracing::info;
+use chrono::{DateTime, Utc};
+use tokio::sync::watch;
 
+type GetSyncStateFn = Box<dyn Fn() -> SyncState + Send + Sync>;
+type IsInCooldownFn = Box<dyn Fn() -> bool + Send + Sync>;
+type CooldownEndsAtFn = Box<dyn Fn() -> DateTime<Utc> + Send + Sync>;
 type SyncFn = Box<dyn Fn() -> Result<(), SyncErr> + Send + Sync>;
+type SyncIfNotInCooldownFn = Box<dyn Fn() -> Result<(), SyncErr> + Send + Sync>;
+type SubscribeFn = Box<dyn Fn() -> watch::Receiver<SyncEvent> + Send + Sync>;
+
 
 pub struct MockSyncer {
     pub last_sync_attempted_at: Arc<Mutex<DateTime<Utc>>>,
-    pub sync_fn: Arc<Mutex<SyncFn>>,
     pub num_sync_calls: AtomicUsize,
+    pub get_sync_state_fn: Arc<Mutex<GetSyncStateFn>>,
+    pub is_in_cooldown_fn: Arc<Mutex<IsInCooldownFn>>,
+    pub cooldown_ends_at_fn: Arc<Mutex<CooldownEndsAtFn>>,
+    pub sync_fn: Arc<Mutex<SyncFn>>,
+    pub sync_if_not_in_cooldown_fn: Arc<Mutex<SyncIfNotInCooldownFn>>,
+    pub subscribe_fn: Arc<Mutex<SubscribeFn>>,
 }
 
 impl Default for MockSyncer {
@@ -30,9 +40,24 @@ impl Default for MockSyncer {
 impl MockSyncer {
     pub fn new() -> Self {
         Self {
-            sync_fn: Arc::new(Mutex::new(Box::new(|| Ok(())))),
             last_sync_attempted_at: Arc::new(Mutex::new(DateTime::<Utc>::UNIX_EPOCH)),
             num_sync_calls: AtomicUsize::new(0),
+            get_sync_state_fn: Arc::new(Mutex::new(Box::new(|| {
+                SyncState {
+                    last_sync_attempted_at: DateTime::<Utc>::UNIX_EPOCH,
+                    last_successful_sync_at: DateTime::<Utc>::UNIX_EPOCH,
+                    cooldown_ends_at: DateTime::<Utc>::UNIX_EPOCH,
+                    err_streak: 0,
+                }
+            }))),
+            is_in_cooldown_fn: Arc::new(Mutex::new(Box::new(|| false))),
+            cooldown_ends_at_fn: Arc::new(Mutex::new(Box::new(Utc::now))),
+            sync_if_not_in_cooldown_fn: Arc::new(Mutex::new(Box::new(|| Ok(())))),
+            sync_fn: Arc::new(Mutex::new(Box::new(|| Ok(())))),
+            subscribe_fn: Arc::new(Mutex::new(Box::new(|| {
+                let (_, rx) = watch::channel(SyncEvent::SyncSuccess);
+                rx
+            }))),
         }
     }
 
@@ -57,18 +82,30 @@ impl SyncerExt for MockSyncer {
         Ok(())
     }
 
+    async fn get_sync_state(&self) -> Result<SyncState, SyncErr> {
+        Ok((*self.get_sync_state_fn.lock().unwrap())())
+    }
+
+    async fn is_in_cooldown(&self) -> Result<bool, SyncErr> {
+        Ok((*self.is_in_cooldown_fn.lock().unwrap())())
+    }
+
+    async fn get_cooldown_ends_at(&self) -> Result<DateTime<Utc>, SyncErr> {
+        Ok((*self.cooldown_ends_at_fn.lock().unwrap())())
+    }
+
     async fn sync(&self) -> Result<(), SyncErr> {
         *self.last_sync_attempted_at.lock().unwrap() = Utc::now();
         self.num_sync_calls.fetch_add(1, Ordering::Relaxed);
         (*self.sync_fn.lock().unwrap())()
     }
 
-    async fn get_last_sync_attempted_at(&self) -> Result<DateTime<Utc>, SyncErr> {
-        Ok(*self.last_sync_attempted_at.lock().unwrap())
+    async fn sync_if_not_in_cooldown(&self) -> Result<(), SyncErr> {
+        *self.last_sync_attempted_at.lock().unwrap() = Utc::now();
+        (*self.sync_if_not_in_cooldown_fn.lock().unwrap())()
     }
 
-    async fn is_in_cooldown(&self, cooldown: TimeDelta) -> Result<bool, SyncErr> {
-        let last_sync_attempted_at = *self.last_sync_attempted_at.lock().unwrap();
-        Ok(is_in_cooldown(last_sync_attempted_at, cooldown))
+    async fn subscribe(&self) -> Result<watch::Receiver<SyncEvent>, SyncErr> {
+        Ok((*self.subscribe_fn.lock().unwrap())())
     }
 }

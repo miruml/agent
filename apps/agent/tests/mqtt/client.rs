@@ -95,7 +95,7 @@ async fn invalid_username_or_password() {
     let options = OptionsBuilder::new(credentials)
         .with_connect_address(ConnectAddress {
             broker: "dev.mqtt.miruml.com".to_string(),
-            port: 1883,
+            port: 8883,
         })
         .build();
 

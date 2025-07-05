@@ -11,6 +11,27 @@ pub mod gen_key_pair {
     use super::*;
 
     // TEST CASES
+    #[ignore]
+    #[tokio::test]
+    async fn sandbox() {
+        let dir = Dir::new_home_dir().unwrap().subdir("Downloads");
+        let private_key_path = dir.path().join("private_key.pem");
+        let public_key_path = dir.path().join("public_key.pem");
+
+        let private_key_file = File::new(private_key_path.clone());
+        let public_key_file = File::new(public_key_path.clone());
+
+        private_key_file.delete().await.unwrap();
+        public_key_file.delete().await.unwrap();
+
+        let result = rsa::gen_key_pair(4096, &private_key_file, &public_key_file, true).await;
+        assert!(result.is_ok());
+
+        assert!(private_key_file.exists());
+        assert!(public_key_file.exists());
+    }
+
+    // TEST CASES
     #[tokio::test]
     async fn success_doesnt_exist_overwrite_true() {
         let crypt_dir = Dir::create_temp_dir("crypt_rsa_test").await.unwrap();
@@ -19,6 +40,7 @@ pub mod gen_key_pair {
 
         let private_key_file = File::new(private_key_path.clone());
         let public_key_file = File::new(public_key_path.clone());
+
         private_key_file.delete().await.unwrap();
         public_key_file.delete().await.unwrap();
 

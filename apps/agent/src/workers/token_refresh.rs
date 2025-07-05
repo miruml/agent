@@ -41,12 +41,11 @@ pub async fn run_token_refresh_worker<F, Fut, TokenManagerT: TokenManagerExt>(
     F: Fn(Duration) -> Fut,
     Fut: Future<Output = ()> + Send
 {
-    let mut wait: Duration;
     let mut err_streak = 0;
 
     loop {
         // refresh
-        match token_mngr.refresh_token().await {
+        let next_wait = match token_mngr.refresh_token().await {
             Ok(_) => {
                 if err_streak > 0 {
                     info!("token refreshed successfully after an error streak of {err_streak} errors");
@@ -54,35 +53,51 @@ pub async fn run_token_refresh_worker<F, Fut, TokenManagerT: TokenManagerExt>(
                     info!("token refreshed successfully");
                 }
                 err_streak = 0;
+                calc_refresh_wait(
+                    token_mngr,
+                    options.refresh_advance_secs,
+                    err_streak,
+                    options.polling,
+                )
+                .await
             }
             Err(e) => {
                 if e.is_network_connection_error() {
                     debug!("unable to refresh token due to a network connection error: {e:?}");
+                    calc_refresh_wait(
+                        token_mngr,
+                        options.refresh_advance_secs,
+                        // we want to try network connection errors again immediately
+                        // (even if the previous errors were not network connection
+                        // errors) so we use an error streak of 0
+                        0, 
+                        options.polling,
+                    )
+                    .await
                 } else {
                     error!("error refreshing token (error streak: {err_streak}): {e:?}");
                     err_streak += 1;
+                    calc_refresh_wait(
+                        token_mngr,
+                        options.refresh_advance_secs,
+                        err_streak,
+                        options.polling,
+                    )
+                    .await
                 }
             }
-        }
+        };
 
-        wait = calc_refresh_wait(
-            token_mngr,
-            options.refresh_advance_secs,
-            err_streak,
-            options.polling,
-        )
-        .await;
-
-        let refresh_time = Utc::now() + wait;
-        info!("Waiting until {:?} to refresh token", refresh_time);
+        let refresh_time = Utc::now() + next_wait;
+        info!("waiting until {:?} to refresh token", refresh_time);
 
         // wait to refresh or shutdown if the signal is received
         tokio::select! {
             _ = shutdown_signal.as_mut() => {
-                info!("Token refresh worker shutdown complete");
+                info!("token refresh worker shutdown complete");
                 return;
             }
-            _ = sleep_fn(wait) => {},
+            _ = sleep_fn(next_wait) => {},
         }
     }
 }

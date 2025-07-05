@@ -345,6 +345,7 @@ pub enum SyncErr {
     StorageErr(Box<SyncStorageErr>),
     SyncErrors(Box<SyncErrors>),
 
+    InCooldownErr(Box<SyncerInCooldownErr>),
     ConfigInstanceDataNotFound(Box<ConfigInstanceDataNotFoundErr>),
     SendActorMessageErr(Box<SendActorMessageErr>),
     ReceiveActorMessageErr(Box<ReceiveActorMessageErr>),
@@ -363,6 +364,7 @@ macro_rules! forward_error_method {
             SyncErr::StorageErr(e) => e.$method($($arg)?),
             SyncErr::SyncErrors(e) => e.$method($($arg)?),
 
+            SyncErr::InCooldownErr(e) => e.$method($($arg)?),
             SyncErr::ConfigInstanceDataNotFound(e) => e.$method($($arg)?),
             SyncErr::SendActorMessageErr(e) => e.$method($($arg)?),
             SyncErr::ReceiveActorMessageErr(e) => e.$method($($arg)?),

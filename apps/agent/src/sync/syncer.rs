@@ -6,6 +6,7 @@ use std::time::Duration;
 use crate::auth::token_mngr::{TokenManager, TokenManagerExt};
 use crate::crud::prelude::*;
 use crate::deploy::{apply::apply, fsm};
+use crate::errors::*;
 use crate::filesys::dir::Dir;
 use crate::http::{client::HTTPClient, config_instances::ConfigInstancesExt};
 use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
@@ -23,32 +24,36 @@ use tokio::sync::{
     watch,
 };
 use tokio::task::JoinHandle;
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
-// =============================== SYNCER TRAIT ================================== //
-#[allow(async_fn_in_trait)]
-pub trait SyncerExt {
-    async fn shutdown(&self) -> Result<(), SyncErr>;
-    async fn is_in_cooldown(&self) -> Result<bool, SyncErr>;
-    async fn get_cooldown_ends_at(&self) -> Result<DateTime<Utc>, SyncErr>;
-    async fn sync(&self) -> Result<(), SyncErr>;
-    async fn sync_if_not_in_cooldown(&self) -> Result<(), SyncErr>;
-    async fn subscribe(&self) -> Result<watch::Receiver<SyncStatus>, SyncErr>;
-}
 
 // =============================== SYNCER EVENTS ================================== //
-#[derive(Debug, Clone)]
-pub enum SyncStatus {
-    Synced,
-    NotSynced,
-    CooldownEnded,
+#[derive(Debug, Clone, PartialEq)]
+pub struct SyncFailure {
+    pub is_network_connection_error: bool,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum CooldownEnd {
+    FromSyncSuccess,
+    FromSyncFailure,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum SyncEvent {
+    SyncSuccess,
+    SyncFailed(SyncFailure),
+    CooldownEnd(CooldownEnd),
 }
 
 // ======================== SINGLE-THREADED IMPLEMENTATION ========================= //
-pub struct SyncerArgs<HTTPClientT: ConfigInstancesExt> {
+pub struct SyncerArgs<
+    HTTPClientT: ConfigInstancesExt,
+    TokenManagerT: TokenManagerExt,
+> {
     pub device_id: String,
     pub http_client: Arc<HTTPClientT>,
-    pub token_mngr: Arc<TokenManager>,
+    pub token_mngr: Arc<TokenManagerT>,
     pub cfg_inst_cache: Arc<ConfigInstanceCache>,
     pub cfg_inst_data_cache: Arc<ConfigInstanceDataCache>,
     pub deployment_dir: Dir,
@@ -57,14 +62,14 @@ pub struct SyncerArgs<HTTPClientT: ConfigInstancesExt> {
 }
 
 #[derive(Debug, Clone)]
-pub struct SyncerState {
+pub struct SyncState {
     pub last_sync_attempted_at: DateTime<Utc>,
     pub last_successful_sync_at: DateTime<Utc>,
     pub cooldown_ends_at: DateTime<Utc>,
     pub err_streak: u32,
 }
 
-impl SyncerState {
+impl SyncState {
     pub fn is_in_cooldown(&self) -> bool {
         Utc::now() < self.cooldown_ends_at
     }
@@ -80,19 +85,19 @@ pub struct SingleThreadSyncer<HTTPClientT: ConfigInstancesExt> {
     fsm_settings: fsm::Settings,
 
     // subscribers
-    subscriber_tx: watch::Sender<SyncStatus>,
-    subscriber_rx: watch::Receiver<SyncStatus>,
+    subscriber_tx: watch::Sender<SyncEvent>,
+    subscriber_rx: watch::Receiver<SyncEvent>,
 
     // syncer state
     cooldown_options: CooldownOptions,
-    state: SyncerState,
+    state: SyncState,
 }
 
 impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
     pub fn new(
-        args: SyncerArgs<HTTPClientT>,
+        args: SyncerArgs<HTTPClientT, TokenManager>,
     ) -> Self {
-        let (subscriber_tx, subscriber_rx) = watch::channel(SyncStatus::CooldownEnded);
+        let (subscriber_tx, subscriber_rx) = watch::channel(SyncEvent::SyncSuccess);
         Self {
             device_id: args.device_id,
             http_client: args.http_client,
@@ -102,7 +107,7 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
             deployment_dir: args.deployment_dir,
             fsm_settings: args.fsm_settings,
             cooldown_options: args.cooldown_options,
-            state: SyncerState {
+            state: SyncState {
                 last_sync_attempted_at: DateTime::<Utc>::UNIX_EPOCH,
                 last_successful_sync_at: DateTime::<Utc>::UNIX_EPOCH,
                 cooldown_ends_at: DateTime::<Utc>::UNIX_EPOCH,
@@ -113,25 +118,40 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
         }
     }
 
-    fn subscribe(&self) -> Result<watch::Receiver<SyncStatus>, SyncErr> {
+    fn subscribe(&self) -> Result<watch::Receiver<SyncEvent>, SyncErr> {
         Ok(self.subscriber_rx.clone())
     }
 
-    fn schedule_cooldown_end_notification(&self, cooldown_end_at: DateTime<Utc>) {
+    fn schedule_cooldown_end_notification(
+        &self,
+        cooldown_end_at: DateTime<Utc>,
+        is_success: bool,
+    ) {
         if cooldown_end_at <= Utc::now() {
             return;
         }
         let cooldown_secs = cooldown_end_at.signed_duration_since(Utc::now()).num_seconds();
         let tx = self.subscriber_tx.clone();
-        
         tokio::spawn(async move {
             tokio::time::sleep(Duration::from_secs(cooldown_secs as u64)).await;
-            let _ = tx.send(SyncStatus::CooldownEnded);
+            let event = if is_success {
+                SyncEvent::CooldownEnd(CooldownEnd::FromSyncSuccess)
+            } else {
+                SyncEvent::CooldownEnd(CooldownEnd::FromSyncFailure)
+            };
+            if let Err(e) = tx.send(event) {
+                error!("failed to send cooldown ended event: {:?}", e);
+            }
         });
     }
 
-    async fn get_state(&self) -> Result<SyncerState, SyncErr> {
+    async fn get_sync_state(&self) -> Result<SyncState, SyncErr> {
         Ok(self.state.clone())
+    }
+
+    #[cfg(feature = "test")]
+    fn set_sync_state(&mut self, state: SyncState) {
+        self.state = state;
     }
 
     async fn sync_if_not_in_cooldown(&mut self) -> Result<(), SyncErr> {
@@ -148,31 +168,64 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
 
     async fn sync(&mut self) -> Result<(), SyncErr> {
         if self.state.is_in_cooldown() {
-            return Ok(());
+            return Err(SyncErr::InCooldownErr(Box::new(SyncerInCooldownErr {
+                err_streak: self.state.err_streak,
+                cooldown_ends_at: self.state.cooldown_ends_at,
+                trace: trace!(),
+            })));
         }
 
         self.state.last_sync_attempted_at = Utc::now();
         let result = self.sync_impl().await;
-        if result.is_ok() {
-            self.state.last_successful_sync_at = Utc::now();
-            self.state.cooldown_ends_at = Utc::now();
-            self.state.err_streak = 0;
-            let _ = self.subscriber_tx.send(SyncStatus::Synced);
-        } else {
-            self.state.err_streak += 1;
-            let cooldown_secs = calc_exp_backoff(
-                self.cooldown_options.base_secs,
-                self.cooldown_options.growth_factor,
-                self.state.err_streak,
-                self.cooldown_options.max_secs,
-            );
-            self.state.cooldown_ends_at = Utc::now() + TimeDelta::seconds(cooldown_secs);
-            self.schedule_cooldown_end_notification(self.state.cooldown_ends_at);
-        }
+        let (success, cooldown_secs) = match &result {
+            Ok(_) => {
+                if let Err(e) = self.subscriber_tx.send(SyncEvent::SyncSuccess) {
+                    error!("failed to send sync success event: {:?}", e);
+                }
+                if self.state.err_streak > 0 {
+                    info!("successfully synced with backend after an error streak of {}", self.state.err_streak);
+                } else {
+                    info!("successfully synced with backend");
+                }
+                self.state.last_successful_sync_at = Utc::now();
+                self.state.cooldown_ends_at = Utc::now();
+                self.state.err_streak = 0;
+                (true, self.cooldown_options.base_secs)
+            }
+            Err(e) => {
+                if let Err(e) = self.subscriber_tx.send(SyncEvent::SyncFailed(SyncFailure {
+                    is_network_connection_error: e.is_network_connection_error(),
+                })) {
+                    error!("failed to send sync failed event: {:?}", e);
+                }
+                // network connection errors are expected to happen and do not count
+                // toward the error streak. We want to be able to retry syncing from network connection errors even if the previous errors were not network connection errors so we use an error streak of 0 when calculating the cooldown period
+                if e.is_network_connection_error() {
+                    debug!("unable to sync with backend due to a network connection error: {:?}", e);
+                    (false, self.cooldown_options.base_secs)
+                } else {
+                    error!("unable to sync with backend: {:?}", e);
+                    self.state.err_streak += 1;
+                    (false, calc_exp_backoff(
+                        self.cooldown_options.base_secs,
+                        self.cooldown_options.growth_factor,
+                        self.state.err_streak,
+                        self.cooldown_options.max_secs,
+                    ))
+                }
+            }
+        };
+
+        // schedule the cooldown end notification
+        self.state.cooldown_ends_at = Utc::now() + TimeDelta::seconds(cooldown_secs);
+        self.schedule_cooldown_end_notification(
+            self.state.cooldown_ends_at,
+            success,
+        );
+        info!("backend syncer cooling down for {cooldown_secs} seconds (until {:?})", self.state.cooldown_ends_at);
+
         result
     }
-
-
 
     async fn sync_impl(&mut self) -> Result<(), SyncErr> {
         let token = self.token_mngr.get_token().await.map_err(|e| {
@@ -258,12 +311,28 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
 }
 
 // ========================= MULTI-THREADED IMPLEMENTATION ========================= //
+#[allow(async_fn_in_trait)]
+pub trait SyncerExt {
+    async fn shutdown(&self) -> Result<(), SyncErr>;
+    async fn get_sync_state(&self) -> Result<SyncState, SyncErr>;
+    async fn is_in_cooldown(&self) -> Result<bool, SyncErr>;
+    async fn get_cooldown_ends_at(&self) -> Result<DateTime<Utc>, SyncErr>;
+    async fn sync(&self) -> Result<(), SyncErr>;
+    async fn sync_if_not_in_cooldown(&self) -> Result<(), SyncErr>;
+    async fn subscribe(&self) -> Result<watch::Receiver<SyncEvent>, SyncErr>;
+}
+
 pub enum WorkerCommand {
     Shutdown {
         respond_to: oneshot::Sender<Result<(), SyncErr>>,
     },
-    GetState {
-        respond_to: oneshot::Sender<Result<SyncerState, SyncErr>>,
+    GetSyncState {
+        respond_to: oneshot::Sender<Result<SyncState, SyncErr>>,
+    },
+    #[cfg(feature = "test")]
+    SetSyncState {
+        state: SyncState,
+        respond_to: oneshot::Sender<Result<(), SyncErr>>,
     },
     SyncIfNotInCooldown {
         respond_to: oneshot::Sender<Result<(), SyncErr>>,
@@ -272,7 +341,7 @@ pub enum WorkerCommand {
         respond_to: oneshot::Sender<Result<(), SyncErr>>,
     },
     Subscribe {
-        respond_to: oneshot::Sender<Result<watch::Receiver<SyncStatus>, SyncErr>>,
+        respond_to: oneshot::Sender<Result<watch::Receiver<SyncEvent>, SyncErr>>,
     },
 }
 
@@ -297,10 +366,17 @@ impl<HTTPClientT: ConfigInstancesExt + Send> Worker<HTTPClientT> {
                     }
                     break;
                 }
-                WorkerCommand::GetState { respond_to } => {
-                    let result = self.syncer.get_state().await;
+                WorkerCommand::GetSyncState { respond_to } => {
+                    let result = self.syncer.get_sync_state().await;
                     if let Err(e) = respond_to.send(result) {
                         error!("Actor failed to send state response: {:?}", e);
+                    }
+                }
+                #[cfg(feature = "test")]
+                WorkerCommand::SetSyncState { state, respond_to } => {
+                    self.syncer.set_sync_state(state);
+                    if let Err(e) = respond_to.send(Ok(())) {
+                        error!("Actor failed to send set sync state response: {:?}", e);
                     }
                 }
                 WorkerCommand::SyncIfNotInCooldown { respond_to } => {
@@ -327,8 +403,6 @@ impl<HTTPClientT: ConfigInstancesExt + Send> Worker<HTTPClientT> {
     }
 }
 
-
-
 #[derive(Debug)]
 pub struct Syncer {
     sender: mpsc::Sender<WorkerCommand>,
@@ -337,7 +411,7 @@ pub struct Syncer {
 impl Syncer {
     pub fn spawn(
         buffer_size: usize,
-        args: SyncerArgs<HTTPClient>,
+        args: SyncerArgs<HTTPClient, TokenManager>,
     ) -> Result<(Self, JoinHandle<()>), SyncErr> {
         let (sender, receiver) = mpsc::channel(buffer_size);
         let worker = Worker {
@@ -354,11 +428,11 @@ impl Syncer {
 }
 
 impl Syncer {
-
-    async fn get_state(&self) -> Result<SyncerState, SyncErr> {
+    #[cfg(feature = "test")]
+    pub async fn set_sync_state(&self, state: SyncState) -> Result<(), SyncErr> {
         let (send, recv) = oneshot::channel();
         self.sender
-            .send(WorkerCommand::GetState { respond_to: send })
+            .send(WorkerCommand::SetSyncState { state, respond_to: send })
             .await
             .map_err(|e| {
                 SyncErr::SendActorMessageErr(Box::new(SendActorMessageErr {
@@ -375,8 +449,8 @@ impl Syncer {
     }
 }
 
-
 impl SyncerExt for Syncer {
+
     async fn shutdown(&self) -> Result<(), SyncErr> {
         let (send, recv) = oneshot::channel();
         self.sender
@@ -398,13 +472,32 @@ impl SyncerExt for Syncer {
         Ok(())
     }
 
+    async fn get_sync_state(&self) -> Result<SyncState, SyncErr> {
+        let (send, recv) = oneshot::channel();
+        self.sender
+            .send(WorkerCommand::GetSyncState { respond_to: send })
+            .await
+            .map_err(|e| {
+                SyncErr::SendActorMessageErr(Box::new(SendActorMessageErr {
+                    source: Box::new(e),
+                    trace: trace!(),
+                }))
+            })?;
+        recv.await.map_err(|e| {
+            SyncErr::ReceiveActorMessageErr(Box::new(ReceiveActorMessageErr {
+                source: Box::new(e),
+                trace: trace!(),
+            }))
+        })?
+    }
+
     async fn is_in_cooldown(&self) -> Result<bool, SyncErr> {
-        let state = self.get_state().await?;
+        let state = self.get_sync_state().await?;
         Ok(state.is_in_cooldown())
     }
 
     async fn get_cooldown_ends_at(&self) -> Result<DateTime<Utc>, SyncErr> {
-        let state = self.get_state().await?;
+        let state = self.get_sync_state().await?;
         Ok(state.cooldown_ends_at)
     }
 
@@ -449,7 +542,7 @@ impl SyncerExt for Syncer {
         })?
     }
 
-    async fn subscribe(&self) -> Result<watch::Receiver<SyncStatus>, SyncErr> {
+    async fn subscribe(&self) -> Result<watch::Receiver<SyncEvent>, SyncErr> {
         let (send, recv) = oneshot::channel();
         self.sender
             .send(WorkerCommand::Subscribe { respond_to: send })
@@ -467,6 +560,4 @@ impl SyncerExt for Syncer {
             }))
         })?
     }
-
-
 }

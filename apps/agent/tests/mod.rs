@@ -1,3 +1,4 @@
+pub mod activity;
 pub mod app;
 pub mod auth;
 pub mod cache;
@@ -16,4 +17,4 @@ pub mod storage;
 pub mod sync;
 pub mod test_utils;
 pub mod utils;
-pub mod workers;
+// pub mod workers;

@@ -19,7 +19,7 @@ use crate::mqtt::client::{
     poll,
 };
 use crate::mqtt::device::{DeviceExt, SyncDevice};
-use crate::sync::syncer::{SyncerExt, SyncStatus};
+use crate::sync::syncer::{SyncerExt, SyncEvent};
 use crate::utils::{calc_exp_backoff, CooldownOptions};
 
 // external crates
@@ -121,7 +121,7 @@ pub async fn run_mqtt_sync_worker<
     let mut syncer_subscriber = syncer.subscribe().await.unwrap_or_else(|e| {
         error!("error subscribing to syncer events: {e:?}");
         // Create a dummy receiver that never sends anything
-        watch::channel(SyncStatus::CooldownEnded).1
+        watch::channel(SyncEvent::SyncSuccess).1
     });
 
     // create the mqtt client
@@ -175,11 +175,11 @@ pub async fn run_mqtt_sync_worker<
 }
 
 async fn handle_syncer_event(
-    event: &SyncStatus,
+    event: &SyncEvent,
     device_id: &str,
     mqtt_client: &MQTTClient,
 ) {
-    if !matches!(event, SyncStatus::Synced) {
+    if !matches!(event, SyncEvent::SyncSuccess) {
         return;
     }
 
@@ -255,7 +255,7 @@ pub async fn handle_mqtt_error<TokenManagerT: TokenManagerExt>(
     mqtt_client: MQTTClient,
     eventloop: EventLoop,
 ) -> (MQTTClient, EventLoop) {
-    // auth error -> refresh token
+    // auth error -> refresh token and reinitialize the mqtt client
     if e.is_authentication_error() {
         error!("authentication error while polling backend for sync command via mqtt: {e:?}");
         info!("attempting to refresh token");

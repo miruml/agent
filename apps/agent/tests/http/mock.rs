@@ -48,51 +48,53 @@ impl DevicesExt for MockAuthClient {
 }
 
 // ============================ CONFIG INSTANCES EXT =============================== //
+
+type ListConfigInstancesFn = Box<dyn Fn() -> Result<ConfigInstanceList, HTTPErr> + Send + Sync>;
+type ListAllConfigInstancesFn = Box<dyn Fn() -> Result<Vec<BackendConfigInstance>, HTTPErr> + Send + Sync>;
+type UpdateConfigInstanceFn = Box<dyn Fn() -> Result<BackendConfigInstance, HTTPErr> + Send + Sync>;
+
 pub struct MockConfigInstancesClient {
-    pub list_config_instances_fn:
-        Box<dyn Fn() -> Result<ConfigInstanceList, HTTPErr> + Send + Sync>,
-    pub list_all_config_instances_fn:
-        Box<dyn Fn() -> Result<Vec<BackendConfigInstance>, HTTPErr> + Send + Sync>,
-    pub update_config_instance_fn:
-        Box<dyn Fn() -> Result<BackendConfigInstance, HTTPErr> + Send + Sync>,
+    pub list_config_instances_fn: Arc<Mutex<ListConfigInstancesFn>>,
+    pub list_all_config_instances_fn: Arc<Mutex<ListAllConfigInstancesFn>>,
+    pub update_config_instance_fn: Arc<Mutex<UpdateConfigInstanceFn>>,
 }
 
 impl Default for MockConfigInstancesClient {
     fn default() -> Self {
         Self {
-            list_config_instances_fn: Box::new(|| Ok(ConfigInstanceList::default())),
-            list_all_config_instances_fn: Box::new(|| Ok(vec![])),
-            update_config_instance_fn: Box::new(|| Ok(BackendConfigInstance::default())),
+            list_config_instances_fn: Arc::new(Mutex::new(Box::new(|| Ok(ConfigInstanceList::default())))),
+            list_all_config_instances_fn: Arc::new(Mutex::new(Box::new(|| Ok(vec![])))),
+            update_config_instance_fn: Arc::new(Mutex::new(Box::new(|| Ok(BackendConfigInstance::default())))),
         }
     }
 }
 
 impl MockConfigInstancesClient {
-    pub fn set_list_config_instances<F>(&mut self, list_config_instances_fn: F)
+    pub fn set_list_config_instances<F>(&self, list_config_instances_fn: F)
     where
         F: Fn() -> Result<ConfigInstanceList, HTTPErr> + Send + Sync + 'static,
     {
-        self.list_config_instances_fn = Box::new(list_config_instances_fn);
+        *self.list_config_instances_fn.lock().unwrap() = Box::new(list_config_instances_fn);
     }
 
-    pub fn set_list_all_config_instances<F>(&mut self, list_all_config_instances_fn: F)
+    pub fn set_list_all_config_instances<F>(&self, list_all_config_instances_fn: F)
     where
         F: Fn() -> Result<Vec<BackendConfigInstance>, HTTPErr> + Send + Sync + 'static,
     {
-        self.list_all_config_instances_fn = Box::new(list_all_config_instances_fn);
+        *self.list_all_config_instances_fn.lock().unwrap() = Box::new(list_all_config_instances_fn);
     }
 
-    pub fn set_update_config_instance<F>(&mut self, update_config_instance_fn: F)
+    pub fn set_update_config_instance<F>(&self, update_config_instance_fn: F)
     where
         F: Fn() -> Result<BackendConfigInstance, HTTPErr> + Send + Sync + 'static,
     {
-        self.update_config_instance_fn = Box::new(update_config_instance_fn);
+        *self.update_config_instance_fn.lock().unwrap() = Box::new(update_config_instance_fn);
     }
 }
 
 impl ConfigInstancesExt for MockConfigInstancesClient {
     async fn list_config_instances(&self, _: &str, _: &str) -> Result<ConfigInstanceList, HTTPErr> {
-        (self.list_config_instances_fn)()
+        (*self.list_config_instances_fn.lock().unwrap())()
     }
 
     async fn list_all_config_instances<I>(
@@ -105,7 +107,7 @@ impl ConfigInstancesExt for MockConfigInstancesClient {
         I: IntoIterator + Send,
         I::Item: fmt::Display,
     {
-        (self.list_all_config_instances_fn)()
+        (*self.list_all_config_instances_fn.lock().unwrap())()
     }
 
     async fn update_config_instance(
@@ -114,7 +116,7 @@ impl ConfigInstancesExt for MockConfigInstancesClient {
         _: &UpdateConfigInstanceRequest,
         _: &str,
     ) -> Result<BackendConfigInstance, HTTPErr> {
-        (self.update_config_instance_fn)()
+        (*self.update_config_instance_fn.lock().unwrap())()
     }
 }
 

@@ -54,7 +54,7 @@ pub mod pull_config_instances_func {
             .unwrap();
 
         // define the mock http client
-        let mut http_client = MockConfigInstancesClient::default();
+        let http_client = MockConfigInstancesClient::default();
         let instance_data = json!({
             "instance1": {
                 "data": "data1",
@@ -107,7 +107,7 @@ pub mod pull_config_instances_func {
 
         // define the mock http client
         let n = 10;
-        let mut http_client = MockConfigInstancesClient::default();
+        let http_client = MockConfigInstancesClient::default();
         let mut instance_datas = Vec::new();
         let mut metadatas = Vec::new();
         for i in 0..n {
@@ -194,7 +194,7 @@ pub mod pull_config_instances_func {
             .unwrap();
 
         // define the mock http client
-        let mut http_client = MockConfigInstancesClient::default();
+        let http_client = MockConfigInstancesClient::default();
         let result = vec![
             openapi_client::models::BackendConfigInstance {
                 id: id.clone(),
@@ -267,7 +267,7 @@ pub mod pull_config_instances_func {
             .unwrap();
 
         // define the mock http client
-        let mut http_client = MockConfigInstancesClient::default();
+        let http_client = MockConfigInstancesClient::default();
         let result = vec![
             openapi_client::models::BackendConfigInstance {
                 id: id.clone(),

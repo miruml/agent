@@ -19,12 +19,13 @@ use config_agent::storage::{
     config_instances::{ConfigInstanceCache, ConfigInstanceDataCache},
     config_schemas::ConfigSchemaCache,
 };
-use config_agent::sync::syncer::Syncer;
+use config_agent::sync::syncer::{Syncer, SyncerArgs};
 use config_agent::trace;
+use config_agent::utils::CooldownOptions;
 
 // test crates
 use crate::http::mock::{MockAuthClient, MockConfigInstancesClient, MockConfigSchemasClient};
-use crate::sync::syncer::{create_token_manager, spawn, TestSyncerArgs};
+use crate::sync::syncer::{create_token_manager, spawn};
 
 // tokio crates
 use serde_json::json;
@@ -47,7 +48,7 @@ pub async fn create_syncer(
 
     spawn(
         32,
-        TestSyncerArgs {
+        SyncerArgs {
             device_id: "device-id".to_string(),
             http_client: http_client.clone(),
             token_mngr: Arc::new(token_mngr),
@@ -55,6 +56,7 @@ pub async fn create_syncer(
             cfg_inst_data_cache: Arc::new(cfg_inst_data_cache),
             deployment_dir: dir.subdir("syncer"),
             fsm_settings: fsm::Settings::default(),
+            cooldown_options: CooldownOptions::default(),
         },
     )
     .unwrap()
@@ -261,13 +263,13 @@ pub mod success {
         let cfg_sch_client = MockConfigSchemasClient::default();
 
         // create the syncer
-        let mut cfg_inst_client = MockConfigInstancesClient::default();
+        let cfg_inst_client = Arc::new(MockConfigInstancesClient::default());
         cfg_inst_client.set_list_all_config_instances(|| {
             Err(HTTPErr::MockErr(Box::new(MockErr {
                 is_network_connection_error: true,
             })))
         });
-        let (syncer, _) = create_syncer(&dir, Arc::new(cfg_inst_client)).await;
+        let (syncer, _) = create_syncer(&dir, cfg_inst_client.clone()).await;
 
         // run the test
         let args = ReadDeployedArgs {
@@ -327,7 +329,7 @@ pub mod success {
         cfg_sch_client.set_find_one_config_schema(move || Ok(cfg_sch_cloned.clone()));
 
         // create the syncer
-        let mut cfg_inst_client = MockConfigInstancesClient::default();
+        let cfg_inst_client = MockConfigInstancesClient::default();
         let cfg_inst_cloned = cfg_inst.clone();
         cfg_inst_client.set_list_all_config_instances(move || Ok(vec![cfg_inst_cloned.clone()]));
         let (syncer, _) = create_syncer(&dir, Arc::new(cfg_inst_client)).await;
