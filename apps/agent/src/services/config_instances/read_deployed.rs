@@ -18,12 +18,11 @@ use crate::services::errors::{
 };
 use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
 use crate::storage::config_schemas::ConfigSchemaCache;
-use crate::sync::syncer::Syncer;
+use crate::sync::syncer::{Syncer, SyncerExt};
 use crate::trace;
 use openapi_server::models::BaseConfigInstance;
 
 // external crates
-use chrono::TimeDelta;
 use serde::Deserialize;
 use tracing::error;
 
@@ -215,8 +214,7 @@ async fn fetch_config_schema_id<
 }
 
 async fn sync_with_backend(syncer: &Syncer) -> Result<(), ServiceErr> {
-    let cooldown = TimeDelta::seconds(15);
-    syncer.sync(cooldown).await
+    syncer.sync_if_not_in_cooldown().await
         .map_err(|e| {
             ServiceErr::SyncErr(Box::new(ServiceSyncErr {
                 source: e,

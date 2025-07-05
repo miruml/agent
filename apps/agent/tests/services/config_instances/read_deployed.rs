@@ -135,7 +135,6 @@ pub mod errors {
         cfg_sch_client.set_find_one_config_schema(|| {
             Err(HTTPErr::MockErr(Box::new(MockErr {
                 is_network_connection_error: true,
-                trace: trace!(),
             })))
         });
 
@@ -183,7 +182,6 @@ pub mod errors {
         cfg_sch_client.set_find_one_config_schema(|| {
             Err(HTTPErr::MockErr(Box::new(MockErr {
                 is_network_connection_error: true,
-                trace: trace!(),
             })))
         });
 
@@ -267,7 +265,6 @@ pub mod success {
         cfg_inst_client.set_list_all_config_instances(|| {
             Err(HTTPErr::MockErr(Box::new(MockErr {
                 is_network_connection_error: true,
-                trace: trace!(),
             })))
         });
         let (syncer, _) = create_syncer(&dir, Arc::new(cfg_inst_client)).await;

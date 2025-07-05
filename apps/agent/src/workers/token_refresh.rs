@@ -6,8 +6,7 @@ use std::time::Duration;
 // internal crates
 use crate::auth::token_mngr::TokenManagerExt;
 use crate::errors::*;
-use crate::utils::calc_exp_backoff;
-use crate::workers::cooldown::CooldownOptions;
+use crate::utils::{calc_exp_backoff, CooldownOptions};
 
 // external crates
 use chrono::Utc;
@@ -36,7 +35,7 @@ impl Default for TokenRefreshWorkerOptions {
 pub async fn run_token_refresh_worker<F, Fut, TokenManagerT: TokenManagerExt>(
     options: &TokenRefreshWorkerOptions,
     token_mngr: &TokenManagerT,
-    sleep_func: F, // for testing purposes
+    sleep_fn: F, // for testing purposes
     mut shutdown_signal: Pin<Box<impl Future<Output = ()> + Send + 'static>>,
 ) where 
     F: Fn(Duration) -> Fut,
@@ -50,17 +49,17 @@ pub async fn run_token_refresh_worker<F, Fut, TokenManagerT: TokenManagerExt>(
         match token_mngr.refresh_token().await {
             Ok(_) => {
                 if err_streak > 0 {
-                    info!("Token refreshed successfully after an error streak of {} errors", err_streak);
+                    info!("token refreshed successfully after an error streak of {err_streak} errors");
                 } else {
-                    info!("Token refreshed successfully");
+                    info!("token refreshed successfully");
                 }
                 err_streak = 0;
             }
             Err(e) => {
                 if e.is_network_connection_error() {
-                    debug!("Unable to refresh token due to a network connection error: {:#?}", e);
+                    debug!("unable to refresh token due to a network connection error: {e:?}");
                 } else {
-                    error!("Error refreshing token (error streak: {}): {:#?}", err_streak, e);
+                    error!("error refreshing token (error streak: {err_streak}): {e:?}");
                     err_streak += 1;
                 }
             }
@@ -83,7 +82,7 @@ pub async fn run_token_refresh_worker<F, Fut, TokenManagerT: TokenManagerExt>(
                 info!("Token refresh worker shutdown complete");
                 return;
             }
-            _ = sleep_func(wait) => {},
+            _ = sleep_fn(wait) => {},
         }
     }
 }

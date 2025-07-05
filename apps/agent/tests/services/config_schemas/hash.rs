@@ -9,7 +9,6 @@ use config_agent::http::client::HTTPClient;
 use config_agent::http::errors::{HTTPErr, MockErr};
 use config_agent::services::config_schemas::hash;
 use config_agent::storage::digests::{ConfigSchemaDigestCache, ConfigSchemaDigests};
-use config_agent::trace;
 use openapi_client::models::SchemaDigestResponse;
 use openapi_server::models::HashSerializedConfigSchemaFormat;
 
@@ -38,7 +37,6 @@ pub mod errors {
         let server_resp = || -> Result<SchemaDigestResponse, HTTPErr> {
             Err(HTTPErr::MockErr(Box::new(MockErr {
                 is_network_connection_error: true,
-                trace: trace!(),
             })))
         };
         mock_client.set_hash_schema(server_resp);

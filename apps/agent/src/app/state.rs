@@ -18,7 +18,8 @@ use crate::storage::{
     caches::{CacheCapacities, Caches},
     layout::StorageLayout,
 };
-use crate::sync::syncer::{Syncer, SyncerArgs};
+use crate::sync::syncer::{Syncer, SyncerExt, SyncerArgs};
+use crate::utils::CooldownOptions;
 use crate::trace;
 
 pub type DeviceID = String;
@@ -99,6 +100,7 @@ impl AppState {
                 cfg_inst_data_cache: caches.cfg_inst_data.clone(),
                 deployment_dir: layout.config_instance_deployment_dir(),
                 fsm_settings,
+                cooldown_options: CooldownOptions::default(),
             },
         )
         .map_err(|e| {

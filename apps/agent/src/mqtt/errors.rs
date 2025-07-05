@@ -160,12 +160,44 @@ impl fmt::Display for PublishErr {
 }
 
 #[derive(Debug)]
+pub struct MockErr {
+    pub is_authentication_error: bool,
+    pub is_network_connection_error: bool,
+}
+
+impl MiruError for MockErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        self.is_network_connection_error
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for MockErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Mock MQTT error (is authentication error: {}, is network connection error: {})", self.is_authentication_error, self.is_network_connection_error)
+    }
+}
+
+#[derive(Debug)]
 pub enum MQTTError {
     AuthenticationErr(Box<AuthenticationErr>),
     NetworkConnectionErr(Box<NetworkConnectionErr>),
     TimeoutErr(Box<TimeoutErr>),
     PollErr(Box<PollErr>),
     PublishErr(Box<PublishErr>),
+
+    MockErr(Box<MockErr>),
 }
 
 macro_rules! forward_error_method {
@@ -176,6 +208,7 @@ macro_rules! forward_error_method {
             MQTTError::TimeoutErr(e) => e.$method($($arg)?),
             MQTTError::PollErr(e) => e.$method($($arg)?),
             MQTTError::PublishErr(e) => e.$method($($arg)?),
+            MQTTError::MockErr(e) => e.$method($($arg)?),
         }
     };
 }
@@ -201,5 +234,15 @@ impl MiruError for MQTTError {
 
     fn params(&self) -> Option<serde_json::Value> {
         forward_error_method!(self, params)
+    }
+}
+
+impl MQTTError {
+    pub fn is_authentication_error(&self) -> bool {
+        match self {
+            MQTTError::AuthenticationErr(_) => true,
+            MQTTError::MockErr(e) => e.is_authentication_error,
+            _ => false,
+        }
     }
 }

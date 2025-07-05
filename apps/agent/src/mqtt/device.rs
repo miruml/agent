@@ -1,5 +1,6 @@
 // internal crates
 use crate::mqtt::client::MQTTClient;
+// use crate::mqtt::device::
 use crate::mqtt::errors::MQTTError;
 
 // external crates
@@ -7,8 +8,16 @@ use rumqttc::QoS;
 
 pub type SyncDevice = openapi_client::models::SyncDevice;
 
-impl MQTTClient {
-    pub async fn publish_device_sync(&self, device_id: &str) -> Result<(), MQTTError> {
+// =================================== TRAIT ======================================= //
+#[allow(async_fn_in_trait)]
+pub trait DeviceExt {
+    async fn publish_device_sync(&self, device_id: &str) -> Result<(), MQTTError>;
+    async fn subscribe_device_sync(&self, device_id: &str) -> Result<(), MQTTError>;
+}
+
+
+impl DeviceExt for MQTTClient {
+    async fn publish_device_sync(&self, device_id: &str) -> Result<(), MQTTError> {
         let topic = format!("cmd/devices/{device_id}/sync");
         let payload = SyncDevice { is_synced: true };
         let payload_bytes = serde_json::to_vec(&payload).unwrap();
@@ -16,7 +25,7 @@ impl MQTTClient {
             .await
     }
 
-    pub async fn subscribe_device_sync(&self, device_id: &str) -> Result<(), MQTTError> {
+    async fn subscribe_device_sync(&self, device_id: &str) -> Result<(), MQTTError> {
         let topic = format!("cmd/devices/{device_id}/sync");
         self.subscribe(&topic, QoS::AtLeastOnce).await
     }

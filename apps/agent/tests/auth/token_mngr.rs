@@ -17,7 +17,6 @@ use config_agent::http::{
     client::HTTPClient,
     errors::{HTTPErr, MockErr},
 };
-use config_agent::trace;
 use openapi_client::models::TokenResponse;
 
 // external crates
@@ -236,7 +235,6 @@ pub mod refresh_token {
             issue_device_token_result: Box::new(move || {
                 Err(HTTPErr::MockErr(Box::new(MockErr {
                     is_network_connection_error: false,
-                    trace: trace!(),
                 })))
             }),
             ..Default::default()

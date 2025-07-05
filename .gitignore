@@ -31,3 +31,5 @@ deleteme_dir/
 # distribution files
 dist/
 zig*/
+
+.vscode/

@@ -10,6 +10,9 @@ use crate::errors::{Code, HTTPCode, MiruError, Trace};
 use crate::http::errors::HTTPErr;
 use crate::storage::errors::StorageErr;
 
+// external crates
+use chrono::{DateTime, Utc};
+
 #[derive(Debug)]
 pub struct SyncAuthErr {
     pub source: AuthErr,
@@ -264,6 +267,74 @@ impl fmt::Display for ConfigInstanceDataNotFoundErr {
 pub type SendActorMessageErr = crate::cache::errors::SendActorMessageErr;
 pub type ReceiveActorMessageErr = crate::cache::errors::ReceiveActorMessageErr;
 
+
+#[derive(Debug)]
+pub struct SyncerInCooldownErr {
+    pub err_streak: u32,
+    pub cooldown_ends_at: DateTime<Utc>,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for SyncerInCooldownErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for SyncerInCooldownErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let err_streak = self.err_streak;
+        let cooldown_secs = self.cooldown_ends_at.signed_duration_since(Utc::now()).num_seconds();
+        let cooldown_ends_at = self.cooldown_ends_at;
+        write!(f, "cannot sync device because the syncer is in cooldown (err streak of {err_streak}) for {cooldown_secs} seconds (cooldown ends at: {cooldown_ends_at})",
+        )
+    }
+}
+
+
+#[derive(Debug)]
+pub struct MockErr {
+    pub is_network_connection_error: bool,
+}
+
+impl MiruError for MockErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        self.is_network_connection_error
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for MockErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Mock error")
+    }
+}
+
+
+
 #[derive(Debug)]
 pub enum SyncErr {
     AuthErr(Box<SyncAuthErr>),
@@ -277,6 +348,8 @@ pub enum SyncErr {
     ConfigInstanceDataNotFound(Box<ConfigInstanceDataNotFoundErr>),
     SendActorMessageErr(Box<SendActorMessageErr>),
     ReceiveActorMessageErr(Box<ReceiveActorMessageErr>),
+
+    MockErr(Box<MockErr>),
 }
 
 macro_rules! forward_error_method {
@@ -290,10 +363,11 @@ macro_rules! forward_error_method {
             SyncErr::StorageErr(e) => e.$method($($arg)?),
             SyncErr::SyncErrors(e) => e.$method($($arg)?),
 
+            SyncErr::ConfigInstanceDataNotFound(e) => e.$method($($arg)?),
             SyncErr::SendActorMessageErr(e) => e.$method($($arg)?),
             SyncErr::ReceiveActorMessageErr(e) => e.$method($($arg)?),
 
-            SyncErr::ConfigInstanceDataNotFound(e) => e.$method($($arg)?),
+            SyncErr::MockErr(e) => e.$method($($arg)?),
         }
     };
 }

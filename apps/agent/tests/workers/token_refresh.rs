@@ -255,7 +255,7 @@ pub mod run_refresh_token_worker {
     }
 
     #[tokio::test]
-    async fn non_network_error_recovery() {
+    async fn error_recovery() {
         // create the token manager
         let token = Token {
             token: "token".to_string(),

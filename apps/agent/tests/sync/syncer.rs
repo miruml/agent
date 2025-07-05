@@ -20,9 +20,8 @@ use config_agent::models::config_instance::ActivityStatus;
 use config_agent::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
 use config_agent::sync::{
     errors::SyncErr,
-    syncer::{SingleThreadSyncer, Syncer, Worker, SyncerArgs},
+    syncer::{SingleThreadSyncer, Syncer, Worker, SyncerArgs, SyncerExt},
 };
-use config_agent::trace;
 
 // external crates
 use chrono::{DateTime, TimeDelta, Utc};
@@ -133,13 +132,11 @@ pub mod sync {
         http_client.set_list_all_config_instances(|| {
             Err(HTTPErr::MockErr(Box::new(MockErr {
                 is_network_connection_error: true,
-                trace: trace!(),
             })))
         });
         http_client.set_update_config_instance(|| {
             Err(HTTPErr::MockErr(Box::new(MockErr {
                 is_network_connection_error: true,
-                trace: trace!(),
             })))
         });
 
@@ -166,7 +163,7 @@ pub mod sync {
         )
         .unwrap();
 
-        let error = syncer.sync(TimeDelta::seconds(1)).await.unwrap_err();
+        let error = syncer.sync().await.unwrap_err();
         assert!(error.is_network_connection_error());
     }
 
@@ -214,7 +211,7 @@ pub mod sync {
         )
         .unwrap();
 
-        syncer.sync(TimeDelta::seconds(1)).await.unwrap();
+        syncer.sync().await.unwrap();
 
         // check the metadata cache has the new instance
         let cache_cfg_inst = cfg_inst_cache.read(id.clone()).await.unwrap();
@@ -228,6 +225,58 @@ pub mod sync {
         let unsynced_entries = cfg_inst_cache.get_dirty_entries().await.unwrap();
         assert_eq!(unsynced_entries.len(), 0);
     }
+
+
+}
+
+pub mod get_last_sync_attempted_at {
+    use super::*;
+
+    #[tokio::test]
+    async fn get_last_sync_attempted_at() {
+        let dir = Dir::create_temp_dir("spawn").await.unwrap();
+        let auth_client = Arc::new(MockAuthClient::default());
+        let (token_mngr, _) = create_token_manager(&dir, auth_client.clone()).await;
+
+        // create the caches
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
+            .await
+            .unwrap();
+        let (cfg_inst_data_cache, _) =
+            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
+                .await
+                .unwrap();
+
+        let (syncer, _) = spawn(
+            32,
+            TestSyncerArgs {
+                device_id: "device_id".to_string(),
+                http_client: Arc::new(MockConfigInstancesClient::default()),
+                token_mngr: Arc::new(token_mngr),
+                cfg_inst_cache: Arc::new(cfg_inst_cache),
+                cfg_inst_data_cache: Arc::new(cfg_inst_data_cache),
+                deployment_dir: dir.clone(),
+                fsm_settings: fsm::Settings::default(),
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            syncer.get_last_sync_attempted_at().await.unwrap(),
+            DateTime::<Utc>::UNIX_EPOCH
+        );
+
+        let before = Utc::now();
+        syncer.sync().await.unwrap();
+        let after = Utc::now();
+
+        assert!(before < syncer.get_last_sync_attempted_at().await.unwrap());
+        assert!(syncer.get_last_sync_attempted_at().await.unwrap() < after);
+    }
+}
+
+pub mod is_in_cooldown {
+    use super::*;
 
     #[tokio::test]
     async fn in_cooldown() {
@@ -258,62 +307,13 @@ pub mod sync {
         )
         .unwrap();
 
-        let before = Utc::now();
-        syncer.sync(TimeDelta::seconds(1)).await.unwrap();
-        let after = Utc::now();
+        // should begin in cooldown
+        assert!(syncer.is_in_cooldown(TimeDelta::seconds(1)).await.unwrap());
 
-        assert!(before < syncer.get_last_synced_at().await.unwrap());
-        assert!(syncer.get_last_synced_at().await.unwrap() < after);
-        let prev_synced_at = syncer.get_last_synced_at().await.unwrap();
+        // should not be in cooldown after syncing
+        syncer.sync().await.unwrap();
 
-        // syncing again should not change the last synced at
-        syncer.sync(TimeDelta::seconds(1)).await.unwrap();
-        assert_eq!(syncer.get_last_synced_at().await.unwrap(), prev_synced_at);
-    }
-}
-
-pub mod get_last_synced_at {
-    use super::*;
-
-    #[tokio::test]
-    async fn get_last_synced_at() {
-        let dir = Dir::create_temp_dir("spawn").await.unwrap();
-        let auth_client = Arc::new(MockAuthClient::default());
-        let (token_mngr, _) = create_token_manager(&dir, auth_client.clone()).await;
-
-        // create the caches
-        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
-            .await
-            .unwrap();
-        let (cfg_inst_data_cache, _) =
-            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
-                .await
-                .unwrap();
-
-        let (syncer, _) = spawn(
-            32,
-            TestSyncerArgs {
-                device_id: "device_id".to_string(),
-                http_client: Arc::new(MockConfigInstancesClient::default()),
-                token_mngr: Arc::new(token_mngr),
-                cfg_inst_cache: Arc::new(cfg_inst_cache),
-                cfg_inst_data_cache: Arc::new(cfg_inst_data_cache),
-                deployment_dir: dir.clone(),
-                fsm_settings: fsm::Settings::default(),
-            },
-        )
-        .unwrap();
-
-        assert_eq!(
-            syncer.get_last_synced_at().await.unwrap(),
-            DateTime::<Utc>::UNIX_EPOCH
-        );
-
-        let before = Utc::now();
-        syncer.sync(TimeDelta::seconds(1)).await.unwrap();
-        let after = Utc::now();
-
-        assert!(before < syncer.get_last_synced_at().await.unwrap());
-        assert!(syncer.get_last_synced_at().await.unwrap() < after);
+        // should not be in cooldown after syncing
+        assert!(!syncer.is_in_cooldown(TimeDelta::seconds(1)).await.unwrap());
     }
 }

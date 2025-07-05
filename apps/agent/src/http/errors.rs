@@ -435,7 +435,6 @@ impl fmt::Display for ReqwestErr {
 #[derive(Debug)]
 pub struct MockErr {
     pub is_network_connection_error: bool,
-    pub trace: Box<Trace>,
 }
 
 impl MiruError for MockErr {
