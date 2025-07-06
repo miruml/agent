@@ -1,5 +1,6 @@
 // standard library
 use std::env;
+use std::collections::HashMap;
 
 // internal crates
 use config_agent::filesys::{dir::Dir, path::PathExt};
@@ -55,12 +56,20 @@ async fn install() -> Result<(), Box<dyn std::error::Error>> {
     let mut settings = settings::Settings::default();
 
     let args: Vec<String> = env::args().collect();
+    // Parse key-value arguments into HashMap
+    let mut kv_args: HashMap<String, String> = HashMap::new();
+    for arg in args.iter().skip(1) {
+        if let Some((key, value)) = arg.split_once('=') {
+            let clean_key = key.trim_start_matches('-');
+            kv_args.insert(clean_key.to_string(), value.to_string());
+        }
+    }
 
     // set optional settings
-    if let Some(backend_url) = args.get(1) {
+    if let Some(backend_url) = kv_args.get("backend-base-url") {
         settings.backend.base_url = backend_url.to_string();
     }
-    if let Some(mqtt_broker_host) = args.get(2) {
+    if let Some(mqtt_broker_host) = kv_args.get("mqtt-broker-host") {
         settings.mqtt_broker.host = mqtt_broker_host.to_string();
     }
 

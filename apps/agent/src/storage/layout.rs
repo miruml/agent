@@ -64,7 +64,7 @@ impl StorageLayout {
     }
 
     pub fn config_instance_deployment_dir(&self) -> Dir {
-        self.root.subdir("/srv/miru/config_instances")
+        Dir::new(PathBuf::from("/").join("srv").join("miru"))
     }
 }
 
