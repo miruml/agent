@@ -5,4 +5,5 @@ pub mod config_schemas;
 pub mod digests;
 pub mod errors;
 pub mod layout;
+pub mod settings;
 pub mod setup;

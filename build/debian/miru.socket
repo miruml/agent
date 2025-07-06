@@ -1,5 +1,5 @@
 [Unit]
-Description=Miru OTA deployment manager socket
+Description=Miru Config Agent socket
 
 [Socket]
 ListenStream=/run/miru/miru.sock

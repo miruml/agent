@@ -1,18 +1,35 @@
 // internal crates
 use crate::auth::token::Token;
 use crate::crypt::rsa;
-use crate::models::agent::Agent;
+use crate::storage::agent::Agent;
+use crate::storage::settings::Settings;
 use crate::storage::{
     errors::{StorageCryptErr, StorageErr, StorageFileSysErr},
     layout::StorageLayout,
 };
 use crate::trace;
 
-pub async fn setup_storage(layout: &StorageLayout, agent: &Agent) -> Result<(), StorageErr> {
+pub async fn setup_storage(
+    layout: &StorageLayout,
+    agent: &Agent,
+    settings: &Settings,
+) -> Result<(), StorageErr> {
     // create the agent file
     let agent_file = layout.agent_file();
     agent_file
         .write_json(&agent, true, true)
+        .await
+        .map_err(|e| {
+            StorageErr::FileSysErr(Box::new(StorageFileSysErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
+
+    // create the settings file
+    let settings_file = layout.settings_file();
+    settings_file
+        .write_json(&settings, true, true)
         .await
         .map_err(|e| {
             StorageErr::FileSysErr(Box::new(StorageFileSysErr {

@@ -2,11 +2,10 @@
 use std::path::PathBuf;
 
 // internal crates
-use config_agent::app::run::{
-    run, AppOptions, LifecycleOptions, StorageOptions,
-};
+use config_agent::app::run::{run};
+use config_agent::app::options::{AppOptions, LifecycleOptions, StorageOptions};
 use config_agent::filesys::{dir::Dir, file::File};
-use config_agent::models::agent::Agent;
+use config_agent::storage::agent::Agent;
 use config_agent::server::serve::ServerOptions;
 use config_agent::storage::layout::StorageLayout;
 
@@ -84,7 +83,7 @@ async fn max_runtime_reached() {
 }
 
 #[tokio::test]
-async fn is_persistent() {
+async fn not_socket_activated() {
     let dir = Dir::create_temp_dir("testing").await.unwrap();
     let max_runtime = Duration::from_millis(100);
     prepare_valid_server_storage(dir.clone()).await;
@@ -94,7 +93,7 @@ async fn is_persistent() {
             ..Default::default()
         },
         lifecycle: LifecycleOptions {
-            is_persistent: true,
+            is_socket_activated: false,
             max_runtime,
             ..Default::default()
         },

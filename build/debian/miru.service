@@ -1,5 +1,5 @@
 [Unit]
-Description=Miru OTA deployment manager
+Description=Miru Config Agent
 After=network.target
 Requires=miru.socket
 
@@ -23,7 +23,7 @@ SyslogIdentifier=miru-agent
 
 # security
 # Allows read / write access
-ReadWritePaths=/var/lib/miru /var/log/miru
+ReadWritePaths=/var/lib/miru /var/log/miru /srv/miru
 # Makes the entire filesystem read-only except for paths in ReadWritePaths
 ProtectSystem=strict
 # Prevents access to /home, /root, and /run/user

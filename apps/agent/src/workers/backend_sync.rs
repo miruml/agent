@@ -31,8 +31,8 @@ use chrono::{TimeDelta, Utc};
 #[derive(Debug, Clone)]
 pub struct BackendSyncWorkerOptions {
     pub poll_interval_secs: i64,
-    pub mqtt_cooldown: CooldownOptions,
     pub mqtt_enabled: bool,
+    pub mqtt_cooldown: CooldownOptions,
     pub mqtt_broker_address: ConnectAddress,
 }
 
@@ -41,12 +41,12 @@ impl Default for BackendSyncWorkerOptions {
         let twelve_hrs = 12 * 60 * 60;
         Self {
             poll_interval_secs: twelve_hrs,
+            mqtt_enabled: true,
             mqtt_cooldown: CooldownOptions {
                 base_secs: 1,
                 growth_factor: 2,
                 max_secs: twelve_hrs,
             },
-            mqtt_enabled: true,
             mqtt_broker_address: ConnectAddress::default(),
         }
     }

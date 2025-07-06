@@ -6,18 +6,16 @@ use std::time::{Duration, SystemTime};
 
 // internal crates
 use crate::activity::ActivityTracker;
-use crate::app::state::AppState;
+use crate::app::{
+    options::{AppOptions, LifecycleOptions},
+    state::AppState,
+};
 use crate::auth::token_mngr::{TokenManager, TokenManagerExt};
-use crate::deploy::fsm;
 use crate::http::client::HTTPClient;
 use crate::server::{
     errors::*,
-    serve::{serve, ServerOptions},
+    serve::{serve},
     state::ServerState,
-};
-use crate::storage::{
-    caches::CacheCapacities,
-    layout::StorageLayout,
 };
 use crate::workers::{
         token_refresh::{
@@ -36,76 +34,6 @@ use tokio::sync::broadcast;
 use tokio::task::JoinHandle;
 use tracing::{error, info};
 
-pub struct ServerComponents {
-    pub state: Arc<ServerState>,
-    pub state_handle: Pin<Box<dyn Future<Output = ()>>>,
-    pub token_refresh_handle: JoinHandle<()>,
-    pub server_handle: JoinHandle<Result<(), ServerErr>>,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct LifecycleOptions {
-    pub is_persistent: bool,
-    pub max_runtime: Duration,
-    pub idle_timeout: Duration,
-    pub idle_timeout_poll_interval: Duration,
-    pub max_shutdown_delay: Duration,
-}
-
-impl Default for LifecycleOptions {
-    fn default() -> Self {
-        Self {
-            is_persistent: true,
-            max_runtime: Duration::from_secs(60 * 15), // 15 minutes
-            idle_timeout: Duration::from_secs(60),
-            idle_timeout_poll_interval: Duration::from_secs(5),
-            max_shutdown_delay: Duration::from_secs(15),
-        }
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct StorageOptions {
-    pub layout: StorageLayout,
-    pub cache_capacities: CacheCapacities,
-}
-
-#[derive(Debug)]
-pub struct AppOptions {
-    pub lifecycle: LifecycleOptions,
-
-    pub storage: StorageOptions,
-    pub token_refresh_worker: TokenRefreshWorkerOptions,
-    pub fsm_settings: fsm::Settings,
-
-    pub backend_base_url: String,
-
-    pub enable_socket_server: bool,
-    pub server: ServerOptions,
-
-    pub enable_backend_sync_worker: bool,
-    pub backend_sync_worker: BackendSyncWorkerOptions,
-}
-
-impl Default for AppOptions {
-    fn default() -> Self {
-        Self {
-            lifecycle: LifecycleOptions::default(),
-
-            storage: StorageOptions::default(),
-            token_refresh_worker: TokenRefreshWorkerOptions::default(),
-            fsm_settings: fsm::Settings::default(),
-
-            backend_base_url: "https://configs.api.miruml.com/agent/v1".to_string(),
-
-            enable_socket_server: true,
-            server: ServerOptions::default(),
-
-            enable_backend_sync_worker: true,
-            backend_sync_worker: BackendSyncWorkerOptions::default(),
-        }
-    }
-}
 
 pub async fn run(
     options: AppOptions,
@@ -134,17 +62,9 @@ pub async fn run(
         }
     };
 
-    // if the app is persistent, wait for ctrl-c to trigger a shutdown
-    if options.lifecycle.is_persistent {
-        tokio::select! {
-            _ = shutdown_signal => {
-                info!("Shutdown signal received, shutting down...");
-            }
-        }
-
     // if the app is not persistent, wait for ctrl-c, an idle timeout, or max runtime
     // reached to trigger a shutdown
-    } else {
+    if options.lifecycle.is_socket_activated {
         tokio::select! {
             _ = shutdown_signal => {
                 info!("Shutdown signal received, shutting down...");
@@ -159,6 +79,14 @@ pub async fn run(
             }
             _ = await_max_runtime(options.lifecycle.max_runtime) => {
                 info!("Max runtime ({:?}) reached, shutting down...", options.lifecycle.max_runtime);
+            }
+        }
+    }
+    // if the app is persistent, wait for ctrl-c to trigger a shutdown
+    else {
+        tokio::select! {
+            _ = shutdown_signal => {
+                info!("Shutdown signal received, shutting down...");
             }
         }
     }

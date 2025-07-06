@@ -1,8 +1,12 @@
 // internal crates
 use config_agent::filesys::dir::Dir;
-use config_agent::models::agent::Agent;
-use config_agent::storage::agent::assert_activated;
-use config_agent::storage::errors::StorageErr;
+use config_agent::storage::{
+    agent::{Agent, assert_activated},
+    errors::StorageErr,
+};
+
+// external crates
+use serde_json::json;
 
 pub mod assert_activated {
     use super::*;
@@ -42,4 +46,50 @@ pub mod assert_activated {
         let result = assert_activated(&agent_file).await.unwrap_err();
         assert!(matches!(result, StorageErr::AgentNotActivatedErr { .. }));
     }
+}
+
+#[test]
+fn serialize_deserialize_agent() {
+    let agent = Agent {
+        device_id: "dvc_123".to_string(),
+        activated: true,
+    };
+    let serialized = serde_json::to_string(&agent).unwrap();
+    let deserialized = serde_json::from_str::<Agent>(&serialized).unwrap();
+    assert_eq!(deserialized, agent);
+}
+
+#[test]
+fn deserialize_agent() {
+    // valid deserialization
+    let expected = Agent {
+        device_id: "dvc_123".to_string(),
+        activated: true,
+    };
+    let valid_input = json!({
+        "device_id": expected.device_id,
+        "activated": expected.activated,
+    });
+    let agent: Agent = serde_json::from_value(valid_input).unwrap();
+    assert_eq!(agent, expected);
+
+    // exclude required fields
+    let empty_input = json!({});
+    assert!(serde_json::from_value::<Agent>(empty_input).is_err());
+
+    // exclude default fields
+    let expected = Agent {
+        // required fields
+        device_id: "dvc_456".to_string(),
+        // rest are defaults
+        ..Default::default()
+    };
+    let valid_input = json!({
+        "device_id": expected.device_id,
+    });
+    let agent: Agent = serde_json::from_value(valid_input).unwrap();
+    assert_eq!(agent, expected);
+
+    // invalid JSON
+    assert!(serde_json::from_str::<Agent>("invalid-json").is_err());
 }

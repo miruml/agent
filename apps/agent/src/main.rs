@@ -1,10 +1,13 @@
 // internal
-use config_agent::app::run::{run, AppOptions};
+use config_agent::app::run::{run};
+use config_agent::app::options::{AppOptions, LifecycleOptions};
 use config_agent::logs::{init, LogOptions};
-use config_agent::models::agent::Agent;
-use config_agent::storage::agent::assert_activated;
+use config_agent::mqtt::client::ConnectAddress;
+use config_agent::storage::agent::{assert_activated, Agent};
 use config_agent::storage::layout::StorageLayout;
+use config_agent::storage::settings::Settings;
 use config_agent::utils::{has_version_flag, version_info};
+use config_agent::workers::backend_sync::BackendSyncWorkerOptions;
 
 // external
 use tokio::signal::unix::signal;
@@ -25,8 +28,6 @@ async fn main() {
         error!("Agent is not yet activated: {}", e);
         return;
     }
-
-    // use the url in the agent file
     let agent = match agent_file.read_json::<Agent>().await {
         Ok(agent) => agent,
         Err(e) => {
@@ -35,9 +36,20 @@ async fn main() {
         }
     };
 
+    // retrieve the settings files
+    let settings_file = layout.settings_file();
+    let settings = match settings_file.read_json::<Settings>().await {
+        Ok(settings) => settings,
+        Err(e) => {
+            error!("Unable to read settings file: {}", e);
+            return;
+        }
+    };
+
+
     // initialize the logging
     let log_options = LogOptions {
-        log_level: agent.log_level,
+        log_level: settings.log_level,
         ..Default::default()
     };
     let result = init(log_options);
@@ -47,7 +59,20 @@ async fn main() {
 
     // run the server
     let options = AppOptions {
-        backend_base_url: agent.backend_base_url,
+        lifecycle: LifecycleOptions {
+            is_socket_activated: settings.is_socket_activated,
+            ..Default::default()
+        },
+        backend_base_url: settings.backend.base_url,
+        enable_socket_server: settings.enable_socket_server,
+        enable_backend_sync_worker: settings.enable_backend_sync_worker,
+        backend_sync_worker: BackendSyncWorkerOptions {
+            mqtt_broker_address: ConnectAddress {
+                broker: settings.mqtt_broker.host,
+                ..Default::default()
+            },
+            ..Default::default()
+        },
         ..Default::default()
     };
     info!("Running the server with options: {:?}", options);

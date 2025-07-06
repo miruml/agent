@@ -9,13 +9,17 @@ use crate::errors::{
 use crate::{utils, utils::Colors};
 use config_agent::crypt::jwt;
 use config_agent::http::devices::DevicesExt;
-use config_agent::models::agent::Agent;
-use config_agent::storage::{layout::StorageLayout, setup::setup_storage};
+use config_agent::storage::{
+    agent::Agent,
+    layout::StorageLayout,
+    setup::setup_storage,
+    settings,
+};
 use config_agent::trace;
 use openapi_client::models::ActivateDeviceRequest;
 
 // external crates
-use dialoguer::Input;
+use dialoguer::Password;
 use indicatif::{ProgressBar, ProgressStyle};
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
@@ -41,13 +45,16 @@ impl<HTTPClientT: DevicesExt> Installer<HTTPClientT> {
     }
 
     // walks user through the installation process
-    pub async fn install(&mut self, backend_base_url: &str) -> Result<(), InstallerErr> {
+    pub async fn install(
+        &mut self,
+        settings: &settings::Settings,
+    ) -> Result<(), InstallerErr> {
         // setup the storage so that the agent can authenticate its keys and such
         let agent = Agent {
             activated: false,
             ..Default::default()
         };
-        setup_storage(&self.layout, &agent).await.map_err(|e| {
+        setup_storage(&self.layout, &agent, settings).await.map_err(|e| {
             InstallerErr::StorageErr(InstallerStorageErr {
                 source: e,
                 trace: trace!(),
@@ -62,8 +69,6 @@ impl<HTTPClientT: DevicesExt> Installer<HTTPClientT> {
         let agent = Agent {
             device_id,
             activated: true,
-            backend_base_url: backend_base_url.to_string(),
-            ..Default::default()
         };
         agent_file
             .write_json(&agent, true, true)
@@ -125,7 +130,7 @@ impl<HTTPClientT: DevicesExt> Installer<HTTPClientT> {
         println!("To authenticate the miru agent, you'll need to retrieve the authentication token from {} for the device you want to authenticate as.\n", utils::format_url(MIRU_DEVICES_PAGE, MIRU_DEVICES_PAGE));
 
         // prompt user for their json web token
-        let token = Input::with_theme(&utils::input_theme())
+        let token = Password::with_theme(&utils::input_theme())
             .with_prompt("Enter Authentication Token")
             .validate_with(|input: &String| -> Result<(), String> {
                 // validate the jwt token

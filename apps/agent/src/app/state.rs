@@ -12,9 +12,9 @@ use crate::crypt::jwt;
 use crate::deploy::fsm;
 use crate::filesys::{cached_file::CachedFile, file::File, path::PathExt};
 use crate::http::client::HTTPClient;
-use crate::models::agent::Agent;
 use crate::server::errors::*;
 use crate::storage::{
+    agent::Agent,
     caches::{CacheCapacities, Caches},
     layout::StorageLayout,
 };

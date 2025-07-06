@@ -6,6 +6,7 @@ use config_agent::filesys::{dir::Dir, path::PathExt};
 use config_agent::http::client::HTTPClient;
 use config_agent::logs::{init, LogOptions};
 use config_agent::storage::layout::StorageLayout;
+use config_agent::storage::settings;
 use config_agent::utils::{has_version_flag, version_info};
 use config_agent_installer::installer::Installer;
 use config_agent_installer::users::{assert_groupname, assert_username};
@@ -51,15 +52,25 @@ async fn install() -> Result<(), Box<dyn std::error::Error>> {
     };
     let guard = init(options)?;
 
-    // determine the backend url to use for installation
-    let default_backend_url = "https://configs.api.miruml.com/agent/v1".to_string();
+    let mut settings = settings::Settings::default();
+
     let args: Vec<String> = env::args().collect();
-    let backend_url = args.get(1).unwrap_or(&default_backend_url);
+
+    // set optional settings
+    if let Some(backend_url) = args.get(1) {
+        settings.backend.base_url = backend_url.to_string();
+    }
+    if let Some(mqtt_broker_host) = args.get(2) {
+        settings.mqtt_broker.host = mqtt_broker_host.to_string();
+    }
 
     // create and run the installer
-    let http_client = HTTPClient::new(backend_url).await;
-    let mut installer = Installer::new(StorageLayout::default(), http_client);
-    installer.install(backend_url).await?;
+    let http_client = HTTPClient::new(&settings.backend.base_url).await;
+    let mut installer = Installer::new(
+        StorageLayout::default(),
+        http_client,
+    );
+    installer.install(&settings).await?;
 
     drop(guard);
 

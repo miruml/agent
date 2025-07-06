@@ -8,8 +8,10 @@ use config_agent::deploy::fsm;
 use config_agent::filesys::dir::Dir;
 use config_agent::filesys::errors::FileSysErr;
 use config_agent::http::client::HTTPClient;
-use config_agent::models::agent::Agent;
-use config_agent::storage::caches::CacheCapacities;
+use config_agent::storage::{
+    agent::Agent,
+    caches::CacheCapacities,
+};
 use config_agent::server::errors::ServerErr;
 use config_agent::storage::layout::StorageLayout;
 

@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# determine the version of systemd
 socket_name="miru.socket"
+service_name="miru.service"
 
 create_miru_user() {
   if ! id -u miru > /dev/null 2>&1; then
@@ -31,6 +31,12 @@ create_miru_directories() {
     mkdir -p /var/log/miru
     chown -R miru:miru /var/log/miru
     chmod -R 755 /var/log/miru
+  fi
+  if [ ! -d /srv/miru ]; then
+    printf "\033[32m Creating the /srv/miru directory\033[0m\n"
+    mkdir -p /srv/miru
+    chown -R miru:miru /srv/miru
+    chmod -R 755 /srv/miru
   fi
 }
 
@@ -75,9 +81,18 @@ upgrade() {
     printf "\033[32m Enable the socket\033[0m\n"
     systemctl enable "${socket_name}"
 
-    # socket upgrade
+    # socket restart
     printf "\033[32m Restart the socket\033[0m\n"
     systemctl restart "${socket_name}"
+
+    # enable the service
+    printf "\033[32m Enable the service\033[0m\n"
+    systemctl enable "${service_name}"
+
+    # socket upgrade
+    printf "\033[32m Restart the service\033[0m\n"
+    systemctl restart "${service_name}"
+
 }
 
 # Step 2, check if this is a clean install or an upgrade

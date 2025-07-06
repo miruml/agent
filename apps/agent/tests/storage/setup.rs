@@ -1,7 +1,11 @@
 // internal crates
 use config_agent::filesys::{dir::Dir, path::PathExt};
-use config_agent::models::agent::Agent;
-use config_agent::storage::{layout::StorageLayout, setup::setup_storage};
+use config_agent::storage::settings::Settings;
+use config_agent::storage::{
+    agent::Agent,
+    layout::StorageLayout,
+    setup::setup_storage,
+};
 
 pub mod setup_storage {
     use super::*;
@@ -11,6 +15,11 @@ pub mod setup_storage {
         let agent_file = layout.agent_file();
         let agent_file_content = agent_file.read_json::<Agent>().await.unwrap();
         assert_eq!(agent_file_content, Agent::default());
+
+        // settings file
+        let settings_file = layout.settings_file();
+        let settings_file_content = settings_file.read_json::<Settings>().await.unwrap();
+        assert_eq!(settings_file_content, Settings::default());
 
         // token file
         let auth_layout = layout.auth_dir();
@@ -34,10 +43,11 @@ pub mod setup_storage {
     async fn clean_install() {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
         let layout = StorageLayout::new(dir);
+        let settings = Settings::default();
 
         // setup the storage
         let agent = Agent::default();
-        setup_storage(&layout, &agent).await.unwrap();
+        setup_storage(&layout, &agent, &settings).await.unwrap();
 
         // validate the storage
         validate_storage(&layout).await;
@@ -47,6 +57,7 @@ pub mod setup_storage {
     async fn agent_file_already_exists() {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
         let layout = StorageLayout::new(dir);
+        let settings = Settings::default();
 
         // create the agent file
         let agent_file = layout.agent_file();
@@ -57,7 +68,7 @@ pub mod setup_storage {
 
         // setup the storage
         let agent = Agent::default();
-        setup_storage(&layout, &agent).await.unwrap();
+        setup_storage(&layout, &agent, &settings).await.unwrap();
 
         // validate the storage
         validate_storage(&layout).await;
@@ -74,7 +85,8 @@ pub mod setup_storage {
 
         // setup the storage
         let agent = Agent::default();
-        setup_storage(&layout, &agent).await.unwrap();
+        let settings = Settings::default();
+        setup_storage(&layout, &agent, &settings).await.unwrap();
 
         // validate the storage
         validate_storage(&layout).await;
@@ -95,7 +107,8 @@ pub mod setup_storage {
 
         // setup the storage
         let agent = Agent::default();
-        setup_storage(&layout, &agent).await.unwrap();
+        let settings = Settings::default();
+        setup_storage(&layout, &agent, &settings).await.unwrap();
 
         // validate the storage
         validate_storage(&layout).await;
@@ -116,7 +129,8 @@ pub mod setup_storage {
 
         // setup the storage
         let agent = Agent::default();
-        setup_storage(&layout, &agent).await.unwrap();
+        let settings = Settings::default();
+        setup_storage(&layout, &agent, &settings).await.unwrap();
 
         // validate the storage
         validate_storage(&layout).await;

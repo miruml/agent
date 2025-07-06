@@ -31,6 +31,10 @@ impl StorageLayout {
         self.root.file("agent.json")
     }
 
+    pub fn settings_file(&self) -> File {
+        self.root.file("settings.json")
+    }
+
     pub fn caches_dir(&self) -> Dir {
         self.root.subdir("cache")
     }
