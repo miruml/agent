@@ -3,14 +3,14 @@ use config_agent::errors::MiruError;
 use config_agent::mqtt::client::{
     ConnectAddress,
     Credentials,
+    Protocol,
     MQTTClient,
     OptionsBuilder,
     poll,
 };
 
 // external crates
-use rumqttc::{Event, Incoming, QoS};
-use tracing::{error, info};
+use rumqttc::QoS;
 
 #[tokio::test]
 async fn test_mqtt_client() {
@@ -20,6 +20,7 @@ async fn test_mqtt_client() {
         Credentials::new(username.to_string(), password.to_string()),
     )
     .with_connect_address(ConnectAddress {
+        protocol: Protocol::TCP,
         broker: "broker.emqx.io".to_string(),
         port: 1883,
     })
@@ -35,22 +36,8 @@ async fn test_mqtt_client() {
     let payload = "test";
     client.publish(topic, QoS::AtLeastOnce, false, payload.as_bytes()).await.unwrap();
 
-
-    // read the published message
-    let event = poll(&mut eventloop).await;
-    match event {
-        Ok(event) => {
-            info!("event: {event:?}");
-            if let Event::Incoming(Incoming::Publish(publish)) = event {
-                if let Ok(text) = std::str::from_utf8(&publish.payload) {
-                    info!("payload as string: {}", text);
-                }
-            }
-        }
-        Err(e) => {
-            error!("error: {e:?}");
-        }
-    }
+    // wait for an event
+    poll(&mut eventloop).await.unwrap();
 
     client.unsubscribe(topic).await.unwrap();
 
@@ -65,6 +52,7 @@ async fn invalid_broker_url() {
     );
     let options = OptionsBuilder::new(credentials)
         .with_connect_address(ConnectAddress {
+            protocol: Protocol::TCP,
             broker: "arglebargle.com".to_string(),
             port: 1883,
         })
@@ -85,6 +73,7 @@ async fn invalid_username_or_password() {
     );
     let options = OptionsBuilder::new(credentials)
         .with_connect_address(ConnectAddress {
+            protocol: Protocol::SSL,
             broker: "dev.mqtt.miruml.com".to_string(),
             port: 8883,
         })

@@ -6,34 +6,41 @@ use crate::mqtt::errors::*;
 use crate::trace;
 
 // external crates
-use rumqttc::{AsyncClient, Event, EventLoop, MqttOptions, QoS};
-use serde::{Deserialize, Serialize};
+use rumqttc::{AsyncClient, Event, EventLoop, MqttOptions, QoS, Transport};
 use tokio::time::timeout;
 use chrono::{DateTime, Utc};
 
 // ================================== OPTIONS ====================================== //
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
+pub enum Protocol {
+    TCP,
+    SSL,
+}
+
+#[derive(Debug, Clone)]
 pub struct ConnectAddress {
+    pub protocol: Protocol,
     pub broker: String,
     pub port: u16,
 }
 
 impl ConnectAddress {
-    pub fn new(broker: String, port: u16) -> Self {
-        Self { broker, port }
+    pub fn new(protocol: Protocol, broker: String, port: u16) -> Self {
+        Self { protocol, broker, port }
     }
 }
 
 impl Default for ConnectAddress {
     fn default() -> Self {
         Self {
+            protocol: Protocol::SSL,
             broker: "mqtt.miruml.com".to_string(),
             port: 8883,
         }
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Credentials {
     pub username: String,
     pub password: String,
@@ -54,7 +61,7 @@ impl Default for Credentials {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy)]
 pub struct Timeouts {
     pub publish: Duration,
     pub subscribe: Duration,
@@ -73,7 +80,7 @@ impl Default for Timeouts {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Options {
     pub connect_address: ConnectAddress,
     pub credentials: Credentials,
@@ -180,6 +187,15 @@ impl MQTTClient {
             &options.credentials.username,
             &options.credentials.password,
         );
+
+        match options.connect_address.protocol {
+            Protocol::TCP => {
+                mqtt_options.set_transport(Transport::Tcp);
+            }
+            Protocol::SSL => {
+                mqtt_options.set_transport(Transport::Tls(Default::default()));
+            }
+        }
 
         let (client, eventloop) = AsyncClient::new(mqtt_options, options.capacity);
 
