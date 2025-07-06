@@ -24,7 +24,7 @@ impl Default for TokenRefreshWorkerOptions {
         Self {
             refresh_advance_secs: 60 * 15, // 15 minutes
             polling: CooldownOptions {
-                base_secs: 10,
+                base_secs: 12,
                 growth_factor: 2,
                 max_secs: 60 * 60, // 1 hour
             },
@@ -41,6 +41,7 @@ pub async fn run_token_refresh_worker<F, Fut, TokenManagerT: TokenManagerExt>(
     F: Fn(Duration) -> Fut,
     Fut: Future<Output = ()> + Send
 {
+    info!("Running token refresh worker");
     let mut err_streak = 0;
 
     loop {

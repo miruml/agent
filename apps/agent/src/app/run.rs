@@ -55,7 +55,7 @@ pub struct LifecycleOptions {
 impl Default for LifecycleOptions {
     fn default() -> Self {
         Self {
-            is_persistent: false,
+            is_persistent: true,
             max_runtime: Duration::from_secs(60 * 15), // 15 minutes
             idle_timeout: Duration::from_secs(60),
             idle_timeout_poll_interval: Duration::from_secs(5),

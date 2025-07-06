@@ -1,7 +1,5 @@
-use config_agent::errors::MiruError;
 // internal crates
-use config_agent::filesys::{dir::Dir, path::PathExt};
-use config_agent::logs::{init, LogOptions};
+use config_agent::errors::MiruError;
 use config_agent::mqtt::client::{
     ConnectAddress,
     Credentials,
@@ -16,13 +14,6 @@ use tracing::{error, info};
 
 #[tokio::test]
 async fn test_mqtt_client() {
-    let dir = Dir::create_temp_dir("mqtt_client_test").await.unwrap();
-    let _ = init(LogOptions {
-        stdout: true,
-        log_dir: dir.path().to_path_buf(),
-        ..Default::default()
-    });
-
     let username = "username";
     let password = "password";
     let options = OptionsBuilder::new(

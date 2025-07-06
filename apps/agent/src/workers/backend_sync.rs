@@ -99,6 +99,8 @@ pub async fn run_polling_sync_worker<F, Fut, SyncerT: SyncerExt>(
     F: Fn(Duration) -> Fut,
     Fut: Future<Output = ()> + Send
 {
+    info!("Running polling backend sync worker");
+
     // subscribe to syncer events
     let mut syncer_subscriber = syncer.subscribe().await.unwrap_or_else(|e| {
         error!("error subscribing to syncer events: {e:?}");
@@ -151,6 +153,7 @@ pub async fn run_mqtt_sync_worker<
     token_mngr: &TokenManagerT,
     syncer: &SyncerT,
 ) -> Result<(), MQTTError> {
+    info!("Running mqtt backend sync worker");
 
     // subscribe to syncer events
     let mut syncer_subscriber = syncer.subscribe().await.unwrap_or_else(|e| {
