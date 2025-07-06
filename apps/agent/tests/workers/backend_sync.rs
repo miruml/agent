@@ -1,25 +1,26 @@
 // standard crates
-use std::{cmp::max, path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 // internal crates
 use config_agent::auth::token::Token;
-use config_agent::logs::*;
 use config_agent::mqtt::{
+    client::{MQTTClient, Options},
     device::SyncDevice,
     errors::*,
 };
-use config_agent::sync::errors::{SyncErr, MockErr as SyncMockErr};
+use config_agent::sync::{
+    errors::{SyncErr, MockErr as SyncMockErr},
+    syncer::{CooldownEnd, SyncEvent, SyncFailure, SyncState},
+};
 use config_agent::workers::{
     backend_sync::{
         BackendSyncWorkerOptions,
-        run_polling_sync,
-        run_mqtt_sync,
+        run_polling_sync_worker,
+        handle_syncer_event,
         handle_mqtt_event,
         handle_mqtt_error,
     },
-    cooldown::CooldownOptions,
 };
-use config_agent::utils::calc_exp_backoff;
 
 use crate::auth::mock::MockTokenManager;
 use crate::mock::SleepController;
@@ -27,242 +28,255 @@ use crate::mqtt::mock::MockDeviceClient;
 use crate::sync::mock::MockSyncer;
 
 // external crates
-use chrono::{DateTime, TimeDelta, Utc};
+use chrono::{TimeDelta, Utc};
 use rumqttc::{Event, Incoming, Publish, QoS};
 
 pub mod run_polling_sync {
     use super::*;
 
     #[tokio::test]
-    async fn success_not_in_cooldown() {
+    async fn syncer_not_in_cooldown() {
         let options = BackendSyncWorkerOptions::default();
         let syncer = Arc::new(MockSyncer::default());
         let sleep_ctrl = Arc::new(SleepController::new());
 
-        let options_for_spawn = options.clone();
         let syncer_for_spawn = syncer.clone();
         let sleep_ctrl_for_spawn = sleep_ctrl.clone();
         let _handle = tokio::spawn(async move {
-            run_polling_sync(
-                &options_for_spawn,
+            run_polling_sync_worker(
+                options.poll_interval_secs,
                 syncer_for_spawn.as_ref(),
                 sleep_ctrl_for_spawn.sleep_fn(),
             ).await;
         });
 
-        // these sleeps should wait for the polling interval less the last sync time (which is 0)
+        let secs_since_last_sync = 30;
+        let state = SyncState {
+            last_sync_attempted_at: Utc::now() - TimeDelta::seconds(secs_since_last_sync),
+            last_successful_sync_at: Utc::now(),
+            cooldown_ends_at: Utc::now(),
+            err_streak: 0,
+        };
+        syncer.set_state(state);
+
+        // these sleeps should wait for the polling interval since it exceeds the syncer
+        let expected_sleep_secs = options.poll_interval_secs - secs_since_last_sync;
+        // cooldown
         for i in 0..10 {
             sleep_ctrl.await_sleep().await;
-            let last_sleep = sleep_ctrl.get_last_sleep().unwrap();
-            assert_eq!(last_sleep.as_secs(), options.poll_secs as u64);
+            let last_sleep = sleep_ctrl.get_last_attempted_sleep().unwrap();
+            assert!(last_sleep.as_secs() <= expected_sleep_secs as u64);
+            assert!(last_sleep.as_secs() >= expected_sleep_secs as u64 - 1);
             assert_eq!(syncer.num_sync_calls(), i + 1);
-
-            // reset the last sync attempted at
-            syncer.set_last_sync_attempted_at(DateTime::<Utc>::UNIX_EPOCH);
-
             sleep_ctrl.release().await;
         }
 
-        // these sleeps should wait for the polling interval less the last sync time (which is 0)
-        for _ in 0..10 {
-            sleep_ctrl.await_sleep().await;
-            let last_sleep = sleep_ctrl.get_last_sleep().unwrap();
-            assert_eq!(last_sleep.as_secs(), options.poll_secs as u64);
-            // only syncs once *in this loop* since the syncer will be in cooldown after
-            // first sync (so it syncs the 11th time first iteration and then doesn't
-            // sync for the other iterations)
-            assert_eq!(syncer.num_sync_calls(), 11);
-            sleep_ctrl.release().await;
-        }
-    }
-
-    #[tokio::test]
-    async fn success_syncer_in_cooldown() {
-        let options = BackendSyncWorkerOptions {
-            poll_secs: 60,
-            sync_cooldown: CooldownOptions {
-                base_secs: 60,
-                growth_factor: 2,
-                max_secs: 60 * 60 * 24, // 1 day
-            },
-            ..Default::default()
-        };
-        let syncer = Arc::new(MockSyncer::default());
-        syncer.set_last_sync_attempted_at(Utc::now() - TimeDelta::seconds(30));
-        let sleep_ctrl = Arc::new(SleepController::new());
-
-        let options_for_spawn = options.clone();
-        let syncer_for_spawn = syncer.clone();
-        let sleep_ctrl_for_spawn = sleep_ctrl.clone();
-        let _handle = tokio::spawn(async move {
-            run_polling_sync(
-                &options_for_spawn,
-                syncer_for_spawn.as_ref(),
-                sleep_ctrl_for_spawn.sleep_fn(),
-            ).await;
-        });
-
-        // should wait for 30 seconds since the polling interval is 60 seconds and the
-        // last sync was 30 seconds ago
-        sleep_ctrl.await_sleep().await;
-        let last_sleep = sleep_ctrl.get_last_sleep().unwrap();
-        assert_eq!(last_sleep.as_secs(), 30);
-        assert_eq!(syncer.num_sync_calls(), 0);
-        sleep_ctrl.release().await;
-    }
-
-    #[tokio::test]
-    async fn network_error() {
-        let options = BackendSyncWorkerOptions {
-            poll_secs: 3,
-            sync_cooldown: CooldownOptions {
-                base_secs: 2,
-                growth_factor: 2,
-                max_secs: 60 * 60 * 24, // 1 day
-            },
-            ..Default::default()
-        };
-
-        let syncer = Arc::new(MockSyncer::default());
+        // these sleeps should still wait for the polling interval starting from the
+        // last sync attempt since errors are logged & ignored
         syncer.set_sync(|| Err(SyncErr::MockErr(Box::new(SyncMockErr {
             is_network_connection_error: true,
         }))));
-        let sleep_ctrl = Arc::new(SleepController::new());
-
-        let options_for_spawn = options.clone();
-        let syncer_for_spawn = syncer.clone();
-        let sleep_ctrl_for_spawn = sleep_ctrl.clone();
-        let _handle = tokio::spawn(async move {
-            run_polling_sync(
-                &options_for_spawn,
-                syncer_for_spawn.as_ref(),
-                sleep_ctrl_for_spawn.sleep_fn(),
-            ).await;
-        });
-
-        // these sleeps should still wait for the polling interval
-        let mut expected_num_syncs = 0;
-        for _ in 0..10 {
-            sleep_ctrl.await_sleep().await;
-            let last_sleep = sleep_ctrl.get_last_sleep().unwrap();
-            assert_eq!(last_sleep.as_secs(), options.poll_secs as u64);
-            expected_num_syncs += 1;
-            assert_eq!(syncer.num_sync_calls(), expected_num_syncs);
-            sleep_ctrl.release().await;
-        }
-    }
-
-    #[tokio::test]
-    async fn non_network_error() {
-        let options = BackendSyncWorkerOptions {
-            poll_secs: 3,
-            sync_cooldown: CooldownOptions {
-                base_secs: 2,
-                growth_factor: 2,
-                max_secs: 60 * 60 * 24, // 1 day
-            },
-            ..Default::default()
-        };
-        let syncer = Arc::new(MockSyncer::default());
-        syncer.set_sync(|| Err(SyncErr::MockErr(Box::new(SyncMockErr {
-            is_network_connection_error: false,
-        }))));
-        let sleep_ctrl = Arc::new(SleepController::new());
-
-        let options_for_spawn = options.clone();
-        let syncer_for_spawn = syncer.clone();
-        let sleep_ctrl_for_spawn = sleep_ctrl.clone();
-        let _handle = tokio::spawn(async move {
-            run_polling_sync(
-                &options_for_spawn,
-                syncer_for_spawn.as_ref(),
-                sleep_ctrl_for_spawn.sleep_fn(),
-            ).await;
-        });
-
-        // these sleeps should wait for the maximum of the polling interval and the
-        // sync cooldown
-        for i in 0..30 {
-
-            let cooldown_secs = calc_exp_backoff(
-                options.sync_cooldown.base_secs,
-                options.sync_cooldown.growth_factor,
-                i + 1,
-                options.sync_cooldown.max_secs
-            );
-            let expected_sleep_secs = max(
-                options.poll_secs as u64,
-                cooldown_secs as u64,
-            );
-
-            sleep_ctrl.await_sleep().await;
-            let last_sleep = sleep_ctrl.get_last_sleep().unwrap();
-            assert_eq!(expected_sleep_secs, last_sleep.as_secs());
-            assert_eq!(syncer.num_sync_calls(), (i + 1) as usize);
-            sleep_ctrl.release().await;
-        }
-    }
-
-    #[tokio::test]
-    async fn error_recovery() {
-        let options = BackendSyncWorkerOptions {
-            poll_secs: 3,
-            sync_cooldown: CooldownOptions {
-                base_secs: 2,
-                growth_factor: 2,
-                max_secs: 60 * 60 * 24, // 1 day
-            },
-            ..Default::default()
-        };
-        let syncer = Arc::new(MockSyncer::default());
-        syncer.set_sync(|| Err(SyncErr::MockErr(Box::new(SyncMockErr {
-            is_network_connection_error: false,
-        }))));
-        let sleep_ctrl = Arc::new(SleepController::new());
-
-        let options_for_spawn = options.clone();
-        let syncer_for_spawn = syncer.clone();
-        let sleep_ctrl_for_spawn = sleep_ctrl.clone();
-        let _handle = tokio::spawn(async move {
-            run_polling_sync(
-                &options_for_spawn,
-                syncer_for_spawn.as_ref(),
-                sleep_ctrl_for_spawn.sleep_fn(),
-            ).await;
-        });
-
-        // these sleeps should wait for the maximum of the polling interval and the
-        // sync cooldown
-        for i in 0..30 {
-            let cooldown_secs = calc_exp_backoff(
-                options.sync_cooldown.base_secs,
-                options.sync_cooldown.growth_factor,
-                i + 1,
-                options.sync_cooldown.max_secs
-            );
-            let expected_sleep_secs = max(
-                options.poll_secs as u64,
-                cooldown_secs as u64,
-            );
-
-            sleep_ctrl.await_sleep().await;
-            let last_sleep = sleep_ctrl.get_last_sleep().unwrap();
-            assert_eq!(expected_sleep_secs, last_sleep.as_secs());
-            assert_eq!(syncer.num_sync_calls(), (i + 1) as usize);
-            sleep_ctrl.release().await;
-        }
-
-        syncer.set_sync(|| Ok(()));
-
-        // these sleeps should wait for the polling interval after recovery
         for i in 0..10 {
             sleep_ctrl.await_sleep().await;
-            let last_sleep = sleep_ctrl.get_last_sleep().unwrap();
-            assert_eq!(last_sleep.as_secs(), options.poll_secs as u64);
-            assert_eq!(syncer.num_sync_calls(), i + 31);
+            let last_sleep = sleep_ctrl.get_last_attempted_sleep().unwrap();
+            assert!(last_sleep.as_secs() <= expected_sleep_secs as u64);
+            assert!(last_sleep.as_secs() >= expected_sleep_secs as u64 - 1);
+            assert_eq!(syncer.num_sync_calls(), i + 11);
             sleep_ctrl.release().await;
         }
 
+        syncer.set_sync(|| Err(SyncErr::MockErr(Box::new(SyncMockErr {
+            is_network_connection_error: false,
+        }))));
+        for i in 0..10 {
+            sleep_ctrl.await_sleep().await;
+            let last_sleep = sleep_ctrl.get_last_attempted_sleep().unwrap();
+            assert!(last_sleep.as_secs() <= expected_sleep_secs as u64);
+            assert!(last_sleep.as_secs() >= expected_sleep_secs as u64 - 1);
+            assert_eq!(syncer.num_sync_calls(), i + 21);
+            sleep_ctrl.release().await;
+        }
+    }
+
+    #[tokio::test]
+    async fn syncer_in_cooldown() {
+        let options = BackendSyncWorkerOptions {
+            poll_interval_secs: 30,
+            ..Default::default()
+        };
+        let syncer = Arc::new(MockSyncer::default());
+        let sleep_ctrl = Arc::new(SleepController::new());
+
+        let syncer_for_spawn = syncer.clone();
+        let sleep_ctrl_for_spawn = sleep_ctrl.clone();
+        let _handle = tokio::spawn(async move {
+            run_polling_sync_worker(
+                options.poll_interval_secs,
+                syncer_for_spawn.as_ref(),
+                sleep_ctrl_for_spawn.sleep_fn(),
+            ).await;
+        });
+
+        let secs_until_cooldown_ends = 120;
+        let state = SyncState {
+            last_sync_attempted_at: Utc::now(),
+            last_successful_sync_at: Utc::now(),
+            cooldown_ends_at: Utc::now() + TimeDelta::seconds(secs_until_cooldown_ends),
+            err_streak: 0,
+        };
+        syncer.set_state(state);
+
+        // these sleeps should wait for the syncer cooldown to end since it's greater
+        // than the polling interval
+        for _ in 0..10 {
+            sleep_ctrl.await_sleep().await;
+            let last_sleep = sleep_ctrl.get_last_attempted_sleep().unwrap();
+            assert!(last_sleep.as_secs() <= secs_until_cooldown_ends as u64);
+            assert!(last_sleep.as_secs() >= secs_until_cooldown_ends as u64 - 1);
+            assert_eq!(syncer.num_sync_calls(), 0); // syncer in cooldown
+            sleep_ctrl.release().await;
+        }
+
+        // these sleeps should still wait for the syncer cooldown to end since errors
+        // are logged & ignored
+        syncer.set_sync(|| Err(SyncErr::MockErr(Box::new(SyncMockErr {
+            is_network_connection_error: true,
+        }))));
+        for _ in 0..10 {
+            sleep_ctrl.await_sleep().await;
+            let last_sleep = sleep_ctrl.get_last_attempted_sleep().unwrap();
+            assert!(last_sleep.as_secs() <= secs_until_cooldown_ends as u64);
+            assert!(last_sleep.as_secs() >= secs_until_cooldown_ends as u64 - 1);
+            assert_eq!(syncer.num_sync_calls(), 0); // syncer in cooldown
+            sleep_ctrl.release().await;
+        }
+
+        syncer.set_sync(|| Err(SyncErr::MockErr(Box::new(SyncMockErr {
+            is_network_connection_error: false,
+        }))));
+        for _ in 0..10 {
+            sleep_ctrl.await_sleep().await;
+            let last_sleep = sleep_ctrl.get_last_completed_sleep().unwrap();
+            assert!(last_sleep.as_secs() <= secs_until_cooldown_ends as u64);
+            assert!(last_sleep.as_secs() >= secs_until_cooldown_ends as u64 - 1);
+            assert_eq!(syncer.num_sync_calls(), 0); // syncer in cooldown
+            sleep_ctrl.release().await;
+        }
+    }
+
+    #[tokio::test]
+    async fn ignored_syncer_events() {
+        let options = BackendSyncWorkerOptions::default();
+        let syncer = Arc::new(MockSyncer::default());
+        let sleep_ctrl = Arc::new(SleepController::new());
+
+        let syncer_for_spawn = syncer.clone();
+        let sleep_ctrl_for_spawn = sleep_ctrl.clone();
+        let _handle = tokio::spawn(async move {
+            run_polling_sync_worker(
+                options.poll_interval_secs,
+                syncer_for_spawn.as_ref(),
+                sleep_ctrl_for_spawn.sleep_fn(),
+            ).await;
+        });
+
+        let secs_since_last_sync = 30;
+        let state = SyncState {
+            last_sync_attempted_at: Utc::now() - TimeDelta::seconds(secs_since_last_sync),
+            last_successful_sync_at: Utc::now(),
+            cooldown_ends_at: Utc::now(),
+            err_streak: 0,
+        };
+        syncer.set_state(state);
+
+        let syncer_tx = syncer.get_transmitter();
+
+        let expected_sleep_secs = options.poll_interval_secs - secs_since_last_sync;
+        let expected_num_sync_calls = 1; // only the first sync occurs
+        for event in [
+            SyncEvent::SyncSuccess,
+            SyncEvent::SyncFailed(SyncFailure {
+                is_network_connection_error: true,
+            }),
+            SyncEvent::CooldownEnd(CooldownEnd::FromSyncSuccess),
+        ] {
+            for _ in 0..10 {
+                sleep_ctrl.await_sleep().await;
+                let last_sleep = sleep_ctrl.get_last_attempted_sleep().unwrap();
+                assert!(last_sleep.as_secs() <= expected_sleep_secs as u64);
+                assert!(last_sleep.as_secs() >= expected_sleep_secs as u64 - 1);
+                assert_eq!(syncer.num_sync_calls(), expected_num_sync_calls);
+                syncer_tx.send(event.clone()).unwrap();
+            }
+        }
+    }
+
+
+    #[tokio::test]
+    async fn syncer_cooldown_end_from_sync_failure_event() {
+        let options = BackendSyncWorkerOptions::default();
+        let syncer = Arc::new(MockSyncer::default());
+        let sleep_ctrl = Arc::new(SleepController::new());
+
+        let syncer_for_spawn = syncer.clone();
+        let sleep_ctrl_for_spawn = sleep_ctrl.clone();
+        let _handle = tokio::spawn(async move {
+            run_polling_sync_worker(
+                options.poll_interval_secs,
+                syncer_for_spawn.as_ref(),
+                sleep_ctrl_for_spawn.sleep_fn(),
+            ).await;
+        });
+
+        let secs_since_last_sync = 45;
+        let state = SyncState {
+            last_sync_attempted_at: Utc::now() - TimeDelta::seconds(secs_since_last_sync),
+            last_successful_sync_at: Utc::now(),
+            cooldown_ends_at: Utc::now() - TimeDelta::seconds(10),
+            err_streak: 0,
+        };
+        syncer.set_state(state);
+
+        let syncer_tx = syncer.get_transmitter();
+
+        let expected_sleep_secs = options.poll_interval_secs - secs_since_last_sync;
+        let mut expected_num_sync_calls = 0; // only the first sync occurs
+        for _ in 0..10 {
+            expected_num_sync_calls += 1;
+            sleep_ctrl.await_sleep().await;
+            let last_attempted_sleep = sleep_ctrl.get_last_attempted_sleep().unwrap();
+            assert!(last_attempted_sleep.as_secs() <= expected_sleep_secs as u64);
+            assert!(last_attempted_sleep.as_secs() >= expected_sleep_secs as u64 - 1);
+            assert_eq!(syncer.num_sync_calls(), expected_num_sync_calls);
+            syncer_tx.send(SyncEvent::CooldownEnd(CooldownEnd::FromSyncFailure)).unwrap();
+        }
+    }
+}
+
+pub mod handle_syncer_event {
+    use super::*;
+
+    #[tokio::test]
+    async fn sync_success_publishes_sync_to_backend() {
+        let event = SyncEvent::SyncSuccess;
+        let mqtt_client = MockDeviceClient::default();
+        handle_syncer_event(&event, "device_id", &mqtt_client).await;
+        assert_eq!(mqtt_client.num_publish_device_sync_calls(), 1);
+    }
+
+    #[tokio::test]
+    async fn ignored_syncer_events() {
+        for event in [
+            SyncEvent::SyncFailed(SyncFailure {
+                is_network_connection_error: true,
+            }),
+            SyncEvent::CooldownEnd(CooldownEnd::FromSyncSuccess),
+            SyncEvent::CooldownEnd(CooldownEnd::FromSyncFailure),
+        ] {
+            let mqtt_client = MockDeviceClient::default();
+            handle_syncer_event(&event, "device_id", &mqtt_client).await;
+            assert_eq!(mqtt_client.num_publish_device_sync_calls(), 0);
+        }
     }
 }
 
@@ -272,17 +286,12 @@ pub mod handle_mqtt_event {
     #[tokio::test]
     async fn non_publish_event() {
         let event = Event::Incoming(Incoming::PingReq);
-        let device_client = MockDeviceClient::default();
         let syncer = MockSyncer::default();
         handle_mqtt_event(
             &event,
-            "device_id",
-            &device_client,
             &syncer,
-            &CooldownOptions::default(),
         ).await;
 
-        assert_eq!(device_client.num_publish_device_sync_calls(), 0);
         assert_eq!(syncer.num_sync_calls(), 0);
     }
 
@@ -293,17 +302,12 @@ pub mod handle_mqtt_event {
             QoS::AtLeastOnce,
             "test".to_string(),
         )));
-        let device_client = MockDeviceClient::default();
         let syncer = MockSyncer::default();
         handle_mqtt_event(
             &event,
-            "device_id",
-            &device_client,
             &syncer,
-            &CooldownOptions::default(),
         ).await;
 
-        assert_eq!(device_client.num_publish_device_sync_calls(), 1);
         assert_eq!(syncer.num_sync_calls(), 1);
     }
 
@@ -318,17 +322,12 @@ pub mod handle_mqtt_event {
             QoS::AtLeastOnce,
             payload_bytes,
         )));
-        let device_client = MockDeviceClient::default();
         let syncer = MockSyncer::default();
         handle_mqtt_event(
             &event,
-            "device_id",
-            &device_client,
             &syncer,
-            &CooldownOptions::default(),
         ).await;
 
-        assert_eq!(device_client.num_publish_device_sync_calls(), 0);
         assert_eq!(syncer.num_sync_calls(), 0);
     }
 
@@ -343,17 +342,12 @@ pub mod handle_mqtt_event {
             QoS::AtLeastOnce,
             payload_bytes,
         )));
-        let device_client = MockDeviceClient::default();
         let syncer = MockSyncer::default();
         handle_mqtt_event(
             &event,
-            "device_id",
-            &device_client,
             &syncer,
-            &CooldownOptions::default(),
         ).await;
 
-        assert_eq!(device_client.num_publish_device_sync_calls(), 1);
         assert_eq!(syncer.num_sync_calls(), 1);
     }
 
@@ -368,54 +362,77 @@ pub mod handle_mqtt_event {
             QoS::AtLeastOnce,
             payload_bytes,
         )));
-        let device_client = MockDeviceClient::default();
-        let mut syncer = MockSyncer::default();
+        let syncer = MockSyncer::default();
         syncer.set_sync(|| Err(SyncErr::MockErr(Box::new(SyncMockErr {
             is_network_connection_error: false,
         }))));
         handle_mqtt_event(
             &event,
-            "device_id",
-            &device_client,
             &syncer,
-            &CooldownOptions::default(),
         ).await;
 
-        assert_eq!(device_client.num_publish_device_sync_calls(), 0);
         assert_eq!(syncer.num_sync_calls(), 1);
     }
 }
 
-// pub mod handle_mqtt_error {
-//     use super::*;
+pub mod handle_mqtt_error {
+    use super::*;
 
-//     #[tokio::test]
-//     async fn authentication_error_triggers_token_refresh() {
-//         let token = Token {
-//             token: "token".to_string(),
-//             expires_at: Utc::now(),
-//         };
-//         let token_mngr = MockTokenManager::new(token);
-//         let error = MQTTError::MockErr(Box::new(MockErr {
-//             is_authentication_error: true,
-//             is_network_connection_error: false,
-//         }));
-//         handle_mqtt_error(error, &token_mngr).await;
-//         assert_eq!(token_mngr.num_refresh_token_calls(), 1);
-//     }
+    #[tokio::test]
+    async fn authentication_error_triggers_token_refresh() {
+        let token = Token {
+            token: "token".to_string(),
+            expires_at: Utc::now(),
+        };
+        let token_mngr = MockTokenManager::new(token);
+        let error = MQTTError::MockErr(Box::new(MockErr {
+            is_authentication_error: true,
+            is_network_connection_error: false,
+        }));
 
-//     #[tokio::test]
-//     async fn other_errors_are_ignored() {
-//         let token = Token {
-//             token: "token".to_string(),
-//             expires_at: Utc::now(),
-//         };
-//         let token_mngr = MockTokenManager::new(token);
-//         let error = MQTTError::MockErr(Box::new(MockErr {
-//             is_authentication_error: false,
-//             is_network_connection_error: true,
-//         }));
-//         handle_mqtt_error(error, &token_mngr).await;
-//         assert_eq!(token_mngr.num_refresh_token_calls(), 0);
-//     }
-// }
+        let options = Options::default();
+        let (mqtt_client, eventloop) = MQTTClient::new(&options).await;
+        let created_at = mqtt_client.created_at;
+
+        let (mqtt_client, _) = handle_mqtt_error(
+            error,
+            "device_id",
+            &token_mngr,
+            &options.connect_address,
+            mqtt_client,
+            eventloop,
+        ).await;
+        assert_eq!(token_mngr.num_refresh_token_calls(), 1);
+        // should reinitialize the mqtt client
+        assert_ne!(mqtt_client.created_at, created_at);
+    }
+
+    #[tokio::test]
+    async fn other_errors_are_ignored() {
+        let token = Token {
+            token: "token".to_string(),
+            expires_at: Utc::now(),
+        };
+        let token_mngr = MockTokenManager::new(token);
+        let error = MQTTError::MockErr(Box::new(MockErr {
+            is_authentication_error: false,
+            is_network_connection_error: true,
+        }));
+
+        let options = Options::default();
+        let (mqtt_client, eventloop) = MQTTClient::new(&options).await;
+        let created_at = mqtt_client.created_at;
+
+        let (mqtt_client, _) = handle_mqtt_error(
+            error,
+            "device_id",
+            &token_mngr,
+            &options.connect_address,
+            mqtt_client,
+            eventloop,
+        ).await;
+        assert_eq!(token_mngr.num_refresh_token_calls(), 0);
+        // should not reinitialize the mqtt client
+        assert_eq!(mqtt_client.created_at, created_at);
+    }
+}

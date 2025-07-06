@@ -1,8 +1,8 @@
 // standard crates
 use std::future::Future;
 use std::pin::Pin;
-use std::time::Duration;
 use std::cmp::max;
+use std::time::Duration;
 
 // internal modules
 use crate::auth::{
@@ -19,18 +19,18 @@ use crate::mqtt::client::{
     poll,
 };
 use crate::mqtt::device::{DeviceExt, SyncDevice};
-use crate::sync::syncer::{SyncerExt, SyncEvent};
+use crate::sync::syncer::{SyncerExt, SyncEvent, CooldownEnd};
 use crate::utils::{calc_exp_backoff, CooldownOptions};
 
 // external crates
-use chrono::{TimeDelta, Utc};
 use rumqttc::{Event, Incoming, EventLoop};
 use tracing::{error, info, debug};
 use tokio::sync::watch;
+use chrono::{TimeDelta, Utc};
 
 #[derive(Debug, Clone)]
 pub struct BackendSyncWorkerOptions {
-    pub poll_secs: i64,
+    pub poll_interval_secs: i64,
     pub mqtt_cooldown: CooldownOptions,
     pub mqtt_enabled: bool,
     pub mqtt_broker_address: ConnectAddress,
@@ -40,7 +40,7 @@ impl Default for BackendSyncWorkerOptions {
     fn default() -> Self {
         let twelve_hrs = 12 * 60 * 60;
         Self {
-            poll_secs: twelve_hrs,
+            poll_interval_secs: twelve_hrs,
             mqtt_cooldown: CooldownOptions {
                 base_secs: 1,
                 growth_factor: 2,
@@ -68,7 +68,11 @@ pub async fn run_backend_sync_worker<
                 info!("Backend sync worker shutdown complete");
             }
             // these don't return but we do need to run them in the background
-            _ = run_polling_sync_worker(options.poll_secs, syncer, tokio::time::sleep) => {}
+            _ = run_polling_sync_worker(
+                options.poll_interval_secs,
+                syncer,
+                tokio::time::sleep,
+            ) => {}
             _ = run_mqtt_sync_worker(device_id, options, token_mngr, syncer) => {}
         }
     } else {
@@ -77,7 +81,11 @@ pub async fn run_backend_sync_worker<
                 info!("Backend sync worker shutdown complete");
             }
             // doesn't return but we do need to run it in the background
-            _ = run_polling_sync_worker(options.poll_secs, syncer, tokio::time::sleep) => {}
+            _ = run_polling_sync_worker(
+                options.poll_interval_secs,
+                syncer,
+                tokio::time::sleep,
+            ) => {}
         }
     }
 }
@@ -91,18 +99,45 @@ pub async fn run_polling_sync_worker<F, Fut, SyncerT: SyncerExt>(
     F: Fn(Duration) -> Fut,
     Fut: Future<Output = ()> + Send
 {
+    // subscribe to syncer events
+    let mut syncer_subscriber = syncer.subscribe().await.unwrap_or_else(|e| {
+        error!("error subscribing to syncer events: {e:?}");
+        // Create a dummy receiver that never sends anything
+        watch::channel(SyncEvent::SyncSuccess).1
+    });
+
+    // begin by syncing
+    let _ = syncer.sync_if_not_in_cooldown().await;
+
     loop {
-        let _ = syncer.sync_if_not_in_cooldown().await;
+        // poll from the last sync attempt, not the current time
+        let last_sync_attempted_at = syncer.get_last_sync_attempted_at().await.unwrap_or_default().timestamp();
+        let secs_since_last_sync = Utc::now().timestamp() - last_sync_attempted_at;
+        let secs_until_next_sync= poll_interval_secs - secs_since_last_sync;
 
-        // wait until the cooldown ends or the poll interval elapses
+        // wait until the cooldown ends or the poll interval elapses (max of the two)
         let secs_until_cooldown_ends = syncer.get_cooldown_ends_at().await.unwrap_or_default().signed_duration_since(Utc::now()).num_seconds();
-        let wait_secs = max(poll_interval_secs, secs_until_cooldown_ends);
+        let wait_secs = max(secs_until_next_sync, secs_until_cooldown_ends);
 
-        // log the next sync time
+        // log the next scheduled sync time
         let next_sync_at = Utc::now() + TimeDelta::seconds(wait_secs);
-        info!("Waiting until {:?} ({:?}) for next *scheduled* device sync", next_sync_at, wait_secs);
+        info!("Waiting until {:?} ({:?} seconds) for next *scheduled* device sync", next_sync_at, wait_secs);
 
-        sleep_fn(Duration::from_secs(wait_secs as u64)).await;
+        tokio::select! {
+            // next scheduled sync
+            _ = sleep_fn(Duration::from_secs(wait_secs as u64)) => {
+                let _ = syncer.sync_if_not_in_cooldown().await;
+            }
+
+            // listen for syncer events from the syncer worker (this device)
+            _ = syncer_subscriber.changed() => {
+                let syncer_event = syncer_subscriber.borrow().clone();
+                // retry synchronization when the cooldown ends from a failed sync
+                if let SyncEvent::CooldownEnd(CooldownEnd::FromSyncFailure) = syncer_event {
+                    let _ = syncer.sync_if_not_in_cooldown().await;
+                } 
+            }
+        }
     }
 }
 
@@ -129,17 +164,20 @@ pub async fn run_mqtt_sync_worker<
         device_id, token_mngr, options.mqtt_broker_address.clone()
     ).await;
 
-    // listen for sync commands from the backend
     let mut mqtt_client_err_streak= 0;
     loop {
         tokio::select! {
-            // listen for syncer events
+            // listen for syncer events from the syncer worker (this device)
             _ = syncer_subscriber.changed() => {
                 let syncer_event = syncer_subscriber.borrow().clone();
-                handle_syncer_event(&syncer_event, device_id, &mqtt_client).await;
+                handle_syncer_event(
+                    &syncer_event,
+                    device_id,
+                    &mqtt_client,
+                ).await;
             }
 
-            // listen for sync commands from the backend
+            // listen for sync commands from the backend (via mqtt broker)
             mqtt_result = poll(&mut eventloop) => {
                 match mqtt_result {
                     Ok(mqtt_event) => {
@@ -174,10 +212,10 @@ pub async fn run_mqtt_sync_worker<
     }
 }
 
-async fn handle_syncer_event(
+pub async fn handle_syncer_event<MQTTClientT: DeviceExt>(
     event: &SyncEvent,
     device_id: &str,
-    mqtt_client: &MQTTClient,
+    mqtt_client: &MQTTClientT,
 ) {
     if !matches!(event, SyncEvent::SyncSuccess) {
         return;
@@ -185,8 +223,13 @@ async fn handle_syncer_event(
 
     // whenever the syncer has synced, we need to publish this synchronization to the 
     // backend
-    if let Err(e) = mqtt_client.publish_device_sync(device_id).await {
-        error!("error publishing device sync: {e:?}");
+    match mqtt_client.publish_device_sync(device_id).await {
+        Ok(_) => {
+            info!("successfully published device sync to backend");
+        }
+        Err(e) => {
+            error!("error publishing device sync: {e:?}");
+        }
     }
 }
 

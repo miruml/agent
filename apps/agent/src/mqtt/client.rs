@@ -9,6 +9,7 @@ use crate::trace;
 use rumqttc::{AsyncClient, Event, EventLoop, MqttOptions, QoS};
 use serde::{Deserialize, Serialize};
 use tokio::time::timeout;
+use chrono::{DateTime, Utc};
 
 // ================================== OPTIONS ====================================== //
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -44,6 +45,14 @@ impl Credentials {
     }
 }
 
+impl Default for Credentials {
+    fn default() -> Self {
+        Self {
+            username: "miru-agent".to_string(),
+            password: "miru-agent-password".to_string(),
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Timeouts {
@@ -94,6 +103,19 @@ impl Options {
     }
 }
 
+impl Default for Options {
+    fn default() -> Self {
+        Self::new(
+            ConnectAddress::default(),
+            Credentials::default(),
+            "miru-agent".to_string(),
+            Duration::from_secs(60),
+            Timeouts::default(),
+            64,
+        )
+    }
+}
+
 pub struct OptionsBuilder {
     options: Options,
 }
@@ -139,7 +161,8 @@ impl OptionsBuilder {
 
 // =================================== CLIENT ======================================= //
 pub struct MQTTClient {
-    pub client: AsyncClient,
+    pub created_at: DateTime<Utc>,
+    pub(crate) client: AsyncClient,
     pub(crate) timeouts: Timeouts,
 }
 
@@ -161,6 +184,7 @@ impl MQTTClient {
         let (client, eventloop) = AsyncClient::new(mqtt_options, options.capacity);
 
         (Self {
+            created_at: Utc::now(),
             client,
             timeouts: options.timeouts,
         }, eventloop)

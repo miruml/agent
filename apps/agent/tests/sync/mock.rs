@@ -13,22 +13,18 @@ use chrono::{DateTime, Utc};
 use tokio::sync::watch;
 
 type GetSyncStateFn = Box<dyn Fn() -> SyncState + Send + Sync>;
-type IsInCooldownFn = Box<dyn Fn() -> bool + Send + Sync>;
-type CooldownEndsAtFn = Box<dyn Fn() -> DateTime<Utc> + Send + Sync>;
 type SyncFn = Box<dyn Fn() -> Result<(), SyncErr> + Send + Sync>;
-type SyncIfNotInCooldownFn = Box<dyn Fn() -> Result<(), SyncErr> + Send + Sync>;
-type SubscribeFn = Box<dyn Fn() -> watch::Receiver<SyncEvent> + Send + Sync>;
 
 
 pub struct MockSyncer {
     pub last_sync_attempted_at: Arc<Mutex<DateTime<Utc>>>,
     pub num_sync_calls: AtomicUsize,
     pub get_sync_state_fn: Arc<Mutex<GetSyncStateFn>>,
-    pub is_in_cooldown_fn: Arc<Mutex<IsInCooldownFn>>,
-    pub cooldown_ends_at_fn: Arc<Mutex<CooldownEndsAtFn>>,
     pub sync_fn: Arc<Mutex<SyncFn>>,
-    pub sync_if_not_in_cooldown_fn: Arc<Mutex<SyncIfNotInCooldownFn>>,
-    pub subscribe_fn: Arc<Mutex<SubscribeFn>>,
+
+    // subscriptions
+    pub subscribe_rx: watch::Receiver<SyncEvent>,
+    pub subscribe_tx: watch::Sender<SyncEvent>,
 }
 
 impl Default for MockSyncer {
@@ -39,6 +35,8 @@ impl Default for MockSyncer {
 
 impl MockSyncer {
     pub fn new() -> Self {
+        let (tx, rx) = watch::channel(SyncEvent::SyncSuccess);
+
         Self {
             last_sync_attempted_at: Arc::new(Mutex::new(DateTime::<Utc>::UNIX_EPOCH)),
             num_sync_calls: AtomicUsize::new(0),
@@ -50,15 +48,20 @@ impl MockSyncer {
                     err_streak: 0,
                 }
             }))),
-            is_in_cooldown_fn: Arc::new(Mutex::new(Box::new(|| false))),
-            cooldown_ends_at_fn: Arc::new(Mutex::new(Box::new(Utc::now))),
-            sync_if_not_in_cooldown_fn: Arc::new(Mutex::new(Box::new(|| Ok(())))),
             sync_fn: Arc::new(Mutex::new(Box::new(|| Ok(())))),
-            subscribe_fn: Arc::new(Mutex::new(Box::new(|| {
-                let (_, rx) = watch::channel(SyncEvent::SyncSuccess);
-                rx
-            }))),
+
+            // subscriptions
+            subscribe_rx: rx,
+            subscribe_tx: tx,
         }
+    }
+
+    pub fn set_state(&self, state: SyncState) {
+        *self.get_sync_state_fn.lock().unwrap() = Box::new(move || state.clone());
+    }
+
+    pub fn get_transmitter(&self) -> watch::Sender<SyncEvent> {
+        self.subscribe_tx.clone()
     }
 
     pub fn set_sync<F>(&self, sync_fn: F)
@@ -66,10 +69,6 @@ impl MockSyncer {
         F: Fn() -> Result<(), SyncErr> + Send + Sync + 'static,
     {
         *self.sync_fn.lock().unwrap() = Box::new(sync_fn);
-    }
-
-    pub fn set_last_sync_attempted_at(&self, last_sync_attempted_at: DateTime<Utc>) {
-        *self.last_sync_attempted_at.lock().unwrap() = last_sync_attempted_at;
     }
 
     pub fn num_sync_calls(&self) -> usize {
@@ -87,11 +86,18 @@ impl SyncerExt for MockSyncer {
     }
 
     async fn is_in_cooldown(&self) -> Result<bool, SyncErr> {
-        Ok((*self.is_in_cooldown_fn.lock().unwrap())())
+        let state = self.get_sync_state().await.unwrap();
+        Ok(state.is_in_cooldown())
     }
 
     async fn get_cooldown_ends_at(&self) -> Result<DateTime<Utc>, SyncErr> {
-        Ok((*self.cooldown_ends_at_fn.lock().unwrap())())
+        let state = self.get_sync_state().await.unwrap();
+        Ok(state.cooldown_ends_at)
+    }
+
+    async fn get_last_sync_attempted_at(&self) -> Result<DateTime<Utc>, SyncErr> {
+        let state = self.get_sync_state().await.unwrap();
+        Ok(state.last_sync_attempted_at)
     }
 
     async fn sync(&self) -> Result<(), SyncErr> {
@@ -101,11 +107,14 @@ impl SyncerExt for MockSyncer {
     }
 
     async fn sync_if_not_in_cooldown(&self) -> Result<(), SyncErr> {
-        *self.last_sync_attempted_at.lock().unwrap() = Utc::now();
-        (*self.sync_if_not_in_cooldown_fn.lock().unwrap())()
+        let state = self.get_sync_state().await.unwrap();
+        if !state.is_in_cooldown() {
+            self.sync().await?;
+        }
+        Ok(())
     }
 
     async fn subscribe(&self) -> Result<watch::Receiver<SyncEvent>, SyncErr> {
-        Ok((*self.subscribe_fn.lock().unwrap())())
+        Ok(self.subscribe_rx.clone())
     }
 }

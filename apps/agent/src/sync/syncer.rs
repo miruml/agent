@@ -130,7 +130,9 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
         if cooldown_end_at <= Utc::now() {
             return;
         }
-        let cooldown_secs = cooldown_end_at.signed_duration_since(Utc::now()).num_seconds();
+        // add 1 second to the cooldown period to ensure that the cooldown period is
+        // cleared when sending the cooldown end event
+        let cooldown_secs = cooldown_end_at.signed_duration_since(Utc::now()).num_seconds() + 1;
         let tx = self.subscriber_tx.clone();
         tokio::spawn(async move {
             tokio::time::sleep(Duration::from_secs(cooldown_secs as u64)).await;
@@ -317,6 +319,7 @@ pub trait SyncerExt {
     async fn get_sync_state(&self) -> Result<SyncState, SyncErr>;
     async fn is_in_cooldown(&self) -> Result<bool, SyncErr>;
     async fn get_cooldown_ends_at(&self) -> Result<DateTime<Utc>, SyncErr>;
+    async fn get_last_sync_attempted_at(&self) -> Result<DateTime<Utc>, SyncErr>;
     async fn sync(&self) -> Result<(), SyncErr>;
     async fn sync_if_not_in_cooldown(&self) -> Result<(), SyncErr>;
     async fn subscribe(&self) -> Result<watch::Receiver<SyncEvent>, SyncErr>;
@@ -499,6 +502,11 @@ impl SyncerExt for Syncer {
     async fn get_cooldown_ends_at(&self) -> Result<DateTime<Utc>, SyncErr> {
         let state = self.get_sync_state().await?;
         Ok(state.cooldown_ends_at)
+    }
+
+    async fn get_last_sync_attempted_at(&self) -> Result<DateTime<Utc>, SyncErr> {
+        let state = self.get_sync_state().await?;
+        Ok(state.last_sync_attempted_at)
     }
 
     async fn sync_if_not_in_cooldown(&self) -> Result<(), SyncErr> {

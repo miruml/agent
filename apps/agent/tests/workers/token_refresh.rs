@@ -7,7 +7,7 @@ use config_agent::auth::{
     token::Token,
     errors::*,
 };
-use config_agent::workers::cooldown::CooldownOptions;
+use config_agent::utils::CooldownOptions;
 use config_agent::workers::token_refresh::{
     TokenRefreshWorkerOptions,
     run_token_refresh_worker,
@@ -76,7 +76,7 @@ pub mod run_refresh_token_worker {
         let mut expected_refresh_token_calls = 0;
         for _ in 0..10 {
             sleep_ctrl.await_sleep().await;
-            let last_sleep = sleep_ctrl.get_last_sleep().unwrap();
+            let last_sleep = sleep_ctrl.get_last_attempted_sleep().unwrap();
             assert_eq!(last_sleep.as_secs(), cooldown.base_secs as u64);
             expected_get_token_calls += 1;
             expected_refresh_token_calls += 1;
@@ -95,7 +95,7 @@ pub mod run_refresh_token_worker {
         sleep_ctrl.release().await;
         for _ in 0..10 {
             sleep_ctrl.await_sleep().await;
-            let last_sleep = sleep_ctrl.get_last_sleep().unwrap();
+            let last_sleep = sleep_ctrl.get_last_attempted_sleep().unwrap();
             let expected_sleep_secs = token_exp_duration.num_seconds() - refresh_advance_secs;
             assert!(last_sleep.as_secs() <= expected_sleep_secs as u64);
             assert!(last_sleep.as_secs() >= expected_sleep_secs as u64 - 2);
@@ -166,7 +166,7 @@ pub mod run_refresh_token_worker {
         for _ in 0..10 {
             sleep_ctrl.release().await;
             sleep_ctrl.await_sleep().await;
-            let last_sleep = sleep_ctrl.get_last_sleep().unwrap();
+            let last_sleep = sleep_ctrl.get_last_attempted_sleep().unwrap();
             let expected_sleep_secs = cooldown.base_secs;
             assert_eq!(last_sleep.as_secs(), expected_sleep_secs as u64);
             expected_get_token_calls += 1;
@@ -235,7 +235,7 @@ pub mod run_refresh_token_worker {
         for i in 0..10 {
             sleep_ctrl.release().await;
             sleep_ctrl.await_sleep().await;
-            let last_sleep = sleep_ctrl.get_last_sleep().unwrap();
+            let last_sleep = sleep_ctrl.get_last_attempted_sleep().unwrap();
             let expected_sleep_secs = calc_exp_backoff(
                 cooldown.base_secs,
                 cooldown.growth_factor,
@@ -308,7 +308,7 @@ pub mod run_refresh_token_worker {
         for i in 0..10 {
             sleep_ctrl.release().await;
             sleep_ctrl.await_sleep().await;
-            let last_sleep = sleep_ctrl.get_last_sleep().unwrap();
+            let last_sleep = sleep_ctrl.get_last_attempted_sleep().unwrap();
             let expected_sleep_secs = calc_exp_backoff(
                 cooldown.base_secs,
                 cooldown.growth_factor,
@@ -329,7 +329,7 @@ pub mod run_refresh_token_worker {
         for _ in 0..10 {
             sleep_ctrl.release().await;
             sleep_ctrl.await_sleep().await;
-            let last_sleep = sleep_ctrl.get_last_sleep().unwrap();
+            let last_sleep = sleep_ctrl.get_last_attempted_sleep().unwrap();
             let expected_sleep_secs = cooldown.base_secs;
             assert_eq!(last_sleep.as_secs(), expected_sleep_secs as u64);
             expected_get_token_calls += 1;

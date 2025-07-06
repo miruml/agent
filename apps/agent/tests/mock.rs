@@ -1,7 +1,7 @@
 // standard library
 use std::fmt;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool,Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use std::time::Duration;
 
@@ -43,35 +43,13 @@ impl fmt::Display for MockMiruError {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct State(bool);
-
-impl State {
-    pub const A: Self = State(true);
-    pub const B: Self = State(false);
-    
-    pub fn is_sleeping(&self) -> bool {
-        self.0
-    }
-}
-
-impl From<bool> for State {
-    fn from(b: bool) -> Self {
-        State(b)
-    }
-}
-
-impl From<State> for bool {
-    fn from(s: State) -> Self {
-        s.0
-    }
-}
-
 // ================================== SLEEP ===================================== //
 pub struct SleepController {
     target: Arc<AtomicBool>,
-    actual: Arc<AtomicBool>,
-    sleeps: Arc<Mutex<Vec<Duration>>>,
+    last_known: Arc<AtomicBool>,
+    is_sleeping: Arc<AtomicBool>,
+    attempted_sleeps: Arc<Mutex<Vec<Duration>>>,
+    completed_sleeps: Arc<Mutex<Vec<Duration>>>,
 }
 
 impl Default for SleepController {
@@ -83,77 +61,74 @@ impl Default for SleepController {
 impl SleepController {
     pub fn new() -> Self {
         Self {
-            target: Arc::new(AtomicBool::new(State::A.into())),
-            actual: Arc::new(AtomicBool::new(State::B.into())),
-            sleeps: Arc::new(Mutex::new(Vec::new())),
+            target: Arc::new(AtomicBool::new(true)),
+            last_known: Arc::new(AtomicBool::new(false)),
+            is_sleeping: Arc::new(AtomicBool::new(false)),
+            attempted_sleeps: Arc::new(Mutex::new(Vec::new())),
+            completed_sleeps: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
-    fn get_target_state(&self) -> State {
-        self.target.load(Ordering::Relaxed).into()
-    }
-
-    fn get_actual_state(&self) -> State {
-        self.actual.load(Ordering::Relaxed).into()
-    }
-
-    pub fn is_sleeping(&self) -> bool {
-        self.get_actual_state() == self.get_target_state()
-    }
-
     pub async fn await_sleep(&self) {
-        while !self.is_sleeping() {
+        self.is_sleeping.store(true, Ordering::Relaxed);
+        while self.is_sleeping.load(Ordering::Relaxed) {
             tokio::task::yield_now().await;
         }
     }
 
     pub async fn release(&self) {
-        // the thread is sleeping if the target state equals the actual state. To release
-        // it we just flip the target state
+        // the thread is sleeping if the target state equals the actual state. To
+        // release it we just flip the target state
         self.target.store(
-            !bool::from(self.get_actual_state()),
+            !self.last_known.load(Ordering::Relaxed),
             Ordering::Relaxed,
         );
     }
 
     pub fn sleep_fn(&self) -> impl Fn(Duration) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>> {
-        let sleeps = self.sleeps.clone();
+        let attempted_sleeps = self.attempted_sleeps.clone();
+        let completed_sleeps = self.completed_sleeps.clone();
+        let is_sleeping = self.is_sleeping.clone();
         let target = self.target.clone();
-        let actual = self.actual.clone();
+        let last_known = self.last_known.clone();
 
         move |wait| {
-            sleeps.lock().unwrap().push(wait);
+            attempted_sleeps.lock().unwrap().push(wait);
+            let completed_sleeps = completed_sleeps.clone();
+            let is_sleeping = is_sleeping.clone();
             let target = target.clone();
-            let actual = actual.clone();
+            let last_known = last_known.clone();
             // the thread is sleeping if the target state equals the actual state. To
             // signal that the thread has begun its sleep, we set the actual state to
             // the target state.
-            actual.store(
+            last_known.store(
                 target.load(Ordering::Relaxed), 
                 Ordering::Relaxed,
             );
 
             Box::pin(async move {
-                while target.load(Ordering::Relaxed) == actual.load(Ordering::Relaxed) {
+                while target.load(Ordering::Relaxed) == last_known.load(Ordering::Relaxed) {
+                    is_sleeping.store(false, Ordering::Relaxed);
                     tokio::task::yield_now().await;
                 }
+                completed_sleeps.lock().unwrap().push(wait);
             })
         }
     }
 
-    pub fn get_sleeps(&self) -> Vec<Duration> {
-        self.sleeps.lock().unwrap().clone()
+    pub fn get_attempted_sleeps(&self) -> Vec<Duration> {
+        self.attempted_sleeps.lock().unwrap().clone()
     }
 
-    pub fn get_last_sleep(&self) -> Option<Duration> {
-        self.sleeps.lock().unwrap().last().copied()
+    pub fn get_completed_sleeps(&self) -> Vec<Duration> {
+        self.completed_sleeps.lock().unwrap().clone()
     }
 
-    pub fn clear_sleeps(&self) {
-        self.sleeps.lock().unwrap().clear();
+    pub fn get_last_attempted_sleep(&self) -> Option<Duration> {
+        self.attempted_sleeps.lock().unwrap().last().copied()
     }
 
-    pub fn num_sleeps(&self) -> usize {
-        self.sleeps.lock().unwrap().len()
+    pub fn get_last_completed_sleep(&self) -> Option<Duration> {
+        self.completed_sleeps.lock().unwrap().last().copied()
     }
 }
