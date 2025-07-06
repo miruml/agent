@@ -91,6 +91,22 @@ print_backend_base_url() {
     debug "Backend Base URL: '$backend_base_url'"
 }
 
+# MQTT Broker Host
+mqtt_broker_host() {
+    mqtt_broker_host=$(default_value "" "$@")
+    for arg in "$@"; do
+        case $arg in
+        --mqtt-broker-host=*) mqtt_broker_host="${arg#*=}";;
+        esac
+    done
+    echo "$mqtt_broker_host"
+}
+
+print_mqtt_broker_host() {
+    mqtt_broker_host=$1
+    debug "MQTT Broker Host: '$mqtt_broker_host'"
+}
+
 ### COPIED ARGUMENT UTILITIES END ###
 
 # CLI args
@@ -105,6 +121,10 @@ fi
 BACKEND_BASE_URL=$(backend_base_url --default="" "$@")
 if [ "$DEBUG" = true ]; then
     print_backend_base_url "$BACKEND_BASE_URL"
+fi
+MQTT_BROKER_HOST=$(mqtt_broker_host --default="" "$@")
+if [ "$DEBUG" = true ]; then
+    print_mqtt_broker_host "$MQTT_BROKER_HOST"
 fi
 
 # Configuration
@@ -214,13 +234,18 @@ log "Extracting..."
 tar -xzf "$DOWNLOAD_DIR/${BINARY_NAME}.tar.gz" -C "$DOWNLOAD_DIR" || 
     error "Failed to extract archive"
 
+# Collect the arguments
+args=""
+if [ -n "$BACKEND_BASE_URL" ]; then
+    args="$args --backend-base-url=$BACKEND_BASE_URL"
+fi
+if [ -n "$MQTT_BROKER_HOST" ]; then
+    args="$args --mqtt-broker-host=$MQTT_BROKER_HOST"
+fi
+
 # Execute the installer
 cd "$DOWNLOAD_DIR"
-if [ -n "$BACKEND_BASE_URL" ]; then
-    sudo -u miru ./config-agent-installer "$BACKEND_BASE_URL"
-else
-    sudo -u miru ./config-agent-installer
-fi
+sudo -u miru ./config-agent-installer $args
 cd -
 
 # Remove the downloaded files

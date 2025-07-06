@@ -91,6 +91,22 @@ print_backend_base_url() {
     debug "Backend Base URL: '$backend_base_url'"
 }
 
+# MQTT Broker Host
+mqtt_broker_host() {
+    mqtt_broker_host=$(default_value "" "$@")
+    for arg in "$@"; do
+        case $arg in
+        --mqtt-broker-host=*) mqtt_broker_host="${arg#*=}";;
+        esac
+    done
+    echo "$mqtt_broker_host"
+}
+
+print_mqtt_broker_host() {
+    mqtt_broker_host=$1
+    debug "MQTT Broker Host: '$mqtt_broker_host'"
+}
+
 ### COPIED ARGUMENT UTILITIES END ###
 
 # CLI args
@@ -106,6 +122,14 @@ BACKEND_BASE_URL=$(backend_base_url --default="https://configs.dev.api.miruml.co
 if [ "$DEBUG" = true ]; then
     print_backend_base_url "$BACKEND_BASE_URL"
 fi
+MQTT_BROKER_HOST=$(mqtt_broker_host --default="dev.mqtt.miruml.com" "$@")
+if [ "$DEBUG" = true ]; then
+    print_mqtt_broker_host "$MQTT_BROKER_HOST"
+fi
 
-curl -fsSL https://raw.githubusercontent.com/miruml/agent/"$BRANCH"/scripts/install/prerelease-install.sh | sh -s -- --debug="$DEBUG" --git-branch="$BRANCH" --backend-base-url="$BACKEND_BASE_URL"
+curl -fsSL https://raw.githubusercontent.com/miruml/agent/"$BRANCH"/scripts/install/prerelease-install.sh | sh -s -- \
+--debug="$DEBUG" \
+--git-branch="$BRANCH" \
+--backend-base-url="$BACKEND_BASE_URL" \
+--mqtt-broker-host="$MQTT_BROKER_HOST"
 

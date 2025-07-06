@@ -91,4 +91,20 @@ print_backend_base_url() {
     debug "Backend Base URL: '$backend_base_url'"
 }
 
+# MQTT Broker Host
+mqtt_broker_host() {
+    mqtt_broker_host=$(default_value "" "$@")
+    for arg in "$@"; do
+        case $arg in
+        --mqtt-broker-host=*) mqtt_broker_host="${arg#*=}";;
+        esac
+    done
+    echo "$mqtt_broker_host"
+}
+
+print_mqtt_broker_host() {
+    mqtt_broker_host=$1
+    debug "MQTT Broker Host: '$mqtt_broker_host'"
+}
+
 ### COPIED ARGUMENT UTILITIES END ###
