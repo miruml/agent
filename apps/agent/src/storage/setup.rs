@@ -73,5 +73,14 @@ pub async fn setup_storage(
             }))
         })?;
 
+    // delete any lingering cache files so that the agent doesn't use old cache data
+    let caches_dir = layout.caches_dir();
+    caches_dir.delete().await.map_err(|e| {
+        StorageErr::FileSysErr(Box::new(StorageFileSysErr {
+            source: e,
+            trace: trace!(),
+        }))
+    })?;
+
     Ok(())
 }

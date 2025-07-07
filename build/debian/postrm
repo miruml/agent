@@ -34,7 +34,8 @@ purge() {
     rm -rf /var/lib/miru
     printf "\033[32m Removing /var/log/miru \033[0m\n"
     rm -rf /var/log/miru
-
+    printf "\033[32m Removing /srv/miru \033[0m\n"
+    rm -rf /srv/miru
 }
 
 upgrade() {

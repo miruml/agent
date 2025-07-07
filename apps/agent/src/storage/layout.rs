@@ -64,7 +64,7 @@ impl StorageLayout {
     }
 
     pub fn config_instance_deployment_dir(&self) -> Dir {
-        Dir::new(PathBuf::from("/").join("srv").join("miru"))
+        Dir::new(PathBuf::from("/").join("srv").join("miru").join("config_instances"))
     }
 }
 

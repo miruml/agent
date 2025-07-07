@@ -135,4 +135,27 @@ pub mod setup_storage {
         // validate the storage
         validate_storage(&layout).await;
     }
+
+    #[tokio::test]
+    async fn caches_directory_already_exists() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let layout = StorageLayout::new(dir);
+        let settings = Settings::default();
+
+        // create the caches directory
+        let caches_dir = layout.caches_dir();
+        let subfile = caches_dir.file("test");
+        subfile.write_string("test", true, true).await.unwrap();
+        assert!(subfile.exists());
+
+        // setup the storage
+        let agent = Agent::default();
+        setup_storage(&layout, &agent, &settings).await.unwrap();
+
+        // validate the storage
+        validate_storage(&layout).await;
+
+        // subfile should be deleted
+        assert!(!subfile.exists());
+    }
 }
