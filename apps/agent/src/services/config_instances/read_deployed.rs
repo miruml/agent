@@ -74,9 +74,6 @@ pub async fn read_deployed<ReadDeployedArgsT: ReadDeployedArgsI, HTTPClientT: Co
         }
     }
 
-    let entries = cfg_inst_cache.find_entries_where(|_| true).await.unwrap();
-    println!("entries: {entries:?}");
-
     // read the config instance metadata from the cache
     let config_schema_id_cloned = config_schema_id.clone();
     let result = cfg_inst_cache
