@@ -7,7 +7,7 @@ use crate::http::{
 };
 use crate::models::config_instance::{ConfigInstance, TargetStatus};
 use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
-use crate::sync::errors::{ConfigInstanceDataNotFoundErr, SyncCrudErr, SyncErr, SyncHTTPClientErr};
+use crate::sync::errors::*;
 use crate::trace;
 use openapi_client::models::{
     BackendConfigInstance, ConfigInstanceActivityStatus, ConfigInstanceExpand,
@@ -32,9 +32,14 @@ pub async fn pull_config_instances<HTTPClientT: ConfigInstancesExt>(
 
     let categorized_insts = categorize_instances(cfg_inst_cache, unremoved_insts).await?;
     debug!(
-        "Categorized {} unremoved config instances: {:?}",
+        "Found {} unknown config instances: {:?}",
         categorized_insts.unknown.len(),
         categorized_insts.unknown
+    );
+    debug!(
+        "Found {} instances with updated target status: {:?}",
+        categorized_insts.update_target_status.len(),
+        categorized_insts.update_target_status
     );
 
     let unknown_insts = fetch_instances_with_expanded_instance_data(
@@ -98,6 +103,16 @@ async fn categorize_instances(
         other: Vec::new(),
     };
 
+    // deleteme
+    match cfg_inst_cache.entries().await {
+        Ok(entries) => {
+            debug!("Found {} instances in cache: {:?}", entries.len(), entries);
+        }
+        Err(e) => {
+            error!("Failed to read instances from cache: {}", e);
+        }
+    }
+
     // unknown config instances
     for server_inst in unremoved_insts {
         // check if the config instance is known
@@ -110,8 +125,12 @@ async fn categorize_instances(
                     trace: trace!(),
                 }))
             })? {
-            Some(storage_inst) => storage_inst,
+            Some(storage_inst) => {
+                debug!("Found instance {}in cache", storage_inst.id);
+                storage_inst
+            }
             None => {
+                debug!("Instance {} not found in cache", server_inst.id);
                 categorized.unknown.push(server_inst);
                 continue;
             }
@@ -119,9 +138,11 @@ async fn categorize_instances(
 
         // check if the target status matches
         if storage_inst.target_status != TargetStatus::from_backend(&server_inst.target_status) {
+            debug!("Instance {} has updated target status", storage_inst.id);
             storage_inst.target_status = TargetStatus::from_backend(&server_inst.target_status);
             categorized.update_target_status.push(storage_inst);
         } else {
+            debug!("Instance {} has the same target status", storage_inst.id);
             categorized.other.push(server_inst);
         }
     }
@@ -144,10 +165,10 @@ async fn fetch_instances_with_expanded_instance_data<HTTPClientT: ConfigInstance
         .with_id_filter(IDFilter {
             not: false,
             op: SearchOperator::Equals,
-            val: ids,
+            val: ids.clone(),
         })
         .build();
-    http_client
+    let instances = http_client
         .list_all_config_instances(
             filters,
             [ConfigInstanceExpand::CONFIG_INSTANCE_EXPAND_INSTANCE],
@@ -159,7 +180,17 @@ async fn fetch_instances_with_expanded_instance_data<HTTPClientT: ConfigInstance
                 source: e,
                 trace: trace!(),
             }))
-        })
+        })?;
+
+    if instances.len() != ids.len() {
+        return Err(SyncErr::MissingExpandedInstancesErr(Box::new(MissingExpandedInstancesErr {
+            expected_ids: ids,
+            actual_ids: instances.iter().map(|inst| inst.id.clone()).collect(),
+            trace: trace!(),
+        })));
+    }
+
+    Ok(instances)
 }
 
 async fn add_unknown_instances_to_storage(

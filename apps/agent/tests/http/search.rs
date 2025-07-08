@@ -37,7 +37,7 @@ pub mod format_search_clause_func {
             vec!["value1", "value2"],
             false,
         );
-        assert_eq!(clause, "key:value1,value2");
+        assert_eq!(clause, "key:value1|value2");
     }
 
     #[test]
@@ -48,7 +48,7 @@ pub mod format_search_clause_func {
             vec!["value1", "value2"],
             false,
         );
-        assert_eq!(clause, "key~value1,value2");
+        assert_eq!(clause, "key~value1|value2");
     }
 }
 

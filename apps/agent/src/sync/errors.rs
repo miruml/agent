@@ -194,6 +194,37 @@ impl fmt::Display for SyncStorageErr {
 }
 
 #[derive(Debug)]
+pub struct MissingExpandedInstancesErr {
+    pub expected_ids: Vec<String>,
+    pub actual_ids: Vec<String>,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for MissingExpandedInstancesErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for MissingExpandedInstancesErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Missing expanded instances: expected ids: {:?}, actual ids: {:?}", self.expected_ids, self.actual_ids)
+    }
+}
+
+#[derive(Debug)]
 pub struct SyncErrors {
     pub source: Vec<SyncErr>,
     pub trace: Box<Trace>,
@@ -345,6 +376,7 @@ pub enum SyncErr {
     StorageErr(Box<SyncStorageErr>),
     SyncErrors(Box<SyncErrors>),
 
+    MissingExpandedInstancesErr(Box<MissingExpandedInstancesErr>),
     InCooldownErr(Box<SyncerInCooldownErr>),
     ConfigInstanceDataNotFound(Box<ConfigInstanceDataNotFoundErr>),
     SendActorMessageErr(Box<SendActorMessageErr>),
@@ -364,6 +396,7 @@ macro_rules! forward_error_method {
             SyncErr::StorageErr(e) => e.$method($($arg)?),
             SyncErr::SyncErrors(e) => e.$method($($arg)?),
 
+            SyncErr::MissingExpandedInstancesErr(e) => e.$method($($arg)?),
             SyncErr::InCooldownErr(e) => e.$method($($arg)?),
             SyncErr::ConfigInstanceDataNotFound(e) => e.$method($($arg)?),
             SyncErr::SendActorMessageErr(e) => e.$method($($arg)?),

@@ -27,7 +27,7 @@ pub mod build_search_query_func {
             }),
         };
         let query = build_search_query(filters);
-        assert_eq!(query, Some("search=config_type_slug:1,2,3".to_string()));
+        assert_eq!(query, Some("search=config_type_slug:1|2|3".to_string()));
     }
 
     #[tokio::test]
@@ -41,6 +41,6 @@ pub mod build_search_query_func {
             config_type_slugs: None,
         };
         let query = build_search_query(filters);
-        assert_eq!(query, Some("search=digest:1,2,3".to_string()));
+        assert_eq!(query, Some("search=digest:1|2|3".to_string()));
     }
 }

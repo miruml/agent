@@ -22,7 +22,7 @@ pub mod build_search_query_func {
         let query = build_search_query(filters);
         assert_eq!(
             query,
-            Some("search=id:1,2,3 AND device_id:dvc_123".to_string())
+            Some("search=id:1|2|3 AND device_id:dvc_123".to_string())
         );
     }
 
@@ -39,7 +39,7 @@ pub mod build_search_query_func {
         let query = build_search_query(filters);
         assert_eq!(
             query,
-            Some("search=device_id:dvc_123 AND config_schema_id:1,2,3".to_string())
+            Some("search=device_id:dvc_123 AND config_schema_id:1|2|3".to_string())
         );
     }
 

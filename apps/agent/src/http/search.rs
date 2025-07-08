@@ -37,9 +37,9 @@ where
     I: IntoIterator<Item = V>,
 {
     if not {
-        format!("-{}{}{}", key, op, join(values, ","))
+        format!("-{}{}{}", key, op, join(values, "|"))
     } else {
-        format!("{}{}{}", key, op, join(values, ","))
+        format!("{}{}{}", key, op, join(values, "|"))
     }
 }
 
