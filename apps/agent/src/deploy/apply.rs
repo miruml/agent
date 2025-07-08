@@ -26,7 +26,7 @@ use crate::trace;
 
 // external crates
 use async_trait::async_trait;
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 pub fn is_dirty(old: Option<&ConfigInstanceCacheEntry>, new: &ConfigInstance) -> bool {
     let old = match old {
@@ -65,6 +65,9 @@ pub async fn apply(
     deployment_dir: &Dir,
     fsm_settings: &fsm::Settings,
 ) -> Result<HashMap<ConfigInstanceID, ConfigInstance>, DeployErr> {
+    let num_cfg_insts_to_apply = cfg_insts_to_apply.len();
+    debug!("Applying {num_cfg_insts_to_apply} config instances {cfg_insts_to_apply:?}");
+
     // observers
     let mut observers: Vec<&mut dyn Observer> = Vec::new();
     let mut storage_observer = StorageObserver { cfg_inst_cache };

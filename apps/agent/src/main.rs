@@ -3,7 +3,7 @@ use config_agent::app::run::{run};
 use config_agent::app::options::{AppOptions, LifecycleOptions};
 use config_agent::logs::{init, LogOptions};
 use config_agent::mqtt::client::ConnectAddress;
-use config_agent::storage::agent::{assert_activated, Agent};
+use config_agent::storage::agent::{assert_activated};
 use config_agent::storage::layout::StorageLayout;
 use config_agent::storage::settings::Settings;
 use config_agent::utils::{has_version_flag, version_info};
@@ -28,13 +28,6 @@ async fn main() {
         error!("Agent is not yet activated: {}", e);
         return;
     }
-    let agent = match agent_file.read_json::<Agent>().await {
-        Ok(agent) => agent,
-        Err(e) => {
-            error!("Unable to read agent file: {}", e);
-            return;
-        }
-    };
 
     // retrieve the settings files
     let settings_file = layout.settings_file();

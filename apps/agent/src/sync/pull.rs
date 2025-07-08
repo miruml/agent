@@ -14,7 +14,7 @@ use openapi_client::models::{
 };
 
 // external crates
-use tracing::error;
+use tracing::{debug, error};
 
 pub async fn pull_config_instances<HTTPClientT: ConfigInstancesExt>(
     cfg_inst_cache: &ConfigInstanceCache,
@@ -24,8 +24,18 @@ pub async fn pull_config_instances<HTTPClientT: ConfigInstancesExt>(
     token: &str,
 ) -> Result<(), SyncErr> {
     let unremoved_insts = fetch_unremoved_instances(http_client, device_id, token).await?;
+    debug!(
+        "Found {} unremoved config instances: {:?}",
+        unremoved_insts.len(),
+        unremoved_insts
+    );
 
     let categorized_insts = categorize_instances(cfg_inst_cache, unremoved_insts).await?;
+    debug!(
+        "Categorized {} unremoved config instances: {:?}",
+        categorized_insts.unknown.len(),
+        categorized_insts.unknown
+    );
 
     let unknown_insts = fetch_instances_with_expanded_instance_data(
         http_client,
@@ -39,8 +49,10 @@ pub async fn pull_config_instances<HTTPClientT: ConfigInstancesExt>(
     )
     .await?;
 
+    debug!("Adding {} unknown instances to storage", unknown_insts.len());
     add_unknown_instances_to_storage(cfg_inst_cache, cfg_inst_data_cache, unknown_insts).await?;
 
+    debug!("Updating target status for {} instances", categorized_insts.update_target_status.len());
     update_target_status_instances(cfg_inst_cache, categorized_insts.update_target_status).await?;
 
     Ok(())

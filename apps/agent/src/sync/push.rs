@@ -6,7 +6,7 @@ use crate::trace;
 use openapi_client::models::UpdateConfigInstanceRequest;
 
 // external crates
-use tracing::error;
+use tracing::{debug, error};
 
 pub async fn push_config_instances<HTTPClientT: ConfigInstancesExt>(
     cfg_inst_cache: &ConfigInstanceCache,
@@ -20,6 +20,7 @@ pub async fn push_config_instances<HTTPClientT: ConfigInstancesExt>(
             trace: trace!(),
         }))
     })?;
+    debug!("Found {} unsynced config instances: {:?}", unsynced_entries.len(), unsynced_entries);
 
     // push each unsynced instance to the server and update the cache
     for entry in unsynced_entries {
@@ -34,6 +35,7 @@ pub async fn push_config_instances<HTTPClientT: ConfigInstancesExt>(
         };
 
         // send to the server
+        debug!("Pushing config instance {} to the server with updates: {:?}", inst.id, updates);
         if let Err(e) = http_client
             .update_config_instance(&inst.id, &updates, token)
             .await
@@ -42,6 +44,7 @@ pub async fn push_config_instances<HTTPClientT: ConfigInstancesExt>(
         }
 
         // update the cache
+        debug!("Updating cache for config instance {}", inst.id);
         let inst_id = inst.id.clone();
         if let Err(e) = cfg_inst_cache
             .write(inst.id.clone(), inst, |_, _| false, true)

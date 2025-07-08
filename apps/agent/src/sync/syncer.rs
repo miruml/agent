@@ -240,6 +240,7 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
         let mut errors = Vec::new();
 
         // pull config instances from server
+        debug!("Pulling config instances from server");
         let result = pull_config_instances(
             self.cfg_inst_cache.as_ref(),
             self.cfg_inst_data_cache.as_ref(),
@@ -256,6 +257,7 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
         };
 
         // read the config instances which need to be applied
+        debug!("Reading config instances which need to be applied");
         let cfg_insts_to_apply = self.cfg_inst_cache
             .find_where(|instance| fsm::is_action_required(fsm::next_action(instance, true)))
             .await
@@ -265,10 +267,11 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
                     trace: trace!(),
                 }))
             })?;
-        let cfg_insts_to_apply = cfg_insts_to_apply
+        let cfg_insts_to_apply  = cfg_insts_to_apply
             .into_iter()
             .map(|instance| (instance.id.clone(), instance))
             .collect();
+
 
         // apply deployments
         apply(
@@ -287,6 +290,7 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
         })?;
 
         // push config instances to server
+        debug!("Pushing config instances to server");
         let result =
             push_config_instances(
                 self.cfg_inst_cache.as_ref(),
