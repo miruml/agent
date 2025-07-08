@@ -251,4 +251,7 @@ cd -
 # Remove the downloaded files
 rm -rf "$DOWNLOAD_DIR"
 
+# Restart the agent
+sudo systemctl restart miru
+
 exit 0
