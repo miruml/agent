@@ -20,7 +20,7 @@ pub struct ConfigSchema {
     pub created_by_id: Option<String>,
     pub config_type_id: String,
 
-    // extra metadata fields
+    // extra fields
     pub config_type_slug: Option<String>,
 }
 

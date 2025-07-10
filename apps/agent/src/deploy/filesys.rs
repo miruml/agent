@@ -28,7 +28,7 @@ impl DeployResults {
 pub async fn deploy_with_rollback<R>(
     to_remove: Vec<ConfigInstance>,
     to_deploy: Vec<ConfigInstance>,
-    cfg_inst_data_reader: &R,
+    cfg_inst_content_reader: &R,
     deployment_dir: &Dir,
     settings: &fsm::Settings,
     observers: &mut [&mut dyn Observer],
@@ -36,17 +36,17 @@ pub async fn deploy_with_rollback<R>(
 where
     R: Read<ConfigInstanceID, serde_json::Value>,
 {
-    // remove the previous instance. Don't worry whether it failed or not as we want
-    // to attempt to deploy the next instance regardless
+    // remove the previous config instance. Don't worry whether it failed or not as we want
+    // to attempt to deploy the next config instance regardless
     let (to_remove, result) = remove_many(to_remove, deployment_dir, settings, observers).await;
     if let Err(e) = result {
         error!("Error removing config instances: {:?}", e);
     }
 
-    // deploy the new instance
+    // deploy the new configinstance
     let (to_deploy, result) = deploy_many(
         to_deploy,
-        cfg_inst_data_reader,
+        cfg_inst_content_reader,
         deployment_dir,
         settings,
         observers,
@@ -64,7 +64,7 @@ where
         );
     }
 
-    // deployment FAILED -> rollback to the previous instance
+    // deployment FAILED -> rollback to the previous configinstance
 
     // remove the attempted deployment. Don't worry whether it failed or not as there
     // is nothing to do at this point. It will be attempted again with a retry.
@@ -78,7 +78,7 @@ where
     // time.
     let (to_remove, result) = deploy_many(
         to_remove,
-        cfg_inst_data_reader,
+        cfg_inst_content_reader,
         deployment_dir,
         settings,
         observers,
@@ -100,7 +100,7 @@ where
 // =================================== DEPLOY ====================================== //
 async fn deploy_many<R>(
     cfg_insts: Vec<ConfigInstance>,
-    data_fetcher: &R,
+    content_fetcher: &R,
     deployment_dir: &Dir,
     settings: &fsm::Settings,
     observers: &mut [&mut dyn Observer],
@@ -112,7 +112,7 @@ where
     let mut cfg_insts_iter = cfg_insts.into_iter();
     while let Some(cfg_inst) = cfg_insts_iter.next() {
         let (post_deploy_cfg_inst, result) =
-            deploy(cfg_inst, data_fetcher, deployment_dir, settings, observers).await;
+            deploy(cfg_inst, content_fetcher, deployment_dir, settings, observers).await;
         if let Err(e) = result {
             // add the current post_deploy_cfg_inst
             post_deploy_cfg_insts.push(post_deploy_cfg_inst);
@@ -129,7 +129,7 @@ where
 
 async fn deploy<R>(
     mut cfg_inst: ConfigInstance,
-    data_fetcher: &R,
+    content_fetcher: &R,
     deployment_dir: &Dir,
     settings: &fsm::Settings,
     observers: &mut [&mut dyn Observer],
@@ -137,7 +137,7 @@ async fn deploy<R>(
 where
     R: Read<ConfigInstanceID, serde_json::Value>,
 {
-    let result = write_cfg_inst_to_deployment_dir(&cfg_inst, data_fetcher, deployment_dir).await;
+    let result = write_cfg_inst_to_deployment_dir(&cfg_inst, content_fetcher, deployment_dir).await;
 
     match result {
         Ok(_) => {
@@ -161,7 +161,7 @@ where
 
 async fn write_cfg_inst_to_deployment_dir<R>(
     cfg_inst: &ConfigInstance,
-    data_fetcher: &R,
+    content_fetcher: &R,
     deployment_dir: &Dir,
 ) -> Result<(), DeployErr>
 where
@@ -173,7 +173,7 @@ where
         None => return Ok(()),
     };
 
-    let data = data_fetcher.read(cfg_inst.id.clone()).await.map_err(|e| {
+    let cfg_inst_content = content_fetcher.read(cfg_inst.id.clone()).await.map_err(|e| {
         DeployErr::CrudErr(Box::new(DeployCrudErr {
             source: e,
             trace: trace!(),
@@ -181,7 +181,7 @@ where
     })?;
 
     let dest_file = deployment_dir.file(rel_filepath);
-    dest_file.write_json(&data, true, true).await.map_err(|e| {
+    dest_file.write_json(&cfg_inst_content, true, true).await.map_err(|e| {
         DeployErr::FileSysErr(Box::new(DeployFileSysErr {
             source: e,
             trace: trace!(),
@@ -247,7 +247,7 @@ async fn delete_cfg_inst_from_deployment_dir(
     cfg_inst: &ConfigInstance,
     deployment_dir: &Dir,
 ) -> Result<(), DeployErr> {
-    // only delete the config instance from the filesystem if it has a filepath
+    // only delete the configs from the filesystem if it has a filepath
     let rel_filepath = match &cfg_inst.relative_filepath {
         Some(filepath) => filepath,
         None => return Ok(()),

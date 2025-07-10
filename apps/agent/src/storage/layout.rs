@@ -55,11 +55,11 @@ impl StorageLayout {
         self.caches_dir().subdir("config_instances")
     }
 
-    pub fn config_instance_metadata_cache(&self) -> File {
+    pub fn config_instance_cache(&self) -> File {
         self.config_instance_caches().file("metadata.json")
     }
 
-    pub fn config_instance_data_cache(&self) -> Dir {
+    pub fn config_instance_content_cache(&self) -> Dir {
         self.config_instance_caches().subdir("contents")
     }
 

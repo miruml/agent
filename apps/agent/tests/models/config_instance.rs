@@ -480,6 +480,7 @@ async fn deserialize_config_instance() {
         "updated_at": expected.updated_at,
         "device_id": expected.device_id,
         "config_schema_id": expected.config_schema_id,
+        "config_type_id": expected.config_type_id,
         "attempts": expected.attempts,
         "cooldown_ends_at": expected.cooldown_ends_at,
     });
@@ -511,6 +512,7 @@ async fn deserialize_config_instance() {
         "error_status": expected.error_status,
         "device_id": expected.device_id,
         "config_schema_id": expected.config_schema_id,
+        "config_type_id": expected.config_type_id,
     });
     let config_instance: ConfigInstance = serde_json::from_value(valid_input).unwrap();
     assert_eq!(config_instance, expected);

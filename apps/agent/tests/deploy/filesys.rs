@@ -27,7 +27,7 @@ pub mod deploy_with_rollback {
             ..Default::default()
         };
 
-        // create the cache but omit the config instance data
+        // create the cache but omit the config instance content
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
         let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
             .await
@@ -49,7 +49,7 @@ pub mod deploy_with_rollback {
         .await;
         result.unwrap();
 
-        // define the expected instance
+        // define the expected config instance
         let expected = ConfigInstance {
             activity_status: ActivityStatus::Removed,
             error_status: ErrorStatus::Retrying,
@@ -111,7 +111,7 @@ pub mod deploy_with_rollback {
         .await;
         result.unwrap();
 
-        // define the expected instance
+        // define the expected config instance
         let expected = ConfigInstance {
             activity_status: ActivityStatus::Deployed,
             ..cfg_inst
@@ -142,11 +142,11 @@ pub mod deploy_with_rollback {
         let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
             .await
             .unwrap();
-        let instance_data = json!({"speed": 4});
+        let cfg_inst_content = json!({"speed": 4});
         cache
             .write(
                 cfg_inst.id.clone(),
-                instance_data.clone(),
+                cfg_inst_content.clone(),
                 |_, _| false,
                 true,
             )
@@ -155,7 +155,7 @@ pub mod deploy_with_rollback {
 
         // create the file in the deployment directory
         let file = dir.file(filepath.as_str());
-        file.write_json(&instance_data, true, true).await.unwrap();
+        file.write_json(&cfg_inst_content, true, true).await.unwrap();
 
         // deploy the config instance
         let settings = Settings::default();
@@ -173,7 +173,7 @@ pub mod deploy_with_rollback {
         .await;
         result.unwrap();
 
-        // define the expected instance
+        // define the expected config instance
         let expected = ConfigInstance {
             activity_status: ActivityStatus::Deployed,
             ..cfg_inst
@@ -191,7 +191,7 @@ pub mod deploy_with_rollback {
         // check that the file was created
         let file = dir.file(filepath.as_str());
         let actual = file.read_json::<serde_json::Value>().await.unwrap();
-        assert_eq!(actual, instance_data);
+        assert_eq!(actual, cfg_inst_content);
     }
 
     // deploy 1 - filepath specified doesn't overwrite existing file
@@ -209,11 +209,11 @@ pub mod deploy_with_rollback {
         let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
             .await
             .unwrap();
-        let instance_data = json!({"speed": 4});
+        let cfg_inst_content = json!({"speed": 4});
         cache
             .write(
                 cfg_inst.id.clone(),
-                instance_data.clone(),
+                cfg_inst_content.clone(),
                 |_, _| false,
                 true,
             )
@@ -236,7 +236,7 @@ pub mod deploy_with_rollback {
         .await;
         result.unwrap();
 
-        // define the expected instance
+        // define the expected config instance
         let expected = ConfigInstance {
             activity_status: ActivityStatus::Deployed,
             ..cfg_inst
@@ -254,7 +254,7 @@ pub mod deploy_with_rollback {
         // check that the file was created
         let file = dir.file(filepath.as_str());
         let actual = file.read_json::<serde_json::Value>().await.unwrap();
-        assert_eq!(actual, instance_data);
+        assert_eq!(actual, cfg_inst_content);
     }
 
     // remove failures are essentially impossible since removing a file that doesn't exist
@@ -294,7 +294,7 @@ pub mod deploy_with_rollback {
         .await;
         result.unwrap();
 
-        // define the expected instance
+        // define the expected config instance
         let expected = ConfigInstance {
             activity_status: ActivityStatus::Removed,
             ..cfg_inst
@@ -345,7 +345,7 @@ pub mod deploy_with_rollback {
         .await;
         result.unwrap();
 
-        // define the expected instance
+        // define the expected config instance
         let expected = ConfigInstance {
             activity_status: ActivityStatus::Removed,
             ..cfg_inst
@@ -375,11 +375,11 @@ pub mod deploy_with_rollback {
         let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
             .await
             .unwrap();
-        let instance_data = json!({"speed": 4});
+        let cfg_inst_content = json!({"speed": 4});
         cache
             .write(
                 cfg_inst.id.clone(),
-                instance_data.clone(),
+                cfg_inst_content.clone(),
                 |_, _| false,
                 true,
             )
@@ -388,7 +388,7 @@ pub mod deploy_with_rollback {
 
         // create the file in the deployment directory
         let file = dir.file(filepath.as_str());
-        file.write_json(&instance_data, true, true).await.unwrap();
+        file.write_json(&cfg_inst_content, true, true).await.unwrap();
 
         // deploy the config instance
         let settings = Settings::default();
@@ -406,7 +406,7 @@ pub mod deploy_with_rollback {
         .await;
         result.unwrap();
 
-        // define the expected instance
+        // define the expected config instance
         let expected = ConfigInstance {
             activity_status: ActivityStatus::Removed,
             ..cfg_inst
@@ -442,7 +442,7 @@ pub mod deploy_with_rollback {
             ..Default::default()
         };
 
-        // create the cache but the config instance data for the to_deploy instance
+        // create the cache but the config instance content for the to_deploy config instance
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
         let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
             .await
@@ -510,7 +510,7 @@ pub mod deploy_with_rollback {
         assert_eq!(observer.history[2], expected_to_deploy);
         assert_eq!(observer.history[3], expected_to_remove);
 
-        // check that the removed instance is still deployed
+        // check that the removed config instance is still deployed
         let file = dir.file(to_remove_filepath.as_str());
         let actual = file.read_json::<serde_json::Value>().await.unwrap();
         assert_eq!(actual, to_remove_data);
@@ -541,7 +541,7 @@ pub mod deploy_with_rollback {
             to_remove_instances.push(cfg_inst);
         }
 
-        // create the cache but the config instance data for the to_deploy instance
+        // create the cache but the config instance content for the to_deploy config instance
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
         let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
             .await

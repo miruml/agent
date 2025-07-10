@@ -18,7 +18,7 @@ use crate::models::config_instance::{
     ActivityStatus, ConfigInstance, ConfigInstanceID, TargetStatus,
 };
 use crate::storage::config_instances::{
-    ConfigInstanceCache, ConfigInstanceCacheEntry, ConfigInstanceDataCache,
+    ConfigInstanceCache, ConfigInstanceCacheEntry, ConfigInstanceContentCache,
 };
 use crate::trace;
 
@@ -59,7 +59,7 @@ impl<'a> Observer for StorageObserver<'a> {
 pub async fn apply(
     mut cfg_insts_to_apply: HashMap<ConfigInstanceID, ConfigInstance>,
     cfg_inst_cache: &ConfigInstanceCache,
-    cfg_inst_data_cache: &ConfigInstanceDataCache,
+    cfg_inst_content_cache: &ConfigInstanceContentCache,
     deployment_dir: &Dir,
     fsm_settings: &fsm::Settings,
 ) -> Result<HashMap<ConfigInstanceID, ConfigInstance>, DeployErr> {
@@ -93,10 +93,10 @@ pub async fn apply(
         };
 
         // apply the deployment
-        let (instance_results, result) = apply_one(
+        let (cfg_inst_results, result) = apply_one(
             cfg_inst,
             cfg_inst_cache,
-            cfg_inst_data_cache,
+            cfg_inst_content_cache,
             deployment_dir,
             fsm_settings,
             &mut observers,
@@ -107,7 +107,7 @@ pub async fn apply(
         }
 
         // update the config instances to apply
-        for cfg_inst in instance_results.to_remove.into_iter() {
+        for cfg_inst in cfg_inst_results.to_remove.into_iter() {
             if fsm::is_action_required(fsm::next_action(&cfg_inst, true)) {
                 cfg_insts_to_apply.insert(cfg_inst.id.clone(), cfg_inst);
             } else {
@@ -115,7 +115,7 @@ pub async fn apply(
                 applied_cfg_insts.insert(cfg_inst.id.clone(), cfg_inst);
             }
         }
-        for cfg_inst in instance_results.to_deploy.into_iter() {
+        for cfg_inst in cfg_inst_results.to_deploy.into_iter() {
             if fsm::is_action_required(fsm::next_action(&cfg_inst, true)) {
                 cfg_insts_to_apply.insert(cfg_inst.id.clone(), cfg_inst);
             } else {
@@ -131,7 +131,7 @@ pub async fn apply(
 async fn apply_one<R1, R2>(
     cfg_inst: ConfigInstance,
     all_cfg_insts: &R1,
-    all_cfg_insts_data: &R2,
+    all_cfg_inst_contents: &R2,
     deployment_dir: &Dir,
     fsm_settings: &fsm::Settings,
     observers: &mut [&mut dyn Observer],
@@ -146,7 +146,7 @@ where
             deploy(
                 cfg_inst,
                 all_cfg_insts,
-                all_cfg_insts_data,
+                all_cfg_inst_contents,
                 deployment_dir,
                 fsm_settings,
                 observers,
@@ -157,7 +157,7 @@ where
             remove(
                 cfg_inst,
                 all_cfg_insts,
-                all_cfg_insts_data,
+                all_cfg_inst_contents,
                 deployment_dir,
                 fsm_settings,
                 observers,
@@ -171,7 +171,7 @@ where
 async fn deploy<R1, R2>(
     cfg_inst: ConfigInstance,
     all_cfg_insts: &R1,
-    all_cfg_insts_data: &R2,
+    all_cfg_inst_contents: &R2,
     deployment_dir: &Dir,
     fsm_settings: &fsm::Settings,
     observers: &mut [&mut dyn Observer],
@@ -202,7 +202,7 @@ where
 
     let replacement_ids = conflicts.iter().map(|c| &c.id).collect::<Vec<_>>();
     info!(
-        "deploying config instance {:?} and removing {:?}",
+        "deploying config {:?} and removing {:?}",
         cfg_inst.id, replacement_ids
     );
 
@@ -210,7 +210,7 @@ where
     filesys::deploy_with_rollback(
         conflicts,
         vec![cfg_inst],
-        all_cfg_insts_data,
+        all_cfg_inst_contents,
         deployment_dir,
         fsm_settings,
         observers,
@@ -221,7 +221,7 @@ where
 async fn remove<R1, R2>(
     mut cfg_inst: ConfigInstance,
     all_cfg_insts: &R1,
-    all_cfg_insts_data: &R2,
+    all_cfg_inst_contents: &R2,
     deployment_dir: &Dir,
     fsm_settings: &fsm::Settings,
     observers: &mut [&mut dyn Observer],
@@ -252,10 +252,10 @@ where
 
     let mut replacements = vec![];
     if let Some(replacement) = replacement {
-        // if a replacement exists and is in cooldown, we must wait for the new instance
-        // to finish cooling down before we can remove this one. Thus, this instance
-        // receives the same cooldown as the replacement so that they are removed at the
-        // same time.
+        // if a replacement exists and is in cooldown, we must wait for the new config
+        // instance to finish cooling down before we can remove this one. Thus, this
+        // config instance receives the same cooldown as the replacement so that they
+        // are removed at the same time.
         if replacement.is_in_cooldown() {
             cfg_inst.set_cooldown(replacement.cooldown());
             let err_results = on_update(observers, &cfg_inst).await;
@@ -274,11 +274,11 @@ where
         cfg_inst.id, replacement_ids
     );
 
-    // remove the instance and deploy the replacement
+    // remove the config instance and deploy the replacement
     filesys::deploy_with_rollback(
         vec![cfg_inst],
         replacements,
-        all_cfg_insts_data,
+        all_cfg_inst_contents,
         deployment_dir,
         fsm_settings,
         observers,
@@ -326,7 +326,7 @@ where
         if conflict.target_status == TargetStatus::Deployed {
             return Err(DeployErr::ConflictingDeploymentsErr(Box::new(
                 ConflictingDeploymentsErr {
-                    instances: vec![cfg_inst.clone(), conflict.clone()],
+                    cfg_insts: vec![cfg_inst.clone(), conflict.clone()],
                     trace: trace!(),
                 },
             )));

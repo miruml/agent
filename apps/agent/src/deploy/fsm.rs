@@ -145,11 +145,11 @@ fn has_recovered(cfg_inst: &ConfigInstance, new_activity_status: ActivityStatus)
         return false;
     }
 
-    // check if the new activity status matches the instance's target status
+    // check if the new activity status matches the config instance's target status
     match cfg_inst.target_status {
         TargetStatus::Created => {
             // the created status is a bit interesting in that we're satisfied with the
-            // instance being in the queued or removed state if it's target status is
+            // config instance being in the queued or removed state if it's target status is
             // created. Thus it recovers as long as it is not deployed.
             match new_activity_status {
                 ActivityStatus::Created => true,

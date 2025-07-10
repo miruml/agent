@@ -16,7 +16,7 @@ use config_agent::services::{
     errors::ServiceErr,
 };
 use config_agent::storage::{
-    config_instances::{ConfigInstanceCache, ConfigInstanceDataCache},
+    config_instances::{ConfigInstanceCache, ConfigInstanceContentCache},
     config_schemas::ConfigSchemaCache,
 };
 use config_agent::sync::syncer::{Syncer, SyncerArgs};
@@ -42,8 +42,8 @@ pub async fn create_syncer(
     let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(32, dir.file("instances.json"), 1000)
         .await
         .unwrap();
-    let (cfg_inst_data_cache, _) =
-        ConfigInstanceDataCache::spawn(32, dir.subdir("instances"), 1000)
+    let (cfg_inst_content_cache, _) =
+        ConfigInstanceContentCache::spawn(32, dir.subdir("instances"), 1000)
             .await
             .unwrap();
 
@@ -54,7 +54,7 @@ pub async fn create_syncer(
             http_client: http_client.clone(),
             token_mngr: Arc::new(token_mngr),
             cfg_inst_cache: Arc::new(cfg_inst_cache),
-            cfg_inst_data_cache: Arc::new(cfg_inst_data_cache),
+            cfg_inst_content_cache: Arc::new(cfg_inst_content_cache),
             deployment_dir: dir.subdir("syncer"),
             fsm_settings: fsm::Settings::default(),
             cooldown_options: CooldownOptions::default(),
@@ -70,10 +70,10 @@ pub mod errors {
     async fn config_schema_not_found_from_storage_or_server() {
         // create the caches
         let dir = Dir::create_temp_dir("read_deployed").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(32, dir.file("instances.json"), 1000)
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(32, dir.file("instances.json"), 1000)
             .await
             .unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(32, dir.subdir("instances"), 1000)
+        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(32, dir.subdir("instances"), 1000)
             .await
             .unwrap();
         let (schema_cache, _) = ConfigSchemaCache::spawn(32, dir.file("schemas.json"), 1000)
@@ -104,8 +104,8 @@ pub mod errors {
         let result = read_deployed::read_deployed(
             &args,
             &syncer,
-            Arc::new(metadata_cache),
-            Arc::new(instance_cache),
+            Arc::new(cfg_inst_cache),
+            Arc::new(cfg_inst_content_cache),
             &schema_cache,
             &cfg_sch_client,
             "doesntmatter",
@@ -123,10 +123,10 @@ pub mod errors {
     async fn config_schema_not_found_from_storage_and_network_connection_error() {
         // create the caches
         let dir = Dir::create_temp_dir("read_deployed").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(32, dir.file("instances.json"), 1000)
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(32, dir.file("instances.json"), 1000)
             .await
             .unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(32, dir.subdir("instances"), 1000)
+        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(32, dir.subdir("instances"), 1000)
             .await
             .unwrap();
         let (schema_cache, _) = ConfigSchemaCache::spawn(32, dir.file("schemas.json"), 1000)
@@ -154,8 +154,8 @@ pub mod errors {
         let result = read_deployed::read_deployed(
             &args,
             &syncer,
-            Arc::new(metadata_cache),
-            Arc::new(instance_cache),
+            Arc::new(cfg_inst_cache),
+            Arc::new(cfg_inst_content_cache),
             &schema_cache,
             &cfg_sch_client,
             "doesntmatter",
@@ -170,10 +170,10 @@ pub mod errors {
     async fn deployed_config_instance_not_found() {
         // create the caches
         let dir = Dir::create_temp_dir("read_deployed").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(32, dir.file("instances.json"), 1000)
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(32, dir.file("instances.json"), 1000)
             .await
             .unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(32, dir.subdir("instances"), 1000)
+        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(32, dir.subdir("instances"), 1000)
             .await
             .unwrap();
         let (schema_cache, _) = ConfigSchemaCache::spawn(32, dir.file("schemas.json"), 1000)
@@ -201,8 +201,8 @@ pub mod errors {
         let result = read_deployed::read_deployed(
             &args,
             &syncer,
-            Arc::new(metadata_cache),
-            Arc::new(instance_cache),
+            Arc::new(cfg_inst_cache),
+            Arc::new(cfg_inst_content_cache),
             &schema_cache,
             &cfg_sch_client,
             "doesntmatter",
@@ -238,17 +238,17 @@ pub mod success {
 
         // create the caches
         let dir = Dir::create_temp_dir("read_deployed").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(32, dir.file("instances.json"), 1000)
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(32, dir.file("instances.json"), 1000)
             .await
             .unwrap();
-        metadata_cache
+        cfg_inst_cache
             .write(cfg_inst_id.clone(), cfg_inst.clone(), |_, _| false, true)
             .await
             .unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(32, dir.subdir("instances"), 1000)
+        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(32, dir.subdir("instances"), 1000)
             .await
             .unwrap();
-        instance_cache
+        cfg_inst_content_cache
             .write(cfg_inst_id.clone(), json!({}), |_, _| false, true)
             .await
             .unwrap();
@@ -281,8 +281,8 @@ pub mod success {
         let deployed_inst = read_deployed::read_deployed(
             &args,
             &syncer,
-            Arc::new(metadata_cache),
-            Arc::new(instance_cache),
+            Arc::new(cfg_inst_cache),
+            Arc::new(cfg_inst_content_cache),
             &schema_cache,
             &cfg_sch_client,
             "doesntmatter",
@@ -297,10 +297,10 @@ pub mod success {
     async fn pull_and_deploy_unknown_from_server() {
         // create the caches
         let dir = Dir::create_temp_dir("read_deployed").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(32, dir.file("instances.json"), 1000)
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(32, dir.file("instances.json"), 1000)
             .await
             .unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(32, dir.subdir("instances"), 1000)
+        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(32, dir.subdir("instances"), 1000)
             .await
             .unwrap();
         let (schema_cache, _) = ConfigSchemaCache::spawn(32, dir.file("schemas.json"), 1000)
@@ -344,8 +344,8 @@ pub mod success {
         let deployed_inst = read_deployed::read_deployed(
             &args,
             &syncer,
-            Arc::new(metadata_cache),
-            Arc::new(instance_cache),
+            Arc::new(cfg_inst_cache),
+            Arc::new(cfg_inst_content_cache),
             &schema_cache,
             &cfg_sch_client,
             "doesntmatter",

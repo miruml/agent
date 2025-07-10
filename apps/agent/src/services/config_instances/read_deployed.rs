@@ -16,7 +16,7 @@ use crate::services::errors::{
     ConfigSchemaNotFound, DeployedConfigInstanceNotFound, ServiceCrudErr, ServiceErr,
     ServiceHTTPErr, ServiceSyncErr,
 };
-use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
+use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceContentCache};
 use crate::storage::config_schemas::ConfigSchemaCache;
 use crate::sync::syncer::{Syncer, SyncerExt};
 use crate::trace;
@@ -55,7 +55,7 @@ pub async fn read_deployed<ReadDeployedArgsT: ReadDeployedArgsI, HTTPClientT: Co
     args: &ReadDeployedArgsT,
     syncer: &Syncer,
     cfg_inst_cache: Arc<ConfigInstanceCache>,
-    cfg_inst_data_cache: Arc<ConfigInstanceDataCache>,
+    cfg_inst_content_cache: Arc<ConfigInstanceContentCache>,
     schema_cache: &ConfigSchemaCache,
     http_client: &HTTPClientT,
     token: &str,
@@ -74,7 +74,7 @@ pub async fn read_deployed<ReadDeployedArgsT: ReadDeployedArgsI, HTTPClientT: Co
         }
     }
 
-    // read the config instance metadata from the cache
+    // read the config instance from the cache
     let config_schema_id_cloned = config_schema_id.clone();
     let result = cfg_inst_cache
         .find_one_optional(
@@ -90,7 +90,7 @@ pub async fn read_deployed<ReadDeployedArgsT: ReadDeployedArgsI, HTTPClientT: Co
         .await;
 
     let result = match result {
-        Ok(metadata) => metadata,
+        Ok(cfg_inst) => cfg_inst,
         Err(e) => {
             if e.is_network_connection_error() {
                 return Err(ServiceErr::DeployedConfigInstanceNotFound(Box::new(
@@ -111,10 +111,10 @@ pub async fn read_deployed<ReadDeployedArgsT: ReadDeployedArgsI, HTTPClientT: Co
         }
     };
 
-    // if we can't find the *metadata*, the deployed config instance doesn't exist or
+    // if we can't find the config instance, the deployed config instance doesn't exist or
     // couldn't be retrieved from the server due to a network connection error
-    let metadata = match result {
-        Some(metadata) => metadata,
+    let cfg_inst = match result {
+        Some(cfg_inst) => cfg_inst,
         None => {
             return Err(ServiceErr::DeployedConfigInstanceNotFound(Box::new(
                 DeployedConfigInstanceNotFound {
@@ -128,10 +128,10 @@ pub async fn read_deployed<ReadDeployedArgsT: ReadDeployedArgsI, HTTPClientT: Co
         }
     };
 
-    // if we can't find the *data*, there was an internal error somewhere because if
-    // the metadata exists, the data should exist too
-    let data = cfg_inst_data_cache
-        .read(metadata.id.clone())
+    // if we can't find the config instance *content*, there was an internal error
+    // somewhere because if the config instance exists, the content should exist too
+    let content = cfg_inst_content_cache
+        .read(cfg_inst.id.clone())
         .await
         .map_err(|e| {
             ServiceErr::CrudErr(Box::new(ServiceCrudErr {
@@ -140,7 +140,7 @@ pub async fn read_deployed<ReadDeployedArgsT: ReadDeployedArgsI, HTTPClientT: Co
             }))
         })?;
 
-    Ok(ConfigInstance::to_sdk(metadata, data))
+    Ok(ConfigInstance::to_sdk(cfg_inst, content))
 }
 
 async fn fetch_config_schema_id<

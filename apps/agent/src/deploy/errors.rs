@@ -47,7 +47,7 @@ impl fmt::Display for ConfigInstanceNotDeployableErr {
 
 #[derive(Debug)]
 pub struct ConflictingDeploymentsErr {
-    pub instances: Vec<ConfigInstance>,
+    pub cfg_insts: Vec<ConfigInstance>,
     pub trace: Box<Trace>,
 }
 
@@ -74,7 +74,7 @@ impl fmt::Display for ConflictingDeploymentsErr {
         write!(
             f,
             "the following config instances both desire to be deployed: {:?}",
-            self.instances
+            self.cfg_insts
         )
     }
 }

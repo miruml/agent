@@ -89,8 +89,8 @@ pub async fn read_deployed_config_instance(
         read_deployed::read_deployed(
             &args,
             &state.syncer,
-            state.caches.cfg_inst_metadata.clone(),
-            state.caches.cfg_inst_data.clone(),
+            state.caches.cfg_inst.clone(),
+            state.caches.cfg_inst_content.clone(),
             &state.caches.cfg_schema,
             &state.http_client,
             &token.token,

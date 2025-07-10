@@ -13,8 +13,8 @@ pub async fn push_config_instances<HTTPClientT: ConfigInstancesExt>(
     http_client: &HTTPClientT,
     token: &str,
 ) -> Result<(), SyncErr> {
-    // get all unsynced instances
-    let unsynced_entries = cfg_inst_cache.get_dirty_entries().await.map_err(|e| {
+    // get all unsynced config instances
+    let unsynced_cfg_insts = cfg_inst_cache.get_dirty_entries().await.map_err(|e| {
         SyncErr::CacheErr(Box::new(SyncCacheErr {
             source: e,
             trace: trace!(),
@@ -22,13 +22,13 @@ pub async fn push_config_instances<HTTPClientT: ConfigInstancesExt>(
     })?;
     debug!(
         "Found {} unsynced config instances: {:?}",
-        unsynced_entries.len(),
-        unsynced_entries
+        unsynced_cfg_insts.len(),
+        unsynced_cfg_insts
     );
 
     // push each unsynced config instance to the server and update the cache
-    for entry in unsynced_entries {
-        let inst = entry.value;
+    for unsynced_cfg_inst in unsynced_cfg_insts {
+        let inst = unsynced_cfg_inst.value;
 
         // define the updates
         let activity_status = ActivityStatus::to_backend(&inst.activity_status);

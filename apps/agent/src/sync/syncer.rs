@@ -9,7 +9,7 @@ use crate::deploy::{apply::apply, fsm};
 use crate::errors::*;
 use crate::filesys::dir::Dir;
 use crate::http::{client::HTTPClient, config_instances::ConfigInstancesExt};
-use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
+use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceContentCache};
 use crate::sync::errors::*;
 use crate::sync::pull::pull_config_instances;
 use crate::sync::push::push_config_instances;
@@ -47,7 +47,7 @@ pub struct SyncerArgs<HTTPClientT: ConfigInstancesExt, TokenManagerT: TokenManag
     pub http_client: Arc<HTTPClientT>,
     pub token_mngr: Arc<TokenManagerT>,
     pub cfg_inst_cache: Arc<ConfigInstanceCache>,
-    pub cfg_inst_data_cache: Arc<ConfigInstanceDataCache>,
+    pub cfg_inst_content_cache: Arc<ConfigInstanceContentCache>,
     pub deployment_dir: Dir,
     pub fsm_settings: fsm::Settings,
     pub cooldown_options: CooldownOptions,
@@ -72,7 +72,7 @@ pub struct SingleThreadSyncer<HTTPClientT: ConfigInstancesExt> {
     http_client: Arc<HTTPClientT>,
     token_mngr: Arc<TokenManager>,
     cfg_inst_cache: Arc<ConfigInstanceCache>,
-    cfg_inst_data_cache: Arc<ConfigInstanceDataCache>,
+    cfg_inst_content_cache: Arc<ConfigInstanceContentCache>,
     deployment_dir: Dir,
     fsm_settings: fsm::Settings,
 
@@ -93,7 +93,7 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
             http_client: args.http_client,
             token_mngr: args.token_mngr,
             cfg_inst_cache: args.cfg_inst_cache,
-            cfg_inst_data_cache: args.cfg_inst_data_cache,
+            cfg_inst_content_cache: args.cfg_inst_content_cache,
             deployment_dir: args.deployment_dir,
             fsm_settings: args.fsm_settings,
             cooldown_options: args.cooldown_options,
@@ -241,7 +241,7 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
         debug!("Pulling config instances from server");
         let result = pull_config_instances(
             self.cfg_inst_cache.as_ref(),
-            self.cfg_inst_data_cache.as_ref(),
+            self.cfg_inst_content_cache.as_ref(),
             self.http_client.as_ref(),
             &self.device_id,
             &token.token,
@@ -275,7 +275,7 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
         apply(
             cfg_insts_to_apply,
             self.cfg_inst_cache.as_ref(),
-            self.cfg_inst_data_cache.as_ref(),
+            self.cfg_inst_content_cache.as_ref(),
             &self.deployment_dir,
             &self.fsm_settings,
         )

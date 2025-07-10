@@ -12,7 +12,7 @@ use config_agent::filesys::dir::Dir;
 use config_agent::models::config_instance::{
     ActivityStatus, ConfigInstance, ErrorStatus, TargetStatus,
 };
-use config_agent::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
+use config_agent::storage::config_instances::{ConfigInstanceCache, ConfigInstanceContentCache};
 use config_agent::utils::calc_exp_backoff;
 
 // external crates
@@ -114,17 +114,17 @@ pub mod apply_func {
     #[tokio::test]
     async fn no_instances() {
         let dir = Dir::create_temp_dir("apply").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
             .await
             .unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(16, dir.clone(), 1000)
+        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(16, dir.clone(), 1000)
             .await
             .unwrap();
 
         let result = apply(
             HashMap::new(),
-            &metadata_cache,
-            &instance_cache,
+            &cfg_inst_cache,
+            &cfg_inst_content_cache,
             &dir,
             &Settings::default(),
         )
@@ -145,24 +145,24 @@ pub mod apply_func {
 
         // create the cache but omit the config instance content
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
             .await
             .unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(16, dir.clone(), 1000)
+        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(16, dir.clone(), 1000)
             .await
             .unwrap();
-        instance_cache
+        cfg_inst_content_cache 
             .write(cfg_inst.id.clone(), json!({"speed": 4}), |_, _| false, true)
             .await
             .unwrap();
 
         // deploy the config instance
         let settings = Settings::default();
-        let instances_to_apply = HashMap::from([(cfg_inst.id.clone(), cfg_inst.clone())]);
+        let cfg_insts_to_apply = HashMap::from([(cfg_inst.id.clone(), cfg_inst.clone())]);
         let result = apply(
-            instances_to_apply,
-            &metadata_cache,
-            &instance_cache,
+            cfg_insts_to_apply,
+            &cfg_inst_cache,
+            &cfg_inst_content_cache,
             &dir,
             &settings,
         )
@@ -177,36 +177,36 @@ pub mod apply_func {
             ..cfg_inst
         };
 
-        // check that the returned instances' states were correctly updated
+        // check that the returned config instances' states were correctly updated
         assert_eq!(actual, expected);
     }
 
     #[tokio::test]
     async fn deploy_1_failure_1_success() {
-        // define the instances
-        let instance1 = ConfigInstance {
+        // define the config instances
+        let cfg_inst1 = ConfigInstance {
             relative_filepath: Some("/test/filepath1".to_string()),
             // target status must be deployed to increment failure attempts
             target_status: TargetStatus::Deployed,
             ..Default::default()
         };
-        let instance2 = ConfigInstance {
+        let cfg_inst2 = ConfigInstance {
             relative_filepath: Some("/test/filepath2".to_string()),
             target_status: TargetStatus::Deployed,
             ..Default::default()
         };
 
-        // create the cache but omit the config instance data
+        // create the cache but omit the config instance content 
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
             .await
             .unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(16, dir.clone(), 1000)
+        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(16, dir.clone(), 1000)
             .await
             .unwrap();
-        instance_cache
+        cfg_inst_content_cache
             .write(
-                instance1.id.clone(),
+                cfg_inst1.id.clone(),
                 json!({"speed": 4}),
                 |_, _| false,
                 true,
@@ -216,34 +216,34 @@ pub mod apply_func {
 
         // deploy the config instance
         let settings = Settings::default();
-        let instances_to_apply = HashMap::from([
-            (instance1.id.clone(), instance1.clone()),
-            (instance2.id.clone(), instance2.clone()),
+        let cfg_insts_to_apply = HashMap::from([
+            (cfg_inst1.id.clone(), cfg_inst1.clone()),
+            (cfg_inst2.id.clone(), cfg_inst2.clone()),
         ]);
         let result = apply(
-            instances_to_apply,
-            &metadata_cache,
-            &instance_cache,
+            cfg_insts_to_apply,
+            &cfg_inst_cache,
+            &cfg_inst_content_cache,
             &dir,
             &settings,
         )
         .await
         .unwrap();
         assert_eq!(result.len(), 2);
-        let actual1 = result[&instance1.id].clone();
-        let actual2 = result[&instance2.id].clone();
+        let actual1 = result[&cfg_inst1.id].clone();
+        let actual2 = result[&cfg_inst2.id].clone();
 
-        // define the expected instances
+        // define the expected config instances
         let expected1 = ConfigInstance {
             activity_status: ActivityStatus::Deployed,
-            ..instance1
+            ..cfg_inst1
         };
         let expected2 = ConfigInstance {
             activity_status: ActivityStatus::Removed,
             error_status: ErrorStatus::Retrying,
             attempts: 1,
             cooldown_ends_at: actual2.cooldown_ends_at,
-            ..instance2
+            ..cfg_inst2
         };
         let cooldown = calc_exp_backoff(
             settings.exp_backoff_base_secs,
@@ -255,7 +255,7 @@ pub mod apply_func {
         assert!(expected2.cooldown_ends_at <= approx_cooldown_ends_at);
         assert!(expected2.cooldown_ends_at >= approx_cooldown_ends_at - TimeDelta::seconds(1));
 
-        // check that the returned instances' states were correctly updated
+        // check that the returned config instances' states were correctly updated
         assert_eq!(expected1, actual1);
         assert_eq!(expected2, actual2);
     }
@@ -272,13 +272,13 @@ pub mod apply_func {
 
         // create the config instance in the cache
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
             .await
             .unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(16, dir.clone(), 1000)
+        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(16, dir.clone(), 1000)
             .await
             .unwrap();
-        instance_cache
+        cfg_inst_content_cache
             .write(cfg_inst.id.clone(), json!({"speed": 4}), |_, _| false, true)
             .await
             .unwrap();
@@ -288,8 +288,8 @@ pub mod apply_func {
         let cfg_insts_to_apply = HashMap::from([(cfg_inst.id.clone(), cfg_inst.clone())]);
         let result = apply(
             cfg_insts_to_apply,
-            &metadata_cache,
-            &instance_cache,
+            &cfg_inst_cache,
+            &cfg_inst_content_cache,
             &dir,
             &settings,
         )
@@ -325,24 +325,24 @@ pub mod apply_func {
             ..Default::default()
         };
 
-        // create the cache but omit the config instance data
+        // create the cache but omit the config instance content 
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
             .await
             .unwrap();
-        metadata_cache
+        cfg_inst_cache
             .write(to_remove.id.clone(), to_remove.clone(), |_, _| false, true)
             .await
             .unwrap();
-        metadata_cache
+        cfg_inst_cache
             .write(to_deploy.id.clone(), to_deploy.clone(), |_, _| false, true)
             .await
             .unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(16, dir.clone(), 1000)
+        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(16, dir.clone(), 1000)
             .await
             .unwrap();
         let to_remove_data = json!({"speed": 4});
-        instance_cache
+        cfg_inst_content_cache
             .write(
                 to_remove.id.clone(),
                 to_remove_data.clone(),
@@ -354,14 +354,14 @@ pub mod apply_func {
 
         // deploy the config instance
         let settings = Settings::default();
-        let instances_to_apply = HashMap::from([
+        let cfg_insts_to_apply = HashMap::from([
             (to_deploy.id.clone(), to_deploy.clone()),
             (to_remove.id.clone(), to_remove.clone()),
         ]);
         let result = apply(
-            instances_to_apply,
-            &metadata_cache,
-            &instance_cache,
+            cfg_insts_to_apply,
+            &cfg_inst_cache,
+            &cfg_inst_content_cache,
             &dir,
             &settings,
         )
@@ -419,24 +419,24 @@ pub mod apply_func {
             ..Default::default()
         };
 
-        // create the cache but omit the config instance data
+        // create the cache but omit the config instance content 
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
             .await
             .unwrap();
-        metadata_cache
+        cfg_inst_cache
             .write(to_remove.id.clone(), to_remove.clone(), |_, _| false, true)
             .await
             .unwrap();
-        metadata_cache
+        cfg_inst_cache
             .write(to_deploy.id.clone(), to_deploy.clone(), |_, _| false, true)
             .await
             .unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(16, dir.clone(), 1000)
+        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(16, dir.clone(), 1000)
             .await
             .unwrap();
         let to_remove_data = json!({"speed": 4});
-        instance_cache
+        cfg_inst_content_cache
             .write(
                 to_remove.id.clone(),
                 to_remove_data.clone(),
@@ -448,14 +448,14 @@ pub mod apply_func {
 
         // deploy the config instance
         let settings = Settings::default();
-        let instances_to_apply = HashMap::from([
+        let cfg_insts_to_apply = HashMap::from([
             (to_deploy.id.clone(), to_deploy.clone()),
             (to_remove.id.clone(), to_remove.clone()),
         ]);
         let result = apply(
-            instances_to_apply,
-            &metadata_cache,
-            &instance_cache,
+            cfg_insts_to_apply,
+            &cfg_inst_cache,
+            &cfg_inst_content_cache,
             &dir,
             &settings,
         )
@@ -514,24 +514,24 @@ pub mod apply_func {
             ..Default::default()
         };
 
-        // create the cache but omit the config instance data
+        // create the cache but omit the config instance content 
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (metadata_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
             .await
             .unwrap();
-        metadata_cache
+        cfg_inst_cache
             .write(to_remove.id.clone(), to_remove.clone(), |_, _| false, true)
             .await
             .unwrap();
-        metadata_cache
+        cfg_inst_cache
             .write(to_deploy.id.clone(), to_deploy.clone(), |_, _| false, true)
             .await
             .unwrap();
-        let (instance_cache, _) = ConfigInstanceDataCache::spawn(16, dir.clone(), 1000)
+        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(16, dir.clone(), 1000)
             .await
             .unwrap();
         let to_remove_data = json!({"speed": 4});
-        instance_cache
+        cfg_inst_content_cache
             .write(
                 to_remove.id.clone(),
                 to_remove_data.clone(),
@@ -541,7 +541,7 @@ pub mod apply_func {
             .await
             .unwrap();
         let to_deploy_data = json!({"speed": 5});
-        instance_cache
+        cfg_inst_content_cache
             .write(
                 to_deploy.id.clone(),
                 to_deploy_data.clone(),
@@ -553,14 +553,14 @@ pub mod apply_func {
 
         // deploy the config instance
         let settings = Settings::default();
-        let instances_to_apply = HashMap::from([
+        let cfg_insts_to_apply = HashMap::from([
             (to_deploy.id.clone(), to_deploy.clone()),
             (to_remove.id.clone(), to_remove.clone()),
         ]);
         let result = apply(
-            instances_to_apply,
-            &metadata_cache,
-            &instance_cache,
+            cfg_insts_to_apply,
+            &cfg_inst_cache,
+            &cfg_inst_content_cache,
             &dir,
             &settings,
         )

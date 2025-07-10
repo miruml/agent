@@ -222,7 +222,7 @@ impl fmt::Display for MissingExpandedInstancesErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Missing expanded instances: expected ids: {:?}, actual ids: {:?}",
+            "Missing expanded config instances: expected ids: {:?}, actual ids: {:?}",
             self.expected_ids, self.actual_ids
         )
     }
@@ -266,12 +266,12 @@ impl fmt::Display for SyncErrors {
 }
 
 #[derive(Debug)]
-pub struct ConfigInstanceDataNotFoundErr {
-    pub instance_id: String,
+pub struct ConfigInstanceContentNotFoundErr {
+    pub cfg_inst_id: String,
     pub trace: Box<Trace>,
 }
 
-impl MiruError for ConfigInstanceDataNotFoundErr {
+impl MiruError for ConfigInstanceContentNotFoundErr {
     fn code(&self) -> Code {
         Code::InternalServerError
     }
@@ -289,12 +289,12 @@ impl MiruError for ConfigInstanceDataNotFoundErr {
     }
 }
 
-impl fmt::Display for ConfigInstanceDataNotFoundErr {
+impl fmt::Display for ConfigInstanceContentNotFoundErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Config instance data not found for config instance '{}'",
-            self.instance_id
+            "Config instance content not found for config instance '{}'",
+            self.cfg_inst_id
         )
     }
 }
@@ -381,7 +381,7 @@ pub enum SyncErr {
 
     MissingExpandedInstancesErr(Box<MissingExpandedInstancesErr>),
     InCooldownErr(Box<SyncerInCooldownErr>),
-    ConfigInstanceDataNotFound(Box<ConfigInstanceDataNotFoundErr>),
+    ConfigInstanceContentNotFound(Box<ConfigInstanceContentNotFoundErr>),
     SendActorMessageErr(Box<SendActorMessageErr>),
     ReceiveActorMessageErr(Box<ReceiveActorMessageErr>),
 
@@ -401,7 +401,7 @@ macro_rules! forward_error_method {
 
             SyncErr::MissingExpandedInstancesErr(e) => e.$method($($arg)?),
             SyncErr::InCooldownErr(e) => e.$method($($arg)?),
-            SyncErr::ConfigInstanceDataNotFound(e) => e.$method($($arg)?),
+            SyncErr::ConfigInstanceContentNotFound(e) => e.$method($($arg)?),
             SyncErr::SendActorMessageErr(e) => e.$method($($arg)?),
             SyncErr::ReceiveActorMessageErr(e) => e.$method($($arg)?),
 

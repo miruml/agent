@@ -15,7 +15,7 @@ use config_agent::http::{
     errors::{HTTPErr, MockErr},
 };
 use config_agent::models::config_instance::ActivityStatus;
-use config_agent::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
+use config_agent::storage::config_instances::{ConfigInstanceCache, ConfigInstanceContentCache};
 use config_agent::sync::{
     errors::SyncErr,
     syncer::{
@@ -105,8 +105,8 @@ pub mod shutdown {
             ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
                 .await
                 .unwrap();
-        let (cfg_inst_data_cache, _) =
-            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
+        let (cfg_inst_content_cache, _) =
+            ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
 
@@ -118,7 +118,7 @@ pub mod shutdown {
                 http_client: http_client.clone(),
                 token_mngr: Arc::new(token_mngr),
                 cfg_inst_cache: Arc::new(cfg_inst_cache),
-                cfg_inst_data_cache: Arc::new(cfg_inst_data_cache),
+                cfg_inst_content_cache: Arc::new(cfg_inst_content_cache),
                 deployment_dir: dir,
                 fsm_settings: fsm::Settings::default(),
                 cooldown_options: CooldownOptions::default(),
@@ -146,8 +146,8 @@ pub mod subscribe {
             ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
                 .await
                 .unwrap();
-        let (cfg_inst_data_cache, _) =
-            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
+        let (cfg_inst_content_cache, _) =
+            ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
 
@@ -162,7 +162,7 @@ pub mod subscribe {
                 http_client: http_client.clone(),
                 token_mngr: Arc::new(token_mngr),
                 cfg_inst_cache: Arc::new(cfg_inst_cache),
-                cfg_inst_data_cache: Arc::new(cfg_inst_data_cache),
+                cfg_inst_content_cache: Arc::new(cfg_inst_content_cache),
                 deployment_dir: dir.clone(),
                 fsm_settings: fsm::Settings::default(),
                 cooldown_options,
@@ -230,8 +230,8 @@ pub mod subscribe {
             ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
                 .await
                 .unwrap();
-        let (cfg_inst_data_cache, _) =
-            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
+        let (cfg_inst_content_cache, _) =
+            ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
 
@@ -246,7 +246,7 @@ pub mod subscribe {
                 http_client: http_client.clone(),
                 token_mngr: Arc::new(token_mngr),
                 cfg_inst_cache: Arc::new(cfg_inst_cache),
-                cfg_inst_data_cache: Arc::new(cfg_inst_data_cache),
+                cfg_inst_content_cache: Arc::new(cfg_inst_content_cache),
                 deployment_dir: dir.clone(),
                 fsm_settings: fsm::Settings::default(),
                 cooldown_options,
@@ -327,12 +327,12 @@ pub mod sync {
             ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
                 .await
                 .unwrap();
-        let (cfg_inst_data_cache, _) =
-            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
+        let (cfg_inst_content_cache, _) =
+            ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
         let cfg_inst_cache = Arc::new(cfg_inst_cache);
-        let cfg_inst_data_cache = Arc::new(cfg_inst_data_cache);
+        let cfg_inst_content_cache = Arc::new(cfg_inst_content_cache);
 
         let cooldown_options = CooldownOptions {
             base_secs: 10,
@@ -345,7 +345,7 @@ pub mod sync {
                 http_client: http_client.clone(),
                 token_mngr: Arc::new(token_mngr),
                 cfg_inst_cache: cfg_inst_cache.clone(),
-                cfg_inst_data_cache: cfg_inst_data_cache.clone(),
+                cfg_inst_content_cache: cfg_inst_content_cache.clone(),
                 deployment_dir: dir.clone(),
                 fsm_settings: fsm::Settings::default(),
                 cooldown_options,
@@ -361,9 +361,9 @@ pub mod sync {
         let cache_cfg_inst = cfg_inst_cache.read(id.clone()).await.unwrap();
         assert_eq!(cache_cfg_inst.activity_status, ActivityStatus::Deployed);
 
-        // check the data cache has the new config instance data
-        let cache_cfg_inst_data = cfg_inst_data_cache.read(id.clone()).await.unwrap();
-        assert_eq!(cache_cfg_inst_data, new_instance_data);
+        // check the content cache has the new config instance content
+        let cache_cfg_inst_content = cfg_inst_content_cache.read(id.clone()).await.unwrap();
+        assert_eq!(cache_cfg_inst_content, new_instance_data);
 
         // check that the metadata cache isn't dirty
         let unsynced_entries = cfg_inst_cache.get_dirty_entries().await.unwrap();
@@ -408,8 +408,8 @@ pub mod sync {
             ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
                 .await
                 .unwrap();
-        let (cfg_inst_data_cache, _) =
-            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
+        let (cfg_inst_content_cache, _) =
+            ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
 
@@ -424,7 +424,7 @@ pub mod sync {
                 http_client: http_client.clone(),
                 token_mngr: Arc::new(token_mngr),
                 cfg_inst_cache: Arc::new(cfg_inst_cache),
-                cfg_inst_data_cache: Arc::new(cfg_inst_data_cache),
+                cfg_inst_content_cache: Arc::new(cfg_inst_content_cache),
                 deployment_dir: dir.clone(),
                 fsm_settings: fsm::Settings::default(),
                 cooldown_options,
@@ -494,8 +494,8 @@ pub mod sync {
             ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
                 .await
                 .unwrap();
-        let (cfg_inst_data_cache, _) =
-            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
+        let (cfg_inst_content_cache, _) =
+            ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
 
@@ -510,7 +510,7 @@ pub mod sync {
                 http_client: http_client.clone(),
                 token_mngr: Arc::new(token_mngr),
                 cfg_inst_cache: Arc::new(cfg_inst_cache),
-                cfg_inst_data_cache: Arc::new(cfg_inst_data_cache),
+                cfg_inst_content_cache: Arc::new(cfg_inst_content_cache),
                 deployment_dir: dir.clone(),
                 fsm_settings: fsm::Settings::default(),
                 cooldown_options,
@@ -584,8 +584,8 @@ pub mod sync {
             ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
                 .await
                 .unwrap();
-        let (cfg_inst_data_cache, _) =
-            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
+        let (cfg_inst_content_cache, _) =
+            ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
 
@@ -600,7 +600,7 @@ pub mod sync {
                 http_client: http_client.clone(),
                 token_mngr: Arc::new(token_mngr),
                 cfg_inst_cache: Arc::new(cfg_inst_cache),
-                cfg_inst_data_cache: Arc::new(cfg_inst_data_cache),
+                cfg_inst_content_cache: Arc::new(cfg_inst_content_cache),
                 deployment_dir: dir.clone(),
                 fsm_settings: fsm::Settings::default(),
                 cooldown_options,
@@ -753,8 +753,8 @@ pub mod sync {
             ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
                 .await
                 .unwrap();
-        let (cfg_inst_data_cache, _) =
-            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
+        let (cfg_inst_content_cache, _) =
+            ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
 
@@ -769,7 +769,7 @@ pub mod sync {
                 http_client: http_client.clone(),
                 token_mngr: Arc::new(token_mngr),
                 cfg_inst_cache: Arc::new(cfg_inst_cache),
-                cfg_inst_data_cache: Arc::new(cfg_inst_data_cache),
+                cfg_inst_content_cache: Arc::new(cfg_inst_content_cache),
                 deployment_dir: dir.clone(),
                 fsm_settings: fsm::Settings::default(),
                 cooldown_options,
@@ -809,8 +809,8 @@ pub mod sync_if_not_in_cooldown {
             ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
                 .await
                 .unwrap();
-        let (cfg_inst_data_cache, _) =
-            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
+        let (cfg_inst_content_cache, _) =
+            ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
 
@@ -825,7 +825,7 @@ pub mod sync_if_not_in_cooldown {
                 http_client: http_client.clone(),
                 token_mngr: Arc::new(token_mngr),
                 cfg_inst_cache: Arc::new(cfg_inst_cache),
-                cfg_inst_data_cache: Arc::new(cfg_inst_data_cache),
+                cfg_inst_content_cache: Arc::new(cfg_inst_content_cache),
                 deployment_dir: dir.clone(),
                 fsm_settings: fsm::Settings::default(),
                 cooldown_options,

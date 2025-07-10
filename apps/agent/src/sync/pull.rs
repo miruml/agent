@@ -6,7 +6,7 @@ use crate::http::{
     search::SearchOperator,
 };
 use crate::models::config_instance::{ConfigInstance, TargetStatus};
-use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
+use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceContentCache};
 use crate::sync::errors::*;
 use crate::trace;
 use openapi_client::models::{
@@ -18,7 +18,7 @@ use tracing::{debug, error};
 
 pub async fn pull_config_instances<HTTPClientT: ConfigInstancesExt>(
     cfg_inst_cache: &ConfigInstanceCache,
-    cfg_inst_data_cache: &ConfigInstanceDataCache,
+    cfg_inst_content_cache: &ConfigInstanceContentCache,
     http_client: &HTTPClientT,
     device_id: &str,
     token: &str,
@@ -55,7 +55,7 @@ pub async fn pull_config_instances<HTTPClientT: ConfigInstancesExt>(
     .await?;
 
     debug!("Adding {} unknown instances to storage", unknown_insts.len());
-    add_unknown_instances_to_storage(cfg_inst_cache, cfg_inst_data_cache, unknown_insts).await?;
+    add_unknown_instances_to_storage(cfg_inst_cache, cfg_inst_content_cache, unknown_insts).await?;
 
     debug!("Updating target status for {} instances", categorized_insts.update_target_status.len());
     update_target_status_instances(cfg_inst_cache, categorized_insts.update_target_status).await?;
@@ -109,7 +109,7 @@ async fn categorize_instances(
             debug!("Found {} instances in cache: {:?}", entries.len(), entries);
         }
         Err(e) => {
-            error!("Failed to read instances from cache: {}", e);
+            error!("Failed to read config instances from cache: {}", e);
         }
     }
 
@@ -126,11 +126,11 @@ async fn categorize_instances(
                 }))
             })? {
             Some(storage_inst) => {
-                debug!("Found instance {}in cache", storage_inst.id);
+                debug!("Found config instance {}in cache", storage_inst.id);
                 storage_inst
             }
             None => {
-                debug!("Instance {} not found in cache", server_inst.id);
+                debug!("Config instance {} not found in cache", server_inst.id);
                 categorized.unknown.push(server_inst);
                 continue;
             }
@@ -138,11 +138,11 @@ async fn categorize_instances(
 
         // check if the target status matches
         if storage_inst.target_status != TargetStatus::from_backend(&server_inst.target_status) {
-            debug!("Instance {} has updated target status", storage_inst.id);
+            debug!("Config instance {} has updated target status", storage_inst.id);
             storage_inst.target_status = TargetStatus::from_backend(&server_inst.target_status);
             categorized.update_target_status.push(storage_inst);
         } else {
-            debug!("Instance {} has the same target status", storage_inst.id);
+            debug!("Config instance {} has the same target status", storage_inst.id);
             categorized.other.push(server_inst);
         }
     }
@@ -160,7 +160,7 @@ async fn fetch_instances_with_expanded_instance_data<HTTPClientT: ConfigInstance
         return Ok(Vec::new());
     }
 
-    // read the unknown config instances from the server with instance data expanded
+    // read the unknown config instances from the server with config instance content expanded
     let filters = ConfigInstanceFiltersBuilder::new(device_id.to_string())
         .with_id_filter(IDFilter {
             not: false,
@@ -168,7 +168,7 @@ async fn fetch_instances_with_expanded_instance_data<HTTPClientT: ConfigInstance
             val: ids.clone(),
         })
         .build();
-    let instances = http_client
+    let cfg_insts = http_client
         .list_all_config_instances(
             filters,
             [ConfigInstanceExpand::CONFIG_INSTANCE_EXPAND_INSTANCE],
@@ -182,33 +182,33 @@ async fn fetch_instances_with_expanded_instance_data<HTTPClientT: ConfigInstance
             }))
         })?;
 
-    if instances.len() != ids.len() {
+    if cfg_insts.len() != ids.len() {
         return Err(SyncErr::MissingExpandedInstancesErr(Box::new(MissingExpandedInstancesErr {
             expected_ids: ids,
-            actual_ids: instances.iter().map(|inst| inst.id.clone()).collect(),
+            actual_ids: cfg_insts.iter().map(|inst| inst.id.clone()).collect(),
             trace: trace!(),
         })));
     }
 
-    Ok(instances)
+    Ok(cfg_insts)
 }
 
 async fn add_unknown_instances_to_storage(
     cfg_inst_cache: &ConfigInstanceCache,
-    cfg_inst_data_cache: &ConfigInstanceDataCache,
+    cfg_inst_content_cache: &ConfigInstanceContentCache,
     unknown_insts: Vec<BackendConfigInstance>,
 ) -> Result<(), SyncErr> {
     // add the unknown config instances to the cache
     for mut unknown_inst in unknown_insts {
-        // throw an error since if the instance data isn't expanded for this one it
-        // won't be expanded for any others and none of the instances will therefore
-        // be added to the cache
-        let instance_data = match unknown_inst.content {
-            Some(instance_data) => instance_data,
+        // throw an error since if the config instance content isn't expanded for this
+        // one it won't be expanded for any others and none of the config instances will
+        // therefore be added to the cache
+        let cfg_inst_content = match unknown_inst.content {
+            Some(cfg_inst_content) => cfg_inst_content,
             None => {
-                return Err(SyncErr::ConfigInstanceDataNotFound(Box::new(
-                    ConfigInstanceDataNotFoundErr {
-                        instance_id: unknown_inst.id.clone(),
+                return Err(SyncErr::ConfigInstanceContentNotFound(Box::new(
+                    ConfigInstanceContentNotFoundErr {
+                        cfg_inst_id: unknown_inst.id.clone(),
                         trace: trace!(),
                     },
                 )));
@@ -217,17 +217,17 @@ async fn add_unknown_instances_to_storage(
         unknown_inst.content = None;
 
         let overwrite = true;
-        if let Err(e) = cfg_inst_data_cache
+        if let Err(e) = cfg_inst_content_cache
             .write(
                 unknown_inst.id.clone(),
-                instance_data,
+                cfg_inst_content,
                 |_, _| false,
                 overwrite,
             )
             .await
         {
             error!(
-                "Failed to write instance data to cache for instance '{}': {}",
+                "Failed to write config instance '{}' content to cache: {}",
                 unknown_inst.id, e
             );
             continue;
@@ -246,7 +246,7 @@ async fn add_unknown_instances_to_storage(
             .await
         {
             error!(
-                "Failed to write instance to cache for instance '{}': {}",
+                "Failed to write config instance '{}' to cache: {}",
                 unknown_inst_id, e
             );
             continue;
@@ -259,36 +259,36 @@ async fn update_target_status_instances(
     cfg_inst_cache: &ConfigInstanceCache,
     update_target_status: Vec<ConfigInstance>,
 ) -> Result<(), SyncErr> {
-    for instance in update_target_status {
-        let instance_id = instance.id.clone();
+    for cfg_inst in update_target_status {
+        let cfg_inst_id = cfg_inst.id.clone();
 
-        // read the instance from the cache to update only select fields
-        let cache_inst = match cfg_inst_cache.read(instance_id.clone()).await {
+        // read the config instance from the cache to update only select fields
+        let cache_inst = match cfg_inst_cache.read(cfg_inst_id.clone()).await {
             Ok(cache_inst) => cache_inst,
             Err(e) => {
                 error!(
-                    "Failed to read instance from cache for instance '{}': {}",
-                    instance_id, e
+                    "Failed to read config instance '{}' from cache: {}",
+                    cfg_inst_id, e
                 );
                 continue;
             }
         };
         let updated_inst = ConfigInstance {
-            target_status: instance.target_status,
-            updated_by_id: instance.updated_by_id,
-            updated_at: instance.updated_at,
+            target_status: cfg_inst.target_status,
+            updated_by_id: cfg_inst.updated_by_id,
+            updated_at: cfg_inst.updated_at,
             ..cache_inst
         };
 
-        // write the updated instance to the cache
+        // write the updated config instance to the cache
         let overwrite = true;
         if let Err(e) = cfg_inst_cache
-            .write(instance_id.clone(), updated_inst, |_, _| false, overwrite)
+            .write(cfg_inst_id.clone(), updated_inst, |_, _| false, overwrite)
             .await
         {
             error!(
-                "Failed to write instance to cache for instance '{}': {}",
-                instance_id, e
+                "Failed to write config instance '{}' to cache: {}",
+                cfg_inst_id, e
             );
             continue;
         }
