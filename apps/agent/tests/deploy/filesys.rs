@@ -19,22 +19,24 @@ pub mod deploy_with_rollback {
     #[tokio::test]
     async fn deploy_1_failed_missing_instance_data() {
         // define the config instance
-        let filepath = "/test/filepath".to_string();
+        let deploy_filepath = "/test/filepath".to_string();
         let cfg_inst = ConfigInstance {
-            relative_filepath: Some(filepath.clone()),
+            relative_filepath: Some(deploy_filepath.clone()),
             // target status must be deployed to increment failure attempts
             target_status: TargetStatus::Deployed,
             ..Default::default()
         };
 
         // create the cache but omit the config instance content
-        let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
+        let temp_dir = Dir::create_temp_dir("deploy").await.unwrap();
+        let cache_dir = temp_dir.subdir("caches");
+        let (cache, _) = FileCache::spawn(16, cache_dir.file("cache.json"), 1000)
             .await
             .unwrap();
 
         // deploy the config instance
         let settings = Settings::default();
+        let deployment_dir = temp_dir.subdir("config_instances");
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
         observers.push(&mut observer);
@@ -42,7 +44,7 @@ pub mod deploy_with_rollback {
             vec![],
             vec![cfg_inst.clone()],
             &cache,
-            &dir,
+            &deployment_dir,
             &settings,
             &mut observers,
         )
@@ -84,10 +86,11 @@ pub mod deploy_with_rollback {
             relative_filepath: None,
             ..Default::default()
         };
+        let temp_dir = Dir::create_temp_dir("deploy").await.unwrap();
+        let cache_dir = temp_dir.subdir("caches");
 
         // create the config instance in the cache
-        let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
+        let (cache, _) = FileCache::spawn(16, cache_dir.file("cache.json"), 1000)
             .await
             .unwrap();
         cache
@@ -97,6 +100,7 @@ pub mod deploy_with_rollback {
 
         // deploy the config instance
         let settings = Settings::default();
+        let deployment_dir = temp_dir.subdir("config_instances");
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
         observers.push(&mut observer);
@@ -104,7 +108,7 @@ pub mod deploy_with_rollback {
             vec![],
             vec![cfg_inst.clone()],
             &cache,
-            &dir,
+            &deployment_dir,
             &settings,
             &mut observers,
         )
@@ -138,8 +142,9 @@ pub mod deploy_with_rollback {
         };
 
         // create the config instance in the cache
-        let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
+        let temp_dir = Dir::create_temp_dir("deploy").await.unwrap();
+        let cache_dir = temp_dir.subdir("caches");
+        let (cache, _) = FileCache::spawn(16, cache_dir.file("cache.json"), 1000)
             .await
             .unwrap();
         let cfg_inst_content = json!({"speed": 4});
@@ -154,7 +159,8 @@ pub mod deploy_with_rollback {
             .unwrap();
 
         // create the file in the deployment directory
-        let file = dir.file(filepath.as_str());
+        let deployment_dir = temp_dir.subdir("config_instances");
+        let file = deployment_dir.file(filepath.as_str());
         file.write_json(&cfg_inst_content, true, true).await.unwrap();
 
         // deploy the config instance
@@ -166,7 +172,7 @@ pub mod deploy_with_rollback {
             vec![],
             vec![cfg_inst.clone()],
             &cache,
-            &dir,
+            &deployment_dir,
             &settings,
             &mut observers,
         )
@@ -189,7 +195,7 @@ pub mod deploy_with_rollback {
         assert_eq!(observer.history[0], expected);
 
         // check that the file was created
-        let file = dir.file(filepath.as_str());
+        let file = deployment_dir.file(filepath.as_str());
         let actual = file.read_json::<serde_json::Value>().await.unwrap();
         assert_eq!(actual, cfg_inst_content);
     }
@@ -205,8 +211,9 @@ pub mod deploy_with_rollback {
         };
 
         // create the config instance in the cache
-        let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
+        let temp_dir = Dir::create_temp_dir("deploy").await.unwrap();
+        let cache_dir = temp_dir.subdir("caches");
+        let (cache, _) = FileCache::spawn(16, cache_dir.file("cache.json"), 1000)
             .await
             .unwrap();
         let cfg_inst_content = json!({"speed": 4});
@@ -222,6 +229,7 @@ pub mod deploy_with_rollback {
 
         // deploy the config instance
         let settings = Settings::default();
+        let deployment_dir = temp_dir.subdir("config_instances");
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
         observers.push(&mut observer);
@@ -229,7 +237,7 @@ pub mod deploy_with_rollback {
             vec![],
             vec![cfg_inst.clone()],
             &cache,
-            &dir,
+            &deployment_dir,
             &settings,
             &mut observers,
         )
@@ -252,7 +260,7 @@ pub mod deploy_with_rollback {
         assert_eq!(observer.history[0], expected);
 
         // check that the file was created
-        let file = dir.file(filepath.as_str());
+        let file = deployment_dir.file(filepath.as_str());
         let actual = file.read_json::<serde_json::Value>().await.unwrap();
         assert_eq!(actual, cfg_inst_content);
     }
@@ -269,8 +277,9 @@ pub mod deploy_with_rollback {
         };
 
         // create the config instance in the cache
-        let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
+        let temp_dir = Dir::create_temp_dir("deploy").await.unwrap();
+        let cache_dir = temp_dir.subdir("caches");
+        let (cache, _) = FileCache::spawn(16, cache_dir.file("cache.json"), 1000)
             .await
             .unwrap();
         cache
@@ -280,6 +289,7 @@ pub mod deploy_with_rollback {
 
         // deploy the config instance
         let settings = Settings::default();
+        let deployment_dir = temp_dir.subdir("config_instances");
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
         observers.push(&mut observer);
@@ -287,7 +297,7 @@ pub mod deploy_with_rollback {
             vec![cfg_inst.clone()],
             vec![],
             &cache,
-            &dir,
+            &deployment_dir,
             &settings,
             &mut observers,
         )
@@ -320,8 +330,9 @@ pub mod deploy_with_rollback {
         };
 
         // create the config instance in the cache
-        let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
+        let temp_dir = Dir::create_temp_dir("deploy").await.unwrap();
+        let cache_dir = temp_dir.subdir("caches");
+        let (cache, _) = FileCache::spawn(16, cache_dir.file("cache.json"), 1000)
             .await
             .unwrap();
         cache
@@ -331,6 +342,7 @@ pub mod deploy_with_rollback {
 
         // deploy the config instance
         let settings = Settings::default();
+        let deployment_dir = temp_dir.subdir("config_instances");
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
         observers.push(&mut observer);
@@ -338,7 +350,7 @@ pub mod deploy_with_rollback {
             vec![cfg_inst.clone()],
             vec![],
             &cache,
-            &dir,
+            &deployment_dir,
             &settings,
             &mut observers,
         )
@@ -364,15 +376,16 @@ pub mod deploy_with_rollback {
     #[tokio::test]
     async fn remove_1_filepath_specified_exists() {
         // define the config instance
-        let filepath = "/test/filepath".to_string();
+        let filepath = "/test/filepath/config.json".to_string();
         let cfg_inst = ConfigInstance {
             relative_filepath: Some(filepath.clone()),
             ..Default::default()
         };
 
         // create the config instance in the cache
-        let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
+        let temp_dir = Dir::create_temp_dir("deploy").await.unwrap();
+        let cache_dir = temp_dir.subdir("caches");
+        let (cache, _) = FileCache::spawn(16, cache_dir.file("cache.json"), 1000)
             .await
             .unwrap();
         let cfg_inst_content = json!({"speed": 4});
@@ -387,7 +400,8 @@ pub mod deploy_with_rollback {
             .unwrap();
 
         // create the file in the deployment directory
-        let file = dir.file(filepath.as_str());
+        let deployment_dir = temp_dir.subdir("config_instances");
+        let file = deployment_dir.file(filepath.as_str());
         file.write_json(&cfg_inst_content, true, true).await.unwrap();
 
         // deploy the config instance
@@ -399,7 +413,7 @@ pub mod deploy_with_rollback {
             vec![cfg_inst.clone()],
             vec![],
             &cache,
-            &dir,
+            &deployment_dir,
             &settings,
             &mut observers,
         )
@@ -423,6 +437,9 @@ pub mod deploy_with_rollback {
 
         // check that the file was removed
         assert!(!file.exists());
+
+        // check that the parent directories were also removed
+        assert!(deployment_dir.is_empty().await.unwrap());
     }
 
     #[tokio::test]
@@ -443,8 +460,9 @@ pub mod deploy_with_rollback {
         };
 
         // create the cache but the config instance content for the to_deploy config instance
-        let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
+        let temp_dir = Dir::create_temp_dir("deploy").await.unwrap();
+        let cache_dir = temp_dir.subdir("caches");
+        let (cache, _) = FileCache::spawn(16, cache_dir.file("cache.json"), 1000)
             .await
             .unwrap();
         let to_remove_data = json!({"speed": 8});
@@ -460,6 +478,7 @@ pub mod deploy_with_rollback {
 
         // deploy the config instance
         let settings = Settings::default();
+        let deployment_dir = temp_dir.subdir("config_instances");
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
         observers.push(&mut observer);
@@ -467,7 +486,7 @@ pub mod deploy_with_rollback {
             vec![to_remove.clone()],
             vec![to_deploy.clone()],
             &cache,
-            &dir,
+            &deployment_dir,
             &settings,
             &mut observers,
         )
@@ -511,7 +530,7 @@ pub mod deploy_with_rollback {
         assert_eq!(observer.history[3], expected_to_remove);
 
         // check that the removed config instance is still deployed
-        let file = dir.file(to_remove_filepath.as_str());
+        let file = deployment_dir.file(to_remove_filepath.as_str());
         let actual = file.read_json::<serde_json::Value>().await.unwrap();
         assert_eq!(actual, to_remove_data);
     }
@@ -542,8 +561,9 @@ pub mod deploy_with_rollback {
         }
 
         // create the cache but the config instance content for the to_deploy config instance
-        let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
+        let temp_dir = Dir::create_temp_dir("deploy").await.unwrap();
+        let cache_dir = temp_dir.subdir("caches");
+        let (cache, _) = FileCache::spawn(16, cache_dir.file("cache.json"), 1000)
             .await
             .unwrap();
         for cfg_inst in to_remove_instances.iter() {
@@ -560,6 +580,7 @@ pub mod deploy_with_rollback {
 
         // deploy the config instance
         let settings = Settings::default();
+        let deployment_dir = temp_dir.subdir("config_instances");
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
         observers.push(&mut observer);
@@ -567,7 +588,7 @@ pub mod deploy_with_rollback {
             to_remove_instances.clone(),
             to_deploy_instances.clone(),
             &cache,
-            &dir,
+            &deployment_dir,
             &settings,
             &mut observers,
         )
@@ -628,7 +649,7 @@ pub mod deploy_with_rollback {
 
         // check that the removed instances are still deployed
         for cfg_inst in to_remove_instances {
-            let file = dir.file(cfg_inst.relative_filepath.as_ref().unwrap());
+            let file = deployment_dir.file(cfg_inst.relative_filepath.as_ref().unwrap());
             let actual = file.read_json::<serde_json::Value>().await.unwrap();
             assert_eq!(
                 actual,

@@ -186,7 +186,11 @@ where
             source: e,
             trace: trace!(),
         }))
-    })
+    })?;
+
+    prune_deployment_dir(deployment_dir).await;
+
+    Ok(())
 }
 
 // =================================== REMOVE ====================================== //
@@ -259,5 +263,26 @@ async fn delete_cfg_inst_from_deployment_dir(
             source: e,
             trace: trace!(),
         }))
-    })
+    })?;
+
+    prune_deployment_dir(deployment_dir).await;
+
+    Ok(())
+}
+
+async fn prune_deployment_dir(deployment_dir: &Dir) {
+    let subdirs = match deployment_dir.subdirs().await {
+        Ok(subdirs) => subdirs,
+        Err(e) => {
+            error!("Error determining deployment subdirs for pruning: {:?}", e);
+            return;
+        }
+    };
+    for subdir in subdirs {
+        if let Err(e) = subdir.delete_if_empty_recursive().await {
+            error!("Error pruning deployment subdir directory {:?}: {:?}", subdir, e);
+        } else {
+            info!("Pruned deployment subdir directory {:?}", subdir);
+        }
+    }
 }

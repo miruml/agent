@@ -264,17 +264,71 @@ impl Dir {
         Ok(files)
     }
 
-    pub async fn delete_if_empty(&self) -> Result<(), FileSysErr> {
+    pub async fn is_empty(&self) -> Result<bool, FileSysErr> {
         if !self.exists() {
-            return Ok(());
+            return Ok(false);
         }
         if !self.files().await?.is_empty() {
-            return Ok(());
+            return Ok(false);
         }
         if !self.subdirs().await?.is_empty() {
-            return Ok(());
+            return Ok(false);
         }
-        self.delete().await?;
+        Ok(true)
+    }
+
+    pub async fn delete_if_empty_recursive(&self) -> Result<(), FileSysErr> {
+        // a recursive implementation would be much simpler but recursion with rust
+        // async is not func and it's still pretty simple to do with a loop
+
+        pub struct Item {
+            dir: Dir,
+            seen_before: bool,
+        }
+
+        // delete the subdirectories
+        let mut queue = Vec::new();
+        queue.push(Item {
+            dir: self.clone(),
+            seen_before: false,
+        });
+
+        while let Some(item) = queue.pop() {
+            if item.dir.is_empty().await? {
+                info!("Deleting empty directory: {}", item.dir);
+                item.dir.delete().await?;
+                continue;
+            }
+
+            // is not empty, but we've already seen it
+            if item.seen_before {
+                info!("Already seen directory: {}", item.dir);
+                let subdirs = item.dir.subdirs().await?;
+                info!("Subdirectories: {:?}", subdirs);
+                let files = item.dir.files().await?;
+                info!("Files: {:?}", files);
+                continue;
+            }
+
+            // we add the directory first so that if its subdirectories are deleted and
+            // leave it empty then it too will be deleted
+            queue.push(Item {
+                dir: item.dir.clone(),
+                seen_before: true,
+            });
+            let subdir_subdirs = item.dir.subdirs().await?;
+            for subdir in subdir_subdirs {
+                info!("Adding subdirectory to queue: {}", subdir);
+                queue.push(Item {
+                    dir: subdir,
+                    seen_before: false,
+                });
+            }
+        }
+
+        if self.is_empty().await? {
+            self.delete().await?;
+        }
         Ok(())
     }
 }
