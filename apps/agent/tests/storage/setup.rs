@@ -33,6 +33,10 @@ pub mod setup_storage {
         assert!(public_key_file.exists());
         let public_key_contents = public_key_file.read_string().await.unwrap();
         assert!(!public_key_contents.is_empty());
+
+        // config instance deployment directory
+        let config_instance_deployment_dir = layout.config_instance_deployment_dir();
+        assert!(config_instance_deployment_dir.exists());
     }
 
     #[tokio::test]
