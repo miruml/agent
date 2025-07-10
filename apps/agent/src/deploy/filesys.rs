@@ -111,8 +111,14 @@ where
     let mut post_deploy_cfg_insts = Vec::new();
     let mut cfg_insts_iter = cfg_insts.into_iter();
     while let Some(cfg_inst) = cfg_insts_iter.next() {
-        let (post_deploy_cfg_inst, result) =
-            deploy(cfg_inst, content_fetcher, deployment_dir, settings, observers).await;
+        let (post_deploy_cfg_inst, result) = deploy(
+            cfg_inst,
+            content_fetcher,
+            deployment_dir,
+            settings,
+            observers,
+        )
+        .await;
         if let Err(e) = result {
             // add the current post_deploy_cfg_inst
             post_deploy_cfg_insts.push(post_deploy_cfg_inst);
@@ -173,20 +179,26 @@ where
         None => return Ok(()),
     };
 
-    let cfg_inst_content = content_fetcher.read(cfg_inst.id.clone()).await.map_err(|e| {
-        DeployErr::CrudErr(Box::new(DeployCrudErr {
-            source: e,
-            trace: trace!(),
-        }))
-    })?;
+    let cfg_inst_content = content_fetcher
+        .read(cfg_inst.id.clone())
+        .await
+        .map_err(|e| {
+            DeployErr::CrudErr(Box::new(DeployCrudErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
 
     let dest_file = deployment_dir.file(rel_filepath);
-    dest_file.write_json(&cfg_inst_content, true, true).await.map_err(|e| {
-        DeployErr::FileSysErr(Box::new(DeployFileSysErr {
-            source: e,
-            trace: trace!(),
-        }))
-    })?;
+    dest_file
+        .write_json(&cfg_inst_content, true, true)
+        .await
+        .map_err(|e| {
+            DeployErr::FileSysErr(Box::new(DeployFileSysErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
 
     prune_deployment_dir(deployment_dir).await;
 
@@ -280,7 +292,10 @@ async fn prune_deployment_dir(deployment_dir: &Dir) {
     };
     for subdir in subdirs {
         if let Err(e) = subdir.delete_if_empty_recursive().await {
-            error!("Error pruning deployment subdir directory {:?}: {:?}", subdir, e);
+            error!(
+                "Error pruning deployment subdir directory {:?}: {:?}",
+                subdir, e
+            );
         } else {
             info!("Pruned deployment subdir directory {:?}", subdir);
         }

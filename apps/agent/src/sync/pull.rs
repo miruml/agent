@@ -54,10 +54,16 @@ pub async fn pull_config_instances<HTTPClientT: ConfigInstancesExt>(
     )
     .await?;
 
-    debug!("Adding {} unknown instances to storage", unknown_insts.len());
+    debug!(
+        "Adding {} unknown instances to storage",
+        unknown_insts.len()
+    );
     add_unknown_instances_to_storage(cfg_inst_cache, cfg_inst_content_cache, unknown_insts).await?;
 
-    debug!("Updating target status for {} instances", categorized_insts.update_target_status.len());
+    debug!(
+        "Updating target status for {} instances",
+        categorized_insts.update_target_status.len()
+    );
     update_target_status_instances(cfg_inst_cache, categorized_insts.update_target_status).await?;
 
     Ok(())
@@ -138,11 +144,17 @@ async fn categorize_instances(
 
         // check if the target status matches
         if storage_inst.target_status != TargetStatus::from_backend(&server_inst.target_status) {
-            debug!("Config instance {} has updated target status", storage_inst.id);
+            debug!(
+                "Config instance {} has updated target status",
+                storage_inst.id
+            );
             storage_inst.target_status = TargetStatus::from_backend(&server_inst.target_status);
             categorized.update_target_status.push(storage_inst);
         } else {
-            debug!("Config instance {} has the same target status", storage_inst.id);
+            debug!(
+                "Config instance {} has the same target status",
+                storage_inst.id
+            );
             categorized.other.push(server_inst);
         }
     }
@@ -171,7 +183,7 @@ async fn fetch_instances_with_expanded_instance_data<HTTPClientT: ConfigInstance
     let cfg_insts = http_client
         .list_all_config_instances(
             filters,
-            [ConfigInstanceExpand::CONFIG_INSTANCE_EXPAND_INSTANCE],
+            [ConfigInstanceExpand::CONFIG_INSTANCE_EXPAND_CONTENT],
             token,
         )
         .await
@@ -183,11 +195,13 @@ async fn fetch_instances_with_expanded_instance_data<HTTPClientT: ConfigInstance
         })?;
 
     if cfg_insts.len() != ids.len() {
-        return Err(SyncErr::MissingExpandedInstancesErr(Box::new(MissingExpandedInstancesErr {
-            expected_ids: ids,
-            actual_ids: cfg_insts.iter().map(|inst| inst.id.clone()).collect(),
-            trace: trace!(),
-        })));
+        return Err(SyncErr::MissingExpandedInstancesErr(Box::new(
+            MissingExpandedInstancesErr {
+                expected_ids: ids,
+                actual_ids: cfg_insts.iter().map(|inst| inst.id.clone()).collect(),
+                trace: trace!(),
+            },
+        )));
     }
 
     Ok(cfg_insts)

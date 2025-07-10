@@ -38,12 +38,9 @@ pub struct BaseConfigInstance {
     /// The ID of the config schema which the config instance must adhere to
     #[serde(rename = "config_schema_id")]
     pub config_schema_id: String,
-    /// The ID of the config type of the config instance
+    /// The ID of the config type which the config instance is a part of
     #[serde(rename = "config_type_id")]
     pub config_type_id: String,
-    /// Expand the config type using 'expand[]=config_type' in the query string
-    #[serde(rename = "config_type", deserialize_with = "Option::deserialize")]
-    pub config_type: Option<Box<models::ConfigType>>,
 }
 
 impl BaseConfigInstance {
@@ -59,7 +56,6 @@ impl BaseConfigInstance {
         updated_at: String,
         config_schema_id: String,
         config_type_id: String,
-        config_type: Option<models::ConfigType>,
     ) -> BaseConfigInstance {
         BaseConfigInstance {
             object,
@@ -73,11 +69,6 @@ impl BaseConfigInstance {
             updated_at,
             config_schema_id,
             config_type_id,
-            config_type: if let Some(x) = config_type {
-                Some(Box::new(x))
-            } else {
-                None
-            },
         }
     }
 }

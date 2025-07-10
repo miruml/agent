@@ -18,14 +18,16 @@ pub enum ConfigInstanceExpand {
     CONFIG_INSTANCE_EXPAND_CREATED_BY,
     #[serde(rename = "updated_by")]
     CONFIG_INSTANCE_EXPAND_UPDATED_BY,
-    #[serde(rename = "instance")]
-    CONFIG_INSTANCE_EXPAND_INSTANCE,
+    #[serde(rename = "content")]
+    CONFIG_INSTANCE_EXPAND_CONTENT,
     #[serde(rename = "patch")]
     CONFIG_INSTANCE_EXPAND_PATCH,
     #[serde(rename = "config_schema")]
     CONFIG_INSTANCE_EXPAND_CONFIG_SCHEMA,
     #[serde(rename = "device")]
     CONFIG_INSTANCE_EXPAND_DEVICE,
+    #[serde(rename = "config_type")]
+    CONFIG_INSTANCE_EXPAND_CONFIG_TYPE,
 
 }
 
@@ -34,10 +36,11 @@ impl std::fmt::Display for ConfigInstanceExpand {
         match self {
             Self::CONFIG_INSTANCE_EXPAND_CREATED_BY => write!(f, "created_by"),
             Self::CONFIG_INSTANCE_EXPAND_UPDATED_BY => write!(f, "updated_by"),
-            Self::CONFIG_INSTANCE_EXPAND_INSTANCE => write!(f, "instance"),
+            Self::CONFIG_INSTANCE_EXPAND_CONTENT => write!(f, "content"),
             Self::CONFIG_INSTANCE_EXPAND_PATCH => write!(f, "patch"),
             Self::CONFIG_INSTANCE_EXPAND_CONFIG_SCHEMA => write!(f, "config_schema"),
             Self::CONFIG_INSTANCE_EXPAND_DEVICE => write!(f, "device"),
+            Self::CONFIG_INSTANCE_EXPAND_CONFIG_TYPE => write!(f, "config_type"),
         }
     }
 }

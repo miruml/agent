@@ -5,7 +5,7 @@
 | Name | Value |
 |---- | -----|
 | CONFIG_SCHEMA_EXPAND_CREATED_BY | created_by |
-| CONFIG_SCHEMA_EXPAND_SCHEMA | schema |
+| CONFIG_SCHEMA_EXPAND_CONTENT | content |
 | CONFIG_SCHEMA_EXPAND_CONFIG_TYPE | config_type |
 | CONFIG_SCHEMA_EXPAND_CONFIG_SCHEMA_GIT_COMMITS | config_schema_git_commits |
 | CONFIG_SCHEMA_EXPAND_OVERRIDES | overrides |

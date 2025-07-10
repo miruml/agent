@@ -8,9 +8,9 @@ use config_agent::http::config_schemas::{ConfigSchemaFilters, ConfigSchemasExt};
 use config_agent::http::devices::DevicesExt;
 use config_agent::http::errors::HTTPErr;
 use openapi_client::models::{
-    ActivateDeviceRequest, ConfigInstance, ConfigInstanceList, ConfigSchema,
-    ConfigSchemaList, Device, HashSchemaSerializedRequest, IssueDeviceTokenRequest,
-    SchemaDigestResponse, TokenResponse, UpdateConfigInstanceRequest,
+    ActivateDeviceRequest, ConfigInstance, ConfigInstanceList, ConfigSchema, ConfigSchemaList,
+    Device, HashSchemaSerializedRequest, IssueDeviceTokenRequest, SchemaDigestResponse,
+    TokenResponse, UpdateConfigInstanceRequest,
 };
 
 // ================================== AUTH EXT ===================================== //
@@ -50,8 +50,7 @@ impl DevicesExt for MockAuthClient {
 // ============================ CONFIG INSTANCES EXT =============================== //
 
 type ListConfigInstancesFn = Box<dyn Fn() -> Result<ConfigInstanceList, HTTPErr> + Send + Sync>;
-type ListAllConfigInstancesFn =
-    Box<dyn Fn() -> Result<Vec<ConfigInstance>, HTTPErr> + Send + Sync>;
+type ListAllConfigInstancesFn = Box<dyn Fn() -> Result<Vec<ConfigInstance>, HTTPErr> + Send + Sync>;
 type UpdateConfigInstanceFn = Box<dyn Fn() -> Result<ConfigInstance, HTTPErr> + Send + Sync>;
 
 pub struct MockConfigInstancesClient {

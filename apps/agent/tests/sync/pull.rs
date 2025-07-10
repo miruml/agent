@@ -19,9 +19,10 @@ pub mod pull_config_instances_func {
         let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
             .await
             .unwrap();
-        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(16, dir.subdir("instances"), 1000)
-            .await
-            .unwrap();
+        let (cfg_inst_content_cache, _) =
+            ConfigInstanceContentCache::spawn(16, dir.subdir("instances"), 1000)
+                .await
+                .unwrap();
 
         // define the mock http client
         let http_client = MockConfigInstancesClient::default();
@@ -49,9 +50,10 @@ pub mod pull_config_instances_func {
         let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
             .await
             .unwrap();
-        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(16, dir.subdir("instances"), 1000)
-            .await
-            .unwrap();
+        let (cfg_inst_content_cache, _) =
+            ConfigInstanceContentCache::spawn(16, dir.subdir("instances"), 1000)
+                .await
+                .unwrap();
 
         // define the mock http client
         let http_client = MockConfigInstancesClient::default();
@@ -101,9 +103,10 @@ pub mod pull_config_instances_func {
         let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
             .await
             .unwrap();
-        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(16, dir.subdir("instances"), 1000)
-            .await
-            .unwrap();
+        let (cfg_inst_content_cache, _) =
+            ConfigInstanceContentCache::spawn(16, dir.subdir("instances"), 1000)
+                .await
+                .unwrap();
 
         // define the mock http client
         let n = 10;
@@ -185,9 +188,10 @@ pub mod pull_config_instances_func {
             .write(id.clone(), existing_instance.clone(), |_, _| false, true)
             .await
             .unwrap();
-        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(16, dir.subdir("instances"), 1000)
-            .await
-            .unwrap();
+        let (cfg_inst_content_cache, _) =
+            ConfigInstanceContentCache::spawn(16, dir.subdir("instances"), 1000)
+                .await
+                .unwrap();
         cfg_inst_content_cache
             .write(id.clone(), cfg_inst_content.clone(), |_, _| false, true)
             .await
@@ -258,9 +262,10 @@ pub mod pull_config_instances_func {
             .write(id.clone(), existing_instance.clone(), |_, _| false, true)
             .await
             .unwrap();
-        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(16, dir.subdir("instances"), 1000)
-            .await
-            .unwrap();
+        let (cfg_inst_content_cache, _) =
+            ConfigInstanceContentCache::spawn(16, dir.subdir("instances"), 1000)
+                .await
+                .unwrap();
         cfg_inst_content_cache
             .write(id.clone(), cfg_inst_content.clone(), |_, _| false, true)
             .await

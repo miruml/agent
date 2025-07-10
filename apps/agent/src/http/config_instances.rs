@@ -12,9 +12,8 @@ use crate::http::search::{
     format_search_clause, format_search_group, LogicalOperator, SearchOperator,
 };
 use openapi_client::models::{
-    ConfigInstance, ConfigInstanceActivityStatus, ConfigInstanceErrorStatus,
-    ConfigInstanceList, ConfigInstanceSearch, ConfigInstanceTargetStatus,
-    UpdateConfigInstanceRequest,
+    ConfigInstance, ConfigInstanceActivityStatus, ConfigInstanceErrorStatus, ConfigInstanceList,
+    ConfigInstanceSearch, ConfigInstanceTargetStatus, UpdateConfigInstanceRequest,
 };
 
 #[allow(async_fn_in_trait)]

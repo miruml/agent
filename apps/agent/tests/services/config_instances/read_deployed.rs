@@ -73,9 +73,10 @@ pub mod errors {
         let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(32, dir.file("instances.json"), 1000)
             .await
             .unwrap();
-        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(32, dir.subdir("instances"), 1000)
-            .await
-            .unwrap();
+        let (cfg_inst_content_cache, _) =
+            ConfigInstanceContentCache::spawn(32, dir.subdir("instances"), 1000)
+                .await
+                .unwrap();
         let (schema_cache, _) = ConfigSchemaCache::spawn(32, dir.file("schemas.json"), 1000)
             .await
             .unwrap();
@@ -126,9 +127,10 @@ pub mod errors {
         let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(32, dir.file("instances.json"), 1000)
             .await
             .unwrap();
-        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(32, dir.subdir("instances"), 1000)
-            .await
-            .unwrap();
+        let (cfg_inst_content_cache, _) =
+            ConfigInstanceContentCache::spawn(32, dir.subdir("instances"), 1000)
+                .await
+                .unwrap();
         let (schema_cache, _) = ConfigSchemaCache::spawn(32, dir.file("schemas.json"), 1000)
             .await
             .unwrap();
@@ -173,9 +175,10 @@ pub mod errors {
         let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(32, dir.file("instances.json"), 1000)
             .await
             .unwrap();
-        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(32, dir.subdir("instances"), 1000)
-            .await
-            .unwrap();
+        let (cfg_inst_content_cache, _) =
+            ConfigInstanceContentCache::spawn(32, dir.subdir("instances"), 1000)
+                .await
+                .unwrap();
         let (schema_cache, _) = ConfigSchemaCache::spawn(32, dir.file("schemas.json"), 1000)
             .await
             .unwrap();
@@ -245,9 +248,10 @@ pub mod success {
             .write(cfg_inst_id.clone(), cfg_inst.clone(), |_, _| false, true)
             .await
             .unwrap();
-        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(32, dir.subdir("instances"), 1000)
-            .await
-            .unwrap();
+        let (cfg_inst_content_cache, _) =
+            ConfigInstanceContentCache::spawn(32, dir.subdir("instances"), 1000)
+                .await
+                .unwrap();
         cfg_inst_content_cache
             .write(cfg_inst_id.clone(), json!({}), |_, _| false, true)
             .await
@@ -300,9 +304,10 @@ pub mod success {
         let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(32, dir.file("instances.json"), 1000)
             .await
             .unwrap();
-        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(32, dir.subdir("instances"), 1000)
-            .await
-            .unwrap();
+        let (cfg_inst_content_cache, _) =
+            ConfigInstanceContentCache::spawn(32, dir.subdir("instances"), 1000)
+                .await
+                .unwrap();
         let (schema_cache, _) = ConfigSchemaCache::spawn(32, dir.file("schemas.json"), 1000)
             .await
             .unwrap();

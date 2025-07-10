@@ -14,8 +14,7 @@ Name | Type | Description | Notes
 **created_at** | **String** | The timestamp when the config instance was created | 
 **updated_at** | **String** | The timestamp when the config instance was last updated | 
 **config_schema_id** | **String** | The ID of the config schema which the config instance must adhere to | 
-**config_type_id** | **String** | The ID of the config type of the config instance  | 
-**config_type** | Option<[**models::ConfigType**](ConfigType.md)> | Expand the config type using 'expand[]=config_type' in the query string | 
+**config_type_id** | **String** | The ID of the config type which the config instance is a part of | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

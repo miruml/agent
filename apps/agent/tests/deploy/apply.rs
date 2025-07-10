@@ -151,7 +151,7 @@ pub mod apply_func {
         let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(16, dir.clone(), 1000)
             .await
             .unwrap();
-        cfg_inst_content_cache 
+        cfg_inst_content_cache
             .write(cfg_inst.id.clone(), json!({"speed": 4}), |_, _| false, true)
             .await
             .unwrap();
@@ -196,7 +196,7 @@ pub mod apply_func {
             ..Default::default()
         };
 
-        // create the cache but omit the config instance content 
+        // create the cache but omit the config instance content
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
         let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
             .await
@@ -325,7 +325,7 @@ pub mod apply_func {
             ..Default::default()
         };
 
-        // create the cache but omit the config instance content 
+        // create the cache but omit the config instance content
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
         let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
             .await
@@ -419,7 +419,7 @@ pub mod apply_func {
             ..Default::default()
         };
 
-        // create the cache but omit the config instance content 
+        // create the cache but omit the config instance content
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
         let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
             .await
@@ -514,7 +514,7 @@ pub mod apply_func {
             ..Default::default()
         };
 
-        // create the cache but omit the config instance content 
+        // create the cache but omit the config instance content
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
         let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
             .await

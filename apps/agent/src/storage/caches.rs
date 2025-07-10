@@ -69,34 +69,32 @@ impl Caches {
                 })?;
         let cfg_schema_cache = Arc::new(cfg_schema_cache);
 
-        // config instance 
-        let (cfg_inst_cache, cfg_inst_cache_handle) = ConfigInstanceCache::spawn(
-            64,
-            layout.config_instance_cache(),
-            capacities.cfg_inst,
-        )
-        .await
-        .map_err(|e| {
-            StorageErr::CacheErr(Box::new(StorageCacheErr {
-                source: e,
-                trace: trace!(),
-            }))
-        })?;
+        // config instance
+        let (cfg_inst_cache, cfg_inst_cache_handle) =
+            ConfigInstanceCache::spawn(64, layout.config_instance_cache(), capacities.cfg_inst)
+                .await
+                .map_err(|e| {
+                    StorageErr::CacheErr(Box::new(StorageCacheErr {
+                        source: e,
+                        trace: trace!(),
+                    }))
+                })?;
         let cfg_inst_cache = Arc::new(cfg_inst_cache);
 
-        // config instance content 
-        let (cfg_inst_content_cache, cfg_inst_content_cache_handle) = ConfigInstanceContentCache::spawn(
-            64,
-            layout.config_instance_content_cache(),
-            capacities.cfg_inst_content,
-        )
-        .await
-        .map_err(|e| {
-            StorageErr::CacheErr(Box::new(StorageCacheErr {
-                source: e,
-                trace: trace!(),
-            }))
-        })?;
+        // config instance content
+        let (cfg_inst_content_cache, cfg_inst_content_cache_handle) =
+            ConfigInstanceContentCache::spawn(
+                64,
+                layout.config_instance_content_cache(),
+                capacities.cfg_inst_content,
+            )
+            .await
+            .map_err(|e| {
+                StorageErr::CacheErr(Box::new(StorageCacheErr {
+                    source: e,
+                    trace: trace!(),
+                }))
+            })?;
         let cfg_inst_content_cache = Arc::new(cfg_inst_content_cache);
 
         // return the shutdown handler

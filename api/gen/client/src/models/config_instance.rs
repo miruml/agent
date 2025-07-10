@@ -38,36 +38,38 @@ pub struct ConfigInstance {
     /// The ID of the config schema which the config instance must adhere to
     #[serde(rename = "config_schema_id")]
     pub config_schema_id: String,
-    /// The ID of the config type of the config instance 
+    /// The ID of the config type which the config instance is a part of
     #[serde(rename = "config_type_id")]
     pub config_type_id: String,
-    /// Expand the config type using 'expand[]=config_type' in the query string
-    #[serde(rename = "config_type", deserialize_with = "Option::deserialize")]
-    pub config_type: Option<Box<models::ConfigType>>,
-    #[serde(rename = "content", deserialize_with = "Option::deserialize")]
-    pub content: Option<serde_json::Value>,
-    #[serde(rename = "patch_id", deserialize_with = "Option::deserialize")]
-    pub patch_id: Option<String>,
     #[serde(rename = "created_by_id", deserialize_with = "Option::deserialize")]
     pub created_by_id: Option<String>,
     #[serde(rename = "updated_by_id", deserialize_with = "Option::deserialize")]
     pub updated_by_id: Option<String>,
+    #[serde(rename = "patch_id", deserialize_with = "Option::deserialize")]
+    pub patch_id: Option<String>,
     #[serde(rename = "device_id")]
     pub device_id: String,
-    #[serde(rename = "created_by", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
-    pub created_by: Option<Option<Box<models::User>>>,
-    #[serde(rename = "updated_by", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
-    pub updated_by: Option<Option<Box<models::User>>>,
-    #[serde(rename = "patch", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
-    pub patch: Option<Option<Box<models::Patch>>>,
-    #[serde(rename = "config_schema", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
-    pub config_schema: Option<Option<Box<models::ConfigSchema>>>,
-    #[serde(rename = "device", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
-    pub device: Option<Option<Box<models::Device>>>,
+    #[serde(rename = "created_by", deserialize_with = "Option::deserialize")]
+    pub created_by: Option<Box<models::User>>,
+    #[serde(rename = "updated_by", deserialize_with = "Option::deserialize")]
+    pub updated_by: Option<Box<models::User>>,
+    #[serde(rename = "patch", deserialize_with = "Option::deserialize")]
+    pub patch: Option<Box<models::Patch>>,
+    #[serde(rename = "device", deserialize_with = "Option::deserialize")]
+    pub device: Option<Box<models::Device>>,
+    /// Expand the config schema using 'expand[]=config_schema' in the query string
+    #[serde(rename = "config_schema", deserialize_with = "Option::deserialize")]
+    pub config_schema: Option<Box<models::ConfigSchema>>,
+    /// Expand the config type using 'expand[]=config_type' in the query string
+    #[serde(rename = "config_type", deserialize_with = "Option::deserialize")]
+    pub config_type: Option<Box<models::ConfigType>>,
+    /// The configuration values associated with the config instance
+    #[serde(rename = "content", deserialize_with = "Option::deserialize")]
+    pub content: Option<serde_json::Value>,
 }
 
 impl ConfigInstance {
-    pub fn new(object: Object, id: String, target_status: models::ConfigInstanceTargetStatus, status: models::ConfigInstanceStatus, activity_status: models::ConfigInstanceActivityStatus, error_status: models::ConfigInstanceErrorStatus, relative_filepath: Option<String>, created_at: String, updated_at: String, config_schema_id: String, config_type_id: String, config_type: Option<models::ConfigType>, content: Option<serde_json::Value>, patch_id: Option<String>, created_by_id: Option<String>, updated_by_id: Option<String>, device_id: String) -> ConfigInstance {
+    pub fn new(object: Object, id: String, target_status: models::ConfigInstanceTargetStatus, status: models::ConfigInstanceStatus, activity_status: models::ConfigInstanceActivityStatus, error_status: models::ConfigInstanceErrorStatus, relative_filepath: Option<String>, created_at: String, updated_at: String, config_schema_id: String, config_type_id: String, created_by_id: Option<String>, updated_by_id: Option<String>, patch_id: Option<String>, device_id: String, created_by: Option<models::User>, updated_by: Option<models::User>, patch: Option<models::Patch>, device: Option<models::Device>, config_schema: Option<models::ConfigSchema>, config_type: Option<models::ConfigType>, content: Option<serde_json::Value>) -> ConfigInstance {
         ConfigInstance {
             object,
             id,
@@ -80,17 +82,17 @@ impl ConfigInstance {
             updated_at,
             config_schema_id,
             config_type_id,
-            config_type: if let Some(x) = config_type {Some(Box::new(x))} else {None},
-            content,
-            patch_id,
             created_by_id,
             updated_by_id,
+            patch_id,
             device_id,
-            created_by: None,
-            updated_by: None,
-            patch: None,
-            config_schema: None,
-            device: None,
+            created_by: if let Some(x) = created_by {Some(Box::new(x))} else {None},
+            updated_by: if let Some(x) = updated_by {Some(Box::new(x))} else {None},
+            patch: if let Some(x) = patch {Some(Box::new(x))} else {None},
+            device: if let Some(x) = device {Some(Box::new(x))} else {None},
+            config_schema: if let Some(x) = config_schema {Some(Box::new(x))} else {None},
+            config_type: if let Some(x) = config_type {Some(Box::new(x))} else {None},
+            content,
         }
     }
 }

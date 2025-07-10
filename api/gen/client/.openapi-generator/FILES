@@ -11,7 +11,6 @@ docs/BaseDevice.md
 docs/BillingPlan.md
 docs/ConfigInstance.md
 docs/ConfigInstanceActivityStatus.md
-docs/ConfigInstanceContent.md
 docs/ConfigInstanceErrorStatus.md
 docs/ConfigInstanceExpand.md
 docs/ConfigInstanceList.md
@@ -44,7 +43,6 @@ docs/HashSerializedConfigSchemaFormat.md
 docs/IssueDeviceClaims.md
 docs/IssueDeviceTokenRequest.md
 docs/MqttApi.md
-docs/NullableConfigInstanceContent.md
 docs/Override.md
 docs/OverrideKeyValuePair.md
 docs/OverrideKeyValuePairList.md
@@ -80,7 +78,6 @@ src/models/base_device.rs
 src/models/billing_plan.rs
 src/models/config_instance.rs
 src/models/config_instance_activity_status.rs
-src/models/config_instance_content.rs
 src/models/config_instance_error_status.rs
 src/models/config_instance_expand.rs
 src/models/config_instance_list.rs
@@ -110,7 +107,6 @@ src/models/issue_device_claims.rs
 src/models/issue_device_token_request.rs
 src/models/mod.rs
 src/models/model_override.rs
-src/models/nullable_config_instance_content.rs
 src/models/override_key_value_pair.rs
 src/models/override_key_value_pair_list.rs
 src/models/override_list.rs

@@ -161,7 +161,9 @@ pub mod deploy_with_rollback {
         // create the file in the deployment directory
         let deployment_dir = temp_dir.subdir("config_instances");
         let file = deployment_dir.file(filepath.as_str());
-        file.write_json(&cfg_inst_content, true, true).await.unwrap();
+        file.write_json(&cfg_inst_content, true, true)
+            .await
+            .unwrap();
 
         // deploy the config instance
         let settings = Settings::default();
@@ -402,7 +404,9 @@ pub mod deploy_with_rollback {
         // create the file in the deployment directory
         let deployment_dir = temp_dir.subdir("config_instances");
         let file = deployment_dir.file(filepath.as_str());
-        file.write_json(&cfg_inst_content, true, true).await.unwrap();
+        file.write_json(&cfg_inst_content, true, true)
+            .await
+            .unwrap();
 
         // deploy the config instance
         let settings = Settings::default();

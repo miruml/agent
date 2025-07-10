@@ -515,7 +515,6 @@ impl ConfigInstance {
             updated_at: cfg_inst.updated_at.to_rfc3339(),
             config_schema_id: cfg_inst.config_schema_id,
             config_type_id: cfg_inst.config_type_id,
-            config_type: None,
             content,
         }
     }

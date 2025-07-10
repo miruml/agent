@@ -625,17 +625,17 @@ mod delete_if_empty_recursive {
     #[tokio::test]
     async fn complex_nested_structure_all_empty() {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
-        
+
         // Create nested structure: dir/subdir1/subdir2/subdir3
         let subdir1 = dir.subdir(PathBuf::from("subdir1"));
         subdir1.create(true).await.unwrap();
-        
+
         let subdir2 = subdir1.subdir(PathBuf::from("subdir2"));
         subdir2.create(true).await.unwrap();
-        
+
         let subdir3 = subdir2.subdir(PathBuf::from("subdir3"));
         subdir3.create(true).await.unwrap();
-        
+
         assert!(dir.delete_if_empty_recursive().await.is_ok());
         assert!(!dir.exists());
     }
@@ -643,21 +643,23 @@ mod delete_if_empty_recursive {
     #[tokio::test]
     async fn complex_nested_structure_mixed_content() {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
-        
+
         // Create nested structure with some files
         let subdir1 = dir.subdir(PathBuf::from("subdir1"));
         subdir1.create(true).await.unwrap();
 
         let subdir2 = subdir1.subdir(PathBuf::from("subdir2"));
         subdir2.create(true).await.unwrap();
-        
+
         // Add a file to subdir2 (making it non-empty)
         let file = subdir2.file("keep.txt");
-        file.write_string("don't delete me", false, false).await.unwrap();
-        
+        file.write_string("don't delete me", false, false)
+            .await
+            .unwrap();
+
         let subdir3 = subdir2.subdir(PathBuf::from("subdir3"));
         subdir3.create(true).await.unwrap();
-        
+
         assert!(dir.delete_if_empty_recursive().await.is_ok());
         assert!(dir.exists()); // Main dir should still exist
         assert!(subdir1.exists()); // subdir1 should still exist
@@ -668,17 +670,17 @@ mod delete_if_empty_recursive {
     #[tokio::test]
     async fn multiple_empty_subdirs_at_same_level() {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
-        
+
         // Create multiple empty subdirs at the same level
         let subdir1 = dir.subdir(PathBuf::from("empty1"));
         subdir1.create(true).await.unwrap();
-        
+
         let subdir2 = dir.subdir(PathBuf::from("empty2"));
         subdir2.create(true).await.unwrap();
-        
+
         let subdir3 = dir.subdir(PathBuf::from("empty3"));
         subdir3.create(true).await.unwrap();
-        
+
         assert!(dir.delete_if_empty_recursive().await.is_ok());
         assert!(!dir.exists()); // All should be deleted
     }
@@ -686,17 +688,17 @@ mod delete_if_empty_recursive {
     #[tokio::test]
     async fn mixed_empty_and_non_empty_subdirs() {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
-        
+
         // Create empty subdir
         let empty_subdir = dir.subdir(PathBuf::from("empty"));
         empty_subdir.create(true).await.unwrap();
-        
+
         // Create non-empty subdir
         let non_empty_subdir = dir.subdir(PathBuf::from("non_empty"));
         non_empty_subdir.create(true).await.unwrap();
         let file = non_empty_subdir.file("test.txt");
         file.write_string("content", false, false).await.unwrap();
-        
+
         assert!(dir.delete_if_empty_recursive().await.is_ok());
         assert!(dir.exists()); // Main dir should still exist
         assert!(!empty_subdir.exists()); // Empty subdir should be deleted
@@ -706,28 +708,34 @@ mod delete_if_empty_recursive {
     #[tokio::test]
     async fn deeply_nested_with_files_at_different_levels() {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
-        
+
         // Create structure: dir/level1/level2/level3/level4
         let level1 = dir.subdir(PathBuf::from("level1"));
         level1.create(true).await.unwrap();
-        
+
         let level2 = level1.subdir(PathBuf::from("level2"));
         level2.create(true).await.unwrap();
-        
+
         let level3 = level2.subdir(PathBuf::from("level3"));
         level3.create(true).await.unwrap();
-        
+
         let level4 = level3.subdir(PathBuf::from("level4"));
         level4.create(true).await.unwrap();
-        
+
         // Add file at level2
         let file2 = level2.file("level2_file.txt");
-        file2.write_string("level2 content", false, false).await.unwrap();
-        
+        file2
+            .write_string("level2 content", false, false)
+            .await
+            .unwrap();
+
         // Add file at level4
         let file4 = level4.file("level4_file.txt");
-        file4.write_string("level4 content", false, false).await.unwrap();
-        
+        file4
+            .write_string("level4 content", false, false)
+            .await
+            .unwrap();
+
         assert!(dir.delete_if_empty_recursive().await.is_ok());
         assert!(dir.exists()); // Main dir should exist
         assert!(level1.exists()); // level1 should exist
@@ -739,14 +747,17 @@ mod delete_if_empty_recursive {
     #[tokio::test]
     async fn empty_subdirs_with_hidden_files() {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
-        
+
         let subdir = dir.subdir(PathBuf::from("subdir"));
         subdir.create(true).await.unwrap();
-        
+
         // Add hidden file
         let hidden_file = subdir.file(".hidden");
-        hidden_file.write_string("hidden content", false, false).await.unwrap();
-        
+        hidden_file
+            .write_string("hidden content", false, false)
+            .await
+            .unwrap();
+
         assert!(dir.delete_if_empty_recursive().await.is_ok());
         assert!(dir.exists()); // Main dir should exist
         assert!(subdir.exists()); // Subdir should exist (has hidden file)
@@ -755,7 +766,7 @@ mod delete_if_empty_recursive {
     #[tokio::test]
     async fn stress_test_many_nested_directories() {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
-        
+
         // Create many nested directories
         let mut current_dir = dir.clone();
         for i in 0..10 {
@@ -763,7 +774,7 @@ mod delete_if_empty_recursive {
             subdir.create(true).await.unwrap();
             current_dir = subdir;
         }
-        
+
         assert!(dir.delete_if_empty_recursive().await.is_ok());
         assert!(!dir.exists()); // All should be deleted
     }
@@ -771,23 +782,23 @@ mod delete_if_empty_recursive {
     #[tokio::test]
     async fn partial_cleanup_with_remaining_structure() {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
-        
+
         // Create structure: dir/branch1/empty1, dir/branch1/empty2, dir/branch2/file
         let branch1 = dir.subdir(PathBuf::from("branch1"));
         branch1.create(true).await.unwrap();
-        
+
         let empty1 = branch1.subdir(PathBuf::from("empty1"));
         empty1.create(true).await.unwrap();
-        
+
         let empty2 = branch1.subdir(PathBuf::from("empty2"));
         empty2.create(true).await.unwrap();
-        
+
         let branch2 = dir.subdir(PathBuf::from("branch2"));
         branch2.create(true).await.unwrap();
-        
+
         let file = branch2.file("keep.txt");
         file.write_string("keep this", false, false).await.unwrap();
-        
+
         assert!(dir.delete_if_empty_recursive().await.is_ok());
         assert!(dir.exists()); // Main dir should exist
         assert!(!branch1.exists()); // branch1 should be deleted (all children empty)

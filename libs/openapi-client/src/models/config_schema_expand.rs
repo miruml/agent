@@ -16,8 +16,8 @@ use serde::{Deserialize, Serialize};
 pub enum ConfigSchemaExpand {
     #[serde(rename = "created_by")]
     CONFIG_SCHEMA_EXPAND_CREATED_BY,
-    #[serde(rename = "schema")]
-    CONFIG_SCHEMA_EXPAND_SCHEMA,
+    #[serde(rename = "content")]
+    CONFIG_SCHEMA_EXPAND_CONTENT,
     #[serde(rename = "config_type")]
     CONFIG_SCHEMA_EXPAND_CONFIG_TYPE,
     #[serde(rename = "config_schema_git_commits")]
@@ -30,7 +30,7 @@ impl std::fmt::Display for ConfigSchemaExpand {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Self::CONFIG_SCHEMA_EXPAND_CREATED_BY => write!(f, "created_by"),
-            Self::CONFIG_SCHEMA_EXPAND_SCHEMA => write!(f, "schema"),
+            Self::CONFIG_SCHEMA_EXPAND_CONTENT => write!(f, "content"),
             Self::CONFIG_SCHEMA_EXPAND_CONFIG_TYPE => write!(f, "config_type"),
             Self::CONFIG_SCHEMA_EXPAND_CONFIG_SCHEMA_GIT_COMMITS => {
                 write!(f, "config_schema_git_commits")

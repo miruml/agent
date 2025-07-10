@@ -6,8 +6,8 @@ use config_agent::models::config_instance::{
     ActivityStatus, ConfigInstance, ErrorStatus, Status, TargetStatus,
 };
 use openapi_client::models::{
-    ConfigInstance as BackendConfigInstance, ConfigInstanceActivityStatus, ConfigInstanceErrorStatus,
-    ConfigInstanceStatus, ConfigInstanceTargetStatus,
+    ConfigInstance as BackendConfigInstance, ConfigInstanceActivityStatus,
+    ConfigInstanceErrorStatus, ConfigInstanceStatus, ConfigInstanceTargetStatus,
 };
 
 // external crates
