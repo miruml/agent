@@ -12,7 +12,6 @@ use crate::utils::{calc_exp_backoff, CooldownOptions};
 use chrono::Utc;
 use tracing::{debug, error, info};
 
-
 #[derive(Debug, Clone)]
 pub struct TokenRefreshWorkerOptions {
     pub refresh_advance_secs: i64,
@@ -37,9 +36,9 @@ pub async fn run_token_refresh_worker<F, Fut, TokenManagerT: TokenManagerExt>(
     token_mngr: &TokenManagerT,
     sleep_fn: F, // for testing purposes
     mut shutdown_signal: Pin<Box<impl Future<Output = ()> + Send + 'static>>,
-) where 
+) where
     F: Fn(Duration) -> Fut,
-    Fut: Future<Output = ()> + Send
+    Fut: Future<Output = ()> + Send,
 {
     info!("Running token refresh worker");
     let mut err_streak = 0;
@@ -49,7 +48,9 @@ pub async fn run_token_refresh_worker<F, Fut, TokenManagerT: TokenManagerExt>(
         let next_wait = match token_mngr.refresh_token().await {
             Ok(_) => {
                 if err_streak > 0 {
-                    info!("token refreshed successfully after an error streak of {err_streak} errors");
+                    info!(
+                        "token refreshed successfully after an error streak of {err_streak} errors"
+                    );
                 } else {
                     info!("token refreshed successfully");
                 }
@@ -71,7 +72,7 @@ pub async fn run_token_refresh_worker<F, Fut, TokenManagerT: TokenManagerExt>(
                         // we want to try network connection errors again immediately
                         // (even if the previous errors were not network connection
                         // errors) so we use an error streak of 0
-                        0, 
+                        0,
                         options.polling,
                     )
                     .await
@@ -109,13 +110,12 @@ pub async fn calc_refresh_wait<TokenManagerT: TokenManagerExt>(
     err_streak: u32,
     cooldown: CooldownOptions,
 ) -> Duration {
-
     // calculate the cooldown period
     let cooldown_secs = calc_exp_backoff(
         cooldown.base_secs,
         cooldown.growth_factor,
         err_streak,
-        cooldown.max_secs
+        cooldown.max_secs,
     );
 
     match token_mngr.get_token().await {

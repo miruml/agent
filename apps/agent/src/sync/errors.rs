@@ -220,7 +220,11 @@ impl MiruError for MissingExpandedInstancesErr {
 
 impl fmt::Display for MissingExpandedInstancesErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Missing expanded instances: expected ids: {:?}, actual ids: {:?}", self.expected_ids, self.actual_ids)
+        write!(
+            f,
+            "Missing expanded instances: expected ids: {:?}, actual ids: {:?}",
+            self.expected_ids, self.actual_ids
+        )
     }
 }
 
@@ -298,7 +302,6 @@ impl fmt::Display for ConfigInstanceDataNotFoundErr {
 pub type SendActorMessageErr = crate::cache::errors::SendActorMessageErr;
 pub type ReceiveActorMessageErr = crate::cache::errors::ReceiveActorMessageErr;
 
-
 #[derive(Debug)]
 pub struct SyncerInCooldownErr {
     pub err_streak: u32,
@@ -327,13 +330,15 @@ impl MiruError for SyncerInCooldownErr {
 impl fmt::Display for SyncerInCooldownErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let err_streak = self.err_streak;
-        let cooldown_secs = self.cooldown_ends_at.signed_duration_since(Utc::now()).num_seconds();
+        let cooldown_secs = self
+            .cooldown_ends_at
+            .signed_duration_since(Utc::now())
+            .num_seconds();
         let cooldown_ends_at = self.cooldown_ends_at;
         write!(f, "cannot sync device because the syncer is in cooldown (err streak of {err_streak}) for {cooldown_secs} seconds (cooldown ends at: {cooldown_ends_at})",
         )
     }
 }
-
 
 #[derive(Debug)]
 pub struct MockErr {
@@ -363,8 +368,6 @@ impl fmt::Display for MockErr {
         write!(f, "Mock error")
     }
 }
-
-
 
 #[derive(Debug)]
 pub enum SyncErr {

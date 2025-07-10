@@ -62,9 +62,9 @@ pub mod pull_config_instances_func {
             }
         });
         let id = "instance1".to_string();
-        let result = vec![openapi_client::models::BackendConfigInstance {
+        let result = vec![openapi_client::models::ConfigInstance {
             id: id.clone(),
-            instance: Some(instance_data.clone()),
+            content: Some(instance_data.clone()),
             ..Default::default()
         }];
         let result_cloned = result.clone();
@@ -87,7 +87,7 @@ pub mod pull_config_instances_func {
         let actual = metadata_cache.read(id.clone()).await.unwrap();
         assert_eq!(expected, actual);
 
-        // check the instance data cache
+        // check the config instance data cache
         assert_eq!(instance_cache.size().await.unwrap(), 1);
         let expected = instance_data;
         let actual = instance_cache.read(id.clone()).await.unwrap();
@@ -119,10 +119,10 @@ pub mod pull_config_instances_func {
             });
             instance_datas.push(instance_data.clone());
 
-            let id = format!("instance{i}");
-            let backend_instance = openapi_client::models::BackendConfigInstance {
+            let id = format!("cfg_inst{i}");
+            let backend_instance = openapi_client::models::ConfigInstance {
                 id: id.clone(),
-                instance: Some(instance_data.clone()),
+                content: Some(instance_data.clone()),
                 ..Default::default()
             };
             metadatas.push(backend_instance);
@@ -150,10 +150,10 @@ pub mod pull_config_instances_func {
             assert_eq!(expected, actual);
         }
 
-        // check the instance data cache
+        // check the cfg_inst data cache
         assert_eq!(instance_cache.size().await.unwrap(), n);
         for (i, instance_data) in instance_datas.iter().enumerate() {
-            let id = format!("instance{i}");
+            let id = format!("cfg_inst{i}");
             let expected = instance_data.clone();
             let actual = instance_cache.read(id.clone()).await.unwrap();
             assert_eq!(expected, actual);
@@ -162,7 +162,7 @@ pub mod pull_config_instances_func {
 
     #[tokio::test]
     async fn one_instance_with_updated_target_status() {
-        // define the existing instance
+        // define the existing config instance
         let id = "instance1".to_string();
         let existing_instance = ConfigInstance {
             id: id.clone(),
@@ -196,9 +196,9 @@ pub mod pull_config_instances_func {
         // define the mock http client
         let http_client = MockConfigInstancesClient::default();
         let result = vec![
-            openapi_client::models::BackendConfigInstance {
+            openapi_client::models::ConfigInstance {
                 id: id.clone(),
-                instance: Some(instance_data.clone()),
+                content: Some(instance_data.clone()),
                 target_status: openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_REMOVED,
                 ..Default::default()
             }
@@ -226,7 +226,7 @@ pub mod pull_config_instances_func {
         let actual = metadata_cache.read(id.clone()).await.unwrap();
         assert_eq!(expected, actual);
 
-        // check the instance data cache
+        // check the config instance data cache
         assert_eq!(instance_cache.size().await.unwrap(), 1);
         let expected = instance_data;
         let actual = instance_cache.read(id.clone()).await.unwrap();
@@ -235,7 +235,7 @@ pub mod pull_config_instances_func {
 
     #[tokio::test]
     async fn one_instance_up_to_date() {
-        // define the existing instance
+        // define the existing config instance
         let id = "instance1".to_string();
         let existing_instance = ConfigInstance {
             id: id.clone(),
@@ -269,9 +269,9 @@ pub mod pull_config_instances_func {
         // define the mock http client
         let http_client = MockConfigInstancesClient::default();
         let result = vec![
-            openapi_client::models::BackendConfigInstance {
+            openapi_client::models::ConfigInstance {
                 id: id.clone(),
-                instance: Some(instance_data.clone()),
+                content: Some(instance_data.clone()),
                 target_status: openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_DEPLOYED,
                 ..Default::default()
             }
@@ -296,7 +296,7 @@ pub mod pull_config_instances_func {
         let actual = metadata_cache.read(id.clone()).await.unwrap();
         assert_eq!(expected, actual);
 
-        // check the instance data cache
+        // check the config instance data cache
         assert_eq!(instance_cache.size().await.unwrap(), 1);
         let expected = instance_data;
         let actual = instance_cache.read(id.clone()).await.unwrap();

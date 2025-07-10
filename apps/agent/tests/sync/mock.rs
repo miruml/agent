@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 // internal crates
 use config_agent::sync::{
     errors::SyncErr,
-    syncer::{SyncerExt, SyncState, SyncEvent},
+    syncer::{SyncEvent, SyncState, SyncerExt},
 };
 
 // external crates
@@ -14,7 +14,6 @@ use tokio::sync::watch;
 
 type GetSyncStateFn = Box<dyn Fn() -> SyncState + Send + Sync>;
 type SyncFn = Box<dyn Fn() -> Result<(), SyncErr> + Send + Sync>;
-
 
 pub struct MockSyncer {
     pub last_sync_attempted_at: Arc<Mutex<DateTime<Utc>>>,
@@ -40,13 +39,11 @@ impl MockSyncer {
         Self {
             last_sync_attempted_at: Arc::new(Mutex::new(DateTime::<Utc>::UNIX_EPOCH)),
             num_sync_calls: AtomicUsize::new(0),
-            get_sync_state_fn: Arc::new(Mutex::new(Box::new(|| {
-                SyncState {
-                    last_sync_attempted_at: DateTime::<Utc>::UNIX_EPOCH,
-                    last_successful_sync_at: DateTime::<Utc>::UNIX_EPOCH,
-                    cooldown_ends_at: DateTime::<Utc>::UNIX_EPOCH,
-                    err_streak: 0,
-                }
+            get_sync_state_fn: Arc::new(Mutex::new(Box::new(|| SyncState {
+                last_sync_attempted_at: DateTime::<Utc>::UNIX_EPOCH,
+                last_successful_sync_at: DateTime::<Utc>::UNIX_EPOCH,
+                cooldown_ends_at: DateTime::<Utc>::UNIX_EPOCH,
+                err_streak: 0,
             }))),
             sync_fn: Arc::new(Mutex::new(Box::new(|| Ok(())))),
 

@@ -1,7 +1,7 @@
 // standard library
 use std::fmt;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
 
@@ -79,13 +79,13 @@ impl SleepController {
     pub async fn release(&self) {
         // the thread is sleeping if the target state equals the actual state. To
         // release it we just flip the target state
-        self.target.store(
-            !self.last_known.load(Ordering::Relaxed),
-            Ordering::Relaxed,
-        );
+        self.target
+            .store(!self.last_known.load(Ordering::Relaxed), Ordering::Relaxed);
     }
 
-    pub fn sleep_fn(&self) -> impl Fn(Duration) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>> {
+    pub fn sleep_fn(
+        &self,
+    ) -> impl Fn(Duration) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>> {
         let attempted_sleeps = self.attempted_sleeps.clone();
         let completed_sleeps = self.completed_sleeps.clone();
         let is_sleeping = self.is_sleeping.clone();
@@ -101,10 +101,7 @@ impl SleepController {
             // the thread is sleeping if the target state equals the actual state. To
             // signal that the thread has begun its sleep, we set the actual state to
             // the target state.
-            last_known.store(
-                target.load(Ordering::Relaxed), 
-                Ordering::Relaxed,
-            );
+            last_known.store(target.load(Ordering::Relaxed), Ordering::Relaxed);
 
             Box::pin(async move {
                 while target.load(Ordering::Relaxed) == last_known.load(Ordering::Relaxed) {

@@ -108,7 +108,6 @@ where
         entry: &CacheEntry<K, V>,
         overwrite: bool,
     ) -> Result<(), CacheErr> {
-
         self.prune().await?;
         self.write_entry_impl(entry, overwrite).await?;
         Ok(())

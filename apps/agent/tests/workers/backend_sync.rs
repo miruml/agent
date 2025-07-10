@@ -9,17 +9,12 @@ use config_agent::mqtt::{
     errors::*,
 };
 use config_agent::sync::{
-    errors::{SyncErr, MockErr as SyncMockErr},
+    errors::{MockErr as SyncMockErr, SyncErr},
     syncer::{CooldownEnd, SyncEvent, SyncFailure, SyncState},
 };
-use config_agent::workers::{
-    backend_sync::{
-        BackendSyncWorkerOptions,
-        run_polling_sync_worker,
-        handle_syncer_event,
-        handle_mqtt_event,
-        handle_mqtt_error,
-    },
+use config_agent::workers::backend_sync::{
+    handle_mqtt_error, handle_mqtt_event, handle_syncer_event, run_polling_sync_worker,
+    BackendSyncWorkerOptions,
 };
 
 use crate::auth::mock::MockTokenManager;
@@ -47,7 +42,8 @@ pub mod run_polling_sync {
                 options.poll_interval_secs,
                 syncer_for_spawn.as_ref(),
                 sleep_ctrl_for_spawn.sleep_fn(),
-            ).await;
+            )
+            .await;
         });
 
         let secs_since_last_sync = 30;
@@ -73,9 +69,11 @@ pub mod run_polling_sync {
 
         // these sleeps should still wait for the polling interval starting from the
         // last sync attempt since errors are logged & ignored
-        syncer.set_sync(|| Err(SyncErr::MockErr(Box::new(SyncMockErr {
-            is_network_connection_error: true,
-        }))));
+        syncer.set_sync(|| {
+            Err(SyncErr::MockErr(Box::new(SyncMockErr {
+                is_network_connection_error: true,
+            })))
+        });
         for i in 0..10 {
             sleep_ctrl.await_sleep().await;
             let last_sleep = sleep_ctrl.get_last_attempted_sleep().unwrap();
@@ -85,9 +83,11 @@ pub mod run_polling_sync {
             sleep_ctrl.release().await;
         }
 
-        syncer.set_sync(|| Err(SyncErr::MockErr(Box::new(SyncMockErr {
-            is_network_connection_error: false,
-        }))));
+        syncer.set_sync(|| {
+            Err(SyncErr::MockErr(Box::new(SyncMockErr {
+                is_network_connection_error: false,
+            })))
+        });
         for i in 0..10 {
             sleep_ctrl.await_sleep().await;
             let last_sleep = sleep_ctrl.get_last_attempted_sleep().unwrap();
@@ -114,7 +114,8 @@ pub mod run_polling_sync {
                 options.poll_interval_secs,
                 syncer_for_spawn.as_ref(),
                 sleep_ctrl_for_spawn.sleep_fn(),
-            ).await;
+            )
+            .await;
         });
 
         let secs_until_cooldown_ends = 120;
@@ -139,9 +140,11 @@ pub mod run_polling_sync {
 
         // these sleeps should still wait for the syncer cooldown to end since errors
         // are logged & ignored
-        syncer.set_sync(|| Err(SyncErr::MockErr(Box::new(SyncMockErr {
-            is_network_connection_error: true,
-        }))));
+        syncer.set_sync(|| {
+            Err(SyncErr::MockErr(Box::new(SyncMockErr {
+                is_network_connection_error: true,
+            })))
+        });
         for _ in 0..10 {
             sleep_ctrl.await_sleep().await;
             let last_sleep = sleep_ctrl.get_last_attempted_sleep().unwrap();
@@ -151,9 +154,11 @@ pub mod run_polling_sync {
             sleep_ctrl.release().await;
         }
 
-        syncer.set_sync(|| Err(SyncErr::MockErr(Box::new(SyncMockErr {
-            is_network_connection_error: false,
-        }))));
+        syncer.set_sync(|| {
+            Err(SyncErr::MockErr(Box::new(SyncMockErr {
+                is_network_connection_error: false,
+            })))
+        });
         for _ in 0..10 {
             sleep_ctrl.await_sleep().await;
             let last_sleep = sleep_ctrl.get_last_completed_sleep().unwrap();
@@ -177,7 +182,8 @@ pub mod run_polling_sync {
                 options.poll_interval_secs,
                 syncer_for_spawn.as_ref(),
                 sleep_ctrl_for_spawn.sleep_fn(),
-            ).await;
+            )
+            .await;
         });
 
         let secs_since_last_sync = 30;
@@ -211,7 +217,6 @@ pub mod run_polling_sync {
         }
     }
 
-
     #[tokio::test]
     async fn syncer_cooldown_end_from_sync_failure_event() {
         let options = BackendSyncWorkerOptions::default();
@@ -225,7 +230,8 @@ pub mod run_polling_sync {
                 options.poll_interval_secs,
                 syncer_for_spawn.as_ref(),
                 sleep_ctrl_for_spawn.sleep_fn(),
-            ).await;
+            )
+            .await;
         });
 
         let secs_since_last_sync = 45;
@@ -248,7 +254,9 @@ pub mod run_polling_sync {
             assert!(last_attempted_sleep.as_secs() <= expected_sleep_secs as u64);
             assert!(last_attempted_sleep.as_secs() >= expected_sleep_secs as u64 - 1);
             assert_eq!(syncer.num_sync_calls(), expected_num_sync_calls);
-            syncer_tx.send(SyncEvent::CooldownEnd(CooldownEnd::FromSyncFailure)).unwrap();
+            syncer_tx
+                .send(SyncEvent::CooldownEnd(CooldownEnd::FromSyncFailure))
+                .unwrap();
         }
     }
 }
@@ -287,10 +295,7 @@ pub mod handle_mqtt_event {
     async fn non_publish_event() {
         let event = Event::Incoming(Incoming::PingReq);
         let syncer = MockSyncer::default();
-        handle_mqtt_event(
-            &event,
-            &syncer,
-        ).await;
+        handle_mqtt_event(&event, &syncer).await;
 
         assert_eq!(syncer.num_sync_calls(), 0);
     }
@@ -303,19 +308,14 @@ pub mod handle_mqtt_event {
             "test".to_string(),
         )));
         let syncer = MockSyncer::default();
-        handle_mqtt_event(
-            &event,
-            &syncer,
-        ).await;
+        handle_mqtt_event(&event, &syncer).await;
 
         assert_eq!(syncer.num_sync_calls(), 1);
     }
 
     #[tokio::test]
     async fn sync_request_is_synced() {
-        let payload = SyncDevice {
-            is_synced: true,
-        };
+        let payload = SyncDevice { is_synced: true };
         let payload_bytes = serde_json::to_vec(&payload).unwrap();
         let event = Event::Incoming(Incoming::Publish(Publish::new(
             "test".to_string(),
@@ -323,19 +323,14 @@ pub mod handle_mqtt_event {
             payload_bytes,
         )));
         let syncer = MockSyncer::default();
-        handle_mqtt_event(
-            &event,
-            &syncer,
-        ).await;
+        handle_mqtt_event(&event, &syncer).await;
 
         assert_eq!(syncer.num_sync_calls(), 0);
     }
 
     #[tokio::test]
     async fn sync_request_is_not_synced() {
-        let payload = SyncDevice {
-            is_synced: false,
-        };
+        let payload = SyncDevice { is_synced: false };
         let payload_bytes = serde_json::to_vec(&payload).unwrap();
         let event = Event::Incoming(Incoming::Publish(Publish::new(
             "test".to_string(),
@@ -343,19 +338,14 @@ pub mod handle_mqtt_event {
             payload_bytes,
         )));
         let syncer = MockSyncer::default();
-        handle_mqtt_event(
-            &event,
-            &syncer,
-        ).await;
+        handle_mqtt_event(&event, &syncer).await;
 
         assert_eq!(syncer.num_sync_calls(), 1);
     }
 
     #[tokio::test]
     async fn sync_error() {
-        let payload = SyncDevice {
-            is_synced: false,
-        };
+        let payload = SyncDevice { is_synced: false };
         let payload_bytes = serde_json::to_vec(&payload).unwrap();
         let event = Event::Incoming(Incoming::Publish(Publish::new(
             "test".to_string(),
@@ -363,13 +353,12 @@ pub mod handle_mqtt_event {
             payload_bytes,
         )));
         let syncer = MockSyncer::default();
-        syncer.set_sync(|| Err(SyncErr::MockErr(Box::new(SyncMockErr {
-            is_network_connection_error: false,
-        }))));
-        handle_mqtt_event(
-            &event,
-            &syncer,
-        ).await;
+        syncer.set_sync(|| {
+            Err(SyncErr::MockErr(Box::new(SyncMockErr {
+                is_network_connection_error: false,
+            })))
+        });
+        handle_mqtt_event(&event, &syncer).await;
 
         assert_eq!(syncer.num_sync_calls(), 1);
     }
@@ -401,7 +390,8 @@ pub mod handle_mqtt_error {
             &options.connect_address,
             mqtt_client,
             eventloop,
-        ).await;
+        )
+        .await;
         assert_eq!(token_mngr.num_refresh_token_calls(), 1);
         // should reinitialize the mqtt client
         assert_ne!(mqtt_client.created_at, created_at);
@@ -430,7 +420,8 @@ pub mod handle_mqtt_error {
             &options.connect_address,
             mqtt_client,
             eventloop,
-        ).await;
+        )
+        .await;
         assert_eq!(token_mngr.num_refresh_token_calls(), 0);
         // should not reinitialize the mqtt client
         assert_eq!(mqtt_client.created_at, created_at);

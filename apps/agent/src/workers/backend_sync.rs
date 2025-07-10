@@ -1,32 +1,23 @@
 // standard crates
+use std::cmp::max;
 use std::future::Future;
 use std::pin::Pin;
-use std::cmp::max;
 use std::time::Duration;
 
 // internal modules
-use crate::auth::{
-    token_mngr::TokenManagerExt,
-    token::Token,
-};
+use crate::auth::{token::Token, token_mngr::TokenManagerExt};
 use crate::errors::*;
-use crate::mqtt::errors::*;
-use crate::mqtt::client::{
-    MQTTClient,
-    OptionsBuilder,
-    ConnectAddress,
-    Credentials,
-    poll,
-};
+use crate::mqtt::client::{poll, ConnectAddress, Credentials, MQTTClient, OptionsBuilder};
 use crate::mqtt::device::{DeviceExt, SyncDevice};
-use crate::sync::syncer::{SyncerExt, SyncEvent, CooldownEnd};
+use crate::mqtt::errors::*;
+use crate::sync::syncer::{CooldownEnd, SyncEvent, SyncerExt};
 use crate::utils::{calc_exp_backoff, CooldownOptions};
 
 // external crates
-use rumqttc::{Event, Incoming, EventLoop};
-use tracing::{error, info, debug};
-use tokio::sync::watch;
 use chrono::{TimeDelta, Utc};
+use rumqttc::{Event, EventLoop, Incoming};
+use tokio::sync::watch;
+use tracing::{debug, error, info};
 
 #[derive(Debug, Clone)]
 pub struct BackendSyncWorkerOptions {
@@ -52,10 +43,7 @@ impl Default for BackendSyncWorkerOptions {
     }
 }
 
-pub async fn run_backend_sync_worker<
-    TokenManagerT: TokenManagerExt,
-    SyncerT: SyncerExt,
->(
+pub async fn run_backend_sync_worker<TokenManagerT: TokenManagerExt, SyncerT: SyncerExt>(
     device_id: &str,
     options: &BackendSyncWorkerOptions,
     token_mngr: &TokenManagerT,
@@ -97,7 +85,7 @@ pub async fn run_polling_sync_worker<F, Fut, SyncerT: SyncerExt>(
     sleep_fn: F, // for testing purposes
 ) where
     F: Fn(Duration) -> Fut,
-    Fut: Future<Output = ()> + Send
+    Fut: Future<Output = ()> + Send,
 {
     info!("Running polling backend sync worker");
 
@@ -113,17 +101,29 @@ pub async fn run_polling_sync_worker<F, Fut, SyncerT: SyncerExt>(
 
     loop {
         // poll from the last sync attempt, not the current time
-        let last_sync_attempted_at = syncer.get_last_sync_attempted_at().await.unwrap_or_default().timestamp();
+        let last_sync_attempted_at = syncer
+            .get_last_sync_attempted_at()
+            .await
+            .unwrap_or_default()
+            .timestamp();
         let secs_since_last_sync = Utc::now().timestamp() - last_sync_attempted_at;
-        let secs_until_next_sync= poll_interval_secs - secs_since_last_sync;
+        let secs_until_next_sync = poll_interval_secs - secs_since_last_sync;
 
         // wait until the cooldown ends or the poll interval elapses (max of the two)
-        let secs_until_cooldown_ends = syncer.get_cooldown_ends_at().await.unwrap_or_default().signed_duration_since(Utc::now()).num_seconds();
+        let secs_until_cooldown_ends = syncer
+            .get_cooldown_ends_at()
+            .await
+            .unwrap_or_default()
+            .signed_duration_since(Utc::now())
+            .num_seconds();
         let wait_secs = max(secs_until_next_sync, secs_until_cooldown_ends);
 
         // log the next scheduled sync time
         let next_sync_at = Utc::now() + TimeDelta::seconds(wait_secs);
-        info!("Waiting until {:?} ({:?} seconds) for next *scheduled* device sync", next_sync_at, wait_secs);
+        info!(
+            "Waiting until {:?} ({:?} seconds) for next *scheduled* device sync",
+            next_sync_at, wait_secs
+        );
 
         tokio::select! {
             // next scheduled sync
@@ -137,17 +137,14 @@ pub async fn run_polling_sync_worker<F, Fut, SyncerT: SyncerExt>(
                 // retry synchronization when the cooldown ends from a failed sync
                 if let SyncEvent::CooldownEnd(CooldownEnd::FromSyncFailure) = syncer_event {
                     let _ = syncer.sync_if_not_in_cooldown().await;
-                } 
+                }
             }
         }
     }
 }
 
 // ============================= MQTT SYNC LISTENER ================================ //
-pub async fn run_mqtt_sync_worker<
-    TokenManagerT: TokenManagerExt,
-    SyncerT: SyncerExt,
->(
+pub async fn run_mqtt_sync_worker<TokenManagerT: TokenManagerExt, SyncerT: SyncerExt>(
     device_id: &str,
     options: &BackendSyncWorkerOptions,
     token_mngr: &TokenManagerT,
@@ -163,11 +160,10 @@ pub async fn run_mqtt_sync_worker<
     });
 
     // create the mqtt client
-    let (mut mqtt_client, mut eventloop) = init_mqtt_client(
-        device_id, token_mngr, options.mqtt_broker_address.clone()
-    ).await;
+    let (mut mqtt_client, mut eventloop) =
+        init_mqtt_client(device_id, token_mngr, options.mqtt_broker_address.clone()).await;
 
-    let mut mqtt_client_err_streak= 0;
+    let mut mqtt_client_err_streak = 0;
     loop {
         tokio::select! {
             // listen for syncer events from the syncer worker (this device)
@@ -201,14 +197,13 @@ pub async fn run_mqtt_sync_worker<
                 }
             }
         }
-        
 
         // sleep for the cooldown period to prevent throttling from mqtt errors
         let cooldown_secs = calc_exp_backoff(
             options.mqtt_cooldown.base_secs,
             options.mqtt_cooldown.growth_factor,
             mqtt_client_err_streak,
-            options.mqtt_cooldown.max_secs
+            options.mqtt_cooldown.max_secs,
         );
         let cooldown_duration = Duration::from_secs(cooldown_secs as u64);
         tokio::time::sleep(cooldown_duration).await;
@@ -224,7 +219,7 @@ pub async fn handle_syncer_event<MQTTClientT: DeviceExt>(
         return;
     }
 
-    // whenever the syncer has synced, we need to publish this synchronization to the 
+    // whenever the syncer has synced, we need to publish this synchronization to the
     // backend
     match mqtt_client.publish_device_sync(device_id).await {
         Ok(_) => {
@@ -244,7 +239,7 @@ async fn init_mqtt_client<TokenManagerT: TokenManagerExt>(
     // update the mqtt password
     let token = match token_mngr.get_token().await {
         Ok(token) => token.token.clone(),
-        Err(_) => { Token::default().token }
+        Err(_) => Token::default().token,
     };
 
     // initialize the mqtt options
@@ -267,10 +262,7 @@ async fn init_mqtt_client<TokenManagerT: TokenManagerExt>(
     (mqtt_client, eventloop)
 }
 
-pub async fn handle_mqtt_event<SyncerT: SyncerExt>(
-    event: &Event,
-    syncer: &SyncerT,
-) {
+pub async fn handle_mqtt_event<SyncerT: SyncerExt>(event: &Event, syncer: &SyncerT) {
     // ignore non-publish events
     let publish = match event {
         Event::Incoming(Incoming::Publish(publish)) => publish,

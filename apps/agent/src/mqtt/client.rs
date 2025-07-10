@@ -6,9 +6,9 @@ use crate::mqtt::errors::*;
 use crate::trace;
 
 // external crates
+use chrono::{DateTime, Utc};
 use rumqttc::{AsyncClient, Event, EventLoop, MqttOptions, QoS, Transport};
 use tokio::time::timeout;
-use chrono::{DateTime, Utc};
 
 // ================================== OPTIONS ====================================== //
 #[derive(Debug, Clone)]
@@ -26,7 +26,11 @@ pub struct ConnectAddress {
 
 impl ConnectAddress {
     pub fn new(protocol: Protocol, broker: String, port: u16) -> Self {
-        Self { protocol, broker, port }
+        Self {
+            protocol,
+            broker,
+            port,
+        }
     }
 }
 
@@ -174,7 +178,6 @@ pub struct MQTTClient {
 }
 
 impl MQTTClient {
-
     pub async fn new(options: &Options) -> (Self, EventLoop) {
         let mut mqtt_options = MqttOptions::new(
             &options.client_id,
@@ -183,10 +186,7 @@ impl MQTTClient {
         );
 
         mqtt_options.set_keep_alive(options.keep_alive);
-        mqtt_options.set_credentials(
-            &options.credentials.username,
-            &options.credentials.password,
-        );
+        mqtt_options.set_credentials(&options.credentials.username, &options.credentials.password);
 
         match options.connect_address.protocol {
             Protocol::TCP => {
@@ -199,11 +199,14 @@ impl MQTTClient {
 
         let (client, eventloop) = AsyncClient::new(mqtt_options, options.capacity);
 
-        (Self {
-            created_at: Utc::now(),
-            client,
-            timeouts: options.timeouts,
-        }, eventloop)
+        (
+            Self {
+                created_at: Utc::now(),
+                client,
+                timeouts: options.timeouts,
+            },
+            eventloop,
+        )
     }
 
     pub async fn publish(
@@ -296,9 +299,9 @@ pub async fn poll(eventloop: &mut EventLoop) -> Result<Event, MQTTError> {
     eventloop.poll().await.map_err(|e| {
         match e {
             // poor network connection errors
-            rumqttc::ConnectionError::NetworkTimeout |
-            rumqttc::ConnectionError::FlushTimeout |
-            rumqttc::ConnectionError::NotConnAck(_) => {
+            rumqttc::ConnectionError::NetworkTimeout
+            | rumqttc::ConnectionError::FlushTimeout
+            | rumqttc::ConnectionError::NotConnAck(_) => {
                 MQTTError::NetworkConnectionErr(Box::new(NetworkConnectionErr {
                     source: e,
                     trace: trace!(),
@@ -314,12 +317,10 @@ pub async fn poll(eventloop: &mut EventLoop) -> Result<Event, MQTTError> {
             }
 
             // all other errors
-            _ => {
-                MQTTError::PollErr(Box::new(PollErr {
-                    source: e,
-                    trace: trace!(),
-                }))
-            }
+            _ => MQTTError::PollErr(Box::new(PollErr {
+                source: e,
+                trace: trace!(),
+            })),
         }
     })
 }

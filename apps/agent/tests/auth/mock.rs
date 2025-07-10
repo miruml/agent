@@ -2,11 +2,7 @@
 use std::sync::{Arc, Mutex};
 
 // internal crates
-use config_agent::auth::{
-    errors::*,
-    token_mngr::TokenManagerExt,
-    token::Token,
-};
+use config_agent::auth::{errors::*, token::Token, token_mngr::TokenManagerExt};
 
 type GetTokenFn = Box<dyn Fn() -> Result<Arc<Token>, AuthErr> + Send + Sync>;
 type RefreshTokenFn = Box<dyn Fn() -> Result<(), AuthErr> + Send + Sync>;
@@ -43,11 +39,21 @@ impl MockTokenManager {
     }
 
     pub fn num_get_token_calls(&self) -> usize {
-        self.calls.lock().unwrap().iter().filter(|call| **call == TokenManagerCall::GetToken).count()
+        self.calls
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|call| **call == TokenManagerCall::GetToken)
+            .count()
     }
 
     pub fn num_refresh_token_calls(&self) -> usize {
-        self.calls.lock().unwrap().iter().filter(|call| **call == TokenManagerCall::RefreshToken).count()
+        self.calls
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|call| **call == TokenManagerCall::RefreshToken)
+            .count()
     }
 
     pub fn set_get_token(&self, get_token_fn: GetTokenFn) {
@@ -74,7 +80,10 @@ impl TokenManagerExt for MockTokenManager {
     }
 
     async fn refresh_token(&self) -> Result<(), AuthErr> {
-        self.calls.lock().unwrap().push(TokenManagerCall::RefreshToken);
+        self.calls
+            .lock()
+            .unwrap()
+            .push(TokenManagerCall::RefreshToken);
         (*self.refresh_token_fn.lock().unwrap())()
     }
 }

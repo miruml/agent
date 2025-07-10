@@ -38,10 +38,10 @@ pub mod push_config_instances_func {
             .await
             .unwrap();
 
-        // create the instance
-        let instance = ConfigInstance::default();
+        // create the config instance
+        let cfg_inst = ConfigInstance::default();
         metadata_cache
-            .write(instance.id.clone(), instance, |_, _| false, true)
+            .write(cfg_inst.id.clone(), cfg_inst, |_, _| false, true)
             .await
             .unwrap();
 
@@ -66,14 +66,14 @@ pub mod push_config_instances_func {
             .await
             .unwrap();
 
-        // create the instance
-        let instance = ConfigInstance {
+        // create the config instance
+        let cfg_inst = ConfigInstance {
             activity_status: ActivityStatus::Deployed,
             error_status: ErrorStatus::Retrying,
             ..Default::default()
         };
         metadata_cache
-            .write(instance.id.clone(), instance, |_, _| true, true)
+            .write(cfg_inst.id.clone(), cfg_inst, |_, _| true, true)
             .await
             .unwrap();
 

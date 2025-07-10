@@ -21,8 +21,8 @@ impl HistoryObserver {
 
 #[async_trait]
 impl Observer for HistoryObserver {
-    async fn on_update(&mut self, instance: &ConfigInstance) -> Result<(), DeployErr> {
-        self.history.push(instance.clone());
+    async fn on_update(&mut self, cfg_inst: &ConfigInstance) -> Result<(), DeployErr> {
+        self.history.push(cfg_inst.clone());
         Ok(())
     }
 }

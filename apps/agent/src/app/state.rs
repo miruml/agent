@@ -5,8 +5,8 @@ use std::sync::Arc;
 // internal crates
 use crate::activity::ActivityTracker;
 use crate::auth::{
-    token_mngr::{TokenManager, TokenManagerExt},
     token::Token,
+    token_mngr::{TokenManager, TokenManagerExt},
 };
 use crate::crypt::jwt;
 use crate::deploy::fsm;
@@ -18,9 +18,9 @@ use crate::storage::{
     caches::{CacheCapacities, Caches},
     layout::StorageLayout,
 };
-use crate::sync::syncer::{Syncer, SyncerExt, SyncerArgs};
-use crate::utils::CooldownOptions;
+use crate::sync::syncer::{Syncer, SyncerArgs, SyncerExt};
 use crate::trace;
+use crate::utils::CooldownOptions;
 
 pub type DeviceID = String;
 
@@ -41,7 +41,6 @@ impl AppState {
         http_client: Arc<HTTPClient>,
         fsm_settings: fsm::Settings,
     ) -> Result<(Self, impl Future<Output = ()>), ServerErr> {
-
         // storage layout stuff
         let auth_dir = layout.auth_dir();
         let private_key_file = auth_dir.private_key_file();
@@ -65,12 +64,13 @@ impl AppState {
         let device_id = Self::init_device_id(&agent_file, &token_file).await?;
 
         // initialize the caches
-        let (caches, caches_shutdown_handle) = Caches::init(layout, cache_capacities).await.map_err(|e| {
-            ServerErr::StorageErr(Box::new(ServerStorageErr {
-                source: e,
-                trace: trace!(),
-            }))
-        })?;
+        let (caches, caches_shutdown_handle) =
+            Caches::init(layout, cache_capacities).await.map_err(|e| {
+                ServerErr::StorageErr(Box::new(ServerStorageErr {
+                    source: e,
+                    trace: trace!(),
+                }))
+            })?;
         let caches = Arc::new(caches);
 
         // initialize the token manager
@@ -115,25 +115,22 @@ impl AppState {
         let activity_tracker = Arc::new(ActivityTracker::new());
 
         let shutdown_handle = async move {
-            let handles = vec![
-                token_mngr_handle,
-                syncer_handle,
-            ];
+            let handles = vec![token_mngr_handle, syncer_handle];
 
-            futures::future::join(
-                futures::future::join_all(handles),
-                caches_shutdown_handle,
-            ).await;
+            futures::future::join(futures::future::join_all(handles), caches_shutdown_handle).await;
         };
 
-        Ok((AppState {
-            device_id,
-            http_client,
-            syncer,
-            caches,
-            token_mngr,
-            activity_tracker,
-        }, shutdown_handle))
+        Ok((
+            AppState {
+                device_id,
+                http_client,
+                syncer,
+                caches,
+                token_mngr,
+                activity_tracker,
+            },
+            shutdown_handle,
+        ))
     }
 
     async fn init_device_id(

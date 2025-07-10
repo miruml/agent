@@ -12,28 +12,17 @@ use crate::app::{
 };
 use crate::auth::token_mngr::{TokenManager, TokenManagerExt};
 use crate::http::client::HTTPClient;
-use crate::server::{
-    errors::*,
-    serve::{serve},
-    state::ServerState,
-};
-use crate::workers::{
-        token_refresh::{
-        run_token_refresh_worker,
-        TokenRefreshWorkerOptions,
-    },
-    backend_sync::{
-        run_backend_sync_worker,
-        BackendSyncWorkerOptions,
-    },
-};
+use crate::server::{errors::*, serve::serve, state::ServerState};
 use crate::trace;
+use crate::workers::{
+    backend_sync::{run_backend_sync_worker, BackendSyncWorkerOptions},
+    token_refresh::{run_token_refresh_worker, TokenRefreshWorkerOptions},
+};
 
 // external
 use tokio::sync::broadcast;
 use tokio::task::JoinHandle;
 use tracing::{error, info};
-
 
 pub async fn run(
     options: AppOptions,
@@ -44,16 +33,10 @@ pub async fn run(
     // Create a single shutdown channel that all components will listen to
     let (shutdown_tx, _shutdown_rx): (tokio::sync::broadcast::Sender<()>, _) =
         tokio::sync::broadcast::channel(1);
-    let mut shutdown_manager =
-        ShutdownManager::new(
-            shutdown_tx.clone(),
-            options.lifecycle,
-        );
+    let mut shutdown_manager = ShutdownManager::new(shutdown_tx.clone(), options.lifecycle);
 
     // initialize the app (and shutdown if failures occur)
-    let app_state = match init(
-        &options, shutdown_tx.clone(), &mut shutdown_manager,
-    ).await {
+    let app_state = match init(&options, shutdown_tx.clone(), &mut shutdown_manager).await {
         Ok(state) => state,
         Err(e) => {
             error!("Failed to start server: {}", e);
@@ -103,7 +86,8 @@ async fn await_idle_timeout(
 ) -> Result<(), ServerErr> {
     loop {
         tokio::time::sleep(poll_interval).await;
-        let last_activity = SystemTime::UNIX_EPOCH + Duration::from_secs(activity_tracker.last_touched());
+        let last_activity =
+            SystemTime::UNIX_EPOCH + Duration::from_secs(activity_tracker.last_touched());
         match SystemTime::now().duration_since(last_activity) {
             Ok(duration) if duration > idle_timeout => {
                 info!("Server idle timeout reached, shutting down...");
@@ -128,7 +112,6 @@ async fn init(
     shutdown_tx: broadcast::Sender<()>,
     shutdown_manager: &mut ShutdownManager,
 ) -> Result<Arc<AppState>, ServerErr> {
-
     let app_state = init_app_state(options, shutdown_manager).await?;
 
     init_token_refresh_worker(
@@ -136,7 +119,8 @@ async fn init(
         options.token_refresh_worker.clone(),
         shutdown_manager,
         shutdown_tx.subscribe(),
-    ).await?;
+    )
+    .await?;
 
     if options.enable_backend_sync_worker {
         init_backend_sync_worker(
@@ -144,7 +128,8 @@ async fn init(
             app_state.clone(),
             shutdown_manager,
             shutdown_tx.subscribe(),
-        ).await?;
+        )
+        .await?;
     }
 
     if options.enable_socket_server {
@@ -153,9 +138,9 @@ async fn init(
             app_state.clone(),
             shutdown_manager,
             shutdown_tx.subscribe(),
-        ).await?;
+        )
+        .await?;
     }
-
 
     Ok(app_state)
 }
@@ -164,7 +149,6 @@ async fn init_app_state(
     options: &AppOptions,
     shutdown_manager: &mut ShutdownManager,
 ) -> Result<Arc<AppState>, ServerErr> {
-
     let (app_state, app_state_handle) = AppState::init(
         &options.storage.layout,
         options.storage.cache_capacities,
@@ -173,10 +157,7 @@ async fn init_app_state(
     )
     .await?;
     let app_state = Arc::new(app_state);
-    shutdown_manager.with_app_state(
-        app_state.clone(),
-        Box::pin(app_state_handle),
-    )?;
+    shutdown_manager.with_app_state(app_state.clone(), Box::pin(app_state_handle))?;
 
     Ok(app_state)
 }
@@ -239,7 +220,7 @@ async fn init_backend_sync_worker(
     let device_id = app_state.device_id.clone();
     let token_mngr = app_state.token_mngr.clone();
     let syncer = app_state.syncer.clone();
-    
+
     let backend_sync_handle = tokio::spawn(async move {
         run_backend_sync_worker(
             device_id.as_ref(),
@@ -273,13 +254,9 @@ async fn init_socket_server(
         app_state.token_mngr.clone(),
         app_state.activity_tracker.clone(),
     );
-    let server_handle = serve(
-        &options.server,
-        Arc::new(server_state),
-        async move {
-            let _ = shutdown_rx.recv().await;
-        },
-    )
+    let server_handle = serve(&options.server, Arc::new(server_state), async move {
+        let _ = shutdown_rx.recv().await;
+    })
     .await?;
     shutdown_manager.with_socket_server_handle(server_handle)?;
 
@@ -329,7 +306,10 @@ impl ShutdownManager {
                 },
             )));
         }
-        self.app_state = Some(AppStateShutdownParams { state, state_handle });
+        self.app_state = Some(AppStateShutdownParams {
+            state,
+            state_handle,
+        });
         Ok(())
     }
 
@@ -388,7 +368,9 @@ impl ShutdownManager {
         match tokio::time::timeout(
             self.lifecycle_options.max_shutdown_delay,
             self.shutdown_impl(),
-        ).await {
+        )
+        .await
+        {
             Ok(result) => result,
             Err(_) => {
                 error!(
@@ -414,7 +396,9 @@ impl ShutdownManager {
                 }))
             })?;
         } else {
-            info!("Token refresh worker handle not found, skipping token refresh worker shutdown...");
+            info!(
+                "Token refresh worker handle not found, skipping token refresh worker shutdown..."
+            );
         }
 
         // 2. backend sync

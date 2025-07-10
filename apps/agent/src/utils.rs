@@ -1,6 +1,6 @@
 // standard library
-use std::env;
 use std::cmp::min;
+use std::env;
 
 // external
 use serde_json::json;

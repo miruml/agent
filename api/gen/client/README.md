@@ -26,11 +26,8 @@ All URIs are relative to *https://configs.dev.api.miruml.com/agent/v1*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
-*ConfigInstancesApi* | [**create_config_instance**](docs/ConfigInstancesApi.md#create_config_instance) | **POST** /config_instances | Create a config instance
-*ConfigInstancesApi* | [**get_config_instance**](docs/ConfigInstancesApi.md#get_config_instance) | **GET** /config_instances/{config_instance_id} | Get a config instance
 *ConfigInstancesApi* | [**list_config_instances**](docs/ConfigInstancesApi.md#list_config_instances) | **GET** /config_instances | List config instances in a workspace
 *ConfigInstancesApi* | [**update_config_instance**](docs/ConfigInstancesApi.md#update_config_instance) | **PATCH** /config_instances/{config_instance_id} | Update a config instance
-*ConfigSchemasApi* | [**create_config_schema**](docs/ConfigSchemasApi.md#create_config_schema) | **POST** /config_schemas | Create a config schema
 *ConfigSchemasApi* | [**hash_config_schema**](docs/ConfigSchemasApi.md#hash_config_schema) | **POST** /config_schemas/hash | Hash a config schema
 *ConfigSchemasApi* | [**hash_config_schema_serialized**](docs/ConfigSchemasApi.md#hash_config_schema_serialized) | **POST** /config_schemas/hash/serialized | Hash a serialized config schema
 *ConfigSchemasApi* | [**list_config_schemas**](docs/ConfigSchemasApi.md#list_config_schemas) | **GET** /config_schemas | List the config schemas for a workspace
@@ -43,10 +40,14 @@ Class | Method | HTTP request | Description
 ## Documentation For Models
 
  - [ActivateDeviceRequest](docs/ActivateDeviceRequest.md)
- - [BackendConfigInstance](docs/BackendConfigInstance.md)
  - [BaseConfigInstance](docs/BaseConfigInstance.md)
+ - [BaseConfigSchema](docs/BaseConfigSchema.md)
+ - [BaseConfigType](docs/BaseConfigType.md)
+ - [BaseDevice](docs/BaseDevice.md)
  - [BillingPlan](docs/BillingPlan.md)
+ - [ConfigInstance](docs/ConfigInstance.md)
  - [ConfigInstanceActivityStatus](docs/ConfigInstanceActivityStatus.md)
+ - [ConfigInstanceContent](docs/ConfigInstanceContent.md)
  - [ConfigInstanceErrorStatus](docs/ConfigInstanceErrorStatus.md)
  - [ConfigInstanceExpand](docs/ConfigInstanceExpand.md)
  - [ConfigInstanceList](docs/ConfigInstanceList.md)
@@ -62,21 +63,19 @@ Class | Method | HTTP request | Description
  - [ConfigSchemaOrderBy](docs/ConfigSchemaOrderBy.md)
  - [ConfigSchemaSearch](docs/ConfigSchemaSearch.md)
  - [ConfigType](docs/ConfigType.md)
- - [CreateConfigInstanceRequest](docs/CreateConfigInstanceRequest.md)
- - [CreateConfigSchemaRequest](docs/CreateConfigSchemaRequest.md)
  - [Device](docs/Device.md)
  - [DeviceTag](docs/DeviceTag.md)
  - [DeviceTagPaginatedList](docs/DeviceTagPaginatedList.md)
  - [Error](docs/Error.md)
  - [ErrorResponse](docs/ErrorResponse.md)
  - [GitCommit](docs/GitCommit.md)
- - [GitCommitRequest](docs/GitCommitRequest.md)
  - [GitRepositoryType](docs/GitRepositoryType.md)
  - [HashSchemaRequest](docs/HashSchemaRequest.md)
  - [HashSchemaSerializedRequest](docs/HashSchemaSerializedRequest.md)
  - [HashSerializedConfigSchemaFormat](docs/HashSerializedConfigSchemaFormat.md)
  - [IssueDeviceClaims](docs/IssueDeviceClaims.md)
  - [IssueDeviceTokenRequest](docs/IssueDeviceTokenRequest.md)
+ - [NullableConfigInstanceContent](docs/NullableConfigInstanceContent.md)
  - [Override](docs/Override.md)
  - [OverrideKeyValuePair](docs/OverrideKeyValuePair.md)
  - [OverrideKeyValuePairList](docs/OverrideKeyValuePairList.md)

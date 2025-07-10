@@ -11,7 +11,8 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-///
+/// ConfigInstanceTargetStatus : Desired state of the config instance
+/// Desired state of the config instance
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum ConfigInstanceTargetStatus {
     #[serde(rename = "created")]

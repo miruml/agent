@@ -11,13 +11,13 @@ use crate::models::config_instance::ConfigInstance;
 use crate::storage::errors::StorageErr;
 
 #[derive(Debug)]
-pub struct InstanceNotDeployableErr {
-    pub instance: ConfigInstance,
+pub struct ConfigInstanceNotDeployableErr {
+    pub cfg_inst: ConfigInstance,
     pub next_action: fsm::NextAction,
     pub trace: Box<Trace>,
 }
 
-impl MiruError for InstanceNotDeployableErr {
+impl MiruError for ConfigInstanceNotDeployableErr {
     fn code(&self) -> Code {
         Code::InternalServerError
     }
@@ -35,12 +35,12 @@ impl MiruError for InstanceNotDeployableErr {
     }
 }
 
-impl fmt::Display for InstanceNotDeployableErr {
+impl fmt::Display for ConfigInstanceNotDeployableErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "cannot deploy config instance '{:?}' since it's next action is: {:?}",
-            self.instance.id, self.next_action
+            self.cfg_inst.id, self.next_action
         )
     }
 }
@@ -202,7 +202,7 @@ impl fmt::Display for DeployStorageErr {
 #[derive(Debug)]
 pub enum DeployErr {
     ConflictingDeploymentsErr(Box<ConflictingDeploymentsErr>),
-    InstanceNotDeployableErr(Box<InstanceNotDeployableErr>),
+    ConfigInstanceNotDeployableErr(Box<ConfigInstanceNotDeployableErr>),
 
     CacheErr(Box<DeployCacheErr>),
     CrudErr(Box<DeployCrudErr>),
@@ -214,7 +214,7 @@ macro_rules! forward_error_method {
     ($self:ident, $method:ident $(, $arg:expr)?) => {
         match $self {
             DeployErr::ConflictingDeploymentsErr(e) => e.$method($($arg)?),
-            DeployErr::InstanceNotDeployableErr(e) => e.$method($($arg)?),
+            DeployErr::ConfigInstanceNotDeployableErr(e) => e.$method($($arg)?),
 
             DeployErr::CacheErr(e) => e.$method($($arg)?),
             DeployErr::CrudErr(e) => e.$method($($arg)?),

@@ -1,6 +1,6 @@
 // internal crates
-use crate::logs::LogLevel;
 use crate::deserialize_warn;
+use crate::logs::LogLevel;
 
 // external crates
 use serde::{Deserialize, Serialize};
@@ -55,18 +55,36 @@ impl<'de> Deserialize<'de> for Settings {
         };
 
         Ok(Settings {
-            log_level: result.log_level
+            log_level: result
+                .log_level
                 .unwrap_or_else(|| deserialize_warn!("settings", "log_level", default.log_level)),
-            backend: result.backend
+            backend: result
+                .backend
                 .unwrap_or_else(|| deserialize_warn!("settings", "backend", default.backend)),
-            mqtt_broker: result.mqtt_broker
-                .unwrap_or_else(|| deserialize_warn!("settings", "mqtt_broker", default.mqtt_broker)),
-            is_socket_activated: result.is_socket_activated
-                .unwrap_or_else(|| deserialize_warn!("settings", "is_socket_activated", default.is_socket_activated)),
-            enable_socket_server: result.enable_socket_server
-                .unwrap_or_else(|| deserialize_warn!("settings", "enable_socket_server", default.enable_socket_server)),
-            enable_backend_sync_worker: result.enable_backend_sync_worker
-                .unwrap_or_else(|| deserialize_warn!("settings", "enable_backend_sync_worker", default.enable_backend_sync_worker)),
+            mqtt_broker: result.mqtt_broker.unwrap_or_else(|| {
+                deserialize_warn!("settings", "mqtt_broker", default.mqtt_broker)
+            }),
+            is_socket_activated: result.is_socket_activated.unwrap_or_else(|| {
+                deserialize_warn!(
+                    "settings",
+                    "is_socket_activated",
+                    default.is_socket_activated
+                )
+            }),
+            enable_socket_server: result.enable_socket_server.unwrap_or_else(|| {
+                deserialize_warn!(
+                    "settings",
+                    "enable_socket_server",
+                    default.enable_socket_server
+                )
+            }),
+            enable_backend_sync_worker: result.enable_backend_sync_worker.unwrap_or_else(|| {
+                deserialize_warn!(
+                    "settings",
+                    "enable_backend_sync_worker",
+                    default.enable_backend_sync_worker
+                )
+            }),
         })
     }
 }

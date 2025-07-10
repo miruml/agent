@@ -30,9 +30,9 @@ pub struct Patch {
     #[serde(rename = "created_by", deserialize_with = "Option::deserialize")]
     pub created_by: Option<Box<models::User>>,
     #[serde(rename = "base_instance", deserialize_with = "Option::deserialize")]
-    pub base_instance: Option<Box<models::BackendConfigInstance>>,
+    pub base_instance: Option<Box<models::ConfigInstance>>,
     #[serde(rename = "patched_instance", deserialize_with = "Option::deserialize")]
-    pub patched_instance: Option<Box<models::BackendConfigInstance>>,
+    pub patched_instance: Option<Box<models::ConfigInstance>>,
     #[serde(rename = "comments", deserialize_with = "Option::deserialize")]
     pub comments: Option<Box<models::PatchCommentList>>,
 }
@@ -47,8 +47,8 @@ impl Patch {
         created_at: String,
         created_by_id: Option<String>,
         created_by: Option<models::User>,
-        base_instance: Option<models::BackendConfigInstance>,
-        patched_instance: Option<models::BackendConfigInstance>,
+        base_instance: Option<models::ConfigInstance>,
+        patched_instance: Option<models::ConfigInstance>,
         comments: Option<models::PatchCommentList>,
     ) -> Patch {
         Patch {

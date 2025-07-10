@@ -18,27 +18,29 @@ pub mod deploy_with_rollback {
 
     #[tokio::test]
     async fn deploy_1_failed_missing_instance_data() {
-        // define the instance
+        // define the config instance
         let filepath = "/test/filepath".to_string();
-        let instance = ConfigInstance {
+        let cfg_inst = ConfigInstance {
             relative_filepath: Some(filepath.clone()),
             // target status must be deployed to increment failure attempts
             target_status: TargetStatus::Deployed,
             ..Default::default()
         };
 
-        // create the cache but omit the instance data
+        // create the cache but omit the config instance data
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
+            .await
+            .unwrap();
 
-        // deploy the instance
+        // deploy the config instance
         let settings = Settings::default();
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
         observers.push(&mut observer);
         let (deploy_results, result) = deploy_with_rollback(
             vec![],
-            vec![instance.clone()],
+            vec![cfg_inst.clone()],
             &cache,
             &dir,
             &settings,
@@ -53,7 +55,7 @@ pub mod deploy_with_rollback {
             error_status: ErrorStatus::Retrying,
             attempts: 1,
             cooldown_ends_at: deploy_results.to_deploy[0].cooldown_ends_at,
-            ..instance
+            ..cfg_inst
         };
         let cooldown = calc_exp_backoff(
             settings.exp_backoff_base_secs,
@@ -77,28 +79,30 @@ pub mod deploy_with_rollback {
 
     #[tokio::test]
     async fn deploy_1_no_filepath() {
-        // define the instance
-        let instance = ConfigInstance {
+        // define the config instance
+        let cfg_inst = ConfigInstance {
             relative_filepath: None,
             ..Default::default()
         };
 
-        // create the instance in the cache
+        // create the config instance in the cache
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
+            .await
+            .unwrap();
         cache
-            .write(instance.id.clone(), json!({"speed": 4}), |_, _| false, true)
+            .write(cfg_inst.id.clone(), json!({"speed": 4}), |_, _| false, true)
             .await
             .unwrap();
 
-        // deploy the instance
+        // deploy the config instance
         let settings = Settings::default();
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
         observers.push(&mut observer);
         let (deploy_results, result) = deploy_with_rollback(
             vec![],
-            vec![instance.clone()],
+            vec![cfg_inst.clone()],
             &cache,
             &dir,
             &settings,
@@ -110,7 +114,7 @@ pub mod deploy_with_rollback {
         // define the expected instance
         let expected = ConfigInstance {
             activity_status: ActivityStatus::Deployed,
-            ..instance
+            ..cfg_inst
         };
 
         // check that the returned instances' states were correctly updated
@@ -126,20 +130,22 @@ pub mod deploy_with_rollback {
     // deploy 1 - filepath specified overwrites existing file
     #[tokio::test]
     async fn deploy_1_filepath_specified_overwrite_existing() {
-        // define the instance
+        // define the config instance
         let filepath = "/test/filepath".to_string();
-        let instance = ConfigInstance {
+        let cfg_inst = ConfigInstance {
             relative_filepath: Some(filepath.clone()),
             ..Default::default()
         };
 
-        // create the instance in the cache
+        // create the config instance in the cache
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
+            .await
+            .unwrap();
         let instance_data = json!({"speed": 4});
         cache
             .write(
-                instance.id.clone(),
+                cfg_inst.id.clone(),
                 instance_data.clone(),
                 |_, _| false,
                 true,
@@ -151,14 +157,14 @@ pub mod deploy_with_rollback {
         let file = dir.file(filepath.as_str());
         file.write_json(&instance_data, true, true).await.unwrap();
 
-        // deploy the instance
+        // deploy the config instance
         let settings = Settings::default();
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
         observers.push(&mut observer);
         let (deploy_results, result) = deploy_with_rollback(
             vec![],
-            vec![instance.clone()],
+            vec![cfg_inst.clone()],
             &cache,
             &dir,
             &settings,
@@ -170,7 +176,7 @@ pub mod deploy_with_rollback {
         // define the expected instance
         let expected = ConfigInstance {
             activity_status: ActivityStatus::Deployed,
-            ..instance
+            ..cfg_inst
         };
 
         // check that the returned instances' states were correctly updated
@@ -191,20 +197,22 @@ pub mod deploy_with_rollback {
     // deploy 1 - filepath specified doesn't overwrite existing file
     #[tokio::test]
     async fn deploy_1_filepath_specified_no_overwrite() {
-        // define the instance
+        // define the config instance
         let filepath = "/test/filepath".to_string();
-        let instance = ConfigInstance {
+        let cfg_inst = ConfigInstance {
             relative_filepath: Some(filepath.clone()),
             ..Default::default()
         };
 
-        // create the instance in the cache
+        // create the config instance in the cache
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
+            .await
+            .unwrap();
         let instance_data = json!({"speed": 4});
         cache
             .write(
-                instance.id.clone(),
+                cfg_inst.id.clone(),
                 instance_data.clone(),
                 |_, _| false,
                 true,
@@ -212,14 +220,14 @@ pub mod deploy_with_rollback {
             .await
             .unwrap();
 
-        // deploy the instance
+        // deploy the config instance
         let settings = Settings::default();
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
         observers.push(&mut observer);
         let (deploy_results, result) = deploy_with_rollback(
             vec![],
-            vec![instance.clone()],
+            vec![cfg_inst.clone()],
             &cache,
             &dir,
             &settings,
@@ -231,7 +239,7 @@ pub mod deploy_with_rollback {
         // define the expected instance
         let expected = ConfigInstance {
             activity_status: ActivityStatus::Deployed,
-            ..instance
+            ..cfg_inst
         };
 
         // check that the returned instances' states were correctly updated
@@ -254,27 +262,29 @@ pub mod deploy_with_rollback {
 
     #[tokio::test]
     async fn remove_1_no_filepath() {
-        // define the instance
-        let instance = ConfigInstance {
+        // define the config instance
+        let cfg_inst = ConfigInstance {
             relative_filepath: None,
             ..Default::default()
         };
 
-        // create the instance in the cache
+        // create the config instance in the cache
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
+            .await
+            .unwrap();
         cache
-            .write(instance.id.clone(), json!({"speed": 4}), |_, _| false, true)
+            .write(cfg_inst.id.clone(), json!({"speed": 4}), |_, _| false, true)
             .await
             .unwrap();
 
-        // deploy the instance
+        // deploy the config instance
         let settings = Settings::default();
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
         observers.push(&mut observer);
         let (deploy_results, result) = deploy_with_rollback(
-            vec![instance.clone()],
+            vec![cfg_inst.clone()],
             vec![],
             &cache,
             &dir,
@@ -287,7 +297,7 @@ pub mod deploy_with_rollback {
         // define the expected instance
         let expected = ConfigInstance {
             activity_status: ActivityStatus::Removed,
-            ..instance
+            ..cfg_inst
         };
 
         // check that the returned instances' states were correctly updated
@@ -302,28 +312,30 @@ pub mod deploy_with_rollback {
 
     #[tokio::test]
     async fn remove_1_filepath_specified_doesnt_exist() {
-        // define the instance
+        // define the config instance
         let filepath = "/test/filepath".to_string();
-        let instance = ConfigInstance {
+        let cfg_inst = ConfigInstance {
             relative_filepath: Some(filepath.clone()),
             ..Default::default()
         };
 
-        // create the instance in the cache
+        // create the config instance in the cache
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
+            .await
+            .unwrap();
         cache
-            .write(instance.id.clone(), json!({"speed": 4}), |_, _| false, true)
+            .write(cfg_inst.id.clone(), json!({"speed": 4}), |_, _| false, true)
             .await
             .unwrap();
 
-        // deploy the instance
+        // deploy the config instance
         let settings = Settings::default();
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
         observers.push(&mut observer);
         let (deploy_results, result) = deploy_with_rollback(
-            vec![instance.clone()],
+            vec![cfg_inst.clone()],
             vec![],
             &cache,
             &dir,
@@ -336,7 +348,7 @@ pub mod deploy_with_rollback {
         // define the expected instance
         let expected = ConfigInstance {
             activity_status: ActivityStatus::Removed,
-            ..instance
+            ..cfg_inst
         };
 
         // check that the returned instances' states were correctly updated
@@ -351,20 +363,22 @@ pub mod deploy_with_rollback {
 
     #[tokio::test]
     async fn remove_1_filepath_specified_exists() {
-        // define the instance
+        // define the config instance
         let filepath = "/test/filepath".to_string();
-        let instance = ConfigInstance {
+        let cfg_inst = ConfigInstance {
             relative_filepath: Some(filepath.clone()),
             ..Default::default()
         };
 
-        // create the instance in the cache
+        // create the config instance in the cache
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
+            .await
+            .unwrap();
         let instance_data = json!({"speed": 4});
         cache
             .write(
-                instance.id.clone(),
+                cfg_inst.id.clone(),
                 instance_data.clone(),
                 |_, _| false,
                 true,
@@ -376,13 +390,13 @@ pub mod deploy_with_rollback {
         let file = dir.file(filepath.as_str());
         file.write_json(&instance_data, true, true).await.unwrap();
 
-        // deploy the instance
+        // deploy the config instance
         let settings = Settings::default();
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
         observers.push(&mut observer);
         let (deploy_results, result) = deploy_with_rollback(
-            vec![instance.clone()],
+            vec![cfg_inst.clone()],
             vec![],
             &cache,
             &dir,
@@ -395,7 +409,7 @@ pub mod deploy_with_rollback {
         // define the expected instance
         let expected = ConfigInstance {
             activity_status: ActivityStatus::Removed,
-            ..instance
+            ..cfg_inst
         };
 
         // check that the returned instances' states were correctly updated
@@ -413,7 +427,7 @@ pub mod deploy_with_rollback {
 
     #[tokio::test]
     async fn rollback_1_deploy_missing_instance_data() {
-        // define the instance
+        // define the config instance
         let to_deploy_filepath = "/to/deploy/filepath".to_string();
         let to_deploy = ConfigInstance {
             relative_filepath: Some(to_deploy_filepath.clone()),
@@ -428,9 +442,11 @@ pub mod deploy_with_rollback {
             ..Default::default()
         };
 
-        // create the cache but the instance data for the to_deploy instance
+        // create the cache but the config instance data for the to_deploy instance
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000).await.unwrap();
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
+            .await
+            .unwrap();
         let to_remove_data = json!({"speed": 8});
         cache
             .write(
@@ -442,7 +458,7 @@ pub mod deploy_with_rollback {
             .await
             .unwrap();
 
-        // deploy the instance
+        // deploy the config instance
         let settings = Settings::default();
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
@@ -507,32 +523,34 @@ pub mod deploy_with_rollback {
         let mut to_deploy_instances = Vec::new();
         for i in 0..n {
             let filepath = format!("/to/deploy/filepath{i}");
-            let instance = ConfigInstance {
+            let cfg_inst = ConfigInstance {
                 relative_filepath: Some(filepath.clone()),
                 target_status: TargetStatus::Deployed,
                 ..Default::default()
             };
-            to_deploy_instances.push(instance);
+            to_deploy_instances.push(cfg_inst);
         }
         let mut to_remove_instances = Vec::new();
         for i in 0..n {
             let filepath = format!("/to/remove/filepath{i}");
-            let instance = ConfigInstance {
+            let cfg_inst = ConfigInstance {
                 relative_filepath: Some(filepath.clone()),
                 target_status: TargetStatus::Removed,
                 ..Default::default()
             };
-            to_remove_instances.push(instance);
+            to_remove_instances.push(cfg_inst);
         }
 
-        // create the cache but the instance data for the to_deploy instance
+        // create the cache but the config instance data for the to_deploy instance
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000).await.unwrap();
-        for instance in to_remove_instances.iter() {
+        let (cache, _) = FileCache::spawn(16, dir.file("cache.json"), 1000)
+            .await
+            .unwrap();
+        for cfg_inst in to_remove_instances.iter() {
             cache
                 .write(
-                    instance.id.clone(),
-                    json!({"relative_filepath": instance.relative_filepath.clone()}),
+                    cfg_inst.id.clone(),
+                    json!({"relative_filepath": cfg_inst.relative_filepath.clone()}),
                     |_, _| false,
                     true,
                 )
@@ -540,7 +558,7 @@ pub mod deploy_with_rollback {
                 .unwrap();
         }
 
-        // deploy the instance
+        // deploy the config instance
         let settings = Settings::default();
         let mut observers: Vec<&mut dyn Observer> = Vec::new();
         let mut observer = HistoryObserver::new();
@@ -558,26 +576,26 @@ pub mod deploy_with_rollback {
 
         // define the expected instances
         let mut expected_to_remove_instances = to_remove_instances.clone();
-        for instance in expected_to_remove_instances.iter_mut() {
-            instance.activity_status = ActivityStatus::Deployed;
+        for cfg_inst in expected_to_remove_instances.iter_mut() {
+            cfg_inst.activity_status = ActivityStatus::Deployed;
         }
         let mut expected_to_deploy_instances = to_deploy_instances.clone();
-        for (i, instance) in expected_to_deploy_instances.iter_mut().enumerate() {
-            instance.activity_status = ActivityStatus::Removed;
+        for (i, cfg_inst) in expected_to_deploy_instances.iter_mut().enumerate() {
+            cfg_inst.activity_status = ActivityStatus::Removed;
             if i == 0 {
-                instance.error_status = ErrorStatus::Retrying;
-                instance.attempts = 1;
+                cfg_inst.error_status = ErrorStatus::Retrying;
+                cfg_inst.attempts = 1;
                 let cooldown = calc_exp_backoff(
                     settings.exp_backoff_base_secs,
                     2,
-                    instance.attempts,
+                    cfg_inst.attempts,
                     settings.max_cooldown_secs,
                 );
                 let approx_cooldown_ends_at = Utc::now() + TimeDelta::seconds(cooldown);
-                instance.cooldown_ends_at = deploy_results.to_deploy[i].cooldown_ends_at;
-                assert!(instance.cooldown_ends_at <= approx_cooldown_ends_at);
+                cfg_inst.cooldown_ends_at = deploy_results.to_deploy[i].cooldown_ends_at;
+                assert!(cfg_inst.cooldown_ends_at <= approx_cooldown_ends_at);
                 assert!(
-                    instance.cooldown_ends_at >= approx_cooldown_ends_at - TimeDelta::seconds(1)
+                    cfg_inst.cooldown_ends_at >= approx_cooldown_ends_at - TimeDelta::seconds(1)
                 );
             }
         }
@@ -588,33 +606,33 @@ pub mod deploy_with_rollback {
             deploy_results.to_remove.len(),
             expected_to_remove_instances.len()
         );
-        for (i, instance) in deploy_results.to_remove.iter().enumerate() {
-            assert_eq!(instance, &expected_to_remove_instances[i]);
+        for (i, cfg_inst) in deploy_results.to_remove.iter().enumerate() {
+            assert_eq!(cfg_inst, &expected_to_remove_instances[i]);
         }
         assert_eq!(deploy_results.to_deploy.len(), n);
         assert_eq!(
             deploy_results.to_deploy.len(),
             expected_to_deploy_instances.len()
         );
-        for (i, instance) in deploy_results.to_deploy.iter().enumerate() {
-            assert_eq!(instance, &expected_to_deploy_instances[i]);
+        for (i, cfg_inst) in deploy_results.to_deploy.iter().enumerate() {
+            assert_eq!(cfg_inst, &expected_to_deploy_instances[i]);
         }
 
         // check that the observer's history was correctly updated
-        for (i, instance) in expected_to_deploy_instances.iter().enumerate() {
-            assert_eq!(&observer.history[n + 1 + i], instance);
+        for (i, cfg_inst) in expected_to_deploy_instances.iter().enumerate() {
+            assert_eq!(&observer.history[n + 1 + i], cfg_inst);
         }
-        for (i, instance) in expected_to_remove_instances.iter().enumerate() {
-            assert_eq!(&observer.history[2 * n + 1 + i], instance);
+        for (i, cfg_inst) in expected_to_remove_instances.iter().enumerate() {
+            assert_eq!(&observer.history[2 * n + 1 + i], cfg_inst);
         }
 
         // check that the removed instances are still deployed
-        for instance in to_remove_instances {
-            let file = dir.file(instance.relative_filepath.as_ref().unwrap());
+        for cfg_inst in to_remove_instances {
+            let file = dir.file(cfg_inst.relative_filepath.as_ref().unwrap());
             let actual = file.read_json::<serde_json::Value>().await.unwrap();
             assert_eq!(
                 actual,
-                json!({"relative_filepath": instance.relative_filepath.as_ref().unwrap()})
+                json!({"relative_filepath": cfg_inst.relative_filepath.as_ref().unwrap()})
             );
         }
     }

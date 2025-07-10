@@ -15,32 +15,32 @@ pub enum NextAction {
     Wait(TimeDelta),
 }
 
-pub fn next_action(instance: &ConfigInstance, use_cooldown: bool) -> NextAction {
+pub fn next_action(cfg_inst: &ConfigInstance, use_cooldown: bool) -> NextAction {
     // do nothing if the status is failed
-    if instance.error_status == ErrorStatus::Failed {
+    if cfg_inst.error_status == ErrorStatus::Failed {
         return NextAction::None;
     }
 
     // check for cooldown
-    if use_cooldown && instance.is_in_cooldown() {
-        return NextAction::Wait(instance.cooldown_ends_at.signed_duration_since(Utc::now()));
+    if use_cooldown && cfg_inst.is_in_cooldown() {
+        return NextAction::Wait(cfg_inst.cooldown_ends_at.signed_duration_since(Utc::now()));
     }
 
     // determine the next action
-    match instance.target_status {
-        TargetStatus::Created => match instance.activity_status {
+    match cfg_inst.target_status {
+        TargetStatus::Created => match cfg_inst.activity_status {
             ActivityStatus::Created => NextAction::None,
             ActivityStatus::Queued => NextAction::None,
             ActivityStatus::Deployed => NextAction::Remove,
             ActivityStatus::Removed => NextAction::None,
         },
-        TargetStatus::Deployed => match instance.activity_status {
+        TargetStatus::Deployed => match cfg_inst.activity_status {
             ActivityStatus::Created => NextAction::Deploy,
             ActivityStatus::Queued => NextAction::Deploy,
             ActivityStatus::Deployed => NextAction::None,
             ActivityStatus::Removed => NextAction::Deploy,
         },
-        TargetStatus::Removed => match instance.activity_status {
+        TargetStatus::Removed => match cfg_inst.activity_status {
             ActivityStatus::Created => NextAction::Remove,
             ActivityStatus::Queued => NextAction::Remove,
             ActivityStatus::Deployed => NextAction::Remove,
@@ -84,52 +84,52 @@ struct TransitionOptions {
     cooldown: Option<TimeDelta>,
 }
 
-fn transition(mut instance: ConfigInstance, options: TransitionOptions) -> ConfigInstance {
+fn transition(mut cfg_inst: ConfigInstance, options: TransitionOptions) -> ConfigInstance {
     if let Some(activity_status) = options.activity_status {
-        instance.activity_status = activity_status;
+        cfg_inst.activity_status = activity_status;
     }
 
     if let Some(error_status) = options.error_status {
-        instance.error_status = error_status;
+        cfg_inst.error_status = error_status;
     }
 
     if let Some(attempts) = options.attempts {
-        instance.attempts = attempts;
+        cfg_inst.attempts = attempts;
     }
 
     if let Some(cooldown) = options.cooldown {
-        instance.set_cooldown(cooldown);
+        cfg_inst.set_cooldown(cooldown);
     }
 
-    instance
+    cfg_inst
 }
 
 // ---------------------------- successful transitions ----------------------------= //
-pub fn deploy(instance: ConfigInstance) -> ConfigInstance {
+pub fn deploy(cfg_inst: ConfigInstance) -> ConfigInstance {
     let new_activity_status = ActivityStatus::Deployed;
-    let options = get_success_options(&instance, new_activity_status);
-    transition(instance, options)
+    let options = get_success_options(&cfg_inst, new_activity_status);
+    transition(cfg_inst, options)
 }
 
-pub fn remove(instance: ConfigInstance) -> ConfigInstance {
+pub fn remove(cfg_inst: ConfigInstance) -> ConfigInstance {
     let new_activity_status = ActivityStatus::Removed;
-    let options = get_success_options(&instance, new_activity_status);
-    transition(instance, options)
+    let options = get_success_options(&cfg_inst, new_activity_status);
+    transition(cfg_inst, options)
 }
 
 fn get_success_options(
-    instance: &ConfigInstance,
+    cfg_inst: &ConfigInstance,
     new_activity_status: ActivityStatus,
 ) -> TransitionOptions {
     TransitionOptions {
         activity_status: Some(new_activity_status),
-        error_status: if has_recovered(instance, new_activity_status) {
+        error_status: if has_recovered(cfg_inst, new_activity_status) {
             Some(ErrorStatus::None)
         } else {
             None
         },
         // reset attempts and cooldown
-        attempts: if has_recovered(instance, new_activity_status) {
+        attempts: if has_recovered(cfg_inst, new_activity_status) {
             Some(0)
         } else {
             None
@@ -138,15 +138,15 @@ fn get_success_options(
     }
 }
 
-fn has_recovered(instance: &ConfigInstance, new_activity_status: ActivityStatus) -> bool {
+fn has_recovered(cfg_inst: &ConfigInstance, new_activity_status: ActivityStatus) -> bool {
     // the error status only needs to be updated if it is currently retrying. If is
     // failed then it can never exit failed and if it is None then it is already correct
-    if instance.error_status != ErrorStatus::Retrying {
+    if cfg_inst.error_status != ErrorStatus::Retrying {
         return false;
     }
 
     // check if the new activity status matches the instance's target status
-    match instance.target_status {
+    match cfg_inst.target_status {
         TargetStatus::Created => {
             // the created status is a bit interesting in that we're satisfied with the
             // instance being in the queued or removed state if it's target status is
@@ -175,17 +175,17 @@ fn has_recovered(instance: &ConfigInstance, new_activity_status: ActivityStatus)
 
 // ----------------------------- error transitions --------------------------------- //
 pub fn error(
-    instance: ConfigInstance,
+    cfg_inst: ConfigInstance,
     settings: &Settings,
     e: &impl MiruError,
     increment_attempts: bool,
 ) -> ConfigInstance {
     let options = get_error_options(
-        &instance,
+        &cfg_inst,
         increment_attempts && should_increment_attempts(e),
         settings,
     );
-    transition(instance, options)
+    transition(cfg_inst, options)
 }
 
 fn should_increment_attempts(e: &impl MiruError) -> bool {
@@ -193,20 +193,20 @@ fn should_increment_attempts(e: &impl MiruError) -> bool {
 }
 
 fn get_error_options(
-    instance: &ConfigInstance,
+    cfg_inst: &ConfigInstance,
     increment_attempts: bool,
     settings: &Settings,
 ) -> TransitionOptions {
     // determine the number of attempts
     let attempts = if increment_attempts {
-        instance.attempts.saturating_add(1)
+        cfg_inst.attempts.saturating_add(1)
     } else {
-        instance.attempts
+        cfg_inst.attempts
     };
 
     // determine the new status
     let mut new_error_status = Some(ErrorStatus::Retrying);
-    if attempts >= settings.max_attempts || instance.error_status == ErrorStatus::Failed {
+    if attempts >= settings.max_attempts || cfg_inst.error_status == ErrorStatus::Failed {
         new_error_status = Some(ErrorStatus::Failed);
     }
 

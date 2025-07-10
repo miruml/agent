@@ -2,10 +2,7 @@
 use std::sync::Arc;
 
 // internal crates
-use crate::auth::{
-    errors::*,
-    token::Token,
-};
+use crate::auth::{errors::*, token::Token};
 use crate::crypt::{base64, rsa};
 use crate::filesys::{cached_file::CachedFile, file::File, path::PathExt};
 use crate::http::{client::HTTPClient, devices::DevicesExt};

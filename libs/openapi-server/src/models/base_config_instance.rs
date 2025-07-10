@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 pub struct BaseConfigInstance {
     #[serde(rename = "object")]
     pub object: Object,
+    /// ID of the config instance
     #[serde(rename = "id")]
     pub id: String,
     #[serde(rename = "target_status")]
@@ -25,24 +26,24 @@ pub struct BaseConfigInstance {
     pub activity_status: models::ConfigInstanceActivityStatus,
     #[serde(rename = "error_status")]
     pub error_status: models::ConfigInstanceErrorStatus,
+    /// The file path to deploy the config instance relative to /srv/miru/config_instances. v1/motion-control.json would deploy to /srv/miru/config_instances/v1/motion-control.json
     #[serde(rename = "relative_filepath", deserialize_with = "Option::deserialize")]
     pub relative_filepath: Option<String>,
-    #[serde(rename = "patch_id", deserialize_with = "Option::deserialize")]
-    pub patch_id: Option<String>,
-    #[serde(rename = "created_by_id", deserialize_with = "Option::deserialize")]
-    pub created_by_id: Option<String>,
+    /// The timestamp when the config instance was created
     #[serde(rename = "created_at")]
     pub created_at: String,
-    #[serde(rename = "updated_by_id", deserialize_with = "Option::deserialize")]
-    pub updated_by_id: Option<String>,
+    /// The timestamp when the config instance was last updated
     #[serde(rename = "updated_at")]
     pub updated_at: String,
-    #[serde(rename = "device_id")]
-    pub device_id: String,
+    /// The ID of the config schema which the config instance must adhere to
     #[serde(rename = "config_schema_id")]
     pub config_schema_id: String,
-    #[serde(rename = "instance", deserialize_with = "Option::deserialize")]
-    pub instance: Option<serde_json::Value>,
+    /// The ID of the config type of the config instance
+    #[serde(rename = "config_type_id")]
+    pub config_type_id: String,
+    /// Expand the config type using 'expand[]=config_type' in the query string
+    #[serde(rename = "config_type", deserialize_with = "Option::deserialize")]
+    pub config_type: Option<Box<models::ConfigType>>,
 }
 
 impl BaseConfigInstance {
@@ -54,14 +55,11 @@ impl BaseConfigInstance {
         activity_status: models::ConfigInstanceActivityStatus,
         error_status: models::ConfigInstanceErrorStatus,
         relative_filepath: Option<String>,
-        patch_id: Option<String>,
-        created_by_id: Option<String>,
         created_at: String,
-        updated_by_id: Option<String>,
         updated_at: String,
-        device_id: String,
         config_schema_id: String,
-        instance: Option<serde_json::Value>,
+        config_type_id: String,
+        config_type: Option<models::ConfigType>,
     ) -> BaseConfigInstance {
         BaseConfigInstance {
             object,
@@ -71,14 +69,15 @@ impl BaseConfigInstance {
             activity_status,
             error_status,
             relative_filepath,
-            patch_id,
-            created_by_id,
             created_at,
-            updated_by_id,
             updated_at,
-            device_id,
             config_schema_id,
-            instance,
+            config_type_id,
+            config_type: if let Some(x) = config_type {
+                Some(Box::new(x))
+            } else {
+                None
+            },
         }
     }
 }

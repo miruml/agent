@@ -5,11 +5,8 @@ use std::sync::Arc;
 use crate::http::mock::MockAuthClient;
 use config_agent::auth::{
     errors::AuthErr,
-    token_mngr::{
-        SingleThreadTokenManager,
-        TokenFile, TokenManager, TokenManagerExt, Worker,
-    },
     token::Token,
+    token_mngr::{SingleThreadTokenManager, TokenFile, TokenManager, TokenManagerExt, Worker},
 };
 use config_agent::crypt::rsa;
 use config_agent::filesys::{cached_file::CachedFile, dir::Dir, file::File};

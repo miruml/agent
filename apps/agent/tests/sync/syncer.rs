@@ -3,8 +3,8 @@ use std::sync::{Arc, Mutex};
 
 // internal crates
 use config_agent::auth::{
-    token_mngr::{TokenFile, TokenManager},
     token::Token,
+    token_mngr::{TokenFile, TokenManager},
 };
 use config_agent::crud::prelude::*;
 use config_agent::deploy::fsm;
@@ -18,7 +18,10 @@ use config_agent::models::config_instance::ActivityStatus;
 use config_agent::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
 use config_agent::sync::{
     errors::SyncErr,
-    syncer::{SingleThreadSyncer, Syncer, Worker, SyncerArgs, SyncerExt, SyncState, SyncEvent, SyncFailure, CooldownEnd},
+    syncer::{
+        CooldownEnd, SingleThreadSyncer, SyncEvent, SyncFailure, SyncState, Syncer, SyncerArgs,
+        SyncerExt, Worker,
+    },
 };
 use config_agent::utils::{calc_exp_backoff, CooldownOptions};
 
@@ -29,7 +32,6 @@ use crate::http::mock::{MockAuthClient, MockConfigInstancesClient};
 use chrono::{DateTime, TimeDelta, Utc};
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
-
 
 pub async fn create_token_manager(
     dir: &Dir,
@@ -59,10 +61,7 @@ pub fn spawn(
     args: SyncerArgs<MockConfigInstancesClient, TokenManager>,
 ) -> Result<(Syncer, JoinHandle<()>), SyncErr> {
     let (sender, receiver) = mpsc::channel(buffer_size);
-    let worker = Worker::new(
-        SingleThreadSyncer::new(args),
-        receiver,
-    );
+    let worker = Worker::new(SingleThreadSyncer::new(args), receiver);
     let worker_handle = tokio::spawn(worker.run());
     Ok((Syncer::new(sender), worker_handle))
 }
@@ -102,12 +101,14 @@ pub mod shutdown {
         let (token_mngr, _) = create_token_manager(&dir, auth_client.clone()).await;
 
         // create the caches
-        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
-            .await
-            .unwrap();
-        let (cfg_inst_data_cache, _) = ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
-            .await
-            .unwrap();
+        let (cfg_inst_cache, _) =
+            ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
+                .await
+                .unwrap();
+        let (cfg_inst_data_cache, _) =
+            ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
+                .await
+                .unwrap();
 
         let http_client = Arc::new(HTTPClient::new("doesntmatter").await);
         let (syncer, worker_handler) = Syncer::spawn(
@@ -141,14 +142,14 @@ pub mod subscribe {
         let http_client = Arc::new(MockConfigInstancesClient::default());
 
         // create the caches
-        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
-            .await
-            .unwrap();
+        let (cfg_inst_cache, _) =
+            ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
+                .await
+                .unwrap();
         let (cfg_inst_data_cache, _) =
             ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
                 .await
                 .unwrap();
-
 
         let cooldown_options = CooldownOptions {
             base_secs: 1,
@@ -178,7 +179,10 @@ pub mod subscribe {
             // expect two events: 1. not synced and then 2. cooldown ended
             for _ in 0..2 {
                 subscriber_for_spawn.changed().await.unwrap();
-                events_for_spawn.lock().unwrap().push(subscriber_for_spawn.borrow().clone());
+                events_for_spawn
+                    .lock()
+                    .unwrap()
+                    .push(subscriber_for_spawn.borrow().clone());
             }
         });
 
@@ -195,7 +199,10 @@ pub mod subscribe {
         let events = events.lock().unwrap().clone();
         assert_eq!(events.len(), 2);
         assert_eq!(events[0], SyncEvent::SyncSuccess);
-        assert_eq!(events[1], SyncEvent::CooldownEnd(CooldownEnd::FromSyncSuccess));
+        assert_eq!(
+            events[1],
+            SyncEvent::CooldownEnd(CooldownEnd::FromSyncSuccess)
+        );
 
         handle.await.unwrap();
     }
@@ -219,14 +226,14 @@ pub mod subscribe {
         });
 
         // create the caches
-        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
-            .await
-            .unwrap();
+        let (cfg_inst_cache, _) =
+            ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
+                .await
+                .unwrap();
         let (cfg_inst_data_cache, _) =
             ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
                 .await
                 .unwrap();
-
 
         let cooldown_options = CooldownOptions {
             base_secs: 1,
@@ -256,7 +263,10 @@ pub mod subscribe {
             // expect two events: 1. not synced and then 2. cooldown ended
             for _ in 0..2 {
                 subscriber_for_spawn.changed().await.unwrap();
-                events_for_spawn.lock().unwrap().push(subscriber_for_spawn.borrow().clone());
+                events_for_spawn
+                    .lock()
+                    .unwrap()
+                    .push(subscriber_for_spawn.borrow().clone());
             }
         });
 
@@ -272,10 +282,16 @@ pub mod subscribe {
 
         let events = events.lock().unwrap().clone();
         assert_eq!(events.len(), 2);
-        assert_eq!(events[0], SyncEvent::SyncFailed(SyncFailure {
-            is_network_connection_error: true,
-        }));
-        assert_eq!(events[1], SyncEvent::CooldownEnd(CooldownEnd::FromSyncFailure));
+        assert_eq!(
+            events[0],
+            SyncEvent::SyncFailed(SyncFailure {
+                is_network_connection_error: true,
+            })
+        );
+        assert_eq!(
+            events[1],
+            SyncEvent::CooldownEnd(CooldownEnd::FromSyncFailure)
+        );
 
         handle.await.unwrap();
     }
@@ -293,13 +309,13 @@ pub mod sync {
         let auth_client = Arc::new(MockAuthClient::default());
         let (token_mngr, _) = create_token_manager(&dir, auth_client.clone()).await;
 
-        // define the new instance
+        // define the new config instance
         let id = "new_instance".to_string();
         let new_instance_data = serde_json::json!({"id": id});
-        let new_instance = openapi_client::models::BackendConfigInstance {
+        let new_instance = openapi_client::models::ConfigInstance {
             id: id.clone(),
             target_status: openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_DEPLOYED,
-            instance: Some(new_instance_data.clone()),
+            content: Some(new_instance_data.clone()),
             ..Default::default()
         };
         let http_client = Arc::new(MockConfigInstancesClient::default());
@@ -307,9 +323,10 @@ pub mod sync {
         http_client.set_list_all_config_instances(move || Ok(vec![new_instance_cloned.clone()]));
 
         // create the caches
-        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
-            .await
-            .unwrap();
+        let (cfg_inst_cache, _) =
+            ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
+                .await
+                .unwrap();
         let (cfg_inst_data_cache, _) =
             ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
                 .await
@@ -340,11 +357,11 @@ pub mod sync {
         syncer.sync().await.unwrap();
         let after = Utc::now();
 
-        // check the metadata cache has the new instance
+        // check the metadata cache has the new config instance
         let cache_cfg_inst = cfg_inst_cache.read(id.clone()).await.unwrap();
         assert_eq!(cache_cfg_inst.activity_status, ActivityStatus::Deployed);
 
-        // check the data cache has the new instance data
+        // check the data cache has the new config instance data
         let cache_cfg_inst_data = cfg_inst_data_cache.read(id.clone()).await.unwrap();
         assert_eq!(cache_cfg_inst_data, new_instance_data);
 
@@ -354,7 +371,10 @@ pub mod sync {
 
         // check the sync state
         let state = syncer.get_sync_state().await.unwrap();
-        assert_eq!(syncer.get_cooldown_ends_at().await.unwrap(), state.cooldown_ends_at);
+        assert_eq!(
+            syncer.get_cooldown_ends_at().await.unwrap(),
+            state.cooldown_ends_at
+        );
         assert!(state.last_sync_attempted_at > before);
         assert!(state.last_sync_attempted_at < after);
         assert!(state.last_successful_sync_at > before);
@@ -384,14 +404,14 @@ pub mod sync {
         });
 
         // create the caches
-        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
-            .await
-            .unwrap();
+        let (cfg_inst_cache, _) =
+            ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
+                .await
+                .unwrap();
         let (cfg_inst_data_cache, _) =
             ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
                 .await
                 .unwrap();
-
 
         let cooldown_options = CooldownOptions {
             base_secs: 10,
@@ -423,7 +443,10 @@ pub mod sync {
 
             // check the sync state
             let state = syncer.get_sync_state().await.unwrap();
-            assert_eq!(syncer.get_cooldown_ends_at().await.unwrap(), state.cooldown_ends_at);
+            assert_eq!(
+                syncer.get_cooldown_ends_at().await.unwrap(),
+                state.cooldown_ends_at
+            );
             assert!(state.last_sync_attempted_at > before);
             assert!(state.last_sync_attempted_at < after);
             assert_eq!(state.last_successful_sync_at, DateTime::<Utc>::UNIX_EPOCH);
@@ -436,10 +459,13 @@ pub mod sync {
 
             // reset the syncer state
             #[cfg(feature = "test")]
-            syncer.set_sync_state(SyncState {
-                cooldown_ends_at: before,
-                ..state
-            }).await.unwrap();
+            syncer
+                .set_sync_state(SyncState {
+                    cooldown_ends_at: before,
+                    ..state
+                })
+                .await
+                .unwrap();
         }
     }
 
@@ -464,9 +490,10 @@ pub mod sync {
         });
 
         // create the caches
-        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
-            .await
-            .unwrap();
+        let (cfg_inst_cache, _) =
+            ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
+                .await
+                .unwrap();
         let (cfg_inst_data_cache, _) =
             ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
                 .await
@@ -501,30 +528,36 @@ pub mod sync {
 
             // check the sync state
             let state = syncer.get_sync_state().await.unwrap();
-            assert_eq!(syncer.get_cooldown_ends_at().await.unwrap(), state.cooldown_ends_at);
+            assert_eq!(
+                syncer.get_cooldown_ends_at().await.unwrap(),
+                state.cooldown_ends_at
+            );
             assert!(state.last_sync_attempted_at > before);
             assert!(state.last_sync_attempted_at < after);
             assert_eq!(state.last_successful_sync_at, DateTime::<Utc>::UNIX_EPOCH);
             let cooldown_secs = calc_exp_backoff(
                 cooldown_options.base_secs,
                 cooldown_options.growth_factor,
-                i+1,
+                i + 1,
                 cooldown_options.max_secs,
             );
             let cooldown_duration = TimeDelta::seconds(cooldown_secs);
             assert!(state.cooldown_ends_at > before + cooldown_duration);
             assert!(state.cooldown_ends_at < after + cooldown_duration);
-            assert_eq!(state.err_streak, i+1);
+            assert_eq!(state.err_streak, i + 1);
 
             // double check sync state functions
             assert!(syncer.is_in_cooldown().await.unwrap());
 
             // reset the syncer state
             #[cfg(feature = "test")]
-            syncer.set_sync_state(SyncState {
-                cooldown_ends_at: before,
-                ..state
-            }).await.unwrap();
+            syncer
+                .set_sync_state(SyncState {
+                    cooldown_ends_at: before,
+                    ..state
+                })
+                .await
+                .unwrap();
         }
     }
 
@@ -547,9 +580,10 @@ pub mod sync {
         });
 
         // create the caches
-        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
-            .await
-            .unwrap();
+        let (cfg_inst_cache, _) =
+            ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
+                .await
+                .unwrap();
         let (cfg_inst_data_cache, _) =
             ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
                 .await
@@ -585,30 +619,36 @@ pub mod sync {
 
             // check the sync state
             let state = syncer.get_sync_state().await.unwrap();
-            assert_eq!(syncer.get_cooldown_ends_at().await.unwrap(), state.cooldown_ends_at);
+            assert_eq!(
+                syncer.get_cooldown_ends_at().await.unwrap(),
+                state.cooldown_ends_at
+            );
             assert!(state.last_sync_attempted_at > before);
             assert!(state.last_sync_attempted_at < after);
             assert_eq!(state.last_successful_sync_at, DateTime::<Utc>::UNIX_EPOCH);
             let cooldown_secs = calc_exp_backoff(
                 cooldown_options.base_secs,
                 cooldown_options.growth_factor,
-                i+1,
+                i + 1,
                 cooldown_options.max_secs,
             );
             let cooldown_duration = TimeDelta::seconds(cooldown_secs);
             assert!(state.cooldown_ends_at > before + cooldown_duration);
             assert!(state.cooldown_ends_at < after + cooldown_duration);
-            assert_eq!(state.err_streak, i+1);
+            assert_eq!(state.err_streak, i + 1);
 
             // double check sync state functions
             assert!(syncer.is_in_cooldown().await.unwrap());
 
             // reset the syncer state
             #[cfg(feature = "test")]
-            syncer.set_sync_state(SyncState {
-                cooldown_ends_at: before,
-                ..state
-            }).await.unwrap();
+            syncer
+                .set_sync_state(SyncState {
+                    cooldown_ends_at: before,
+                    ..state
+                })
+                .await
+                .unwrap();
         }
 
         // set the http client to return a network connection error
@@ -648,17 +688,22 @@ pub mod sync {
 
             // reset the syncer state
             #[cfg(feature = "test")]
-            syncer.set_sync_state(SyncState {
-                cooldown_ends_at: before,
-                ..state
-            }).await.unwrap();
+            syncer
+                .set_sync_state(SyncState {
+                    cooldown_ends_at: before,
+                    ..state
+                })
+                .await
+                .unwrap();
         }
 
         // set the http client to not return an error
-        http_client.set_list_all_config_instances(|| { Ok(vec![]) });
-        http_client.set_update_config_instance(|| { Ok(openapi_client::models::BackendConfigInstance {
-            ..Default::default()
-        }) });
+        http_client.set_list_all_config_instances(|| Ok(vec![]));
+        http_client.set_update_config_instance(|| {
+            Ok(openapi_client::models::ConfigInstance {
+                ..Default::default()
+            })
+        });
 
         // recovery
         let base_cooldown_duration = TimeDelta::seconds(cooldown_options.base_secs);
@@ -669,7 +714,10 @@ pub mod sync {
 
             // check the sync state
             let state = syncer.get_sync_state().await.unwrap();
-            assert_eq!(syncer.get_cooldown_ends_at().await.unwrap(), state.cooldown_ends_at);
+            assert_eq!(
+                syncer.get_cooldown_ends_at().await.unwrap(),
+                state.cooldown_ends_at
+            );
             assert!(state.last_sync_attempted_at > before);
             assert!(state.last_sync_attempted_at < after);
             assert!(state.last_successful_sync_at > before);
@@ -683,10 +731,13 @@ pub mod sync {
 
             // reset the syncer state
             #[cfg(feature = "test")]
-            syncer.set_sync_state(SyncState {
-                cooldown_ends_at: before,
-                ..state
-            }).await.unwrap();
+            syncer
+                .set_sync_state(SyncState {
+                    cooldown_ends_at: before,
+                    ..state
+                })
+                .await
+                .unwrap();
         }
     }
 
@@ -698,14 +749,14 @@ pub mod sync {
         let http_client = Arc::new(MockConfigInstancesClient::default());
 
         // create the caches
-        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
-            .await
-            .unwrap();
+        let (cfg_inst_cache, _) =
+            ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
+                .await
+                .unwrap();
         let (cfg_inst_data_cache, _) =
             ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
                 .await
                 .unwrap();
-
 
         let cooldown_options = CooldownOptions {
             base_secs: 10,
@@ -728,12 +779,15 @@ pub mod sync {
 
         // set the syncer state to be in cooldown
         #[cfg(feature = "test")]
-        syncer.set_sync_state(SyncState {
-            last_sync_attempted_at: DateTime::<Utc>::UNIX_EPOCH,
-            last_successful_sync_at: DateTime::<Utc>::UNIX_EPOCH,
-            cooldown_ends_at: Utc::now() + TimeDelta::seconds(10),
-            err_streak: 0,
-        }).await.unwrap();
+        syncer
+            .set_sync_state(SyncState {
+                last_sync_attempted_at: DateTime::<Utc>::UNIX_EPOCH,
+                last_successful_sync_at: DateTime::<Utc>::UNIX_EPOCH,
+                cooldown_ends_at: Utc::now() + TimeDelta::seconds(10),
+                err_streak: 0,
+            })
+            .await
+            .unwrap();
 
         let error = syncer.sync().await.unwrap_err();
         assert!(matches!(error, SyncErr::InCooldownErr(_)));
@@ -751,14 +805,14 @@ pub mod sync_if_not_in_cooldown {
         let http_client = Arc::new(MockConfigInstancesClient::default());
 
         // create the caches
-        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
-            .await
-            .unwrap();
+        let (cfg_inst_cache, _) =
+            ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
+                .await
+                .unwrap();
         let (cfg_inst_data_cache, _) =
             ConfigInstanceDataCache::spawn(16, dir.subdir("cfg_inst_data_cache"), 1000)
                 .await
                 .unwrap();
-
 
         let cooldown_options = CooldownOptions {
             base_secs: 10,
@@ -781,29 +835,56 @@ pub mod sync_if_not_in_cooldown {
 
         // set the syncer state to be in cooldown
         #[cfg(feature = "test")]
-        syncer.set_sync_state(SyncState {
-            last_sync_attempted_at: DateTime::<Utc>::UNIX_EPOCH,
-            last_successful_sync_at: DateTime::<Utc>::UNIX_EPOCH,
-            cooldown_ends_at: Utc::now() + TimeDelta::seconds(10),
-            err_streak: 0,
-        }).await.unwrap();
+        syncer
+            .set_sync_state(SyncState {
+                last_sync_attempted_at: DateTime::<Utc>::UNIX_EPOCH,
+                last_successful_sync_at: DateTime::<Utc>::UNIX_EPOCH,
+                cooldown_ends_at: Utc::now() + TimeDelta::seconds(10),
+                err_streak: 0,
+            })
+            .await
+            .unwrap();
 
         syncer.sync_if_not_in_cooldown().await.unwrap();
-        assert_eq!(syncer.get_sync_state().await.unwrap().last_sync_attempted_at, DateTime::<Utc>::UNIX_EPOCH);
+        assert_eq!(
+            syncer
+                .get_sync_state()
+                .await
+                .unwrap()
+                .last_sync_attempted_at,
+            DateTime::<Utc>::UNIX_EPOCH
+        );
 
         // set the syncer state to be in cooldown
         #[cfg(feature = "test")]
-        syncer.set_sync_state(SyncState {
-            last_sync_attempted_at: DateTime::<Utc>::UNIX_EPOCH,
-            last_successful_sync_at: DateTime::<Utc>::UNIX_EPOCH,
-            cooldown_ends_at: DateTime::<Utc>::UNIX_EPOCH,
-            err_streak: 0,
-        }).await.unwrap();
+        syncer
+            .set_sync_state(SyncState {
+                last_sync_attempted_at: DateTime::<Utc>::UNIX_EPOCH,
+                last_successful_sync_at: DateTime::<Utc>::UNIX_EPOCH,
+                cooldown_ends_at: DateTime::<Utc>::UNIX_EPOCH,
+                err_streak: 0,
+            })
+            .await
+            .unwrap();
 
         let before = Utc::now();
         syncer.sync_if_not_in_cooldown().await.unwrap();
         let after = Utc::now();
-        assert!(syncer.get_sync_state().await.unwrap().last_sync_attempted_at > before);
-        assert!(syncer.get_sync_state().await.unwrap().last_sync_attempted_at < after);
+        assert!(
+            syncer
+                .get_sync_state()
+                .await
+                .unwrap()
+                .last_sync_attempted_at
+                > before
+        );
+        assert!(
+            syncer
+                .get_sync_state()
+                .await
+                .unwrap()
+                .last_sync_attempted_at
+                < after
+        );
     }
 }

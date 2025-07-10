@@ -42,9 +42,10 @@ pub async fn create_syncer(
     let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(32, dir.file("instances.json"), 1000)
         .await
         .unwrap();
-    let (cfg_inst_data_cache, _) = ConfigInstanceDataCache::spawn(32, dir.subdir("instances"), 1000)
-        .await
-        .unwrap();
+    let (cfg_inst_data_cache, _) =
+        ConfigInstanceDataCache::spawn(32, dir.subdir("instances"), 1000)
+            .await
+            .unwrap();
 
     spawn(
         32,
@@ -315,11 +316,11 @@ pub mod success {
             ..Default::default()
         };
         let cfg_inst_id = "cfg-inst-id".to_string();
-        let cfg_inst = openapi_client::models::BackendConfigInstance {
+        let cfg_inst = openapi_client::models::ConfigInstance {
             id: cfg_inst_id.clone(),
             target_status: openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_DEPLOYED,
             config_schema_id: cfg_sch_id.clone(),
-            instance: Some(json!({})),
+            content: Some(json!({})),
             ..Default::default()
         };
 

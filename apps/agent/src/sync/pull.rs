@@ -10,7 +10,7 @@ use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCa
 use crate::sync::errors::*;
 use crate::trace;
 use openapi_client::models::{
-    BackendConfigInstance, ConfigInstanceActivityStatus, ConfigInstanceExpand,
+    ConfigInstance as BackendConfigInstance, ConfigInstanceActivityStatus, ConfigInstanceExpand,
 };
 
 // external crates
@@ -203,7 +203,7 @@ async fn add_unknown_instances_to_storage(
         // throw an error since if the instance data isn't expanded for this one it
         // won't be expanded for any others and none of the instances will therefore
         // be added to the cache
-        let instance_data = match unknown_inst.instance {
+        let instance_data = match unknown_inst.content {
             Some(instance_data) => instance_data,
             None => {
                 return Err(SyncErr::ConfigInstanceDataNotFound(Box::new(
@@ -214,7 +214,7 @@ async fn add_unknown_instances_to_storage(
                 )));
             }
         };
-        unknown_inst.instance = None;
+        unknown_inst.content = None;
 
         let overwrite = true;
         if let Err(e) = cfg_inst_data_cache

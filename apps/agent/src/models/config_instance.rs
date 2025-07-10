@@ -432,6 +432,7 @@ pub struct ConfigInstance {
     pub updated_at: DateTime<Utc>,
     pub device_id: String,
     pub config_schema_id: String,
+    pub config_type_id: String,
 
     // fsm fields
     pub attempts: u32,
@@ -453,6 +454,7 @@ impl Default for ConfigInstance {
             updated_at: DateTime::<Utc>::UNIX_EPOCH,
             device_id: format!("unknown-{}", Uuid::new_v4()),
             config_schema_id: format!("unknown-{}", Uuid::new_v4()),
+            config_type_id: format!("unknown-{}", Uuid::new_v4()),
             attempts: 0,
             cooldown_ends_at: DateTime::<Utc>::UNIX_EPOCH,
         }
@@ -461,7 +463,7 @@ impl Default for ConfigInstance {
 
 impl ConfigInstance {
     pub fn from_backend(
-        backend_instance: openapi_client::models::BackendConfigInstance,
+        backend_instance: openapi_client::models::ConfigInstance,
     ) -> ConfigInstance {
         ConfigInstance {
             id: backend_instance.id,
@@ -488,6 +490,7 @@ impl ConfigInstance {
             updated_by_id: backend_instance.updated_by_id,
             device_id: backend_instance.device_id,
             config_schema_id: backend_instance.config_schema_id,
+            config_type_id: backend_instance.config_type_id,
 
             // fsm fields
             attempts: 0,
@@ -496,26 +499,24 @@ impl ConfigInstance {
     }
 
     pub fn to_sdk(
-        instance: ConfigInstance,
-        instance_data: serde_json::Value,
-    ) -> openapi_server::models::BaseConfigInstance {
-        let status = Status::to_sdk(&instance.status());
-        openapi_server::models::BaseConfigInstance {
-            object: openapi_server::models::base_config_instance::Object::ConfigInstance,
-            id: instance.id,
-            target_status: TargetStatus::to_sdk(&instance.target_status),
+        cfg_inst: ConfigInstance,
+        content: serde_json::Value,
+    ) -> openapi_server::models::ConfigInstance {
+        let status = Status::to_sdk(&cfg_inst.status());
+        openapi_server::models::ConfigInstance {
+            object: openapi_server::models::config_instance::Object::ConfigInstance,
+            id: cfg_inst.id,
+            target_status: TargetStatus::to_sdk(&cfg_inst.target_status),
             status,
-            activity_status: ActivityStatus::to_sdk(&instance.activity_status),
-            error_status: ErrorStatus::to_sdk(&instance.error_status),
-            relative_filepath: instance.relative_filepath,
-            patch_id: instance.patch_id,
-            created_by_id: instance.created_by_id,
-            updated_by_id: instance.updated_by_id,
-            created_at: instance.created_at.to_rfc3339(),
-            updated_at: instance.updated_at.to_rfc3339(),
-            device_id: instance.device_id,
-            config_schema_id: instance.config_schema_id,
-            instance: Some(instance_data),
+            activity_status: ActivityStatus::to_sdk(&cfg_inst.activity_status),
+            error_status: ErrorStatus::to_sdk(&cfg_inst.error_status),
+            relative_filepath: cfg_inst.relative_filepath,
+            created_at: cfg_inst.created_at.to_rfc3339(),
+            updated_at: cfg_inst.updated_at.to_rfc3339(),
+            config_schema_id: cfg_inst.config_schema_id,
+            config_type_id: cfg_inst.config_type_id,
+            config_type: None,
+            content,
         }
     }
 
@@ -563,6 +564,7 @@ impl<'de> Deserialize<'de> for ConfigInstance {
             error_status: ErrorStatus,
             device_id: String,
             config_schema_id: String,
+            config_type_id: String,
 
             // reasonable default fields
             created_at: Option<DateTime<Utc>>,
@@ -578,7 +580,7 @@ impl<'de> Deserialize<'de> for ConfigInstance {
         }
 
         let result = match DeserializeConfigInstance::deserialize(deserializer) {
-            Ok(instance) => instance,
+            Ok(cfg_inst) => cfg_inst,
             Err(e) => {
                 error!("Error deserializing config instance: {}", e);
                 return Err(e);
@@ -617,6 +619,7 @@ impl<'de> Deserialize<'de> for ConfigInstance {
             updated_at,
             device_id: result.device_id,
             config_schema_id: result.config_schema_id,
+            config_type_id: result.config_type_id,
             attempts,
             cooldown_ends_at,
         })

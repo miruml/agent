@@ -6,8 +6,8 @@ use std::sync::Arc;
 use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCache};
 use crate::storage::config_schemas::ConfigSchemaCache;
 use crate::storage::digests::ConfigSchemaDigestCache;
-use crate::storage::layout::StorageLayout;
 use crate::storage::errors::*;
+use crate::storage::layout::StorageLayout;
 use crate::trace;
 
 #[derive(Copy, Clone, Debug)]
@@ -42,30 +42,24 @@ impl Caches {
         layout: &StorageLayout,
         capacities: CacheCapacities,
     ) -> Result<(Caches, impl Future<Output = ()>), StorageErr> {
-
         // config schema digests
-        let (cfg_sch_digest_cache, cfg_sch_digest_cache_handle) =
-            ConfigSchemaDigestCache::spawn(
-                64,
-                layout.config_schema_digest_cache(),
-                capacities.cfg_sch_digest,
-            )
-                .await
-                .map_err(|e| {
-                    StorageErr::CacheErr(Box::new(StorageCacheErr {
-                        source: e,
-                        trace: trace!(),
-                    }))
-                })?;
+        let (cfg_sch_digest_cache, cfg_sch_digest_cache_handle) = ConfigSchemaDigestCache::spawn(
+            64,
+            layout.config_schema_digest_cache(),
+            capacities.cfg_sch_digest,
+        )
+        .await
+        .map_err(|e| {
+            StorageErr::CacheErr(Box::new(StorageCacheErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
         let cfg_sch_digest_cache = Arc::new(cfg_sch_digest_cache);
 
         // config schemas
         let (cfg_schema_cache, cfg_schema_cache_handle) =
-            ConfigSchemaCache::spawn(
-                64,
-                layout.config_schema_cache(),
-                capacities.cfg_schema,
-            )
+            ConfigSchemaCache::spawn(64, layout.config_schema_cache(), capacities.cfg_schema)
                 .await
                 .map_err(|e| {
                     StorageErr::CacheErr(Box::new(StorageCacheErr {
@@ -76,35 +70,33 @@ impl Caches {
         let cfg_schema_cache = Arc::new(cfg_schema_cache);
 
         // config instance metadata
-        let (cfg_inst_metadata_cache, cfg_inst_metadata_cache_handle) =
-            ConfigInstanceCache::spawn(
-                64,
-                layout.config_instance_metadata_cache(),
-                capacities.cfg_inst_metadata,
-            )
-                .await
-                .map_err(|e| {
-                    StorageErr::CacheErr(Box::new(StorageCacheErr {
-                        source: e,
-                        trace: trace!(),
-                    }))
-                })?;
+        let (cfg_inst_metadata_cache, cfg_inst_metadata_cache_handle) = ConfigInstanceCache::spawn(
+            64,
+            layout.config_instance_metadata_cache(),
+            capacities.cfg_inst_metadata,
+        )
+        .await
+        .map_err(|e| {
+            StorageErr::CacheErr(Box::new(StorageCacheErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
         let cfg_inst_metadata_cache = Arc::new(cfg_inst_metadata_cache);
 
         // config instance data
-        let (cfg_inst_data_cache, cfg_inst_data_cache_handle) =
-            ConfigInstanceDataCache::spawn(
-                64,
-                layout.config_instance_data_cache(),
-                capacities.cfg_inst_data,
-            )
-                .await
-                .map_err(|e| {
-                    StorageErr::CacheErr(Box::new(StorageCacheErr {
-                        source: e,
-                        trace: trace!(),
-                    }))
-                })?;
+        let (cfg_inst_data_cache, cfg_inst_data_cache_handle) = ConfigInstanceDataCache::spawn(
+            64,
+            layout.config_instance_data_cache(),
+            capacities.cfg_inst_data,
+        )
+        .await
+        .map_err(|e| {
+            StorageErr::CacheErr(Box::new(StorageCacheErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
         let cfg_inst_data_cache = Arc::new(cfg_inst_data_cache);
 
         // return the shutdown handler
@@ -119,16 +111,18 @@ impl Caches {
             futures::future::join_all(handles).await;
         };
 
-        Ok((Caches{
-            cfg_sch_digest: cfg_sch_digest_cache,
-            cfg_inst_metadata: cfg_inst_metadata_cache,
-            cfg_inst_data: cfg_inst_data_cache,
-            cfg_schema: cfg_schema_cache,
-        }, shutdown_handle))
+        Ok((
+            Caches {
+                cfg_sch_digest: cfg_sch_digest_cache,
+                cfg_inst_metadata: cfg_inst_metadata_cache,
+                cfg_inst_data: cfg_inst_data_cache,
+                cfg_schema: cfg_schema_cache,
+            },
+            shutdown_handle,
+        ))
     }
 
     pub async fn shutdown(&self) -> Result<(), StorageErr> {
-
         self.cfg_sch_digest.shutdown().await.map_err(|e| {
             StorageErr::CacheErr(Box::new(StorageCacheErr {
                 source: e,

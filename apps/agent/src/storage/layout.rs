@@ -60,11 +60,16 @@ impl StorageLayout {
     }
 
     pub fn config_instance_data_cache(&self) -> Dir {
-        self.config_instance_caches().subdir("instances")
+        self.config_instance_caches().subdir("contents")
     }
 
     pub fn config_instance_deployment_dir(&self) -> Dir {
-        Dir::new(PathBuf::from("/").join("srv").join("miru").join("config_instances"))
+        Dir::new(
+            PathBuf::from("/")
+                .join("srv")
+                .join("miru")
+                .join("config_instances"),
+        )
     }
 }
 

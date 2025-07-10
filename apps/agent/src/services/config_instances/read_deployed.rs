@@ -20,7 +20,7 @@ use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceDataCa
 use crate::storage::config_schemas::ConfigSchemaCache;
 use crate::sync::syncer::{Syncer, SyncerExt};
 use crate::trace;
-use openapi_server::models::BaseConfigInstance;
+use openapi_server::models::ConfigInstance as SDKConfigInstance;
 
 // external crates
 use serde::Deserialize;
@@ -59,7 +59,7 @@ pub async fn read_deployed<ReadDeployedArgsT: ReadDeployedArgsI, HTTPClientT: Co
     schema_cache: &ConfigSchemaCache,
     http_client: &HTTPClientT,
     token: &str,
-) -> Result<BaseConfigInstance, ServiceErr> {
+) -> Result<SDKConfigInstance, ServiceErr> {
     let (config_schema_id_result, sync_result) = tokio::join!(
         fetch_config_schema_id(args, http_client, schema_cache, token),
         sync_with_backend(syncer)
@@ -211,13 +211,12 @@ async fn fetch_config_schema_id<
 }
 
 async fn sync_with_backend(syncer: &Syncer) -> Result<(), ServiceErr> {
-    syncer.sync_if_not_in_cooldown().await
-        .map_err(|e| {
-            ServiceErr::SyncErr(Box::new(ServiceSyncErr {
-                source: e,
-                trace: trace!(),
-            }))
-        })?;
+    syncer.sync_if_not_in_cooldown().await.map_err(|e| {
+        ServiceErr::SyncErr(Box::new(ServiceSyncErr {
+            source: e,
+            trace: trace!(),
+        }))
+    })?;
 
     Ok(())
 }

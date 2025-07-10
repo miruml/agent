@@ -105,7 +105,7 @@ pub async fn read_deployed_config_instance(
     };
 
     match service.await {
-        Ok(config_instance) => (StatusCode::OK, Json(json!(config_instance))),
+        Ok(cfg_inst) => (StatusCode::OK, Json(json!(cfg_inst))),
         Err(e) => {
             error!("Error reading deployed config instance: {e:?}");
             (e.http_status(), Json(json!(to_error_response(e))))

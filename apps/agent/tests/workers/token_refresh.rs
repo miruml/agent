@@ -3,25 +3,19 @@ use std::sync::Arc;
 use std::time::Duration;
 
 // internal crates
-use config_agent::auth::{
-    token::Token,
-    errors::*,
-};
+use config_agent::auth::{errors::*, token::Token};
+use config_agent::trace;
+use config_agent::utils::calc_exp_backoff;
 use config_agent::utils::CooldownOptions;
 use config_agent::workers::token_refresh::{
-    TokenRefreshWorkerOptions,
-    run_token_refresh_worker,
-    calc_refresh_wait,
+    calc_refresh_wait, run_token_refresh_worker, TokenRefreshWorkerOptions,
 };
-use config_agent::utils::calc_exp_backoff;
-use config_agent::trace;
 
 use crate::auth::mock::MockTokenManager;
 use crate::mock::SleepController;
 
 // external crates
 use chrono::{TimeDelta, Utc};
-
 
 pub mod run_refresh_token_worker {
     use super::*;
@@ -37,7 +31,7 @@ pub mod run_refresh_token_worker {
 
         // create a controllable sleep function
         let sleep_ctrl = Arc::new(SleepController::new());
-        
+
         // create the shutdown signal
         let (shutdown_tx, _shutdown_rx): (tokio::sync::broadcast::Sender<()>, _) =
             tokio::sync::broadcast::channel(1);
@@ -81,7 +75,10 @@ pub mod run_refresh_token_worker {
             expected_get_token_calls += 1;
             expected_refresh_token_calls += 1;
             assert_eq!(token_mngr.num_get_token_calls(), expected_get_token_calls);
-            assert_eq!(token_mngr.num_refresh_token_calls(), expected_refresh_token_calls);
+            assert_eq!(
+                token_mngr.num_refresh_token_calls(),
+                expected_refresh_token_calls
+            );
             sleep_ctrl.release().await;
         }
 
@@ -102,10 +99,13 @@ pub mod run_refresh_token_worker {
             expected_get_token_calls += 1;
             expected_refresh_token_calls += 1;
             assert_eq!(token_mngr.num_get_token_calls(), expected_get_token_calls);
-            assert_eq!(token_mngr.num_refresh_token_calls(), expected_refresh_token_calls);
+            assert_eq!(
+                token_mngr.num_refresh_token_calls(),
+                expected_refresh_token_calls
+            );
             sleep_ctrl.release().await;
         }
-        
+
         // shutdown the token manager and refresh loop
         shutdown_tx.send(()).unwrap();
         token_refresh_handle.await.unwrap();
@@ -119,15 +119,17 @@ pub mod run_refresh_token_worker {
             expires_at: Utc::now(),
         };
         let token_mngr = MockTokenManager::new(token);
-        token_mngr.set_refresh_token(Box::new(|| Err(AuthErr::MockError(Box::new(MockError {
-            is_network_connection_error: true,
-            trace: trace!(),
-        })))));
+        token_mngr.set_refresh_token(Box::new(|| {
+            Err(AuthErr::MockError(Box::new(MockError {
+                is_network_connection_error: true,
+                trace: trace!(),
+            })))
+        }));
         let token_mngr = Arc::new(token_mngr);
 
         // create a controllable sleep function
         let sleep_ctrl = Arc::new(SleepController::new());
-        
+
         // create the shutdown signal
         let (shutdown_tx, _shutdown_rx): (tokio::sync::broadcast::Sender<()>, _) =
             tokio::sync::broadcast::channel(1);
@@ -172,9 +174,12 @@ pub mod run_refresh_token_worker {
             expected_get_token_calls += 1;
             expected_refresh_token_calls += 1;
             assert_eq!(token_mngr.num_get_token_calls(), expected_get_token_calls);
-            assert_eq!(token_mngr.num_refresh_token_calls(), expected_refresh_token_calls);
+            assert_eq!(
+                token_mngr.num_refresh_token_calls(),
+                expected_refresh_token_calls
+            );
         }
-        
+
         // shutdown the token manager and refresh loop
         shutdown_tx.send(()).unwrap();
         token_refresh_handle.await.unwrap();
@@ -188,15 +193,17 @@ pub mod run_refresh_token_worker {
             expires_at: Utc::now(),
         };
         let token_mngr = MockTokenManager::new(token);
-        token_mngr.set_refresh_token(Box::new(|| Err(AuthErr::MockError(Box::new(MockError {
-            is_network_connection_error: false,
-            trace: trace!(),
-        })))));
+        token_mngr.set_refresh_token(Box::new(|| {
+            Err(AuthErr::MockError(Box::new(MockError {
+                is_network_connection_error: false,
+                trace: trace!(),
+            })))
+        }));
         let token_mngr = Arc::new(token_mngr);
 
         // create a controllable sleep function
         let sleep_ctrl = Arc::new(SleepController::new());
-        
+
         // create the shutdown signal
         let (shutdown_tx, _shutdown_rx): (tokio::sync::broadcast::Sender<()>, _) =
             tokio::sync::broadcast::channel(1);
@@ -246,9 +253,12 @@ pub mod run_refresh_token_worker {
             expected_get_token_calls += 1;
             expected_refresh_token_calls += 1;
             assert_eq!(token_mngr.num_get_token_calls(), expected_get_token_calls);
-            assert_eq!(token_mngr.num_refresh_token_calls(), expected_refresh_token_calls);
+            assert_eq!(
+                token_mngr.num_refresh_token_calls(),
+                expected_refresh_token_calls
+            );
         }
-        
+
         // shutdown the token manager and refresh loop
         shutdown_tx.send(()).unwrap();
         token_refresh_handle.await.unwrap();
@@ -262,14 +272,16 @@ pub mod run_refresh_token_worker {
             expires_at: Utc::now(),
         };
         let token_mngr = Arc::new(MockTokenManager::new(token));
-        token_mngr.set_refresh_token(Box::new(|| Err(AuthErr::MockError(Box::new(MockError {
-            is_network_connection_error: false,
-            trace: trace!(),
-        })))));
+        token_mngr.set_refresh_token(Box::new(|| {
+            Err(AuthErr::MockError(Box::new(MockError {
+                is_network_connection_error: false,
+                trace: trace!(),
+            })))
+        }));
 
         // create a controllable sleep function
         let sleep_ctrl = Arc::new(SleepController::new());
-        
+
         // create the shutdown signal
         let (shutdown_tx, _shutdown_rx): (tokio::sync::broadcast::Sender<()>, _) =
             tokio::sync::broadcast::channel(1);
@@ -319,7 +331,10 @@ pub mod run_refresh_token_worker {
             expected_get_token_calls += 1;
             expected_refresh_token_calls += 1;
             assert_eq!(token_mngr.num_get_token_calls(), expected_get_token_calls);
-            assert_eq!(token_mngr.num_refresh_token_calls(), expected_refresh_token_calls);
+            assert_eq!(
+                token_mngr.num_refresh_token_calls(),
+                expected_refresh_token_calls
+            );
         }
 
         token_mngr.set_refresh_token(Box::new(|| Ok(())));
@@ -335,9 +350,12 @@ pub mod run_refresh_token_worker {
             expected_get_token_calls += 1;
             expected_refresh_token_calls += 1;
             assert_eq!(token_mngr.num_get_token_calls(), expected_get_token_calls);
-            assert_eq!(token_mngr.num_refresh_token_calls(), expected_refresh_token_calls);
+            assert_eq!(
+                token_mngr.num_refresh_token_calls(),
+                expected_refresh_token_calls
+            );
         }
-        
+
         // shutdown the token manager and refresh loop
         shutdown_tx.send(()).unwrap();
         token_refresh_handle.await.unwrap();
@@ -349,7 +367,7 @@ pub mod calc_refresh_wait {
 
     #[tokio::test]
     async fn expired_in_past() {
-        let token = Token { 
+        let token = Token {
             token: "token".to_string(),
             expires_at: Utc::now() - TimeDelta::minutes(60),
         };
@@ -363,13 +381,8 @@ pub mod calc_refresh_wait {
 
         for i in 0..10 {
             let err_streak = i;
-            let actual = calc_refresh_wait(
-                &token_mngr,
-                refresh_advance,
-                err_streak,
-                cooldown,
-            )
-            .await;
+            let actual =
+                calc_refresh_wait(&token_mngr, refresh_advance, err_streak, cooldown).await;
             let expected_secs = calc_exp_backoff(
                 cooldown.base_secs,
                 cooldown.growth_factor,
@@ -397,13 +410,8 @@ pub mod calc_refresh_wait {
 
         for i in 0..10 {
             let err_streak = i;
-            let sleep_duration = calc_refresh_wait(
-                &token_mngr,
-                refresh_advance,
-                err_streak,
-                cooldown,
-            )
-            .await;
+            let sleep_duration =
+                calc_refresh_wait(&token_mngr, refresh_advance, err_streak, cooldown).await;
             let expected_secs = calc_exp_backoff(
                 cooldown.base_secs,
                 cooldown.growth_factor,
@@ -432,11 +440,11 @@ pub mod calc_refresh_wait {
         // expect to wait until 10 minutes before expiration (25 minutes)
         for i in 0..10 {
             let err_streak = i;
-            let actual = calc_refresh_wait(&token_mngr, refresh_advance, err_streak, cooldown).await;
+            let actual =
+                calc_refresh_wait(&token_mngr, refresh_advance, err_streak, cooldown).await;
             let expected = Duration::from_secs(25 * 60);
             assert!(actual < expected);
             assert!(actual > expected - Duration::from_secs(5));
         }
     }
 }
-

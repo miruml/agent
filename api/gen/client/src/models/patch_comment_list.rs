@@ -21,10 +21,6 @@ pub struct PatchCommentList {
     pub limit: i32,
     #[serde(rename = "offset")]
     pub offset: i32,
-    #[serde(rename = "next", deserialize_with = "Option::deserialize")]
-    pub next: Option<String>,
-    #[serde(rename = "previous", deserialize_with = "Option::deserialize")]
-    pub previous: Option<String>,
     #[serde(rename = "has_more")]
     pub has_more: bool,
     #[serde(rename = "data")]
@@ -32,14 +28,12 @@ pub struct PatchCommentList {
 }
 
 impl PatchCommentList {
-    pub fn new(object: Object, total_count: i64, limit: i32, offset: i32, next: Option<String>, previous: Option<String>, has_more: bool, data: Vec<models::PatchComment>) -> PatchCommentList {
+    pub fn new(object: Object, total_count: i64, limit: i32, offset: i32, has_more: bool, data: Vec<models::PatchComment>) -> PatchCommentList {
         PatchCommentList {
             object,
             total_count,
             limit,
             offset,
-            next,
-            previous,
             has_more,
             data,
         }

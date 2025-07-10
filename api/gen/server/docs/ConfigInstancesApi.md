@@ -10,7 +10,7 @@ Method | HTTP request | Description
 
 ## get_latest_config_instance
 
-> models::BaseConfigInstance get_latest_config_instance(config_schema_digest, config_type_slug)
+> models::ConfigInstance get_latest_config_instance(config_schema_digest, config_type_slug)
 Get the latest config instance
 
 ### Parameters
@@ -23,7 +23,7 @@ Name | Type | Description  | Required | Notes
 
 ### Return type
 
-[**models::BaseConfigInstance**](BaseConfigInstance.md)
+[**models::ConfigInstance**](ConfigInstance.md)
 
 ### Authorization
 

@@ -1,9 +1,9 @@
 // internal
-use config_agent::app::run::{run};
 use config_agent::app::options::{AppOptions, LifecycleOptions};
+use config_agent::app::run::run;
 use config_agent::logs::{init, LogOptions};
 use config_agent::mqtt::client::ConnectAddress;
-use config_agent::storage::agent::{assert_activated};
+use config_agent::storage::agent::assert_activated;
 use config_agent::storage::layout::StorageLayout;
 use config_agent::storage::settings::Settings;
 use config_agent::utils::{has_version_flag, version_info};
@@ -38,7 +38,6 @@ async fn main() {
             return;
         }
     };
-
 
     // initialize the logging
     let log_options = LogOptions {

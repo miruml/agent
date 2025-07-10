@@ -11,7 +11,8 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-///
+/// ConfigInstanceErrorStatus : Last known error of the config instance
+/// Last known error of the config instance
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum ConfigInstanceErrorStatus {
     #[serde(rename = "none")]

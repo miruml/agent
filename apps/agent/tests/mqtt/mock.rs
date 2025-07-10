@@ -57,20 +57,33 @@ impl MockDeviceClient {
     }
 
     pub fn num_publish_device_sync_calls(&self) -> usize {
-        self.calls.lock().unwrap().iter().filter(|call| matches!(call, MQTTDeviceClientCall::PublishDeviceSync(_))).count()
+        self.calls
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|call| matches!(call, MQTTDeviceClientCall::PublishDeviceSync(_)))
+            .count()
     }
 
     pub fn num_subscribe_device_sync_calls(&self) -> usize {
-        self.calls.lock().unwrap().iter().filter(|call| matches!(call, MQTTDeviceClientCall::SubscribeDeviceSync(_))).count()
+        self.calls
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|call| matches!(call, MQTTDeviceClientCall::SubscribeDeviceSync(_)))
+            .count()
     }
 }
 
 impl DeviceExt for MockDeviceClient {
     async fn publish_device_sync(&self, device_id: &str) -> Result<(), MQTTError> {
-        let call = PublishDeviceSyncCall { 
+        let call = PublishDeviceSyncCall {
             device_id: device_id.to_string(),
         };
-        self.calls.lock().unwrap().push(MQTTDeviceClientCall::PublishDeviceSync(call));
+        self.calls
+            .lock()
+            .unwrap()
+            .push(MQTTDeviceClientCall::PublishDeviceSync(call));
         (self.publish_device_sync_fn)()
     }
 
@@ -78,7 +91,10 @@ impl DeviceExt for MockDeviceClient {
         let call = SubscribeDeviceSyncCall {
             device_id: device_id.to_string(),
         };
-        self.calls.lock().unwrap().push(MQTTDeviceClientCall::SubscribeDeviceSync(call));
+        self.calls
+            .lock()
+            .unwrap()
+            .push(MQTTDeviceClientCall::SubscribeDeviceSync(call));
         (self.subscribe_device_sync_fn)()
     }
 }

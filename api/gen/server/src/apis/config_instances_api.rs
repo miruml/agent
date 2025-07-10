@@ -23,7 +23,7 @@ pub enum GetLatestConfigInstanceError {
 }
 
 
-pub async fn get_latest_config_instance(configuration: &configuration::Configuration, config_schema_digest: &str, config_type_slug: &str) -> Result<models::BaseConfigInstance, Error<GetLatestConfigInstanceError>> {
+pub async fn get_latest_config_instance(configuration: &configuration::Configuration, config_schema_digest: &str, config_type_slug: &str) -> Result<models::ConfigInstance, Error<GetLatestConfigInstanceError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_config_schema_digest = config_schema_digest;
     let p_config_type_slug = config_type_slug;
@@ -55,8 +55,8 @@ pub async fn get_latest_config_instance(configuration: &configuration::Configura
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::BaseConfigInstance`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::BaseConfigInstance`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::ConfigInstance`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::ConfigInstance`")))),
         }
     } else {
         let content = resp.text().await?;

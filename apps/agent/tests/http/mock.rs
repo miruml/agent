@@ -8,7 +8,7 @@ use config_agent::http::config_schemas::{ConfigSchemaFilters, ConfigSchemasExt};
 use config_agent::http::devices::DevicesExt;
 use config_agent::http::errors::HTTPErr;
 use openapi_client::models::{
-    ActivateDeviceRequest, BackendConfigInstance, ConfigInstanceList, ConfigSchema,
+    ActivateDeviceRequest, ConfigInstance, ConfigInstanceList, ConfigSchema,
     ConfigSchemaList, Device, HashSchemaSerializedRequest, IssueDeviceTokenRequest,
     SchemaDigestResponse, TokenResponse, UpdateConfigInstanceRequest,
 };
@@ -50,8 +50,9 @@ impl DevicesExt for MockAuthClient {
 // ============================ CONFIG INSTANCES EXT =============================== //
 
 type ListConfigInstancesFn = Box<dyn Fn() -> Result<ConfigInstanceList, HTTPErr> + Send + Sync>;
-type ListAllConfigInstancesFn = Box<dyn Fn() -> Result<Vec<BackendConfigInstance>, HTTPErr> + Send + Sync>;
-type UpdateConfigInstanceFn = Box<dyn Fn() -> Result<BackendConfigInstance, HTTPErr> + Send + Sync>;
+type ListAllConfigInstancesFn =
+    Box<dyn Fn() -> Result<Vec<ConfigInstance>, HTTPErr> + Send + Sync>;
+type UpdateConfigInstanceFn = Box<dyn Fn() -> Result<ConfigInstance, HTTPErr> + Send + Sync>;
 
 pub struct MockConfigInstancesClient {
     pub list_config_instances_fn: Arc<Mutex<ListConfigInstancesFn>>,
@@ -62,9 +63,13 @@ pub struct MockConfigInstancesClient {
 impl Default for MockConfigInstancesClient {
     fn default() -> Self {
         Self {
-            list_config_instances_fn: Arc::new(Mutex::new(Box::new(|| Ok(ConfigInstanceList::default())))),
+            list_config_instances_fn: Arc::new(Mutex::new(Box::new(|| {
+                Ok(ConfigInstanceList::default())
+            }))),
             list_all_config_instances_fn: Arc::new(Mutex::new(Box::new(|| Ok(vec![])))),
-            update_config_instance_fn: Arc::new(Mutex::new(Box::new(|| Ok(BackendConfigInstance::default())))),
+            update_config_instance_fn: Arc::new(Mutex::new(Box::new(|| {
+                Ok(ConfigInstance::default())
+            }))),
         }
     }
 }
@@ -79,14 +84,14 @@ impl MockConfigInstancesClient {
 
     pub fn set_list_all_config_instances<F>(&self, list_all_config_instances_fn: F)
     where
-        F: Fn() -> Result<Vec<BackendConfigInstance>, HTTPErr> + Send + Sync + 'static,
+        F: Fn() -> Result<Vec<ConfigInstance>, HTTPErr> + Send + Sync + 'static,
     {
         *self.list_all_config_instances_fn.lock().unwrap() = Box::new(list_all_config_instances_fn);
     }
 
     pub fn set_update_config_instance<F>(&self, update_config_instance_fn: F)
     where
-        F: Fn() -> Result<BackendConfigInstance, HTTPErr> + Send + Sync + 'static,
+        F: Fn() -> Result<ConfigInstance, HTTPErr> + Send + Sync + 'static,
     {
         *self.update_config_instance_fn.lock().unwrap() = Box::new(update_config_instance_fn);
     }
@@ -102,7 +107,7 @@ impl ConfigInstancesExt for MockConfigInstancesClient {
         _: ConfigInstanceFilters,
         _: I,
         _: &str,
-    ) -> Result<Vec<BackendConfigInstance>, HTTPErr>
+    ) -> Result<Vec<ConfigInstance>, HTTPErr>
     where
         I: IntoIterator + Send,
         I::Item: fmt::Display,
@@ -115,7 +120,7 @@ impl ConfigInstancesExt for MockConfigInstancesClient {
         _: &str,
         _: &UpdateConfigInstanceRequest,
         _: &str,
-    ) -> Result<BackendConfigInstance, HTTPErr> {
+    ) -> Result<ConfigInstance, HTTPErr> {
         (*self.update_config_instance_fn.lock().unwrap())()
     }
 }
@@ -149,7 +154,7 @@ impl ConfigInstancesExt for HistoryConfigInstancesClient {
         _: ConfigInstanceFilters,
         _: I,
         _: &str,
-    ) -> Result<Vec<BackendConfigInstance>, HTTPErr>
+    ) -> Result<Vec<ConfigInstance>, HTTPErr>
     where
         I: IntoIterator + Send,
         I::Item: fmt::Display,
@@ -162,20 +167,19 @@ impl ConfigInstancesExt for HistoryConfigInstancesClient {
         _: &str,
         request: &UpdateConfigInstanceRequest,
         _: &str,
-    ) -> Result<BackendConfigInstance, HTTPErr> {
+    ) -> Result<ConfigInstance, HTTPErr> {
         self.update_config_instance_requests
             .lock()
             .unwrap()
             .push(request.clone());
-        Ok(BackendConfigInstance::default())
+        Ok(ConfigInstance::default())
     }
 }
 
 // =========================== CONFIG SCHEMAS EXT ================================== //
 pub struct MockConfigSchemasClient {
     pub hash_schema_fn: Box<dyn Fn() -> Result<SchemaDigestResponse, HTTPErr> + Send + Sync>,
-    pub list_config_schemas_fn:
-        Box<dyn Fn() -> Result<ConfigSchemaList, HTTPErr> + Send + Sync>,
+    pub list_config_schemas_fn: Box<dyn Fn() -> Result<ConfigSchemaList, HTTPErr> + Send + Sync>,
     pub find_one_config_schema_fn: Box<dyn Fn() -> Result<ConfigSchema, HTTPErr> + Send + Sync>,
 }
 

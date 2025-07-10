@@ -11,7 +11,8 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-///
+/// ConfigInstanceActivityStatus : Last known activity of the config instance
+/// Last known activity of the config instance
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum ConfigInstanceActivityStatus {
     #[serde(rename = "created")]

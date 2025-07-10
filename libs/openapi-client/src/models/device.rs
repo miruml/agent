@@ -15,14 +15,19 @@ use serde::{Deserialize, Serialize};
 pub struct Device {
     #[serde(rename = "object")]
     pub object: Object,
+    /// ID of the device
     #[serde(rename = "id")]
     pub id: String,
+    /// Name of the device
     #[serde(rename = "name")]
     pub name: String,
+    /// True if a machine has been installed + activated with this device's ID
     #[serde(rename = "is_activated")]
     pub is_activated: bool,
+    /// Timestamp of when the device was created
     #[serde(rename = "created_at")]
     pub created_at: String,
+    /// Timestamp of when the device was last updated
     #[serde(rename = "updated_at")]
     pub updated_at: String,
     #[serde(rename = "created_by_id", deserialize_with = "Option::deserialize")]

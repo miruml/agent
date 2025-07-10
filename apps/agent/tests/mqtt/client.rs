@@ -1,12 +1,7 @@
 // internal crates
 use config_agent::errors::MiruError;
 use config_agent::mqtt::client::{
-    ConnectAddress,
-    Credentials,
-    Protocol,
-    MQTTClient,
-    OptionsBuilder,
-    poll,
+    poll, ConnectAddress, Credentials, MQTTClient, OptionsBuilder, Protocol,
 };
 
 // external crates
@@ -16,15 +11,13 @@ use rumqttc::QoS;
 async fn test_mqtt_client() {
     let username = "username";
     let password = "password";
-    let options = OptionsBuilder::new(
-        Credentials::new(username.to_string(), password.to_string()),
-    )
-    .with_connect_address(ConnectAddress {
-        protocol: Protocol::TCP,
-        broker: "broker.emqx.io".to_string(),
-        port: 1883,
-    })
-    .build();
+    let options = OptionsBuilder::new(Credentials::new(username.to_string(), password.to_string()))
+        .with_connect_address(ConnectAddress {
+            protocol: Protocol::TCP,
+            broker: "broker.emqx.io".to_string(),
+            port: 1883,
+        })
+        .build();
 
     // create the client and subscribe to the device sync topic
     let (client, mut eventloop) = MQTTClient::new(&options).await;
@@ -34,7 +27,10 @@ async fn test_mqtt_client() {
     client.subscribe(topic, QoS::AtLeastOnce).await.unwrap();
 
     let payload = "test";
-    client.publish(topic, QoS::AtLeastOnce, false, payload.as_bytes()).await.unwrap();
+    client
+        .publish(topic, QoS::AtLeastOnce, false, payload.as_bytes())
+        .await
+        .unwrap();
 
     // wait for an event
     poll(&mut eventloop).await.unwrap();
@@ -46,10 +42,7 @@ async fn test_mqtt_client() {
 
 #[tokio::test]
 async fn invalid_broker_url() {
-    let credentials = Credentials::new(
-        "test".to_string(),
-        "test".to_string(),
-    );
+    let credentials = Credentials::new("test".to_string(), "test".to_string());
     let options = OptionsBuilder::new(credentials)
         .with_connect_address(ConnectAddress {
             protocol: Protocol::TCP,
@@ -67,10 +60,7 @@ async fn invalid_broker_url() {
 
 #[tokio::test]
 async fn invalid_username_or_password() {
-    let credentials = Credentials::new(
-        "username".to_string(),
-        "password".to_string(),
-    );
+    let credentials = Credentials::new("username".to_string(), "password".to_string());
     let options = OptionsBuilder::new(credentials)
         .with_connect_address(ConnectAddress {
             protocol: Protocol::SSL,

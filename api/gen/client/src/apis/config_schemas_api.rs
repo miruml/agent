@@ -15,13 +15,6 @@ use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
 
-/// struct for typed errors of method [`create_config_schema`]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum CreateConfigSchemaError {
-    UnknownValue(serde_json::Value),
-}
-
 /// struct for typed errors of method [`hash_config_schema`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -43,53 +36,6 @@ pub enum ListConfigSchemasError {
     UnknownValue(serde_json::Value),
 }
 
-
-pub async fn create_config_schema(configuration: &configuration::Configuration, create_config_schema_request: models::CreateConfigSchemaRequest, expand_left_square_bracket_right_square_bracket: Option<Vec<models::ConfigSchemaExpand>>) -> Result<models::ConfigSchema, Error<CreateConfigSchemaError>> {
-    // add a prefix to parameters to efficiently prevent name collisions
-    let p_create_config_schema_request = create_config_schema_request;
-    let p_expand_left_square_bracket_right_square_bracket = expand_left_square_bracket_right_square_bracket;
-
-    let uri_str = format!("{}/config_schemas", configuration.base_path);
-    let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
-
-    if let Some(ref param_value) = p_expand_left_square_bracket_right_square_bracket {
-        req_builder = match "multi" {
-            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("expand[]".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
-            _ => req_builder.query(&[("expand[]", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
-        };
-    }
-    if let Some(ref user_agent) = configuration.user_agent {
-        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
-    }
-    if let Some(ref token) = configuration.bearer_access_token {
-        req_builder = req_builder.bearer_auth(token.to_owned());
-    };
-    req_builder = req_builder.json(&p_create_config_schema_request);
-
-    let req = req_builder.build()?;
-    let resp = configuration.client.execute(req).await?;
-
-    let status = resp.status();
-    let content_type = resp
-        .headers()
-        .get("content-type")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("application/octet-stream");
-    let content_type = super::ContentType::from(content_type);
-
-    if !status.is_client_error() && !status.is_server_error() {
-        let content = resp.text().await?;
-        match content_type {
-            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::ConfigSchema`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::ConfigSchema`")))),
-        }
-    } else {
-        let content = resp.text().await?;
-        let entity: Option<CreateConfigSchemaError> = serde_json::from_str(&content).ok();
-        Err(Error::ResponseError(ResponseContent { status, content, entity }))
-    }
-}
 
 pub async fn hash_config_schema(configuration: &configuration::Configuration, hash_schema_request: models::HashSchemaRequest) -> Result<models::SchemaDigestResponse, Error<HashConfigSchemaError>> {
     // add a prefix to parameters to efficiently prevent name collisions

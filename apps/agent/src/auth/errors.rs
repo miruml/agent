@@ -223,7 +223,7 @@ pub struct MockError {
     pub trace: Box<Trace>,
 }
 
-impl MiruError for MockError {  
+impl MiruError for MockError {
     fn code(&self) -> Code {
         Code::InternalServerError
     }
@@ -243,10 +243,13 @@ impl MiruError for MockError {
 
 impl fmt::Display for MockError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "mock error (is network connection error: {})", self.is_network_connection_error)
+        write!(
+            f,
+            "mock error (is network connection error: {})",
+            self.is_network_connection_error
+        )
     }
 }
-
 
 #[derive(Debug)]
 pub enum AuthErr {

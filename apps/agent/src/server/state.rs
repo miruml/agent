@@ -2,14 +2,11 @@
 use std::sync::Arc;
 
 // internal crates
+use crate::activity::ActivityTracker;
 use crate::auth::token_mngr::TokenManager;
 use crate::http::client::HTTPClient;
-use crate::storage::{
-    caches::Caches,
-};
+use crate::storage::caches::Caches;
 use crate::sync::syncer::Syncer;
-use crate::activity::ActivityTracker;
-
 
 #[derive(Clone, Debug)]
 pub struct ServerState {

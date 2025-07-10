@@ -12,7 +12,7 @@ use crate::http::search::{
     format_search_clause, format_search_group, LogicalOperator, SearchOperator,
 };
 use openapi_client::models::{
-    BackendConfigInstance, ConfigInstanceActivityStatus, ConfigInstanceErrorStatus,
+    ConfigInstance, ConfigInstanceActivityStatus, ConfigInstanceErrorStatus,
     ConfigInstanceList, ConfigInstanceSearch, ConfigInstanceTargetStatus,
     UpdateConfigInstanceRequest,
 };
@@ -30,7 +30,7 @@ pub trait ConfigInstancesExt: Send + Sync {
         filters: ConfigInstanceFilters,
         expansions: I,
         token: &str,
-    ) -> Result<Vec<BackendConfigInstance>, HTTPErr>
+    ) -> Result<Vec<ConfigInstance>, HTTPErr>
     where
         I: IntoIterator + Send,
         I::Item: fmt::Display;
@@ -40,7 +40,7 @@ pub trait ConfigInstancesExt: Send + Sync {
         config_instance_id: &str,
         updates: &UpdateConfigInstanceRequest,
         token: &str,
-    ) -> Result<BackendConfigInstance, HTTPErr>;
+    ) -> Result<ConfigInstance, HTTPErr>;
 }
 
 impl HTTPClient {
@@ -76,7 +76,7 @@ impl ConfigInstancesExt for HTTPClient {
         filters: ConfigInstanceFilters,
         expansions: I,
         token: &str,
-    ) -> Result<Vec<BackendConfigInstance>, HTTPErr>
+    ) -> Result<Vec<ConfigInstance>, HTTPErr>
     where
         I: IntoIterator + Send,
         I::Item: fmt::Display,
@@ -110,7 +110,7 @@ impl ConfigInstancesExt for HTTPClient {
         config_instance_id: &str,
         updates: &UpdateConfigInstanceRequest,
         token: &str,
-    ) -> Result<BackendConfigInstance, HTTPErr> {
+    ) -> Result<ConfigInstance, HTTPErr> {
         // build the request
         let (request, context) = self.build_patch_request(
             &self.config_instance_url(config_instance_id),
@@ -124,7 +124,7 @@ impl ConfigInstancesExt for HTTPClient {
         let text_resp = self.handle_response(http_resp, &context).await?;
 
         // parse the response
-        self.parse_json_response_text::<BackendConfigInstance>(text_resp, &context)
+        self.parse_json_response_text::<ConfigInstance>(text_resp, &context)
             .await
     }
 }
@@ -145,7 +145,7 @@ impl ConfigInstancesExt for Arc<HTTPClient> {
         filters: ConfigInstanceFilters,
         expansions: I,
         token: &str,
-    ) -> Result<Vec<BackendConfigInstance>, HTTPErr>
+    ) -> Result<Vec<ConfigInstance>, HTTPErr>
     where
         I: IntoIterator + Send,
         I::Item: fmt::Display,
@@ -160,7 +160,7 @@ impl ConfigInstancesExt for Arc<HTTPClient> {
         config_instance_id: &str,
         updates: &UpdateConfigInstanceRequest,
         token: &str,
-    ) -> Result<BackendConfigInstance, HTTPErr> {
+    ) -> Result<ConfigInstance, HTTPErr> {
         self.as_ref()
             .update_config_instance(config_instance_id, updates, token)
             .await

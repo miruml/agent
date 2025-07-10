@@ -39,7 +39,7 @@ impl ActivityTracker {
             Err(e) => {
                 error!("Failed to record activity: {:?}", e);
                 return;
-            },
+            }
         };
         self.last_activity.store(now, Ordering::Relaxed);
     }

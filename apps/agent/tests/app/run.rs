@@ -2,11 +2,11 @@
 use std::path::PathBuf;
 
 // internal crates
-use config_agent::app::run::{run};
 use config_agent::app::options::{AppOptions, LifecycleOptions, StorageOptions};
+use config_agent::app::run::run;
 use config_agent::filesys::{dir::Dir, file::File};
-use config_agent::storage::agent::Agent;
 use config_agent::server::serve::ServerOptions;
+use config_agent::storage::agent::Agent;
 use config_agent::storage::layout::StorageLayout;
 
 // external crates
@@ -48,8 +48,6 @@ async fn invalid_app_state_initialization() {
     .await
     .unwrap();
 }
-
-
 
 #[tokio::test]
 async fn max_runtime_reached() {

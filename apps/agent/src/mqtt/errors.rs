@@ -185,7 +185,11 @@ impl MiruError for MockErr {
 
 impl fmt::Display for MockErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Mock MQTT error (is authentication error: {}, is network connection error: {})", self.is_authentication_error, self.is_network_connection_error)
+        write!(
+            f,
+            "Mock MQTT error (is authentication error: {}, is network connection error: {})",
+            self.is_authentication_error, self.is_network_connection_error
+        )
     }
 }
 

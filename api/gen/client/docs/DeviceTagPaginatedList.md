@@ -8,8 +8,6 @@ Name | Type | Description | Notes
 **total_count** | **i64** |  | 
 **limit** | **i32** |  | 
 **offset** | **i32** |  | 
-**next** | Option<**String**> |  | 
-**previous** | Option<**String**> |  | 
 **has_more** | **bool** |  | 
 **data** | [**Vec<models::DeviceTag>**](DeviceTag.md) |  | 
 

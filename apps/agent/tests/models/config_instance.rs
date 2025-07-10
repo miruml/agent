@@ -6,7 +6,7 @@ use config_agent::models::config_instance::{
     ActivityStatus, ConfigInstance, ErrorStatus, Status, TargetStatus,
 };
 use openapi_client::models::{
-    BackendConfigInstance, ConfigInstanceActivityStatus, ConfigInstanceErrorStatus,
+    ConfigInstance as BackendConfigInstance, ConfigInstanceActivityStatus, ConfigInstanceErrorStatus,
     ConfigInstanceStatus, ConfigInstanceTargetStatus,
 };
 
@@ -438,6 +438,7 @@ fn serialize_deserialize_config_instance() {
         updated_at: Utc::now(),
         device_id: "dvc_123".to_string(),
         config_schema_id: "123".to_string(),
+        config_type_id: "123".to_string(),
         attempts: 0,
         cooldown_ends_at: Utc::now(),
     };
@@ -462,6 +463,7 @@ async fn deserialize_config_instance() {
         updated_at: Utc::now(),
         device_id: "dvc_123".to_string(),
         config_schema_id: "123".to_string(),
+        config_type_id: "123".to_string(),
         attempts: 0,
         cooldown_ends_at: Utc::now(),
     };
@@ -498,6 +500,7 @@ async fn deserialize_config_instance() {
         error_status: ErrorStatus::None,
         device_id: "dvc_123".to_string(),
         config_schema_id: "123".to_string(),
+        config_type_id: "123".to_string(),
         // rest are defaults
         ..Default::default()
     };
@@ -527,7 +530,7 @@ fn config_instance_from_backend() {
 
     let test_cases = vec![TestCase {
         backend: BackendConfigInstance {
-            object: openapi_client::models::backend_config_instance::Object::ConfigInstance,
+            object: openapi_client::models::config_instance::Object::ConfigInstance,
             id: "cfg_inst_123".to_string(),
             target_status: ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_CREATED,
             status: ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_CREATED,
@@ -541,7 +544,9 @@ fn config_instance_from_backend() {
             updated_at: now.to_rfc3339(),
             device_id: "device_id".to_string(),
             config_schema_id: "config_schema_id".to_string(),
-            instance: None,
+            config_type_id: "config_type_id".to_string(),
+            config_type: None,
+            content: None,
             created_by: None,
             updated_by: None,
             patch: None,
@@ -561,6 +566,7 @@ fn config_instance_from_backend() {
             updated_at: now,
             device_id: "device_id".to_string(),
             config_schema_id: "config_schema_id".to_string(),
+            config_type_id: "config_type_id".to_string(),
             attempts: 0,
             cooldown_ends_at: DateTime::<Utc>::UNIX_EPOCH,
         },
@@ -575,14 +581,14 @@ fn config_instance_from_backend() {
 #[test]
 fn config_instance_status() {
     struct TestCase {
-        instance: ConfigInstance,
+        cfg_inst: ConfigInstance,
         expected: Status,
     }
 
     let test_cases = vec![
         // activity statuses
         TestCase {
-            instance: ConfigInstance {
+            cfg_inst: ConfigInstance {
                 activity_status: ActivityStatus::Created,
                 error_status: ErrorStatus::None,
                 ..Default::default()
@@ -590,7 +596,7 @@ fn config_instance_status() {
             expected: Status::Created,
         },
         TestCase {
-            instance: ConfigInstance {
+            cfg_inst: ConfigInstance {
                 activity_status: ActivityStatus::Queued,
                 error_status: ErrorStatus::None,
                 ..Default::default()
@@ -598,7 +604,7 @@ fn config_instance_status() {
             expected: Status::Queued,
         },
         TestCase {
-            instance: ConfigInstance {
+            cfg_inst: ConfigInstance {
                 activity_status: ActivityStatus::Deployed,
                 error_status: ErrorStatus::None,
                 ..Default::default()
@@ -606,7 +612,7 @@ fn config_instance_status() {
             expected: Status::Deployed,
         },
         TestCase {
-            instance: ConfigInstance {
+            cfg_inst: ConfigInstance {
                 activity_status: ActivityStatus::Removed,
                 error_status: ErrorStatus::None,
                 ..Default::default()
@@ -615,7 +621,7 @@ fn config_instance_status() {
         },
         // error statuses
         TestCase {
-            instance: ConfigInstance {
+            cfg_inst: ConfigInstance {
                 activity_status: ActivityStatus::Created,
                 error_status: ErrorStatus::Retrying,
                 ..Default::default()
@@ -623,7 +629,7 @@ fn config_instance_status() {
             expected: Status::Retrying,
         },
         TestCase {
-            instance: ConfigInstance {
+            cfg_inst: ConfigInstance {
                 activity_status: ActivityStatus::Created,
                 error_status: ErrorStatus::Failed,
                 ..Default::default()
@@ -636,7 +642,7 @@ fn config_instance_status() {
 
     for test_case in test_cases {
         variants.remove(&test_case.expected);
-        assert_eq!(test_case.instance.status(), test_case.expected);
+        assert_eq!(test_case.cfg_inst.status(), test_case.expected);
     }
 
     assert!(variants.is_empty(), "variants: {variants:?}");
@@ -644,35 +650,35 @@ fn config_instance_status() {
 
 #[test]
 fn config_instance_set_cooldown() {
-    let mut instance = ConfigInstance::default();
-    instance.set_cooldown(TimeDelta::seconds(10));
+    let mut cfg_inst = ConfigInstance::default();
+    cfg_inst.set_cooldown(TimeDelta::seconds(10));
     let now = Utc::now();
-    assert!(instance.cooldown_ends_at < now + TimeDelta::seconds(10));
-    assert!(instance.cooldown_ends_at > now + TimeDelta::seconds(9));
+    assert!(cfg_inst.cooldown_ends_at < now + TimeDelta::seconds(10));
+    assert!(cfg_inst.cooldown_ends_at > now + TimeDelta::seconds(9));
 }
 
 #[test]
 fn config_instance_clear_cooldown() {
-    let mut instance = ConfigInstance::default();
-    instance.set_cooldown(TimeDelta::seconds(10));
-    instance.clear_cooldown();
-    assert_eq!(instance.cooldown_ends_at, DateTime::<Utc>::UNIX_EPOCH);
+    let mut cfg_inst = ConfigInstance::default();
+    cfg_inst.set_cooldown(TimeDelta::seconds(10));
+    cfg_inst.clear_cooldown();
+    assert_eq!(cfg_inst.cooldown_ends_at, DateTime::<Utc>::UNIX_EPOCH);
 }
 
 #[test]
 fn config_instance_is_cooling_down() {
-    let mut instance = ConfigInstance::default();
-    instance.set_cooldown(TimeDelta::seconds(10));
-    assert!(instance.is_in_cooldown());
-    instance.clear_cooldown();
-    assert!(!instance.is_in_cooldown());
+    let mut cfg_inst = ConfigInstance::default();
+    cfg_inst.set_cooldown(TimeDelta::seconds(10));
+    assert!(cfg_inst.is_in_cooldown());
+    cfg_inst.clear_cooldown();
+    assert!(!cfg_inst.is_in_cooldown());
 }
 
 #[test]
 fn config_instance_cooldown() {
-    let mut instance = ConfigInstance::default();
+    let mut cfg_inst = ConfigInstance::default();
     let cooldown = TimeDelta::seconds(10);
-    instance.set_cooldown(cooldown);
-    assert!(instance.cooldown() < cooldown);
-    assert!(instance.cooldown() > cooldown - TimeDelta::seconds(1));
+    cfg_inst.set_cooldown(cooldown);
+    assert!(cfg_inst.cooldown() < cooldown);
+    assert!(cfg_inst.cooldown() > cooldown - TimeDelta::seconds(1));
 }

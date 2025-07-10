@@ -4,7 +4,6 @@ use config_agent::activity::ActivityTracker;
 // external crates
 use chrono::Utc;
 
-
 #[test]
 fn activity_tracker() {
     let before_init = Utc::now().timestamp() as u64;

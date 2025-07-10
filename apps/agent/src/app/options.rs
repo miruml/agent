@@ -3,18 +3,11 @@ use std::time::Duration;
 
 // internal crates
 use crate::deploy::fsm;
-use crate::server::{
-    serve::ServerOptions,
-};
-use crate::storage::{
-    caches::CacheCapacities,
-    layout::StorageLayout,
-};
+use crate::server::serve::ServerOptions;
+use crate::storage::{caches::CacheCapacities, layout::StorageLayout};
 use crate::workers::{
-    token_refresh::TokenRefreshWorkerOptions,
-    backend_sync::BackendSyncWorkerOptions,
+    backend_sync::BackendSyncWorkerOptions, token_refresh::TokenRefreshWorkerOptions,
 };
-
 
 #[derive(Debug, Clone, Copy)]
 pub struct LifecycleOptions {

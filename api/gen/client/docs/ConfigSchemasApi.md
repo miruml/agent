@@ -4,40 +4,10 @@ All URIs are relative to *https://configs.dev.api.miruml.com/agent/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**create_config_schema**](ConfigSchemasApi.md#create_config_schema) | **POST** /config_schemas | Create a config schema
 [**hash_config_schema**](ConfigSchemasApi.md#hash_config_schema) | **POST** /config_schemas/hash | Hash a config schema
 [**hash_config_schema_serialized**](ConfigSchemasApi.md#hash_config_schema_serialized) | **POST** /config_schemas/hash/serialized | Hash a serialized config schema
 [**list_config_schemas**](ConfigSchemasApi.md#list_config_schemas) | **GET** /config_schemas | List the config schemas for a workspace
 
-
-
-## create_config_schema
-
-> models::ConfigSchema create_config_schema(create_config_schema_request, expand_left_square_bracket_right_square_bracket)
-Create a config schema
-
-### Parameters
-
-
-Name | Type | Description  | Required | Notes
-------------- | ------------- | ------------- | ------------- | -------------
-**create_config_schema_request** | [**CreateConfigSchemaRequest**](CreateConfigSchemaRequest.md) |  | [required] |
-**expand_left_square_bracket_right_square_bracket** | Option<[**Vec<models::ConfigSchemaExpand>**](models::ConfigSchemaExpand.md)> |  |  |
-
-### Return type
-
-[**models::ConfigSchema**](ConfigSchema.md)
-
-### Authorization
-
-[ClerkAuth](../README.md#ClerkAuth)
-
-### HTTP request headers
-
-- **Content-Type**: application/json
-- **Accept**: application/json
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
 ## hash_config_schema

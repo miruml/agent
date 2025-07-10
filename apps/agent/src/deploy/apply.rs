@@ -6,9 +6,7 @@ use crate::crud::config_instance::{
     matches_config_schema_and_activity_status, matches_filepath_and_activity_status,
 };
 use crate::crud::prelude::{Find, Read};
-use crate::deploy::errors::{
-    ConflictingDeploymentsErr, DeployCacheErr, DeployCrudErr, DeployErr, InstanceNotDeployableErr,
-};
+use crate::deploy::errors::*;
 use crate::deploy::{
     filesys,
     filesys::DeployResults,
@@ -44,10 +42,10 @@ pub struct StorageObserver<'a> {
 
 #[async_trait]
 impl<'a> Observer for StorageObserver<'a> {
-    async fn on_update(&mut self, instance: &ConfigInstance) -> Result<(), DeployErr> {
+    async fn on_update(&mut self, cfg_inst: &ConfigInstance) -> Result<(), DeployErr> {
         let overwrite = true;
         self.cfg_inst_cache
-            .write(instance.id.clone(), instance.clone(), is_dirty, overwrite)
+            .write(cfg_inst.id.clone(), cfg_inst.clone(), is_dirty, overwrite)
             .await
             .map_err(|e| {
                 DeployErr::CacheErr(Box::new(DeployCacheErr {
@@ -109,20 +107,20 @@ pub async fn apply(
         }
 
         // update the config instances to apply
-        for instance in instance_results.to_remove.into_iter() {
-            if fsm::is_action_required(fsm::next_action(&instance, true)) {
-                cfg_insts_to_apply.insert(instance.id.clone(), instance);
+        for cfg_inst in instance_results.to_remove.into_iter() {
+            if fsm::is_action_required(fsm::next_action(&cfg_inst, true)) {
+                cfg_insts_to_apply.insert(cfg_inst.id.clone(), cfg_inst);
             } else {
-                cfg_insts_to_apply.remove(&instance.id);
-                applied_cfg_insts.insert(instance.id.clone(), instance);
+                cfg_insts_to_apply.remove(&cfg_inst.id);
+                applied_cfg_insts.insert(cfg_inst.id.clone(), cfg_inst);
             }
         }
-        for instance in instance_results.to_deploy.into_iter() {
-            if fsm::is_action_required(fsm::next_action(&instance, true)) {
-                cfg_insts_to_apply.insert(instance.id.clone(), instance);
+        for cfg_inst in instance_results.to_deploy.into_iter() {
+            if fsm::is_action_required(fsm::next_action(&cfg_inst, true)) {
+                cfg_insts_to_apply.insert(cfg_inst.id.clone(), cfg_inst);
             } else {
-                cfg_insts_to_apply.remove(&instance.id);
-                applied_cfg_insts.insert(instance.id.clone(), instance);
+                cfg_insts_to_apply.remove(&cfg_inst.id);
+                applied_cfg_insts.insert(cfg_inst.id.clone(), cfg_inst);
             }
         }
     }
@@ -186,9 +184,9 @@ where
         let next_action = fsm::next_action(&cfg_inst, true);
         return (
             DeployResults::empty(),
-            Err(DeployErr::InstanceNotDeployableErr(Box::new(
-                InstanceNotDeployableErr {
-                    instance: cfg_inst,
+            Err(DeployErr::ConfigInstanceNotDeployableErr(Box::new(
+                ConfigInstanceNotDeployableErr {
+                    cfg_inst,
                     next_action,
                     trace: trace!(),
                 },
@@ -208,7 +206,7 @@ where
         cfg_inst.id, replacement_ids
     );
 
-    // remove the old instances and deploy the new instance
+    // remove the old instances and deploy the new config instance
     filesys::deploy_with_rollback(
         conflicts,
         vec![cfg_inst],
@@ -236,9 +234,9 @@ where
         let next_action = fsm::next_action(&cfg_inst, true);
         return (
             DeployResults::empty(),
-            Err(DeployErr::InstanceNotDeployableErr(Box::new(
-                InstanceNotDeployableErr {
-                    instance: cfg_inst,
+            Err(DeployErr::ConfigInstanceNotDeployableErr(Box::new(
+                ConfigInstanceNotDeployableErr {
+                    cfg_inst,
                     next_action,
                     trace: trace!(),
                 },
@@ -366,11 +364,11 @@ where
 }
 
 pub fn matches_config_schema_and_next_action(
-    instance: &ConfigInstance,
+    cfg_inst: &ConfigInstance,
     config_schema_id: &str,
     next_action: fsm::NextAction,
     use_cooldown: bool,
 ) -> bool {
-    instance.config_schema_id == config_schema_id
-        && fsm::next_action(instance, use_cooldown) == next_action
+    cfg_inst.config_schema_id == config_schema_id
+        && fsm::next_action(cfg_inst, use_cooldown) == next_action
 }

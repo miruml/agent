@@ -1,7 +1,7 @@
 // internal crates
 use config_agent::filesys::dir::Dir;
 use config_agent::storage::{
-    agent::{Agent, assert_activated},
+    agent::{assert_activated, Agent},
     errors::StorageErr,
 };
 

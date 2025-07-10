@@ -20,9 +20,13 @@ pub async fn push_config_instances<HTTPClientT: ConfigInstancesExt>(
             trace: trace!(),
         }))
     })?;
-    debug!("Found {} unsynced config instances: {:?}", unsynced_entries.len(), unsynced_entries);
+    debug!(
+        "Found {} unsynced config instances: {:?}",
+        unsynced_entries.len(),
+        unsynced_entries
+    );
 
-    // push each unsynced instance to the server and update the cache
+    // push each unsynced config instance to the server and update the cache
     for entry in unsynced_entries {
         let inst = entry.value;
 
@@ -35,7 +39,10 @@ pub async fn push_config_instances<HTTPClientT: ConfigInstancesExt>(
         };
 
         // send to the server
-        debug!("Pushing config instance {} to the server with updates: {:?}", inst.id, updates);
+        debug!(
+            "Pushing config instance {} to the server with updates: {:?}",
+            inst.id, updates
+        );
         if let Err(e) = http_client
             .update_config_instance(&inst.id, &updates, token)
             .await

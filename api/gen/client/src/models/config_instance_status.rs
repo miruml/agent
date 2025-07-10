@@ -11,7 +11,8 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-/// 
+/// ConfigInstanceStatus : The merging of the 'activity_status' and 'error_status' where 'error_status' takes precedence over 'activity_status' if errors are present
+/// The merging of the 'activity_status' and 'error_status' where 'error_status' takes precedence over 'activity_status' if errors are present
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum ConfigInstanceStatus {
     #[serde(rename = "created")]

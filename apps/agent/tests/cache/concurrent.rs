@@ -152,7 +152,8 @@ macro_rules! concurrent_cache_tests {
 
             #[tokio::test]
             async fn trigger_prune() {
-                $crate::cache::concurrent::write::trigger_prune_impl($spawn_cache_with_capacity).await;
+                $crate::cache::concurrent::write::trigger_prune_impl($spawn_cache_with_capacity)
+                    .await;
             }
         }
 
@@ -175,17 +176,24 @@ macro_rules! concurrent_cache_tests {
 
             #[tokio::test]
             async fn empty_cache() {
-                $crate::cache::concurrent::prune::empty_cache_impl($spawn_cache_with_capacity).await;
+                $crate::cache::concurrent::prune::empty_cache_impl($spawn_cache_with_capacity)
+                    .await;
             }
 
             #[tokio::test]
             async fn cache_equal_to_max_size() {
-                $crate::cache::concurrent::prune::cache_equal_to_max_size_impl($spawn_cache_with_capacity).await;
+                $crate::cache::concurrent::prune::cache_equal_to_max_size_impl(
+                    $spawn_cache_with_capacity,
+                )
+                .await;
             }
 
             #[tokio::test]
             async fn remove_oldest_entries() {
-                $crate::cache::concurrent::prune::remove_oldest_entries_impl($spawn_cache_with_capacity).await;
+                $crate::cache::concurrent::prune::remove_oldest_entries_impl(
+                    $spawn_cache_with_capacity,
+                )
+                .await;
             }
         }
 
@@ -880,7 +888,12 @@ pub mod write {
     pub async fn trigger_prune_impl<F, Fut, SingleThreadCacheT>(new_cache: F)
     where
         F: Fn(usize) -> Fut + Clone,
-        Fut: Future<Output = (ConcurrentCache<SingleThreadCacheT, String, String>, JoinHandle<()>)>,
+        Fut: Future<
+            Output = (
+                ConcurrentCache<SingleThreadCacheT, String, String>,
+                JoinHandle<()>,
+            ),
+        >,
         SingleThreadCacheT: SingleThreadCache<String, String>,
     {
         let (cache, _) = new_cache(10).await;

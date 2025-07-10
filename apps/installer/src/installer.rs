@@ -9,12 +9,7 @@ use crate::errors::{
 use crate::{utils, utils::Colors};
 use config_agent::crypt::jwt;
 use config_agent::http::devices::DevicesExt;
-use config_agent::storage::{
-    agent::Agent,
-    layout::StorageLayout,
-    setup::setup_storage,
-    settings,
-};
+use config_agent::storage::{agent::Agent, layout::StorageLayout, settings, setup::setup_storage};
 use config_agent::trace;
 use openapi_client::models::ActivateDeviceRequest;
 
@@ -45,21 +40,20 @@ impl<HTTPClientT: DevicesExt> Installer<HTTPClientT> {
     }
 
     // walks user through the installation process
-    pub async fn install(
-        &mut self,
-        settings: &settings::Settings,
-    ) -> Result<(), InstallerErr> {
+    pub async fn install(&mut self, settings: &settings::Settings) -> Result<(), InstallerErr> {
         // setup the storage so that the agent can authenticate its keys and such
         let agent = Agent {
             activated: false,
             ..Default::default()
         };
-        setup_storage(&self.layout, &agent, settings).await.map_err(|e| {
-            InstallerErr::StorageErr(InstallerStorageErr {
-                source: e,
-                trace: trace!(),
-            })
-        })?;
+        setup_storage(&self.layout, &agent, settings)
+            .await
+            .map_err(|e| {
+                InstallerErr::StorageErr(InstallerStorageErr {
+                    source: e,
+                    trace: trace!(),
+                })
+            })?;
 
         // authenticate the agent
         let device_id = self.authenticate_agent().await?;

@@ -18,14 +18,9 @@ use crate::utils::{calc_exp_backoff, CooldownOptions};
 
 // external crates
 use chrono::{DateTime, TimeDelta, Utc};
-use tokio::sync::{
-    mpsc,
-    oneshot,
-    watch,
-};
+use tokio::sync::{mpsc, oneshot, watch};
 use tokio::task::JoinHandle;
 use tracing::{debug, error, info};
-
 
 // =============================== SYNCER EVENTS ================================== //
 #[derive(Debug, Clone, PartialEq)]
@@ -47,10 +42,7 @@ pub enum SyncEvent {
 }
 
 // ======================== SINGLE-THREADED IMPLEMENTATION ========================= //
-pub struct SyncerArgs<
-    HTTPClientT: ConfigInstancesExt,
-    TokenManagerT: TokenManagerExt,
-> {
+pub struct SyncerArgs<HTTPClientT: ConfigInstancesExt, TokenManagerT: TokenManagerExt> {
     pub device_id: String,
     pub http_client: Arc<HTTPClientT>,
     pub token_mngr: Arc<TokenManagerT>,
@@ -94,9 +86,7 @@ pub struct SingleThreadSyncer<HTTPClientT: ConfigInstancesExt> {
 }
 
 impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
-    pub fn new(
-        args: SyncerArgs<HTTPClientT, TokenManager>,
-    ) -> Self {
+    pub fn new(args: SyncerArgs<HTTPClientT, TokenManager>) -> Self {
         let (subscriber_tx, subscriber_rx) = watch::channel(SyncEvent::SyncSuccess);
         Self {
             device_id: args.device_id,
@@ -122,17 +112,16 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
         Ok(self.subscriber_rx.clone())
     }
 
-    fn schedule_cooldown_end_notification(
-        &self,
-        cooldown_end_at: DateTime<Utc>,
-        is_success: bool,
-    ) {
+    fn schedule_cooldown_end_notification(&self, cooldown_end_at: DateTime<Utc>, is_success: bool) {
         if cooldown_end_at <= Utc::now() {
             return;
         }
         // add 1 second to the cooldown period to ensure that the cooldown period is
         // cleared when sending the cooldown end event
-        let cooldown_secs = cooldown_end_at.signed_duration_since(Utc::now()).num_seconds() + 1;
+        let cooldown_secs = cooldown_end_at
+            .signed_duration_since(Utc::now())
+            .num_seconds()
+            + 1;
         let tx = self.subscriber_tx.clone();
         tokio::spawn(async move {
             tokio::time::sleep(Duration::from_secs(cooldown_secs as u64)).await;
@@ -185,7 +174,10 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
                     error!("failed to send sync success event: {:?}", e);
                 }
                 if self.state.err_streak > 0 {
-                    info!("successfully synced with backend after an error streak of {}", self.state.err_streak);
+                    info!(
+                        "successfully synced with backend after an error streak of {}",
+                        self.state.err_streak
+                    );
                 } else {
                     info!("successfully synced with backend");
                 }
@@ -203,28 +195,34 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
                 // network connection errors are expected to happen and do not count
                 // toward the error streak. We want to be able to retry syncing from network connection errors even if the previous errors were not network connection errors so we use an error streak of 0 when calculating the cooldown period
                 if e.is_network_connection_error() {
-                    debug!("unable to sync with backend due to a network connection error: {:?}", e);
+                    debug!(
+                        "unable to sync with backend due to a network connection error: {:?}",
+                        e
+                    );
                     (false, self.cooldown_options.base_secs)
                 } else {
                     error!("unable to sync with backend: {:?}", e);
                     self.state.err_streak += 1;
-                    (false, calc_exp_backoff(
-                        self.cooldown_options.base_secs,
-                        self.cooldown_options.growth_factor,
-                        self.state.err_streak,
-                        self.cooldown_options.max_secs,
-                    ))
+                    (
+                        false,
+                        calc_exp_backoff(
+                            self.cooldown_options.base_secs,
+                            self.cooldown_options.growth_factor,
+                            self.state.err_streak,
+                            self.cooldown_options.max_secs,
+                        ),
+                    )
                 }
             }
         };
 
         // schedule the cooldown end notification
         self.state.cooldown_ends_at = Utc::now() + TimeDelta::seconds(cooldown_secs);
-        self.schedule_cooldown_end_notification(
-            self.state.cooldown_ends_at,
-            success,
+        self.schedule_cooldown_end_notification(self.state.cooldown_ends_at, success);
+        info!(
+            "backend syncer cooling down for {cooldown_secs} seconds (until {:?})",
+            self.state.cooldown_ends_at
         );
-        info!("backend syncer cooling down for {cooldown_secs} seconds (until {:?})", self.state.cooldown_ends_at);
 
         result
     }
@@ -258,8 +256,9 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
 
         // read the config instances which need to be applied
         debug!("Reading config instances which need to be applied");
-        let cfg_insts_to_apply = self.cfg_inst_cache
-            .find_where(|instance| fsm::is_action_required(fsm::next_action(instance, true)))
+        let cfg_insts_to_apply = self
+            .cfg_inst_cache
+            .find_where(|cfg_inst| fsm::is_action_required(fsm::next_action(cfg_inst, true)))
             .await
             .map_err(|e| {
                 SyncErr::CrudErr(Box::new(SyncCrudErr {
@@ -267,11 +266,10 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
                     trace: trace!(),
                 }))
             })?;
-        let cfg_insts_to_apply  = cfg_insts_to_apply
+        let cfg_insts_to_apply = cfg_insts_to_apply
             .into_iter()
-            .map(|instance| (instance.id.clone(), instance))
+            .map(|cfg_inst| (cfg_inst.id.clone(), cfg_inst))
             .collect();
-
 
         // apply deployments
         apply(
@@ -291,13 +289,12 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
 
         // push config instances to server
         debug!("Pushing config instances to server");
-        let result =
-            push_config_instances(
-                self.cfg_inst_cache.as_ref(),
-                self.http_client.as_ref(),
-                &token.token,
-            )
-            .await;
+        let result = push_config_instances(
+            self.cfg_inst_cache.as_ref(),
+            self.http_client.as_ref(),
+            &token.token,
+        )
+        .await;
         match result {
             Ok(_) => (),
             Err(e) => {
@@ -358,7 +355,10 @@ pub struct Worker<HTTPClientT: ConfigInstancesExt + Send> {
 }
 
 impl<HTTPClientT: ConfigInstancesExt + Send> Worker<HTTPClientT> {
-    pub fn new(syncer: SingleThreadSyncer<HTTPClientT>, receiver: mpsc::Receiver<WorkerCommand>) -> Self {
+    pub fn new(
+        syncer: SingleThreadSyncer<HTTPClientT>,
+        receiver: mpsc::Receiver<WorkerCommand>,
+    ) -> Self {
         Self { syncer, receiver }
     }
 }
@@ -389,7 +389,10 @@ impl<HTTPClientT: ConfigInstancesExt + Send> Worker<HTTPClientT> {
                 WorkerCommand::SyncIfNotInCooldown { respond_to } => {
                     let result = self.syncer.sync_if_not_in_cooldown().await;
                     if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to send sync if not in cooldown response: {:?}", e);
+                        error!(
+                            "Actor failed to send sync if not in cooldown response: {:?}",
+                            e
+                        );
                     }
                 }
                 WorkerCommand::Sync { respond_to } => {
@@ -404,7 +407,6 @@ impl<HTTPClientT: ConfigInstancesExt + Send> Worker<HTTPClientT> {
                         error!("Actor failed to send subscribe response");
                     }
                 }
-                
             }
         }
     }
@@ -439,7 +441,10 @@ impl Syncer {
     pub async fn set_sync_state(&self, state: SyncState) -> Result<(), SyncErr> {
         let (send, recv) = oneshot::channel();
         self.sender
-            .send(WorkerCommand::SetSyncState { state, respond_to: send })
+            .send(WorkerCommand::SetSyncState {
+                state,
+                respond_to: send,
+            })
             .await
             .map_err(|e| {
                 SyncErr::SendActorMessageErr(Box::new(SendActorMessageErr {
@@ -457,7 +462,6 @@ impl Syncer {
 }
 
 impl SyncerExt for Syncer {
-
     async fn shutdown(&self) -> Result<(), SyncErr> {
         let (send, recv) = oneshot::channel();
         self.sender
@@ -536,9 +540,7 @@ impl SyncerExt for Syncer {
     async fn sync(&self) -> Result<(), SyncErr> {
         let (send, recv) = oneshot::channel();
         self.sender
-            .send(WorkerCommand::Sync {
-                respond_to: send,
-            })
+            .send(WorkerCommand::Sync { respond_to: send })
             .await
             .map_err(|e| {
                 SyncErr::SendActorMessageErr(Box::new(SendActorMessageErr {

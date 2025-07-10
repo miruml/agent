@@ -492,9 +492,7 @@ where
     pub async fn prune(&self) -> Result<(), CacheErr> {
         let (send, recv) = oneshot::channel();
         self.sender
-            .send(WorkerCommand::Prune {
-                respond_to: send,
-            })
+            .send(WorkerCommand::Prune { respond_to: send })
             .await
             .map_err(|e| {
                 CacheErr::SendActorMessageErr(Box::new(SendActorMessageErr {

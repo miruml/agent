@@ -1,6 +1,6 @@
 // standard library
-use std::env;
 use std::collections::HashMap;
+use std::env;
 
 // internal crates
 use config_agent::filesys::{dir::Dir, path::PathExt};
@@ -75,10 +75,7 @@ async fn install() -> Result<(), Box<dyn std::error::Error>> {
 
     // create and run the installer
     let http_client = HTTPClient::new(&settings.backend.base_url).await;
-    let mut installer = Installer::new(
-        StorageLayout::default(),
-        http_client,
-    );
+    let mut installer = Installer::new(StorageLayout::default(), http_client);
     installer.install(&settings).await?;
 
     drop(guard);

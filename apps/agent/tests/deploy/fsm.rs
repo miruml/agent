@@ -54,23 +54,23 @@ pub mod next_action {
     }
 
     fn validate_next_actions(
-        mut instance: ConfigInstance,
+        mut cfg_inst: ConfigInstance,
         use_cooldown: bool,
         target_created: fsm::NextAction,
         target_deployed: fsm::NextAction,
         target_removed: fsm::NextAction,
     ) {
-        instance.target_status = TargetStatus::Created;
-        validate_next_action(target_created, fsm::next_action(&instance, use_cooldown));
-        instance.target_status = TargetStatus::Deployed;
-        validate_next_action(target_deployed, fsm::next_action(&instance, use_cooldown));
-        instance.target_status = TargetStatus::Removed;
-        validate_next_action(target_removed, fsm::next_action(&instance, use_cooldown));
+        cfg_inst.target_status = TargetStatus::Created;
+        validate_next_action(target_created, fsm::next_action(&cfg_inst, use_cooldown));
+        cfg_inst.target_status = TargetStatus::Deployed;
+        validate_next_action(target_deployed, fsm::next_action(&cfg_inst, use_cooldown));
+        cfg_inst.target_status = TargetStatus::Removed;
+        validate_next_action(target_removed, fsm::next_action(&cfg_inst, use_cooldown));
     }
 
     #[test]
     fn created_activity_status() {
-        let mut instance = ConfigInstance {
+        let mut cfg_inst = ConfigInstance {
             activity_status: ActivityStatus::Created,
             error_status: ErrorStatus::None,
             ..Default::default()
@@ -79,12 +79,12 @@ pub mod next_action {
         // error status 'None' or 'Retrying' && not in cooldown
         for i in 0..2 {
             if i == 0 {
-                instance.error_status = ErrorStatus::None;
+                cfg_inst.error_status = ErrorStatus::None;
             } else {
-                instance.error_status = ErrorStatus::Retrying;
+                cfg_inst.error_status = ErrorStatus::Retrying;
             }
             validate_next_actions(
-                instance.clone(),
+                cfg_inst.clone(),
                 true,
                 fsm::NextAction::None,
                 fsm::NextAction::Deploy,
@@ -95,16 +95,16 @@ pub mod next_action {
         // error status 'None' or 'Retrying' && in cooldown
         for i in 0..2 {
             if i == 0 {
-                instance.error_status = ErrorStatus::None;
+                cfg_inst.error_status = ErrorStatus::None;
             } else {
-                instance.error_status = ErrorStatus::Retrying;
+                cfg_inst.error_status = ErrorStatus::Retrying;
             }
             let cooldown = TimeDelta::minutes(60);
-            instance.set_cooldown(cooldown);
+            cfg_inst.set_cooldown(cooldown);
 
             // using cooldown
             validate_next_actions(
-                instance.clone(),
+                cfg_inst.clone(),
                 true,
                 fsm::NextAction::Wait(cooldown),
                 fsm::NextAction::Wait(cooldown),
@@ -113,7 +113,7 @@ pub mod next_action {
 
             // ignore cooldown
             validate_next_actions(
-                instance.clone(),
+                cfg_inst.clone(),
                 false,
                 fsm::NextAction::None,
                 fsm::NextAction::Deploy,
@@ -122,9 +122,9 @@ pub mod next_action {
         }
 
         // error status 'Failed'
-        instance.error_status = ErrorStatus::Failed;
+        cfg_inst.error_status = ErrorStatus::Failed;
         validate_next_actions(
-            instance.clone(),
+            cfg_inst.clone(),
             true,
             fsm::NextAction::None,
             fsm::NextAction::None,
@@ -134,7 +134,7 @@ pub mod next_action {
 
     #[test]
     fn queued_activity_status() {
-        let mut instance = ConfigInstance {
+        let mut cfg_inst = ConfigInstance {
             activity_status: ActivityStatus::Queued,
             error_status: ErrorStatus::None,
             ..Default::default()
@@ -143,12 +143,12 @@ pub mod next_action {
         // error status 'None' or 'Retrying' && not in cooldown
         for i in 0..2 {
             if i == 0 {
-                instance.error_status = ErrorStatus::None;
+                cfg_inst.error_status = ErrorStatus::None;
             } else {
-                instance.error_status = ErrorStatus::Retrying;
+                cfg_inst.error_status = ErrorStatus::Retrying;
             }
             validate_next_actions(
-                instance.clone(),
+                cfg_inst.clone(),
                 true,
                 fsm::NextAction::None,
                 fsm::NextAction::Deploy,
@@ -159,16 +159,16 @@ pub mod next_action {
         // error status 'None' or 'Retrying' && in cooldown
         for i in 0..2 {
             if i == 0 {
-                instance.error_status = ErrorStatus::None;
+                cfg_inst.error_status = ErrorStatus::None;
             } else {
-                instance.error_status = ErrorStatus::Retrying;
+                cfg_inst.error_status = ErrorStatus::Retrying;
             }
             let cooldown = TimeDelta::minutes(60);
-            instance.set_cooldown(cooldown);
+            cfg_inst.set_cooldown(cooldown);
 
             // using cooldown
             validate_next_actions(
-                instance.clone(),
+                cfg_inst.clone(),
                 true,
                 fsm::NextAction::Wait(cooldown),
                 fsm::NextAction::Wait(cooldown),
@@ -177,7 +177,7 @@ pub mod next_action {
 
             // ignore cooldown
             validate_next_actions(
-                instance.clone(),
+                cfg_inst.clone(),
                 false,
                 fsm::NextAction::None,
                 fsm::NextAction::Deploy,
@@ -186,9 +186,9 @@ pub mod next_action {
         }
 
         // error status 'Failed'
-        instance.error_status = ErrorStatus::Failed;
+        cfg_inst.error_status = ErrorStatus::Failed;
         validate_next_actions(
-            instance.clone(),
+            cfg_inst.clone(),
             true,
             fsm::NextAction::None,
             fsm::NextAction::None,
@@ -198,7 +198,7 @@ pub mod next_action {
 
     #[test]
     fn deployed_activity_status() {
-        let mut instance = ConfigInstance {
+        let mut cfg_inst = ConfigInstance {
             activity_status: ActivityStatus::Deployed,
             error_status: ErrorStatus::None,
             ..Default::default()
@@ -207,12 +207,12 @@ pub mod next_action {
         // error status 'None' or 'Retrying' && not in cooldown
         for i in 0..2 {
             if i == 0 {
-                instance.error_status = ErrorStatus::None;
+                cfg_inst.error_status = ErrorStatus::None;
             } else {
-                instance.error_status = ErrorStatus::Retrying;
+                cfg_inst.error_status = ErrorStatus::Retrying;
             }
             validate_next_actions(
-                instance.clone(),
+                cfg_inst.clone(),
                 true,
                 fsm::NextAction::Remove,
                 fsm::NextAction::None,
@@ -223,16 +223,16 @@ pub mod next_action {
         // error status 'None' or 'Retrying' && in cooldown
         for i in 0..2 {
             if i == 0 {
-                instance.error_status = ErrorStatus::None;
+                cfg_inst.error_status = ErrorStatus::None;
             } else {
-                instance.error_status = ErrorStatus::Retrying;
+                cfg_inst.error_status = ErrorStatus::Retrying;
             }
             let cooldown = TimeDelta::minutes(60);
-            instance.set_cooldown(cooldown);
+            cfg_inst.set_cooldown(cooldown);
 
             // using cooldown
             validate_next_actions(
-                instance.clone(),
+                cfg_inst.clone(),
                 true,
                 fsm::NextAction::Wait(cooldown),
                 fsm::NextAction::Wait(cooldown),
@@ -241,7 +241,7 @@ pub mod next_action {
 
             // ignore cooldown
             validate_next_actions(
-                instance.clone(),
+                cfg_inst.clone(),
                 false,
                 fsm::NextAction::Remove,
                 fsm::NextAction::None,
@@ -250,9 +250,9 @@ pub mod next_action {
         }
 
         // error status 'Failed'
-        instance.error_status = ErrorStatus::Failed;
+        cfg_inst.error_status = ErrorStatus::Failed;
         validate_next_actions(
-            instance.clone(),
+            cfg_inst.clone(),
             true,
             fsm::NextAction::None,
             fsm::NextAction::None,
@@ -262,7 +262,7 @@ pub mod next_action {
 
     #[test]
     fn removed_activity_status() {
-        let mut instance = ConfigInstance {
+        let mut cfg_inst = ConfigInstance {
             activity_status: ActivityStatus::Removed,
             error_status: ErrorStatus::None,
             ..Default::default()
@@ -271,12 +271,12 @@ pub mod next_action {
         // error status 'None' or 'Retrying' && not in cooldown
         for i in 0..2 {
             if i == 0 {
-                instance.error_status = ErrorStatus::None;
+                cfg_inst.error_status = ErrorStatus::None;
             } else {
-                instance.error_status = ErrorStatus::Retrying;
+                cfg_inst.error_status = ErrorStatus::Retrying;
             }
             validate_next_actions(
-                instance.clone(),
+                cfg_inst.clone(),
                 true,
                 fsm::NextAction::None,
                 fsm::NextAction::Deploy,
@@ -287,16 +287,16 @@ pub mod next_action {
         // error status 'None' or 'Retrying' && in cooldown
         for i in 0..2 {
             if i == 0 {
-                instance.error_status = ErrorStatus::None;
+                cfg_inst.error_status = ErrorStatus::None;
             } else {
-                instance.error_status = ErrorStatus::Retrying;
+                cfg_inst.error_status = ErrorStatus::Retrying;
             }
             let cooldown = TimeDelta::minutes(60);
-            instance.set_cooldown(cooldown);
+            cfg_inst.set_cooldown(cooldown);
 
             // using cooldown
             validate_next_actions(
-                instance.clone(),
+                cfg_inst.clone(),
                 true,
                 fsm::NextAction::Wait(cooldown),
                 fsm::NextAction::Wait(cooldown),
@@ -305,7 +305,7 @@ pub mod next_action {
 
             // ignore cooldown
             validate_next_actions(
-                instance.clone(),
+                cfg_inst.clone(),
                 false,
                 fsm::NextAction::None,
                 fsm::NextAction::Deploy,
@@ -314,9 +314,9 @@ pub mod next_action {
         }
 
         // error status 'Failed'
-        instance.error_status = ErrorStatus::Failed;
+        cfg_inst.error_status = ErrorStatus::Failed;
         validate_next_actions(
-            instance.clone(),
+            cfg_inst.clone(),
             true,
             fsm::NextAction::None,
             fsm::NextAction::None,
@@ -373,22 +373,23 @@ pub mod transitions {
         instances
     }
 
-    fn validate_deploy_transition(instance: ConfigInstance, expected_error_status: ErrorStatus) {
-        let actual = fsm::deploy(instance.clone());
+    fn validate_deploy_transition(cfg_inst: ConfigInstance, expected_error_status: ErrorStatus) {
+        let actual = fsm::deploy(cfg_inst.clone());
 
         let expected = ConfigInstance {
-            id: instance.id.clone(),
-            target_status: instance.target_status,
+            id: cfg_inst.id.clone(),
+            target_status: cfg_inst.target_status,
             activity_status: ActivityStatus::Deployed,
             error_status: expected_error_status,
-            relative_filepath: instance.relative_filepath.clone(),
-            patch_id: instance.patch_id.clone(),
-            created_by_id: instance.created_by_id.clone(),
-            created_at: instance.created_at,
-            updated_by_id: instance.updated_by_id.clone(),
-            updated_at: instance.updated_at,
-            device_id: instance.device_id.clone(),
-            config_schema_id: instance.config_schema_id.clone(),
+            relative_filepath: cfg_inst.relative_filepath.clone(),
+            patch_id: cfg_inst.patch_id.clone(),
+            created_by_id: cfg_inst.created_by_id.clone(),
+            created_at: cfg_inst.created_at,
+            updated_by_id: cfg_inst.updated_by_id.clone(),
+            updated_at: cfg_inst.updated_at,
+            device_id: cfg_inst.device_id.clone(),
+            config_schema_id: cfg_inst.config_schema_id.clone(),
+            config_type_id: cfg_inst.config_type_id.clone(),
             attempts: 0,
             cooldown_ends_at: actual.cooldown_ends_at,
         };
@@ -398,24 +399,24 @@ pub mod transitions {
         );
 
         // check the cooldown
-        assert!(instance.cooldown_ends_at < Utc::now());
+        assert!(cfg_inst.cooldown_ends_at < Utc::now());
     }
 
     #[test]
     fn deploy_error_status_none() {
         let instances = def_deps_w_error_status(ErrorStatus::None);
-        for instance in instances {
-            validate_deploy_transition(instance, ErrorStatus::None);
+        for cfg_inst in instances {
+            validate_deploy_transition(cfg_inst, ErrorStatus::None);
         }
     }
 
     #[test]
     fn deploy_error_status_retrying() {
         let instances = def_deps_w_error_status(ErrorStatus::Retrying);
-        for instance in instances {
-            match instance.target_status {
-                TargetStatus::Deployed => validate_deploy_transition(instance, ErrorStatus::None),
-                _ => validate_deploy_transition(instance, ErrorStatus::Retrying),
+        for cfg_inst in instances {
+            match cfg_inst.target_status {
+                TargetStatus::Deployed => validate_deploy_transition(cfg_inst, ErrorStatus::None),
+                _ => validate_deploy_transition(cfg_inst, ErrorStatus::Retrying),
             }
         }
     }
@@ -423,27 +424,28 @@ pub mod transitions {
     #[test]
     fn deploy_error_status_failed() {
         let instances = def_deps_w_error_status(ErrorStatus::Failed);
-        for instance in instances {
-            validate_deploy_transition(instance, ErrorStatus::Failed);
+        for cfg_inst in instances {
+            validate_deploy_transition(cfg_inst, ErrorStatus::Failed);
         }
     }
 
-    fn validate_remove_transition(instance: ConfigInstance, expected_error_status: ErrorStatus) {
-        let actual = fsm::remove(instance.clone());
+    fn validate_remove_transition(cfg_inst: ConfigInstance, expected_error_status: ErrorStatus) {
+        let actual = fsm::remove(cfg_inst.clone());
 
         let expected = ConfigInstance {
-            id: instance.id.clone(),
-            target_status: instance.target_status,
+            id: cfg_inst.id.clone(),
+            target_status: cfg_inst.target_status,
             activity_status: ActivityStatus::Removed,
             error_status: expected_error_status,
-            relative_filepath: instance.relative_filepath.clone(),
-            patch_id: instance.patch_id.clone(),
-            created_by_id: instance.created_by_id.clone(),
-            created_at: instance.created_at,
-            updated_by_id: instance.updated_by_id.clone(),
-            updated_at: instance.updated_at,
-            device_id: instance.device_id.clone(),
-            config_schema_id: instance.config_schema_id.clone(),
+            relative_filepath: cfg_inst.relative_filepath.clone(),
+            patch_id: cfg_inst.patch_id.clone(),
+            created_by_id: cfg_inst.created_by_id.clone(),
+            created_at: cfg_inst.created_at,
+            updated_by_id: cfg_inst.updated_by_id.clone(),
+            updated_at: cfg_inst.updated_at,
+            device_id: cfg_inst.device_id.clone(),
+            config_schema_id: cfg_inst.config_schema_id.clone(),
+            config_type_id: cfg_inst.config_type_id.clone(),
             attempts: 0,
             cooldown_ends_at: actual.cooldown_ends_at,
         };
@@ -453,26 +455,26 @@ pub mod transitions {
         );
 
         // check the cooldown
-        assert!(instance.cooldown_ends_at < Utc::now());
+        assert!(cfg_inst.cooldown_ends_at < Utc::now());
     }
 
     #[test]
     fn remove_error_status_none() {
         let instances = def_deps_w_error_status(ErrorStatus::None);
-        for instance in instances {
-            validate_remove_transition(instance, ErrorStatus::None);
+        for cfg_inst in instances {
+            validate_remove_transition(cfg_inst, ErrorStatus::None);
         }
     }
 
     #[test]
     fn remove_error_status_retrying() {
         let instances = def_deps_w_error_status(ErrorStatus::Retrying);
-        for instance in instances {
-            match instance.target_status {
+        for cfg_inst in instances {
+            match cfg_inst.target_status {
                 TargetStatus::Removed | TargetStatus::Created => {
-                    validate_remove_transition(instance, ErrorStatus::None)
+                    validate_remove_transition(cfg_inst, ErrorStatus::None)
                 }
-                _ => validate_remove_transition(instance, ErrorStatus::Retrying),
+                _ => validate_remove_transition(cfg_inst, ErrorStatus::Retrying),
             }
         }
     }
@@ -480,43 +482,44 @@ pub mod transitions {
     #[test]
     fn remove_error_status_failed() {
         let instances = def_deps_w_error_status(ErrorStatus::Failed);
-        for instance in instances {
-            validate_remove_transition(instance, ErrorStatus::Failed);
+        for cfg_inst in instances {
+            validate_remove_transition(cfg_inst, ErrorStatus::Failed);
         }
     }
 
     fn validate_error_transition(
-        instance: ConfigInstance,
+        cfg_inst: ConfigInstance,
         settings: &fsm::Settings,
         e: &impl MiruError,
         increment_attempts: bool,
     ) {
         let attempts = if increment_attempts && !e.is_network_connection_error() {
-            instance.attempts + 1
+            cfg_inst.attempts + 1
         } else {
-            instance.attempts
+            cfg_inst.attempts
         };
         let expected_err_status =
-            if attempts >= settings.max_attempts || instance.error_status == ErrorStatus::Failed {
+            if attempts >= settings.max_attempts || cfg_inst.error_status == ErrorStatus::Failed {
                 ErrorStatus::Failed
             } else {
                 ErrorStatus::Retrying
             };
-        let actual = fsm::error(instance.clone(), settings, e, increment_attempts);
+        let actual = fsm::error(cfg_inst.clone(), settings, e, increment_attempts);
 
         let expected = ConfigInstance {
-            id: instance.id.clone(),
-            target_status: instance.target_status,
-            activity_status: instance.activity_status,
+            id: cfg_inst.id.clone(),
+            target_status: cfg_inst.target_status,
+            activity_status: cfg_inst.activity_status,
             error_status: expected_err_status,
-            relative_filepath: instance.relative_filepath.clone(),
-            patch_id: instance.patch_id.clone(),
-            created_by_id: instance.created_by_id.clone(),
-            created_at: instance.created_at,
-            updated_by_id: instance.updated_by_id.clone(),
-            updated_at: instance.updated_at,
-            device_id: instance.device_id.clone(),
-            config_schema_id: instance.config_schema_id.clone(),
+            relative_filepath: cfg_inst.relative_filepath.clone(),
+            patch_id: cfg_inst.patch_id.clone(),
+            created_by_id: cfg_inst.created_by_id.clone(),
+            created_at: cfg_inst.created_at,
+            updated_by_id: cfg_inst.updated_by_id.clone(),
+            updated_at: cfg_inst.updated_at,
+            device_id: cfg_inst.device_id.clone(),
+            config_schema_id: cfg_inst.config_schema_id.clone(),
+            config_type_id: cfg_inst.config_type_id.clone(),
             attempts,
             cooldown_ends_at: actual.cooldown_ends_at,
         };
@@ -562,10 +565,10 @@ pub mod transitions {
 
             // no failed attempts
             let instances = def_deps_w_all_status_combos();
-            for mut instance in instances {
-                instance.attempts = 0;
+            for mut cfg_inst in instances {
+                cfg_inst.attempts = 0;
                 validate_error_transition(
-                    instance.clone(),
+                    cfg_inst.clone(),
                     &settings,
                     &MockMiruError::new(network_err),
                     increment_attempts,
@@ -574,10 +577,10 @@ pub mod transitions {
 
             // failed attempts not reached max
             let instances = def_deps_w_all_status_combos();
-            for mut instance in instances {
-                instance.attempts = settings.max_attempts - 2;
+            for mut cfg_inst in instances {
+                cfg_inst.attempts = settings.max_attempts - 2;
                 validate_error_transition(
-                    instance.clone(),
+                    cfg_inst.clone(),
                     &settings,
                     &MockMiruError::new(network_err),
                     increment_attempts,
@@ -586,10 +589,10 @@ pub mod transitions {
 
             // failed attempts reached max
             let instances = def_deps_w_all_status_combos();
-            for mut instance in instances {
-                instance.attempts = settings.max_attempts - 1;
+            for mut cfg_inst in instances {
+                cfg_inst.attempts = settings.max_attempts - 1;
                 validate_error_transition(
-                    instance.clone(),
+                    cfg_inst.clone(),
                     &settings,
                     &MockMiruError::new(network_err),
                     increment_attempts,
@@ -598,10 +601,10 @@ pub mod transitions {
 
             // failed attempts exceeding max
             let instances = def_deps_w_all_status_combos();
-            for mut instance in instances {
-                instance.attempts = settings.max_attempts + 1;
+            for mut cfg_inst in instances {
+                cfg_inst.attempts = settings.max_attempts + 1;
                 validate_error_transition(
-                    instance.clone(),
+                    cfg_inst.clone(),
                     &settings,
                     &MockMiruError::new(network_err),
                     increment_attempts,

@@ -15,7 +15,6 @@ pub trait DeviceExt {
     async fn subscribe_device_sync(&self, device_id: &str) -> Result<(), MQTTError>;
 }
 
-
 impl DeviceExt for MQTTClient {
     async fn publish_device_sync(&self, device_id: &str) -> Result<(), MQTTError> {
         let topic = format!("cmd/devices/{device_id}/sync");

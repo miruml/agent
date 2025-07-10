@@ -99,7 +99,7 @@ where
 
 // =================================== DEPLOY ====================================== //
 async fn deploy_many<R>(
-    instances: Vec<ConfigInstance>,
+    cfg_insts: Vec<ConfigInstance>,
     data_fetcher: &R,
     deployment_dir: &Dir,
     settings: &fsm::Settings,
@@ -108,27 +108,27 @@ async fn deploy_many<R>(
 where
     R: Read<ConfigInstanceID, serde_json::Value>,
 {
-    let mut post_deploy_instances = Vec::new();
-    let mut instances_iter = instances.into_iter();
-    while let Some(instance) = instances_iter.next() {
-        let (post_deploy_instance, result) =
-            deploy(instance, data_fetcher, deployment_dir, settings, observers).await;
+    let mut post_deploy_cfg_insts = Vec::new();
+    let mut cfg_insts_iter = cfg_insts.into_iter();
+    while let Some(cfg_inst) = cfg_insts_iter.next() {
+        let (post_deploy_cfg_inst, result) =
+            deploy(cfg_inst, data_fetcher, deployment_dir, settings, observers).await;
         if let Err(e) = result {
-            // add the current post_deploy_instance
-            post_deploy_instances.push(post_deploy_instance);
-            // add the rest of the unprocessed instances
-            for remaining_instance in instances_iter {
-                post_deploy_instances.push(remaining_instance);
+            // add the current post_deploy_cfg_inst
+            post_deploy_cfg_insts.push(post_deploy_cfg_inst);
+            // add the rest of the unprocessed config instances
+            for remaining_cfg_inst in cfg_insts_iter {
+                post_deploy_cfg_insts.push(remaining_cfg_inst);
             }
-            return (post_deploy_instances, Err(e));
+            return (post_deploy_cfg_insts, Err(e));
         }
-        post_deploy_instances.push(post_deploy_instance);
+        post_deploy_cfg_insts.push(post_deploy_cfg_inst);
     }
-    (post_deploy_instances, Ok(()))
+    (post_deploy_cfg_insts, Ok(()))
 }
 
 async fn deploy<R>(
-    mut instance: ConfigInstance,
+    mut cfg_inst: ConfigInstance,
     data_fetcher: &R,
     deployment_dir: &Dir,
     settings: &fsm::Settings,
@@ -137,30 +137,30 @@ async fn deploy<R>(
 where
     R: Read<ConfigInstanceID, serde_json::Value>,
 {
-    let result = write_instance_to_deployment_dir(&instance, data_fetcher, deployment_dir).await;
+    let result = write_cfg_inst_to_deployment_dir(&cfg_inst, data_fetcher, deployment_dir).await;
 
     match result {
         Ok(_) => {
-            info!("Deployed config instance '{}' to filesystem", instance.id);
-            instance = fsm::deploy(instance);
-            if let Err(e) = on_update(observers, &instance).await {
-                return (instance, Err(e));
+            info!("Deployed config instance '{}' to filesystem", cfg_inst.id);
+            cfg_inst = fsm::deploy(cfg_inst);
+            if let Err(e) = on_update(observers, &cfg_inst).await {
+                return (cfg_inst, Err(e));
             }
-            (instance, Ok(()))
+            (cfg_inst, Ok(()))
         }
         Err(e) => {
-            let increment_attempts = instance.target_status == TargetStatus::Deployed;
-            instance = fsm::error(instance, settings, &e, increment_attempts);
-            if let Err(e) = on_update(observers, &instance).await {
-                return (instance, Err(e));
+            let increment_attempts = cfg_inst.target_status == TargetStatus::Deployed;
+            cfg_inst = fsm::error(cfg_inst, settings, &e, increment_attempts);
+            if let Err(e) = on_update(observers, &cfg_inst).await {
+                return (cfg_inst, Err(e));
             }
-            (instance, Err(e))
+            (cfg_inst, Err(e))
         }
     }
 }
 
-async fn write_instance_to_deployment_dir<R>(
-    instance: &ConfigInstance,
+async fn write_cfg_inst_to_deployment_dir<R>(
+    cfg_inst: &ConfigInstance,
     data_fetcher: &R,
     deployment_dir: &Dir,
 ) -> Result<(), DeployErr>
@@ -168,12 +168,12 @@ where
     R: Read<ConfigInstanceID, serde_json::Value>,
 {
     // only write the config instance to the filesystem if it has a filepath
-    let rel_filepath = match &instance.relative_filepath {
+    let rel_filepath = match &cfg_inst.relative_filepath {
         Some(filepath) => filepath,
         None => return Ok(()),
     };
 
-    let data = data_fetcher.read(instance.id.clone()).await.map_err(|e| {
+    let data = data_fetcher.read(cfg_inst.id.clone()).await.map_err(|e| {
         DeployErr::CrudErr(Box::new(DeployCrudErr {
             source: e,
             trace: trace!(),
@@ -191,64 +191,64 @@ where
 
 // =================================== REMOVE ====================================== //
 async fn remove_many(
-    instances: Vec<ConfigInstance>,
+    cfg_insts: Vec<ConfigInstance>,
     deployment_dir: &Dir,
     settings: &fsm::Settings,
     observers: &mut [&mut dyn Observer],
 ) -> (Vec<ConfigInstance>, Result<(), DeployErr>) {
-    let mut post_remove_instances = Vec::new();
-    let mut instances_iter = instances.into_iter();
-    while let Some(instance) = instances_iter.next() {
-        let (post_remove_instance, result) =
-            remove(instance, deployment_dir, settings, observers).await;
+    let mut post_remove_cfg_insts = Vec::new();
+    let mut cfg_insts_iter = cfg_insts.into_iter();
+    while let Some(cfg_inst) = cfg_insts_iter.next() {
+        let (post_remove_cfg_inst, result) =
+            remove(cfg_inst, deployment_dir, settings, observers).await;
         if let Err(e) = result {
-            // add the current post_remove_instance
-            post_remove_instances.push(post_remove_instance);
-            // add the rest of the unprocessed instances
-            for remaining_instance in instances_iter {
-                post_remove_instances.push(remaining_instance);
+            // add the current post_remove_cfg_inst
+            post_remove_cfg_insts.push(post_remove_cfg_inst);
+            // add the rest of the unprocessed config instances
+            for remaining_cfg_inst in cfg_insts_iter {
+                post_remove_cfg_insts.push(remaining_cfg_inst);
             }
-            return (post_remove_instances, Err(e));
+            return (post_remove_cfg_insts, Err(e));
         }
-        post_remove_instances.push(post_remove_instance);
+        post_remove_cfg_insts.push(post_remove_cfg_inst);
     }
-    (post_remove_instances, Ok(()))
+    (post_remove_cfg_insts, Ok(()))
 }
 
 async fn remove(
-    mut instance: ConfigInstance,
+    mut cfg_inst: ConfigInstance,
     deployment_dir: &Dir,
     settings: &fsm::Settings,
     observers: &mut [&mut dyn Observer],
 ) -> (ConfigInstance, Result<(), DeployErr>) {
-    let result = delete_instance_from_deployment_dir(&instance, deployment_dir).await;
+    let result = delete_cfg_inst_from_deployment_dir(&cfg_inst, deployment_dir).await;
 
     match result {
         Ok(_) => {
-            info!("Removed config instance '{}' from filesystem", instance.id);
-            instance = fsm::remove(instance);
-            if let Err(e) = on_update(observers, &instance).await {
-                return (instance, Err(e));
+            info!("Removed config instance '{}' from filesystem", cfg_inst.id);
+            cfg_inst = fsm::remove(cfg_inst);
+            if let Err(e) = on_update(observers, &cfg_inst).await {
+                return (cfg_inst, Err(e));
             }
-            (instance, Ok(()))
+            (cfg_inst, Ok(()))
         }
         Err(e) => {
-            let increment_attempts = instance.target_status == TargetStatus::Removed;
-            instance = fsm::error(instance, settings, &e, increment_attempts);
-            if let Err(e) = on_update(observers, &instance).await {
-                return (instance, Err(e));
+            let increment_attempts = cfg_inst.target_status == TargetStatus::Removed;
+            cfg_inst = fsm::error(cfg_inst, settings, &e, increment_attempts);
+            if let Err(e) = on_update(observers, &cfg_inst).await {
+                return (cfg_inst, Err(e));
             }
-            (instance, Err(e))
+            (cfg_inst, Err(e))
         }
     }
 }
 
-async fn delete_instance_from_deployment_dir(
-    instance: &ConfigInstance,
+async fn delete_cfg_inst_from_deployment_dir(
+    cfg_inst: &ConfigInstance,
     deployment_dir: &Dir,
 ) -> Result<(), DeployErr> {
     // only delete the config instance from the filesystem if it has a filepath
-    let rel_filepath = match &instance.relative_filepath {
+    let rel_filepath = match &cfg_inst.relative_filepath {
         Some(filepath) => filepath,
         None => return Ok(()),
     };
