@@ -315,6 +315,7 @@ pub mod sync {
         let new_instance = openapi_client::models::ConfigInstance {
             id: id.clone(),
             target_status: openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_DEPLOYED,
+            activity_status: openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_QUEUED,
             content: Some(new_instance_data.clone()),
             ..Default::default()
         };

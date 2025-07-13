@@ -140,6 +140,7 @@ pub mod apply_func {
             relative_filepath: Some("/test/filepath".to_string()),
             // target status must be deployed to increment failure attempts
             target_status: TargetStatus::Deployed,
+            activity_status: ActivityStatus::Queued,
             ..Default::default()
         };
 
@@ -188,11 +189,13 @@ pub mod apply_func {
             relative_filepath: Some("/test/filepath1".to_string()),
             // target status must be deployed to increment failure attempts
             target_status: TargetStatus::Deployed,
+            activity_status: ActivityStatus::Queued,
             ..Default::default()
         };
         let cfg_inst2 = ConfigInstance {
             relative_filepath: Some("/test/filepath2".to_string()),
             target_status: TargetStatus::Deployed,
+            activity_status: ActivityStatus::Queued,
             ..Default::default()
         };
 

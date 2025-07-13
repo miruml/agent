@@ -23,29 +23,29 @@ pub async fn pull_config_instances<HTTPClientT: ConfigInstancesExt>(
     device_id: &str,
     token: &str,
 ) -> Result<(), SyncErr> {
-    let unremoved_insts = fetch_unremoved_instances(http_client, device_id, token).await?;
+    let active_insts = fetch_active_cfg_insts(http_client, device_id, token).await?;
     debug!(
-        "Found {} unremoved config instances: {:?}",
-        unremoved_insts.len(),
-        unremoved_insts
+        "Found {} active config instances: {:?}",
+        active_insts.len(),
+        active_insts
     );
 
-    let categorized_insts = categorize_instances(cfg_inst_cache, unremoved_insts).await?;
+    let categorized_cfg_insts = categorize_cfg_insts(cfg_inst_cache, active_insts).await?;
     debug!(
         "Found {} unknown config instances: {:?}",
-        categorized_insts.unknown.len(),
-        categorized_insts.unknown
+        categorized_cfg_insts.unknown.len(),
+        categorized_cfg_insts.unknown
     );
     debug!(
         "Found {} instances with updated target status: {:?}",
-        categorized_insts.update_target_status.len(),
-        categorized_insts.update_target_status
+        categorized_cfg_insts.update_target_status.len(),
+        categorized_cfg_insts.update_target_status
     );
 
-    let unknown_insts = fetch_instances_with_expanded_instance_data(
+    let unknown_cfg_insts = fetch_cfg_insts_with_content(
         http_client,
         device_id,
-        categorized_insts
+        categorized_cfg_insts
             .unknown
             .iter()
             .map(|inst| inst.id.clone())
@@ -56,20 +56,20 @@ pub async fn pull_config_instances<HTTPClientT: ConfigInstancesExt>(
 
     debug!(
         "Adding {} unknown instances to storage",
-        unknown_insts.len()
+        unknown_cfg_insts.len()
     );
-    add_unknown_instances_to_storage(cfg_inst_cache, cfg_inst_content_cache, unknown_insts).await?;
+    add_unknown_cfg_insts_to_storage(cfg_inst_cache, cfg_inst_content_cache, unknown_cfg_insts).await?;
 
     debug!(
         "Updating target status for {} instances",
-        categorized_insts.update_target_status.len()
+        categorized_cfg_insts.update_target_status.len()
     );
-    update_target_status_instances(cfg_inst_cache, categorized_insts.update_target_status).await?;
+    update_target_status_instances(cfg_inst_cache, categorized_cfg_insts.update_target_status).await?;
 
     Ok(())
 }
 
-async fn fetch_unremoved_instances<HTTPClientT: ConfigInstancesExt>(
+async fn fetch_active_cfg_insts<HTTPClientT: ConfigInstancesExt>(
     http_client: &HTTPClientT,
     device_id: &str,
     token: &str,
@@ -78,6 +78,11 @@ async fn fetch_unremoved_instances<HTTPClientT: ConfigInstancesExt>(
         .with_activity_status_filter(ActivityStatusFilter {
             not: false,
             op: SearchOperator::Equals,
+            // we don't want to fetch 'created' or 'validating' activity statuses
+            // because created instances because they have not cleared the validation
+            // stage and are thus not ready for deployment. We don't want to fetch the
+            // 'removed' status because they're already removed and therefore useless to
+            // us (there's also a lot of them so it's not very performant to fetch them)
             val: vec![
                 ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_QUEUED,
                 ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_DEPLOYED,
@@ -102,9 +107,9 @@ pub struct CategorizedConfigInstances {
     pub other: Vec<BackendConfigInstance>,
 }
 
-async fn categorize_instances(
+async fn categorize_cfg_insts(
     cfg_inst_cache: &ConfigInstanceCache,
-    unremoved_insts: Vec<BackendConfigInstance>,
+    active_cfgs_insts: Vec<BackendConfigInstance>,
 ) -> Result<CategorizedConfigInstances, SyncErr> {
     let mut categorized = CategorizedConfigInstances {
         unknown: Vec::new(),
@@ -123,7 +128,7 @@ async fn categorize_instances(
     }
 
     // unknown config instances
-    for server_inst in unremoved_insts {
+    for server_inst in active_cfgs_insts {
         // check if the config instance is known
         let mut storage_inst = match cfg_inst_cache
             .read_optional(server_inst.id.clone())
@@ -165,7 +170,7 @@ async fn categorize_instances(
     Ok(categorized)
 }
 
-async fn fetch_instances_with_expanded_instance_data<HTTPClientT: ConfigInstancesExt>(
+async fn fetch_cfg_insts_with_content<HTTPClientT: ConfigInstancesExt>(
     http_client: &HTTPClientT,
     device_id: &str,
     ids: Vec<String>,
@@ -210,7 +215,7 @@ async fn fetch_instances_with_expanded_instance_data<HTTPClientT: ConfigInstance
     Ok(cfg_insts)
 }
 
-async fn add_unknown_instances_to_storage(
+async fn add_unknown_cfg_insts_to_storage(
     cfg_inst_cache: &ConfigInstanceCache,
     cfg_inst_content_cache: &ConfigInstanceContentCache,
     unknown_insts: Vec<BackendConfigInstance>,

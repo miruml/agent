@@ -8,7 +8,7 @@ use config_agent::http::errors::{
     ConfigSchemaNotFound as HTTPConfigSchemaNotFound, HTTPErr, MockErr,
 };
 use config_agent::models::{
-    config_instance::{ConfigInstance, TargetStatus},
+    config_instance::{ActivityStatus, ConfigInstance, TargetStatus},
     config_schema::ConfigSchema,
 };
 use config_agent::services::{
@@ -235,6 +235,7 @@ pub mod success {
         let cfg_inst = ConfigInstance {
             id: cfg_inst_id.clone(),
             target_status: TargetStatus::Deployed,
+            activity_status: ActivityStatus::Queued,
             config_schema_id: cfg_sch_id.clone(),
             ..Default::default()
         };
@@ -324,6 +325,7 @@ pub mod success {
         let cfg_inst = openapi_client::models::ConfigInstance {
             id: cfg_inst_id.clone(),
             target_status: openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_DEPLOYED,
+            activity_status: openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_QUEUED,
             config_schema_id: cfg_sch_id.clone(),
             content: Some(json!({})),
             ..Default::default()
