@@ -130,6 +130,11 @@ fn serialize_deserialize_activity_status() {
             valid: true,
         },
         TestCase {
+            input: "\"validating\"",
+            expected: ActivityStatus::Validating,
+            valid: true,
+        },
+        TestCase {
             input: "\"deployed\"",
             expected: ActivityStatus::Deployed,
             valid: true,
@@ -176,6 +181,11 @@ fn activity_status_backend_and_sdk_conversions() {
             storage: ActivityStatus::Created,
             backend: openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_CREATED,
             sdk: openapi_server::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_CREATED,
+        },
+        TestCase {
+            storage: ActivityStatus::Validating,
+            backend: openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_VALIDATING,
+            sdk: openapi_server::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_VALIDATING,
         },
         TestCase {
             storage: ActivityStatus::Queued,
@@ -327,6 +337,11 @@ fn serialize_deserialize_status() {
             valid: true,
         },
         TestCase {
+            input: "\"validating\"",
+            expected: Status::Validating,
+            valid: true,
+        },
+        TestCase {
             input: "\"deployed\"",
             expected: Status::Deployed,
             valid: true,
@@ -382,6 +397,11 @@ fn status_backend_and_sdk_conversions() {
             storage: Status::Created,
             backend: openapi_client::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_CREATED,
             sdk: openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_CREATED,
+        },
+        TestCase {
+            storage: Status::Validating,
+            backend: openapi_client::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_VALIDATING,
+            sdk: openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_VALIDATING,
         },
         TestCase {
             storage: Status::Queued,
@@ -596,6 +616,14 @@ fn config_instance_status() {
                 ..Default::default()
             },
             expected: Status::Created,
+        },
+        TestCase {
+            cfg_inst: ConfigInstance {
+                activity_status: ActivityStatus::Validating,
+                error_status: ErrorStatus::None,
+                ..Default::default()
+            },
+            expected: Status::Validating,
         },
         TestCase {
             cfg_inst: ConfigInstance {

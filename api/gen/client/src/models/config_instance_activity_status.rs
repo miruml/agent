@@ -17,6 +17,8 @@ use serde::{Deserialize, Serialize};
 pub enum ConfigInstanceActivityStatus {
     #[serde(rename = "created")]
     CONFIG_INSTANCE_ACTIVITY_STATUS_CREATED,
+    #[serde(rename = "validating")]
+    CONFIG_INSTANCE_ACTIVITY_STATUS_VALIDATING,
     #[serde(rename = "queued")]
     CONFIG_INSTANCE_ACTIVITY_STATUS_QUEUED,
     #[serde(rename = "deployed")]
@@ -30,6 +32,7 @@ impl std::fmt::Display for ConfigInstanceActivityStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Self::CONFIG_INSTANCE_ACTIVITY_STATUS_CREATED => write!(f, "created"),
+            Self::CONFIG_INSTANCE_ACTIVITY_STATUS_VALIDATING => write!(f, "validating"),
             Self::CONFIG_INSTANCE_ACTIVITY_STATUS_QUEUED => write!(f, "queued"),
             Self::CONFIG_INSTANCE_ACTIVITY_STATUS_DEPLOYED => write!(f, "deployed"),
             Self::CONFIG_INSTANCE_ACTIVITY_STATUS_REMOVED => write!(f, "removed"),

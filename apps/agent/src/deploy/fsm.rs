@@ -30,18 +30,21 @@ pub fn next_action(cfg_inst: &ConfigInstance, use_cooldown: bool) -> NextAction 
     match cfg_inst.target_status {
         TargetStatus::Created => match cfg_inst.activity_status {
             ActivityStatus::Created => NextAction::None,
+            ActivityStatus::Validating => NextAction::None,
             ActivityStatus::Queued => NextAction::None,
             ActivityStatus::Deployed => NextAction::Remove,
             ActivityStatus::Removed => NextAction::None,
         },
         TargetStatus::Deployed => match cfg_inst.activity_status {
-            ActivityStatus::Created => NextAction::Deploy,
+            ActivityStatus::Created => NextAction::None,
+            ActivityStatus::Validating => NextAction::None,
             ActivityStatus::Queued => NextAction::Deploy,
             ActivityStatus::Deployed => NextAction::None,
             ActivityStatus::Removed => NextAction::Deploy,
         },
         TargetStatus::Removed => match cfg_inst.activity_status {
             ActivityStatus::Created => NextAction::Remove,
+            ActivityStatus::Validating => NextAction::Remove,
             ActivityStatus::Queued => NextAction::Remove,
             ActivityStatus::Deployed => NextAction::Remove,
             ActivityStatus::Removed => NextAction::None,
@@ -149,10 +152,11 @@ fn has_recovered(cfg_inst: &ConfigInstance, new_activity_status: ActivityStatus)
     match cfg_inst.target_status {
         TargetStatus::Created => {
             // the created status is a bit interesting in that we're satisfied with the
-            // config instance being in the queued or removed state if it's target status is
-            // created. Thus it recovers as long as it is not deployed.
+            // config instance being in the queued or removed state if it's target
+            // status is created. Thus it recovers as long as it is not deployed.
             match new_activity_status {
                 ActivityStatus::Created => true,
+                ActivityStatus::Validating => true,
                 ActivityStatus::Queued => true,
                 ActivityStatus::Deployed => false,
                 ActivityStatus::Removed => true,
@@ -160,12 +164,14 @@ fn has_recovered(cfg_inst: &ConfigInstance, new_activity_status: ActivityStatus)
         }
         TargetStatus::Deployed => match new_activity_status {
             ActivityStatus::Created => false,
+            ActivityStatus::Validating => false,
             ActivityStatus::Queued => false,
             ActivityStatus::Deployed => true,
             ActivityStatus::Removed => false,
         },
         TargetStatus::Removed => match new_activity_status {
             ActivityStatus::Created => false,
+            ActivityStatus::Validating => false,
             ActivityStatus::Queued => false,
             ActivityStatus::Deployed => false,
             ActivityStatus::Removed => true,

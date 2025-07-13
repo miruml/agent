@@ -75,12 +75,15 @@ pub async fn setup_storage(
 
     // create the config instance deployment directory if it doesn't exist
     let config_instance_deployment_dir = layout.config_instance_deployment_dir();
-    config_instance_deployment_dir.create_if_absent().await.map_err(|e| {
-        StorageErr::FileSysErr(Box::new(StorageFileSysErr {
-            source: e,
-            trace: trace!(),
-        }))
-    })?;
+    config_instance_deployment_dir
+        .create_if_absent()
+        .await
+        .map_err(|e| {
+            StorageErr::FileSysErr(Box::new(StorageFileSysErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
 
     // delete any lingering cache files so that the agent doesn't use old cache content
     let caches_dir = layout.caches_dir();

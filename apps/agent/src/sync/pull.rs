@@ -76,9 +76,12 @@ async fn fetch_unremoved_instances<HTTPClientT: ConfigInstancesExt>(
 ) -> Result<Vec<BackendConfigInstance>, SyncErr> {
     let filters = ConfigInstanceFiltersBuilder::new(device_id.to_string())
         .with_activity_status_filter(ActivityStatusFilter {
-            not: true,
+            not: false,
             op: SearchOperator::Equals,
-            val: vec![ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_REMOVED],
+            val: vec![
+                ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_QUEUED,
+                ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_DEPLOYED,
+            ],
         })
         .build();
     http_client

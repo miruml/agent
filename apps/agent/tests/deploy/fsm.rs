@@ -87,7 +87,7 @@ pub mod next_action {
                 cfg_inst.clone(),
                 true,
                 fsm::NextAction::None,
-                fsm::NextAction::Deploy,
+                fsm::NextAction::None,
                 fsm::NextAction::Remove,
             );
         }
@@ -116,7 +116,71 @@ pub mod next_action {
                 cfg_inst.clone(),
                 false,
                 fsm::NextAction::None,
-                fsm::NextAction::Deploy,
+                fsm::NextAction::None,
+                fsm::NextAction::Remove,
+            );
+        }
+
+        // error status 'Failed'
+        cfg_inst.error_status = ErrorStatus::Failed;
+        validate_next_actions(
+            cfg_inst.clone(),
+            true,
+            fsm::NextAction::None,
+            fsm::NextAction::None,
+            fsm::NextAction::None,
+        );
+    }
+
+    #[test]
+    fn validating_activity_status() {
+        let mut cfg_inst = ConfigInstance {
+            activity_status: ActivityStatus::Validating,
+            error_status: ErrorStatus::None,
+            ..Default::default()
+        };
+
+        // error status 'None' or 'Retrying' && not in cooldown
+        for i in 0..2 {
+            if i == 0 {
+                cfg_inst.error_status = ErrorStatus::None;
+            } else {
+                cfg_inst.error_status = ErrorStatus::Retrying;
+            }
+            validate_next_actions(
+                cfg_inst.clone(),
+                true,
+                fsm::NextAction::None,
+                fsm::NextAction::None,
+                fsm::NextAction::Remove,
+            );
+        }
+
+        // error status 'None' or 'Retrying' && in cooldown
+        for i in 0..2 {
+            if i == 0 {
+                cfg_inst.error_status = ErrorStatus::None;
+            } else {
+                cfg_inst.error_status = ErrorStatus::Retrying;
+            }
+            let cooldown = TimeDelta::minutes(60);
+            cfg_inst.set_cooldown(cooldown);
+
+            // using cooldown
+            validate_next_actions(
+                cfg_inst.clone(),
+                true,
+                fsm::NextAction::Wait(cooldown),
+                fsm::NextAction::Wait(cooldown),
+                fsm::NextAction::Wait(cooldown),
+            );
+
+            // ignore cooldown
+            validate_next_actions(
+                cfg_inst.clone(),
+                false,
+                fsm::NextAction::None,
+                fsm::NextAction::None,
                 fsm::NextAction::Remove,
             );
         }

@@ -2,7 +2,7 @@
 use crate::http::mock::MockConfigInstancesClient;
 use config_agent::crud::prelude::*;
 use config_agent::filesys::dir::Dir;
-use config_agent::models::config_instance::{ConfigInstance, TargetStatus};
+use config_agent::models::config_instance::{ActivityStatus, ConfigInstance, TargetStatus};
 use config_agent::storage::config_instances::{ConfigInstanceCache, ConfigInstanceContentCache};
 use config_agent::sync::pull::pull_config_instances;
 
@@ -170,6 +170,7 @@ pub mod pull_config_instances_func {
         let existing_instance = ConfigInstance {
             id: id.clone(),
             target_status: TargetStatus::Deployed,
+            activity_status: ActivityStatus::Deployed,
             ..Default::default()
         };
         let cfg_inst_content = json!({
@@ -204,6 +205,9 @@ pub mod pull_config_instances_func {
                 id: id.clone(),
                 content: Some(cfg_inst_content.clone()),
                 target_status: openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_REMOVED,
+                // use a different activity status from the server to ensure that the
+                // activity status is NOT updated when updating new target statuses
+                activity_status: openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_QUEUED,
                 ..Default::default()
             }
         ];
