@@ -293,7 +293,7 @@ pub async fn find_instances_to_replace<R>(
 where
     R: Find<ConfigInstanceID, ConfigInstance>,
 {
-    let opt_filepath = cfg_inst.relative_filepath.clone();
+    let filepath = cfg_inst.relative_filepath.clone();
     let cfg_sch_id = cfg_inst.config_schema_id.clone();
     let conflicts = all_cfg_insts
         .find_where(move |cfg_inst| {
@@ -306,12 +306,9 @@ where
                 return true;
             }
 
-            // is deployed and has same filepath
-            let filepath = match opt_filepath.as_ref() {
-                Some(filepath) => filepath,
-                None => return false,
-            };
-            matches_filepath_and_activity_status(cfg_inst, filepath, ActivityStatus::Deployed)
+            matches_filepath_and_activity_status(
+                cfg_inst, &filepath, ActivityStatus::Deployed
+            )
         })
         .await
         .map_err(|e| {

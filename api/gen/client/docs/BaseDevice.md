@@ -7,7 +7,7 @@ Name | Type | Description | Notes
 **object** | **String** |  | 
 **id** | **String** | ID of the device | 
 **name** | **String** | Name of the device | 
-**is_activated** | **bool** | True if a machine has been installed + activated with this device's ID | 
+**status** | [**models::DeviceStatus**](DeviceStatus.md) |  | 
 **created_at** | **String** | Timestamp of when the device was created | 
 **updated_at** | **String** | Timestamp of when the device was last updated | 
 

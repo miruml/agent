@@ -21,7 +21,7 @@ pub mod deploy_with_rollback {
         // define the config instance
         let deploy_filepath = "/test/filepath".to_string();
         let cfg_inst = ConfigInstance {
-            relative_filepath: Some(deploy_filepath.clone()),
+            relative_filepath: deploy_filepath.clone(),
             // target status must be deployed to increment failure attempts
             target_status: TargetStatus::Deployed,
             ..Default::default()
@@ -79,65 +79,13 @@ pub mod deploy_with_rollback {
         assert_eq!(observer.history[1], expected);
     }
 
-    #[tokio::test]
-    async fn deploy_1_no_filepath() {
-        // define the config instance
-        let cfg_inst = ConfigInstance {
-            relative_filepath: None,
-            ..Default::default()
-        };
-        let temp_dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let cache_dir = temp_dir.subdir("caches");
-
-        // create the config instance in the cache
-        let (cache, _) = FileCache::spawn(16, cache_dir.file("cache.json"), 1000)
-            .await
-            .unwrap();
-        cache
-            .write(cfg_inst.id.clone(), json!({"speed": 4}), |_, _| false, true)
-            .await
-            .unwrap();
-
-        // deploy the config instance
-        let settings = Settings::default();
-        let deployment_dir = temp_dir.subdir("config_instances");
-        let mut observers: Vec<&mut dyn Observer> = Vec::new();
-        let mut observer = HistoryObserver::new();
-        observers.push(&mut observer);
-        let (deploy_results, result) = deploy_with_rollback(
-            vec![],
-            vec![cfg_inst.clone()],
-            &cache,
-            &deployment_dir,
-            &settings,
-            &mut observers,
-        )
-        .await;
-        result.unwrap();
-
-        // define the expected config instance
-        let expected = ConfigInstance {
-            activity_status: ActivityStatus::Deployed,
-            ..cfg_inst
-        };
-
-        // check that the returned instances' states were correctly updated
-        assert!(deploy_results.to_remove.is_empty());
-        assert_eq!(deploy_results.to_deploy.len(), 1);
-        assert_eq!(deploy_results.to_deploy[0], expected);
-
-        // check that the observer's history was correctly updated
-        assert_eq!(observer.history.len(), 1);
-        assert_eq!(observer.history[0], expected);
-    }
-
     // deploy 1 - filepath specified overwrites existing file
     #[tokio::test]
     async fn deploy_1_filepath_specified_overwrite_existing() {
         // define the config instance
         let filepath = "/test/filepath".to_string();
         let cfg_inst = ConfigInstance {
-            relative_filepath: Some(filepath.clone()),
+            relative_filepath: filepath.clone(),
             ..Default::default()
         };
 
@@ -208,7 +156,7 @@ pub mod deploy_with_rollback {
         // define the config instance
         let filepath = "/test/filepath".to_string();
         let cfg_inst = ConfigInstance {
-            relative_filepath: Some(filepath.clone()),
+            relative_filepath: filepath.clone(),
             ..Default::default()
         };
 
@@ -271,63 +219,11 @@ pub mod deploy_with_rollback {
     // does not throw an error
 
     #[tokio::test]
-    async fn remove_1_no_filepath() {
-        // define the config instance
-        let cfg_inst = ConfigInstance {
-            relative_filepath: None,
-            ..Default::default()
-        };
-
-        // create the config instance in the cache
-        let temp_dir = Dir::create_temp_dir("deploy").await.unwrap();
-        let cache_dir = temp_dir.subdir("caches");
-        let (cache, _) = FileCache::spawn(16, cache_dir.file("cache.json"), 1000)
-            .await
-            .unwrap();
-        cache
-            .write(cfg_inst.id.clone(), json!({"speed": 4}), |_, _| false, true)
-            .await
-            .unwrap();
-
-        // deploy the config instance
-        let settings = Settings::default();
-        let deployment_dir = temp_dir.subdir("config_instances");
-        let mut observers: Vec<&mut dyn Observer> = Vec::new();
-        let mut observer = HistoryObserver::new();
-        observers.push(&mut observer);
-        let (deploy_results, result) = deploy_with_rollback(
-            vec![cfg_inst.clone()],
-            vec![],
-            &cache,
-            &deployment_dir,
-            &settings,
-            &mut observers,
-        )
-        .await;
-        result.unwrap();
-
-        // define the expected config instance
-        let expected = ConfigInstance {
-            activity_status: ActivityStatus::Removed,
-            ..cfg_inst
-        };
-
-        // check that the returned instances' states were correctly updated
-        assert_eq!(deploy_results.to_remove.len(), 1);
-        assert_eq!(deploy_results.to_remove[0], expected);
-        assert!(deploy_results.to_deploy.is_empty());
-
-        // check that the observer's history was correctly updated
-        assert_eq!(observer.history.len(), 1);
-        assert_eq!(observer.history[0], expected);
-    }
-
-    #[tokio::test]
     async fn remove_1_filepath_specified_doesnt_exist() {
         // define the config instance
         let filepath = "/test/filepath".to_string();
         let cfg_inst = ConfigInstance {
-            relative_filepath: Some(filepath.clone()),
+            relative_filepath: filepath.clone(),
             ..Default::default()
         };
 
@@ -380,7 +276,7 @@ pub mod deploy_with_rollback {
         // define the config instance
         let filepath = "/test/filepath/config.json".to_string();
         let cfg_inst = ConfigInstance {
-            relative_filepath: Some(filepath.clone()),
+            relative_filepath: filepath.clone(),
             ..Default::default()
         };
 
@@ -451,14 +347,14 @@ pub mod deploy_with_rollback {
         // define the config instance
         let to_deploy_filepath = "/to/deploy/filepath".to_string();
         let to_deploy = ConfigInstance {
-            relative_filepath: Some(to_deploy_filepath.clone()),
+            relative_filepath: to_deploy_filepath.clone(),
             // target status must be deployed to increment failure attempts
             target_status: TargetStatus::Deployed,
             ..Default::default()
         };
         let to_remove_filepath = "/to/remove/filepath".to_string();
         let to_remove = ConfigInstance {
-            relative_filepath: Some(to_remove_filepath.clone()),
+            relative_filepath: to_remove_filepath.clone(),
             target_status: TargetStatus::Removed,
             ..Default::default()
         };
@@ -547,7 +443,7 @@ pub mod deploy_with_rollback {
         for i in 0..n {
             let filepath = format!("/to/deploy/filepath{i}");
             let cfg_inst = ConfigInstance {
-                relative_filepath: Some(filepath.clone()),
+                relative_filepath: filepath.clone(),
                 target_status: TargetStatus::Deployed,
                 ..Default::default()
             };
@@ -557,7 +453,7 @@ pub mod deploy_with_rollback {
         for i in 0..n {
             let filepath = format!("/to/remove/filepath{i}");
             let cfg_inst = ConfigInstance {
-                relative_filepath: Some(filepath.clone()),
+                relative_filepath: filepath.clone(),
                 target_status: TargetStatus::Removed,
                 ..Default::default()
             };
@@ -653,11 +549,11 @@ pub mod deploy_with_rollback {
 
         // check that the removed instances are still deployed
         for cfg_inst in to_remove_instances {
-            let file = deployment_dir.file(cfg_inst.relative_filepath.as_ref().unwrap());
+            let file = deployment_dir.file(&cfg_inst.relative_filepath);
             let actual = file.read_json::<serde_json::Value>().await.unwrap();
             assert_eq!(
                 actual,
-                json!({"relative_filepath": cfg_inst.relative_filepath.as_ref().unwrap()})
+                json!({"relative_filepath": cfg_inst.relative_filepath})
             );
         }
     }

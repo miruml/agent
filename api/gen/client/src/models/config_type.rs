@@ -33,6 +33,9 @@ pub struct ConfigType {
     /// Expand the config schemas using 'expand[]=config_schemas' in the query string
     #[serde(rename = "config_schemas", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
     pub config_schemas: Option<Option<Box<models::ConfigSchemaList>>>,
+    /// Whether the config type requires user validation for deployments
+    #[serde(rename = "user_validates_deployments")]
+    pub user_validates_deployments: bool,
     #[serde(rename = "created_by_id", deserialize_with = "Option::deserialize")]
     pub created_by_id: Option<String>,
     #[serde(rename = "updated_by_id", deserialize_with = "Option::deserialize")]
@@ -44,7 +47,7 @@ pub struct ConfigType {
 }
 
 impl ConfigType {
-    pub fn new(object: Object, id: String, name: String, slug: String, created_at: String, updated_at: String, created_by_id: Option<String>, updated_by_id: Option<String>, created_by: Option<models::User>, updated_by: Option<models::User>) -> ConfigType {
+    pub fn new(object: Object, id: String, name: String, slug: String, created_at: String, updated_at: String, user_validates_deployments: bool, created_by_id: Option<String>, updated_by_id: Option<String>, created_by: Option<models::User>, updated_by: Option<models::User>) -> ConfigType {
         ConfigType {
             object,
             id,
@@ -53,6 +56,7 @@ impl ConfigType {
             created_at,
             updated_at,
             config_schemas: None,
+            user_validates_deployments,
             created_by_id,
             updated_by_id,
             created_by: if let Some(x) = created_by {Some(Box::new(x))} else {None},

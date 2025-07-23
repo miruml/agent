@@ -14,6 +14,7 @@ use uuid::Uuid;
 pub enum TargetStatus {
     #[default]
     Created,
+    Validated,
     Deployed,
     #[serde(other)]
     Removed,
@@ -28,6 +29,7 @@ impl<'de> Deserialize<'de> for TargetStatus {
         let default = TargetStatus::default();
         match s.as_str() {
             "created" => Ok(TargetStatus::Created),
+            "validated" => Ok(TargetStatus::Validated),
             "deployed" => Ok(TargetStatus::Deployed),
             "removed" => Ok(TargetStatus::Removed),
             status => {
@@ -55,6 +57,7 @@ impl TargetStatus {
     ) -> TargetStatus {
         match target_status {
             openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_CREATED => TargetStatus::Created,
+            openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_VALIDATED => TargetStatus::Validated,
             openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_DEPLOYED => TargetStatus::Deployed,
             openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_REMOVED => TargetStatus::Removed,
         }
@@ -65,6 +68,7 @@ impl TargetStatus {
     ) -> openapi_client::models::ConfigInstanceTargetStatus {
         match target_status {
             TargetStatus::Created => openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_CREATED,
+            TargetStatus::Validated => openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_VALIDATED,
             TargetStatus::Deployed => openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_DEPLOYED,
             TargetStatus::Removed => openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_REMOVED,
         }
@@ -75,6 +79,7 @@ impl TargetStatus {
     ) -> TargetStatus {
         match target_status {
             openapi_server::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_CREATED => TargetStatus::Created,
+            openapi_server::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_VALIDATED => TargetStatus::Validated,
             openapi_server::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_DEPLOYED => TargetStatus::Deployed,
             openapi_server::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_REMOVED => TargetStatus::Removed,
         }
@@ -85,6 +90,7 @@ impl TargetStatus {
     ) -> openapi_server::models::ConfigInstanceTargetStatus {
         match target_status {
             TargetStatus::Created => openapi_server::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_CREATED,
+            TargetStatus::Validated => openapi_server::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_VALIDATED,
             TargetStatus::Deployed => openapi_server::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_DEPLOYED,
             TargetStatus::Removed => openapi_server::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_REMOVED,
         }
@@ -98,6 +104,7 @@ pub enum ActivityStatus {
     #[default]
     Created,
     Validating,
+    Validated,
     Queued,
     Deployed,
     Removed,
@@ -113,6 +120,7 @@ impl<'de> Deserialize<'de> for ActivityStatus {
         match s.as_str() {
             "created" => Ok(ActivityStatus::Created),
             "validating" => Ok(ActivityStatus::Validating),
+            "validated" => Ok(ActivityStatus::Validated),
             "queued" => Ok(ActivityStatus::Queued),
             "deployed" => Ok(ActivityStatus::Deployed),
             "removed" => Ok(ActivityStatus::Removed),
@@ -144,6 +152,7 @@ impl ActivityStatus {
         match activity_status {
             openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_CREATED => ActivityStatus::Created,
             openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_VALIDATING => ActivityStatus::Validating,
+            openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_VALIDATED => ActivityStatus::Validated,
             openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_QUEUED => ActivityStatus::Queued,
             openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_DEPLOYED => ActivityStatus::Deployed,
             openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_REMOVED => ActivityStatus::Removed,
@@ -156,6 +165,7 @@ impl ActivityStatus {
         match activity_status {
             ActivityStatus::Created => openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_CREATED,
             ActivityStatus::Validating => openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_VALIDATING,
+            ActivityStatus::Validated => openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_VALIDATED,
             ActivityStatus::Queued => openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_QUEUED,
             ActivityStatus::Deployed => openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_DEPLOYED,
             ActivityStatus::Removed => openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_REMOVED,
@@ -168,6 +178,7 @@ impl ActivityStatus {
         match activity_status {
             openapi_server::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_CREATED => ActivityStatus::Created,
             openapi_server::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_VALIDATING => ActivityStatus::Validating,
+            openapi_server::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_VALIDATED => ActivityStatus::Validated,
             openapi_server::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_QUEUED => ActivityStatus::Queued,
             openapi_server::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_DEPLOYED => ActivityStatus::Deployed,
             openapi_server::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_REMOVED => ActivityStatus::Removed,
@@ -180,6 +191,7 @@ impl ActivityStatus {
         match activity_status {
             ActivityStatus::Created => openapi_server::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_CREATED,
             ActivityStatus::Validating => openapi_server::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_VALIDATING,
+            ActivityStatus::Validated => openapi_server::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_VALIDATED,
             ActivityStatus::Queued => openapi_server::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_QUEUED,
             ActivityStatus::Deployed => openapi_server::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_DEPLOYED,
             ActivityStatus::Removed => openapi_server::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_REMOVED,
@@ -286,6 +298,7 @@ pub enum Status {
     #[default]
     Created,
     Validating,
+    Validated,
     Queued,
     Deployed,
     Removed,
@@ -303,6 +316,7 @@ impl<'de> Deserialize<'de> for Status {
         match s.as_str() {
             "created" => Ok(Status::Created),
             "validating" => Ok(Status::Validating),
+            "validated" => Ok(Status::Validated),
             "queued" => Ok(Status::Queued),
             "deployed" => Ok(Status::Deployed),
             "removed" => Ok(Status::Removed),
@@ -324,6 +338,7 @@ impl Status {
         vec![
             Status::Created,
             Status::Validating,
+            Status::Validated,
             Status::Queued,
             Status::Deployed,
             Status::Removed,
@@ -339,6 +354,9 @@ impl Status {
             }
             openapi_client::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_VALIDATING => {
                 Status::Validating
+            }
+            openapi_client::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_VALIDATED => {
+                Status::Validated
             }
             openapi_client::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_QUEUED => {
                 Status::Queued
@@ -366,6 +384,9 @@ impl Status {
             Status::Validating => {
                 openapi_client::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_VALIDATING
             }
+            Status::Validated => {
+                openapi_client::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_VALIDATED
+            }
             Status::Queued => {
                 openapi_client::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_QUEUED
             }
@@ -392,6 +413,9 @@ impl Status {
             openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_VALIDATING => {
                 Status::Validating
             }
+            openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_VALIDATED => {
+                Status::Validated
+            }
             openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_QUEUED => {
                 Status::Queued
             }
@@ -417,6 +441,9 @@ impl Status {
             }
             Status::Validating => {
                 openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_VALIDATING
+            }
+            Status::Validated => {
+                openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_VALIDATED
             }
             Status::Queued => {
                 openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_QUEUED
@@ -446,7 +473,7 @@ pub struct ConfigInstance {
     pub target_status: TargetStatus,
     pub activity_status: ActivityStatus,
     pub error_status: ErrorStatus,
-    pub relative_filepath: Option<String>,
+    pub relative_filepath: String,
     pub patch_id: Option<String>,
     pub created_by_id: Option<String>,
     pub created_at: DateTime<Utc>,
@@ -468,7 +495,7 @@ impl Default for ConfigInstance {
             target_status: TargetStatus::Created,
             activity_status: ActivityStatus::Created,
             error_status: ErrorStatus::None,
-            relative_filepath: None,
+            relative_filepath: format!("unknown-{}", Uuid::new_v4()),
             patch_id: None,
             created_by_id: None,
             created_at: DateTime::<Utc>::UNIX_EPOCH,
@@ -535,6 +562,7 @@ impl ConfigInstance {
             relative_filepath: cfg_inst.relative_filepath,
             created_at: cfg_inst.created_at.to_rfc3339(),
             updated_at: cfg_inst.updated_at.to_rfc3339(),
+            device_id: cfg_inst.device_id,
             config_schema_id: cfg_inst.config_schema_id,
             config_type_id: cfg_inst.config_type_id,
             content,
@@ -546,6 +574,7 @@ impl ConfigInstance {
             ErrorStatus::None => match self.activity_status {
                 ActivityStatus::Created => Status::Created,
                 ActivityStatus::Validating => Status::Validating,
+                ActivityStatus::Validated => Status::Validated,
                 ActivityStatus::Queued => Status::Queued,
                 ActivityStatus::Deployed => Status::Deployed,
                 ActivityStatus::Removed => Status::Removed,
@@ -584,6 +613,7 @@ impl<'de> Deserialize<'de> for ConfigInstance {
             target_status: TargetStatus,
             activity_status: ActivityStatus,
             error_status: ErrorStatus,
+            relative_filepath: String,
             device_id: String,
             config_schema_id: String,
             config_type_id: String,
@@ -595,7 +625,6 @@ impl<'de> Deserialize<'de> for ConfigInstance {
             cooldown_ends_at: Option<DateTime<Utc>>,
 
             // optional fields
-            relative_filepath: Option<String>,
             patch_id: Option<String>,
             created_by_id: Option<String>,
             updated_by_id: Option<String>,

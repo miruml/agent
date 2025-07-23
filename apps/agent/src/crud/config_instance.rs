@@ -14,9 +14,5 @@ pub fn matches_filepath_and_activity_status(
     rel_filepath: &str,
     status: ActivityStatus,
 ) -> bool {
-    let cfg_inst_rel_filepath = match &cfg_inst.relative_filepath {
-        Some(filepath) => filepath,
-        None => return false,
-    };
-    rel_filepath == cfg_inst_rel_filepath && status == cfg_inst.activity_status
+    rel_filepath == cfg_inst.relative_filepath && status == cfg_inst.activity_status
 }

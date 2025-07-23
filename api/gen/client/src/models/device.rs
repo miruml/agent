@@ -21,9 +21,8 @@ pub struct Device {
     /// Name of the device
     #[serde(rename = "name")]
     pub name: String,
-    /// True if a machine has been installed + activated with this device's ID
-    #[serde(rename = "is_activated")]
-    pub is_activated: bool,
+    #[serde(rename = "status")]
+    pub status: models::DeviceStatus,
     /// Timestamp of when the device was created
     #[serde(rename = "created_at")]
     pub created_at: String,
@@ -43,12 +42,12 @@ pub struct Device {
 }
 
 impl Device {
-    pub fn new(object: Object, id: String, name: String, is_activated: bool, created_at: String, updated_at: String, created_by_id: Option<String>, updated_by_id: Option<String>, created_by: Option<models::User>, updated_by: Option<models::User>, device_tags: Option<models::DeviceTagPaginatedList>) -> Device {
+    pub fn new(object: Object, id: String, name: String, status: models::DeviceStatus, created_at: String, updated_at: String, created_by_id: Option<String>, updated_by_id: Option<String>, created_by: Option<models::User>, updated_by: Option<models::User>, device_tags: Option<models::DeviceTagPaginatedList>) -> Device {
         Device {
             object,
             id,
             name,
-            is_activated,
+            status,
             created_at,
             updated_at,
             created_by_id,

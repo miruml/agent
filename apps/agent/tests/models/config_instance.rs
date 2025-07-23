@@ -32,6 +32,11 @@ fn serialize_deserialize_target_status() {
             valid: true,
         },
         TestCase {
+            input: "\"validated\"",
+            expected: TargetStatus::Validated,
+            valid: true,
+        },
+        TestCase {
             input: "\"deployed\"",
             expected: TargetStatus::Deployed,
             valid: true,
@@ -77,6 +82,11 @@ fn target_status_backend_and_sdk_conversions() {
             storage: TargetStatus::Created,
             backend: openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_CREATED,
             sdk: openapi_server::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_CREATED,
+        },
+        TestCase {
+            storage: TargetStatus::Validated,
+            backend: openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_VALIDATED,
+            sdk: openapi_server::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_VALIDATED,
         },
         TestCase {
             storage: TargetStatus::Deployed,
@@ -125,13 +135,18 @@ fn serialize_deserialize_activity_status() {
             valid: true,
         },
         TestCase {
-            input: "\"queued\"",
-            expected: ActivityStatus::Queued,
+            input: "\"validating\"",
+            expected: ActivityStatus::Validating,
             valid: true,
         },
         TestCase {
-            input: "\"validating\"",
-            expected: ActivityStatus::Validating,
+            input: "\"validated\"",
+            expected: ActivityStatus::Validated,
+            valid: true,
+        },
+        TestCase {
+            input: "\"queued\"",
+            expected: ActivityStatus::Queued,
             valid: true,
         },
         TestCase {
@@ -186,6 +201,11 @@ fn activity_status_backend_and_sdk_conversions() {
             storage: ActivityStatus::Validating,
             backend: openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_VALIDATING,
             sdk: openapi_server::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_VALIDATING,
+        },
+        TestCase {
+            storage: ActivityStatus::Validated,
+            backend: openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_VALIDATED,
+            sdk: openapi_server::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_VALIDATED,
         },
         TestCase {
             storage: ActivityStatus::Queued,
@@ -342,6 +362,11 @@ fn serialize_deserialize_status() {
             valid: true,
         },
         TestCase {
+            input: "\"validated\"",
+            expected: Status::Validated,
+            valid: true,
+        },
+        TestCase {
             input: "\"deployed\"",
             expected: Status::Deployed,
             valid: true,
@@ -400,8 +425,14 @@ fn status_backend_and_sdk_conversions() {
         },
         TestCase {
             storage: Status::Validating,
-            backend: openapi_client::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_VALIDATING,
+            backend:
+                openapi_client::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_VALIDATING,
             sdk: openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_VALIDATING,
+        },
+        TestCase {
+            storage: Status::Validated,
+            backend: openapi_client::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_VALIDATED,
+            sdk: openapi_server::models::ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_VALIDATED,
         },
         TestCase {
             storage: Status::Queued,
@@ -450,7 +481,7 @@ fn serialize_deserialize_config_instance() {
         target_status: TargetStatus::Removed,
         activity_status: ActivityStatus::Removed,
         error_status: ErrorStatus::Failed,
-        relative_filepath: Some("test".to_string()),
+        relative_filepath: "test".to_string(),
         patch_id: Some("test".to_string()),
         created_by_id: Some("test".to_string()),
         created_at: Utc::now(),
@@ -475,7 +506,7 @@ async fn deserialize_config_instance() {
         target_status: TargetStatus::Created,
         activity_status: ActivityStatus::Created,
         error_status: ErrorStatus::None,
-        relative_filepath: Some("test".to_string()),
+        relative_filepath: "test".to_string(),
         patch_id: Some("test".to_string()),
         created_by_id: Some("test".to_string()),
         created_at: Utc::now(),
@@ -529,6 +560,7 @@ async fn deserialize_config_instance() {
         "id": expected.id,
         "target_status": expected.target_status,
         "activity_status": expected.activity_status,
+        "relative_filepath": expected.relative_filepath,
         "error_status": expected.error_status,
         "device_id": expected.device_id,
         "config_schema_id": expected.config_schema_id,
@@ -558,7 +590,7 @@ fn config_instance_from_backend() {
             status: ConfigInstanceStatus::CONFIG_INSTANCE_STATUS_CREATED,
             activity_status: ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_CREATED,
             error_status: ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_NONE,
-            relative_filepath: Some("filepath".to_string()),
+            relative_filepath: "filepath".to_string(),
             patch_id: Some("ptch_123".to_string()),
             created_by_id: Some("created_by_id".to_string()),
             created_at: now.to_rfc3339(),
@@ -580,7 +612,7 @@ fn config_instance_from_backend() {
             target_status: TargetStatus::Created,
             activity_status: ActivityStatus::Created,
             error_status: ErrorStatus::None,
-            relative_filepath: Some("filepath".to_string()),
+            relative_filepath: "filepath".to_string(),
             patch_id: Some("ptch_123".to_string()),
             created_by_id: Some("created_by_id".to_string()),
             created_at: now,
@@ -624,6 +656,14 @@ fn config_instance_status() {
                 ..Default::default()
             },
             expected: Status::Validating,
+        },
+        TestCase {
+            cfg_inst: ConfigInstance {
+                activity_status: ActivityStatus::Validated,
+                error_status: ErrorStatus::None,
+                ..Default::default()
+            },
+            expected: Status::Validated,
         },
         TestCase {
             cfg_inst: ConfigInstance {

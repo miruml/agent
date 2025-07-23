@@ -63,6 +63,7 @@ Class | Method | HTTP request | Description
  - [ConfigSchemaSearch](docs/ConfigSchemaSearch.md)
  - [ConfigType](docs/ConfigType.md)
  - [Device](docs/Device.md)
+ - [DeviceStatus](docs/DeviceStatus.md)
  - [DeviceTag](docs/DeviceTag.md)
  - [DeviceTagPaginatedList](docs/DeviceTagPaginatedList.md)
  - [Error](docs/Error.md)

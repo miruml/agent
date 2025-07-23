@@ -46,6 +46,8 @@ pub mod config_type;
 pub use self::config_type::ConfigType;
 pub mod device;
 pub use self::device::Device;
+pub mod device_status;
+pub use self::device_status::DeviceStatus;
 pub mod device_tag;
 pub use self::device_tag::DeviceTag;
 pub mod device_tag_paginated_list;

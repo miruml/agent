@@ -62,7 +62,7 @@ pub mod matches_filepath_and_activity_status {
         let filepath = "test.txt";
         let activity_status = ActivityStatus::Deployed;
         let cfg_inst = ConfigInstance {
-            relative_filepath: Some(filepath.to_string()),
+            relative_filepath: filepath.to_string(),
             activity_status,
             ..Default::default()
         };
@@ -92,7 +92,7 @@ pub mod matches_filepath_and_activity_status {
         let filepath = "test.txt";
         let activity_status = ActivityStatus::Deployed;
         let cfg_inst = ConfigInstance {
-            relative_filepath: Some(filepath.to_string()),
+            relative_filepath: filepath.to_string(),
             activity_status,
             ..Default::default()
         };

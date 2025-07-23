@@ -24,9 +24,15 @@ pub struct ConfigSchema {
     /// Digest of the config schema
     #[serde(rename = "digest")]
     pub digest: String,
+    /// The default file path to deploy the config instances of this config schema relative to /srv/miru/config_instances. v1/motion-control.json would deploy to /srv/miru/config_instances/v1/motion-control.json
+    #[serde(rename = "relative_filepath")]
+    pub relative_filepath: String,
     /// Timestamp of when the config schema was created
     #[serde(rename = "created_at")]
     pub created_at: String,
+    /// Timestamp of when the config schema was last updated
+    #[serde(rename = "updated_at")]
+    pub updated_at: String,
     /// ID of the config type
     #[serde(rename = "config_type_id")]
     pub config_type_id: String,
@@ -43,8 +49,22 @@ pub struct ConfigSchema {
         skip_serializing_if = "Option::is_none"
     )]
     pub created_by_id: Option<Option<String>>,
+    #[serde(
+        rename = "updated_by_id",
+        default,
+        with = "::serde_with::rust::double_option",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub updated_by_id: Option<Option<String>>,
     #[serde(rename = "created_by", deserialize_with = "Option::deserialize")]
     pub created_by: Option<Box<models::User>>,
+    #[serde(
+        rename = "updated_by",
+        default,
+        with = "::serde_with::rust::double_option",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub updated_by: Option<Option<Box<models::User>>>,
     #[serde(
         rename = "config_schema_git_commits",
         deserialize_with = "Option::deserialize"
@@ -60,7 +80,9 @@ impl ConfigSchema {
         id: String,
         version: i32,
         digest: String,
+        relative_filepath: String,
         created_at: String,
+        updated_at: String,
         config_type_id: String,
         content: Option<serde_json::Value>,
         config_type: Option<models::ConfigType>,
@@ -73,7 +95,9 @@ impl ConfigSchema {
             id,
             version,
             digest,
+            relative_filepath,
             created_at,
+            updated_at,
             config_type_id,
             content,
             config_type: if let Some(x) = config_type {
@@ -82,11 +106,13 @@ impl ConfigSchema {
                 None
             },
             created_by_id: None,
+            updated_by_id: None,
             created_by: if let Some(x) = created_by {
                 Some(Box::new(x))
             } else {
                 None
             },
+            updated_by: None,
             config_schema_git_commits: if let Some(x) = config_schema_git_commits {
                 Some(Box::new(x))
             } else {

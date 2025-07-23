@@ -10,9 +10,10 @@ Name | Type | Description | Notes
 **status** | [**models::ConfigInstanceStatus**](ConfigInstanceStatus.md) |  | 
 **activity_status** | [**models::ConfigInstanceActivityStatus**](ConfigInstanceActivityStatus.md) |  | 
 **error_status** | [**models::ConfigInstanceErrorStatus**](ConfigInstanceErrorStatus.md) |  | 
-**relative_filepath** | Option<**String**> | The file path to deploy the config instance relative to /srv/miru/config_instances. v1/motion-control.json would deploy to /srv/miru/config_instances/v1/motion-control.json | 
+**relative_filepath** | **String** | The file path to deploy the config instance relative to /srv/miru/config_instances. v1/motion-control.json would deploy to /srv/miru/config_instances/v1/motion-control.json | 
 **created_at** | **String** | The timestamp when the config instance was created | 
 **updated_at** | **String** | The timestamp when the config instance was last updated | 
+**device_id** | **String** | The ID of the device which the config instance is associated with | 
 **config_schema_id** | **String** | The ID of the config schema which the config instance must adhere to | 
 **config_type_id** | **String** | The ID of the config type which the config instance is a part of | 
 **content** | [**serde_json::Value**](.md) | The configuration values associated with the config instance | 

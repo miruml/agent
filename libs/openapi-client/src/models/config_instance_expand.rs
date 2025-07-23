@@ -28,6 +28,8 @@ pub enum ConfigInstanceExpand {
     CONFIG_INSTANCE_EXPAND_DEVICE,
     #[serde(rename = "config_type")]
     CONFIG_INSTANCE_EXPAND_CONFIG_TYPE,
+    #[serde(rename = "validation")]
+    CONFIG_INSTANCE_EXPAND_VALIDATION,
 }
 
 impl std::fmt::Display for ConfigInstanceExpand {
@@ -40,6 +42,7 @@ impl std::fmt::Display for ConfigInstanceExpand {
             Self::CONFIG_INSTANCE_EXPAND_CONFIG_SCHEMA => write!(f, "config_schema"),
             Self::CONFIG_INSTANCE_EXPAND_DEVICE => write!(f, "device"),
             Self::CONFIG_INSTANCE_EXPAND_CONFIG_TYPE => write!(f, "config_type"),
+            Self::CONFIG_INSTANCE_EXPAND_VALIDATION => write!(f, "validation"),
         }
     }
 }

@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **created_at** | **String** | Timestamp of when the config type was created | 
 **updated_at** | **String** | Timestamp of when the config type was last updated | 
 **config_schemas** | Option<[**models::ConfigSchemaList**](ConfigSchemaList.md)> | Expand the config schemas using 'expand[]=config_schemas' in the query string | [optional]
+**user_validates_deployments** | **bool** | Whether the config type requires user validation for deployments | 
 **created_by_id** | Option<**String**> |  | 
 **updated_by_id** | Option<**String**> |  | 
 **created_by** | Option<[**models::User**](User.md)> |  | 

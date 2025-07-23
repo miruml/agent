@@ -17,6 +17,8 @@ use serde::{Deserialize, Serialize};
 pub enum ConfigInstanceTargetStatus {
     #[serde(rename = "created")]
     CONFIG_INSTANCE_TARGET_STATUS_CREATED,
+    #[serde(rename = "validated")]
+    CONFIG_INSTANCE_TARGET_STATUS_VALIDATED,
     #[serde(rename = "deployed")]
     CONFIG_INSTANCE_TARGET_STATUS_DEPLOYED,
     #[serde(rename = "removed")]
@@ -27,6 +29,7 @@ impl std::fmt::Display for ConfigInstanceTargetStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Self::CONFIG_INSTANCE_TARGET_STATUS_CREATED => write!(f, "created"),
+            Self::CONFIG_INSTANCE_TARGET_STATUS_VALIDATED => write!(f, "validated"),
             Self::CONFIG_INSTANCE_TARGET_STATUS_DEPLOYED => write!(f, "deployed"),
             Self::CONFIG_INSTANCE_TARGET_STATUS_REMOVED => write!(f, "removed"),
         }

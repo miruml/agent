@@ -173,12 +173,6 @@ async fn write_cfg_inst_to_deployment_dir<R>(
 where
     R: Read<ConfigInstanceID, serde_json::Value>,
 {
-    // only write the config instance to the filesystem if it has a filepath
-    let rel_filepath = match &cfg_inst.relative_filepath {
-        Some(filepath) => filepath,
-        None => return Ok(()),
-    };
-
     let cfg_inst_content = content_fetcher
         .read(cfg_inst.id.clone())
         .await
@@ -189,7 +183,7 @@ where
             }))
         })?;
 
-    let dest_file = deployment_dir.file(rel_filepath);
+    let dest_file = deployment_dir.file(&cfg_inst.relative_filepath);
     dest_file
         .write_json(&cfg_inst_content, true, true)
         .await
@@ -263,13 +257,7 @@ async fn delete_cfg_inst_from_deployment_dir(
     cfg_inst: &ConfigInstance,
     deployment_dir: &Dir,
 ) -> Result<(), DeployErr> {
-    // only delete the configs from the filesystem if it has a filepath
-    let rel_filepath = match &cfg_inst.relative_filepath {
-        Some(filepath) => filepath,
-        None => return Ok(()),
-    };
-
-    let dest_file = deployment_dir.file(rel_filepath);
+    let dest_file = deployment_dir.file(&cfg_inst.relative_filepath);
     dest_file.delete().await.map_err(|e| {
         DeployErr::FileSysErr(Box::new(DeployFileSysErr {
             source: e,

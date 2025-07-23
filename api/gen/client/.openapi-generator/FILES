@@ -29,6 +29,7 @@ docs/ConfigSchemaSearch.md
 docs/ConfigSchemasApi.md
 docs/ConfigType.md
 docs/Device.md
+docs/DeviceStatus.md
 docs/DeviceTag.md
 docs/DeviceTagPaginatedList.md
 docs/DevicesApi.md
@@ -94,6 +95,7 @@ src/models/config_schema_order_by.rs
 src/models/config_schema_search.rs
 src/models/config_type.rs
 src/models/device.rs
+src/models/device_status.rs
 src/models/device_tag.rs
 src/models/device_tag_paginated_list.rs
 src/models/error.rs

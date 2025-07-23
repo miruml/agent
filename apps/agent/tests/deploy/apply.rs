@@ -137,7 +137,7 @@ pub mod apply_func {
     async fn deploy_1() {
         // define the config instance
         let cfg_inst = ConfigInstance {
-            relative_filepath: Some("/test/filepath".to_string()),
+            relative_filepath: "/test/filepath".to_string(),
             // target status must be deployed to increment failure attempts
             target_status: TargetStatus::Deployed,
             activity_status: ActivityStatus::Queued,
@@ -186,14 +186,14 @@ pub mod apply_func {
     async fn deploy_1_failure_1_success() {
         // define the config instances
         let cfg_inst1 = ConfigInstance {
-            relative_filepath: Some("/test/filepath1".to_string()),
+            relative_filepath: "/test/filepath1".to_string(),
             // target status must be deployed to increment failure attempts
             target_status: TargetStatus::Deployed,
             activity_status: ActivityStatus::Queued,
             ..Default::default()
         };
         let cfg_inst2 = ConfigInstance {
-            relative_filepath: Some("/test/filepath2".to_string()),
+            relative_filepath: "/test/filepath2".to_string(),
             target_status: TargetStatus::Deployed,
             activity_status: ActivityStatus::Queued,
             ..Default::default()
@@ -268,7 +268,7 @@ pub mod apply_func {
         // define the config instance
         let filepath = "/test/filepath".to_string();
         let cfg_inst = ConfigInstance {
-            relative_filepath: Some(filepath.clone()),
+            relative_filepath: filepath.clone(),
             target_status: TargetStatus::Removed,
             ..Default::default()
         };
@@ -316,13 +316,13 @@ pub mod apply_func {
         // define the instances with DIFFERENT config schemas but the same filepath
         let filepath = "/test/filepath".to_string();
         let to_deploy = ConfigInstance {
-            relative_filepath: Some(filepath.clone()),
+            relative_filepath: filepath.clone(),
             target_status: TargetStatus::Deployed,
             activity_status: ActivityStatus::Queued,
             ..Default::default()
         };
         let to_remove = ConfigInstance {
-            relative_filepath: Some(filepath.clone()),
+            relative_filepath: filepath.clone(),
             target_status: TargetStatus::Removed,
             activity_status: ActivityStatus::Deployed,
             ..Default::default()
@@ -409,14 +409,14 @@ pub mod apply_func {
         // define the instances with DIFFERENT config schemas but the same filepath
         let filepath = "/test/filepath".to_string();
         let to_deploy = ConfigInstance {
-            relative_filepath: Some(filepath.clone()),
+            relative_filepath: filepath.clone(),
             target_status: TargetStatus::Deployed,
             activity_status: ActivityStatus::Queued,
             ..Default::default()
         };
         let to_remove = ConfigInstance {
             config_schema_id: to_deploy.config_schema_id.clone(),
-            relative_filepath: Some(filepath.clone()),
+            relative_filepath: filepath.clone(),
             target_status: TargetStatus::Removed,
             activity_status: ActivityStatus::Deployed,
             ..Default::default()
@@ -504,14 +504,14 @@ pub mod apply_func {
         // define the instances with DIFFERENT config schemas but the same filepath
         let filepath = "/test/filepath".to_string();
         let to_deploy = ConfigInstance {
-            relative_filepath: Some(filepath.clone()),
+            relative_filepath: filepath.clone(),
             target_status: TargetStatus::Deployed,
             activity_status: ActivityStatus::Queued,
             ..Default::default()
         };
         let to_remove = ConfigInstance {
             config_schema_id: to_deploy.config_schema_id.clone(),
-            relative_filepath: Some(filepath.clone()),
+            relative_filepath: filepath.clone(),
             target_status: TargetStatus::Removed,
             activity_status: ActivityStatus::Deployed,
             ..Default::default()
@@ -600,14 +600,14 @@ pub mod find_instances_to_replace_func {
             .unwrap();
 
         let cfg_inst = ConfigInstance {
-            relative_filepath: Some("/test/filepath".to_string()),
+            relative_filepath: "/test/filepath".to_string(),
             ..Default::default()
         };
 
         // create a bunch of instances with that don't match
         for i in 0..10 {
             let cfg_inst = ConfigInstance {
-                relative_filepath: Some(format!("/test/filepath{i}")),
+                relative_filepath: format!("/test/filepath{i}"),
                 activity_status: ActivityStatus::Deployed,
                 target_status: TargetStatus::Removed,
                 ..Default::default()
@@ -630,13 +630,13 @@ pub mod find_instances_to_replace_func {
 
         let filepath = "/test/filepath".to_string();
         let cfg_inst = ConfigInstance {
-            relative_filepath: Some(filepath.clone()),
+            relative_filepath: filepath.clone(),
             ..Default::default()
         };
 
         // create a valid replacement config instance
         let to_replace = ConfigInstance {
-            relative_filepath: Some(filepath.clone()),
+            relative_filepath: filepath.clone(),
             activity_status: ActivityStatus::Deployed,
             target_status: TargetStatus::Removed,
             ..Default::default()
@@ -697,7 +697,7 @@ pub mod find_instances_to_replace_func {
             .unwrap();
 
         let cfg_inst = ConfigInstance {
-            relative_filepath: Some("/test/filepath".to_string()),
+            relative_filepath: "/test/filepath".to_string(),
             ..Default::default()
         };
 

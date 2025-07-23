@@ -27,14 +27,17 @@ pub struct ConfigInstance {
     #[serde(rename = "error_status")]
     pub error_status: models::ConfigInstanceErrorStatus,
     /// The file path to deploy the config instance relative to /srv/miru/config_instances. v1/motion-control.json would deploy to /srv/miru/config_instances/v1/motion-control.json
-    #[serde(rename = "relative_filepath", deserialize_with = "Option::deserialize")]
-    pub relative_filepath: Option<String>,
+    #[serde(rename = "relative_filepath")]
+    pub relative_filepath: String,
     /// The timestamp when the config instance was created
     #[serde(rename = "created_at")]
     pub created_at: String,
     /// The timestamp when the config instance was last updated
     #[serde(rename = "updated_at")]
     pub updated_at: String,
+    /// The ID of the device which the config instance is associated with
+    #[serde(rename = "device_id")]
+    pub device_id: String,
     /// The ID of the config schema which the config instance must adhere to
     #[serde(rename = "config_schema_id")]
     pub config_schema_id: String,
@@ -47,7 +50,7 @@ pub struct ConfigInstance {
 }
 
 impl ConfigInstance {
-    pub fn new(object: Object, id: String, target_status: models::ConfigInstanceTargetStatus, status: models::ConfigInstanceStatus, activity_status: models::ConfigInstanceActivityStatus, error_status: models::ConfigInstanceErrorStatus, relative_filepath: Option<String>, created_at: String, updated_at: String, config_schema_id: String, config_type_id: String, content: serde_json::Value) -> ConfigInstance {
+    pub fn new(object: Object, id: String, target_status: models::ConfigInstanceTargetStatus, status: models::ConfigInstanceStatus, activity_status: models::ConfigInstanceActivityStatus, error_status: models::ConfigInstanceErrorStatus, relative_filepath: String, created_at: String, updated_at: String, device_id: String, config_schema_id: String, config_type_id: String, content: serde_json::Value) -> ConfigInstance {
         ConfigInstance {
             object,
             id,
@@ -58,6 +61,7 @@ impl ConfigInstance {
             relative_filepath,
             created_at,
             updated_at,
+            device_id,
             config_schema_id,
             config_type_id,
             content,

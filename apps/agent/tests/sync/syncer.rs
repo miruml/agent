@@ -1,4 +1,5 @@
 // standard crates
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 // internal crates
@@ -14,6 +15,7 @@ use config_agent::http::{
     client::HTTPClient,
     errors::{HTTPErr, MockErr},
 };
+use config_agent::logs::*;
 use config_agent::models::config_instance::ActivityStatus;
 use config_agent::storage::config_instances::{ConfigInstanceCache, ConfigInstanceContentCache};
 use config_agent::sync::{
@@ -305,6 +307,12 @@ pub mod sync {
 
     #[tokio::test]
     async fn pull_deploy_and_push() {
+        let _ = init(LogOptions {
+            stdout: true,
+            log_level: LogLevel::Info,
+            log_dir: PathBuf::from("logs"),
+        });
+
         let dir = Dir::create_temp_dir("spawn").await.unwrap();
         let auth_client = Arc::new(MockAuthClient::default());
         let (token_mngr, _) = create_token_manager(&dir, auth_client.clone()).await;
@@ -317,6 +325,7 @@ pub mod sync {
             target_status: openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_DEPLOYED,
             activity_status: openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_QUEUED,
             content: Some(new_instance_data.clone()),
+            relative_filepath: "/test/filepath".to_string(),
             ..Default::default()
         };
         let http_client = Arc::new(MockConfigInstancesClient::default());

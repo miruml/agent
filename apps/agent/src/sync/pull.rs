@@ -58,13 +58,15 @@ pub async fn pull_config_instances<HTTPClientT: ConfigInstancesExt>(
         "Adding {} unknown instances to storage",
         unknown_cfg_insts.len()
     );
-    add_unknown_cfg_insts_to_storage(cfg_inst_cache, cfg_inst_content_cache, unknown_cfg_insts).await?;
+    add_unknown_cfg_insts_to_storage(cfg_inst_cache, cfg_inst_content_cache, unknown_cfg_insts)
+        .await?;
 
     debug!(
         "Updating target status for {} instances",
         categorized_cfg_insts.update_target_status.len()
     );
-    update_target_status_instances(cfg_inst_cache, categorized_cfg_insts.update_target_status).await?;
+    update_target_status_instances(cfg_inst_cache, categorized_cfg_insts.update_target_status)
+        .await?;
 
     Ok(())
 }

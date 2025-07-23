@@ -11,14 +11,16 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-/// ConfigInstanceActivityStatus : Last known activity of the config instance
-/// Last known activity of the config instance
+/// ConfigInstanceActivityStatus : Last known activity state of the config instance
+/// Last known activity state of the config instance
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum ConfigInstanceActivityStatus {
     #[serde(rename = "created")]
     CONFIG_INSTANCE_ACTIVITY_STATUS_CREATED,
     #[serde(rename = "validating")]
     CONFIG_INSTANCE_ACTIVITY_STATUS_VALIDATING,
+    #[serde(rename = "validated")]
+    CONFIG_INSTANCE_ACTIVITY_STATUS_VALIDATED,
     #[serde(rename = "queued")]
     CONFIG_INSTANCE_ACTIVITY_STATUS_QUEUED,
     #[serde(rename = "deployed")]
@@ -32,6 +34,7 @@ impl std::fmt::Display for ConfigInstanceActivityStatus {
         match self {
             Self::CONFIG_INSTANCE_ACTIVITY_STATUS_CREATED => write!(f, "created"),
             Self::CONFIG_INSTANCE_ACTIVITY_STATUS_VALIDATING => write!(f, "validating"),
+            Self::CONFIG_INSTANCE_ACTIVITY_STATUS_VALIDATED => write!(f, "validated"),
             Self::CONFIG_INSTANCE_ACTIVITY_STATUS_QUEUED => write!(f, "queued"),
             Self::CONFIG_INSTANCE_ACTIVITY_STATUS_DEPLOYED => write!(f, "deployed"),
             Self::CONFIG_INSTANCE_ACTIVITY_STATUS_REMOVED => write!(f, "removed"),
