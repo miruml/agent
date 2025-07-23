@@ -295,18 +295,12 @@ impl Dir {
 
         while let Some(item) = queue.pop() {
             if item.dir.is_empty().await? {
-                info!("Deleting empty directory: {}", item.dir);
                 item.dir.delete().await?;
                 continue;
             }
 
             // is not empty, but we've already seen it
             if item.seen_before {
-                info!("Already seen directory: {}", item.dir);
-                let subdirs = item.dir.subdirs().await?;
-                info!("Subdirectories: {:?}", subdirs);
-                let files = item.dir.files().await?;
-                info!("Files: {:?}", files);
                 continue;
             }
 
@@ -318,7 +312,6 @@ impl Dir {
             });
             let subdir_subdirs = item.dir.subdirs().await?;
             for subdir in subdir_subdirs {
-                info!("Adding subdirectory to queue: {}", subdir);
                 queue.push(Item {
                     dir: subdir,
                     seen_before: false,
