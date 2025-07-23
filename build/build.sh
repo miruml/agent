@@ -11,4 +11,7 @@ previous_tag=$(previous_tag)
 echo "Previous tag: $previous_tag"
 export GORELEASER_PREVIOUS_TAG="$previous_tag"
 
+# remove the zig build cache
+rm -rf ~/.cache/cargo-zigbuild/
+
 goreleaser release --snapshot --clean
