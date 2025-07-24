@@ -158,4 +158,27 @@ pub mod setup_storage {
         // subfile should be deleted
         assert!(!subfile.exists());
     }
+
+    #[tokio::test]
+    async fn config_instance_deployment_directory_already_exists() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let layout = StorageLayout::new(dir);
+        let settings = Settings::default();
+
+        // create the config instance deployment directory
+        let config_instance_deployment_dir = layout.config_instance_deployment_dir();
+        let subfile = config_instance_deployment_dir.file("test");
+        subfile.write_string("test", true, true).await.unwrap();
+        assert!(subfile.exists());
+
+        // setup the storage
+        let agent = Agent::default();
+        setup_storage(&layout, &agent, &settings).await.unwrap();
+
+        // validate the storage
+        validate_storage(&layout).await;
+
+        // subfile should be deleted
+        assert!(!subfile.exists());
+    }
 }

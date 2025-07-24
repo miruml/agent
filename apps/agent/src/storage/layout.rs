@@ -1,6 +1,3 @@
-// standard library
-use std::path::PathBuf;
-
 // internal crates
 use crate::filesys::dir::Dir;
 use crate::filesys::file::File;
@@ -19,24 +16,24 @@ impl StorageLayout {
         Self { root }
     }
 
-    pub fn default_root_dir() -> Dir {
-        Dir::new(PathBuf::from("/").join("var").join("lib").join("miru"))
+    pub fn internal_dir(&self) -> Dir {
+        self.root.subdir("var").subdir("lib").subdir("miru")
     }
 
     pub fn auth_dir(&self) -> AuthLayout {
-        AuthLayout::new(self.root.subdir("auth"))
+        AuthLayout::new(self.internal_dir().subdir("auth"))
     }
 
     pub fn agent_file(&self) -> File {
-        self.root.file("agent.json")
+        self.internal_dir().file("agent.json")
     }
 
     pub fn settings_file(&self) -> File {
-        self.root.file("settings.json")
+        self.internal_dir().file("settings.json")
     }
 
     pub fn caches_dir(&self) -> Dir {
-        self.root.subdir("cache")
+        self.internal_dir().subdir("cache")
     }
 
     pub fn config_schema_caches(&self) -> Dir {
@@ -64,18 +61,13 @@ impl StorageLayout {
     }
 
     pub fn config_instance_deployment_dir(&self) -> Dir {
-        Dir::new(
-            PathBuf::from("/")
-                .join("srv")
-                .join("miru")
-                .join("config_instances"),
-        )
+        self.root.subdir("srv").subdir("miru").subdir("config_instances")
     }
 }
 
 impl Default for StorageLayout {
     fn default() -> Self {
-        Self::new(Self::default_root_dir())
+        Self::new(Dir::new("/"))
     }
 }
 

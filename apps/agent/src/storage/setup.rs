@@ -73,7 +73,14 @@ pub async fn setup_storage(
             }))
         })?;
 
-    // create the config instance deployment directory if it doesn't exist
+    // recreate the config instance deployment directory (wipe old contents)
+    let config_instance_deployment_dir = layout.config_instance_deployment_dir();
+    config_instance_deployment_dir.delete().await.map_err(|e| {
+        StorageErr::FileSysErr(Box::new(StorageFileSysErr {
+            source: e,
+            trace: trace!(),
+        }))
+    })?;
     let config_instance_deployment_dir = layout.config_instance_deployment_dir();
     config_instance_deployment_dir
         .create_if_absent()
