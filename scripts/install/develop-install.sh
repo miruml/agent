@@ -107,6 +107,22 @@ print_mqtt_broker_host() {
     debug "MQTT Broker Host: '$mqtt_broker_host'"
 }
 
+# Token
+token() {
+    token=$(default_value "" "$@")
+    for arg in "$@"; do
+        case $arg in
+        --token=*) token="${arg#*=}";;
+        esac
+    done
+    echo "$token"
+}
+
+print_token() {
+    token=$1
+    debug "Token provided"
+}
+
 ### COPIED ARGUMENT UTILITIES END ###
 
 # CLI args
@@ -126,10 +142,15 @@ MQTT_BROKER_HOST=$(mqtt_broker_host --default="dev.mqtt.miruml.com" "$@")
 if [ "$DEBUG" = true ]; then
     print_mqtt_broker_host "$MQTT_BROKER_HOST"
 fi
+TOKEN=$(token --default="" "$@")
+if [ "$DEBUG" = true ]; then
+    print_token "$TOKEN"
+fi
 
-curl -fsSL https://raw.githubusercontent.com/miruml/agent/"$BRANCH"/scripts/install/prerelease-install.sh | sh -s -- \
+curl -fsSL https://raw.githubusercontent.com/miruml/agent/"$BRANCH"/scripts/install/install.sh | sh -s -- \
 --debug="$DEBUG" \
 --git-branch="$BRANCH" \
 --backend-base-url="$BACKEND_BASE_URL" \
---mqtt-broker-host="$MQTT_BROKER_HOST"
+--mqtt-broker-host="$MQTT_BROKER_HOST" \
+--token="$TOKEN"
 

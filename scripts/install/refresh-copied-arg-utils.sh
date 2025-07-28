@@ -55,8 +55,3 @@ INSTALL_SH="$INSTALL_DIR/install.sh"
 assert_file_exists "$INSTALL_SH"
 echo "Refreshing $INSTALL_SH"
 refresh_copied_args_utils "$INSTALL_SH"
-
-PRERELEASE_INSTALL_SH="$INSTALL_DIR/prerelease-install.sh"
-assert_file_exists "$PRERELEASE_INSTALL_SH"
-echo "Refreshing $PRERELEASE_INSTALL_SH"
-refresh_copied_args_utils "$PRERELEASE_INSTALL_SH"

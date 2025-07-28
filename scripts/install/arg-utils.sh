@@ -107,4 +107,20 @@ print_mqtt_broker_host() {
     debug "MQTT Broker Host: '$mqtt_broker_host'"
 }
 
+# Token
+token() {
+    token=$(default_value "" "$@")
+    for arg in "$@"; do
+        case $arg in
+        --token=*) token="${arg#*=}";;
+        esac
+    done
+    echo "$token"
+}
+
+print_token() {
+    token=$1
+    debug "Token provided"
+}
+
 ### COPIED ARGUMENT UTILITIES END ###
