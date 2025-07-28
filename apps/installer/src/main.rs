@@ -10,7 +10,6 @@ use config_agent::storage::layout::StorageLayout;
 use config_agent::storage::settings;
 use config_agent::utils::{has_version_flag, version_info};
 use config_agent_installer::installer::Installer;
-use config_agent_installer::users::{assert_groupname, assert_username};
 use config_agent_installer::utils;
 
 // external crates
@@ -39,10 +38,6 @@ async fn main() {
 }
 
 async fn install() -> Result<(), Box<dyn std::error::Error>> {
-    // assert the os user and group
-    assert_username("miru")?;
-    assert_groupname("miru")?;
-
     // initialize the logger
     let tmp_dir = Dir::create_temp_dir("miru-agent-installer-logs").await?;
     let options = LogOptions {
@@ -76,7 +71,9 @@ async fn install() -> Result<(), Box<dyn std::error::Error>> {
     // create and run the installer
     let http_client = HTTPClient::new(&settings.backend.base_url).await;
     let mut installer = Installer::new(StorageLayout::default(), http_client);
-    installer.install(&settings).await?;
+    installer
+        .install(&settings, kv_args.get("token").map(|s| s.to_string()))
+        .await?;
 
     drop(guard);
 

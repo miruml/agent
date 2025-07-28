@@ -10,10 +10,10 @@ Name | Type | Description | Notes
 **status** | [**models::DeviceStatus**](DeviceStatus.md) |  | 
 **created_at** | **String** | Timestamp of when the device was created | 
 **updated_at** | **String** | Timestamp of when the device was last updated | 
-**created_by_id** | Option<**String**> |  | 
-**updated_by_id** | Option<**String**> |  | 
-**created_by** | Option<[**models::User**](User.md)> |  | 
-**updated_by** | Option<[**models::User**](User.md)> |  | 
+**created_by_id** | **String** |  | 
+**updated_by_id** | **String** |  | 
+**created_by** | Option<[**models::Principal**](Principal.md)> |  | 
+**updated_by** | Option<[**models::Principal**](Principal.md)> |  | 
 **device_tags** | Option<[**models::DeviceTagPaginatedList**](DeviceTagPaginatedList.md)> |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

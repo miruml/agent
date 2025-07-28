@@ -25,16 +25,16 @@ pub struct Override {
     pub created_at: String,
     #[serde(rename = "updated_at")]
     pub updated_at: String,
-    #[serde(rename = "created_by_id", deserialize_with = "Option::deserialize")]
-    pub created_by_id: Option<String>,
-    #[serde(rename = "updated_by_id", deserialize_with = "Option::deserialize")]
-    pub updated_by_id: Option<String>,
+    #[serde(rename = "created_by_id")]
+    pub created_by_id: String,
+    #[serde(rename = "updated_by_id")]
+    pub updated_by_id: String,
     #[serde(rename = "config_schema_id")]
     pub config_schema_id: String,
     #[serde(rename = "created_by", deserialize_with = "Option::deserialize")]
-    pub created_by: Option<Box<models::User>>,
+    pub created_by: Option<Box<models::Principal>>,
     #[serde(rename = "updated_by", deserialize_with = "Option::deserialize")]
-    pub updated_by: Option<Box<models::User>>,
+    pub updated_by: Option<Box<models::Principal>>,
     #[serde(rename = "key_value_pairs", deserialize_with = "Option::deserialize")]
     pub key_value_pairs: Option<Box<models::OverrideKeyValuePairList>>,
     #[serde(rename = "config_schema", deserialize_with = "Option::deserialize")]
@@ -42,7 +42,7 @@ pub struct Override {
 }
 
 impl Override {
-    pub fn new(object: Object, id: String, name: String, hierarchy_position: i32, created_at: String, updated_at: String, created_by_id: Option<String>, updated_by_id: Option<String>, config_schema_id: String, created_by: Option<models::User>, updated_by: Option<models::User>, key_value_pairs: Option<models::OverrideKeyValuePairList>, config_schema: Option<models::ConfigSchema>) -> Override {
+    pub fn new(object: Object, id: String, name: String, hierarchy_position: i32, created_at: String, updated_at: String, created_by_id: String, updated_by_id: String, config_schema_id: String, created_by: Option<models::Principal>, updated_by: Option<models::Principal>, key_value_pairs: Option<models::OverrideKeyValuePairList>, config_schema: Option<models::ConfigSchema>) -> Override {
         Override {
             object,
             id,

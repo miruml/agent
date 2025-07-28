@@ -9,11 +9,11 @@ Name | Type | Description | Notes
 **name** | **String** |  | 
 **created_at** | **String** |  | 
 **updated_at** | **String** |  | 
-**created_by_id** | Option<**String**> |  | 
-**updated_by_id** | Option<**String**> |  | 
+**created_by_id** | **String** |  | 
+**updated_by_id** | **String** |  | 
 **tag_type_id** | **String** |  | 
-**created_by** | Option<[**models::User**](User.md)> |  | 
-**updated_by** | Option<[**models::User**](User.md)> |  | 
+**created_by** | Option<[**models::Principal**](Principal.md)> |  | 
+**updated_by** | Option<[**models::Principal**](Principal.md)> |  | 
 **tag_type** | Option<[**models::TagType**](TagType.md)> |  | 
 **metadata** | Option<[**serde_json::Value**](.md)> |  | 
 

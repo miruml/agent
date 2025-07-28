@@ -61,7 +61,10 @@ impl StorageLayout {
     }
 
     pub fn config_instance_deployment_dir(&self) -> Dir {
-        self.root.subdir("srv").subdir("miru").subdir("config_instances")
+        self.root
+            .subdir("srv")
+            .subdir("miru")
+            .subdir("config_instances")
     }
 }
 

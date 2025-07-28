@@ -10,11 +10,11 @@ Name | Type | Description | Notes
 **hierarchy_position** | **i32** |  | 
 **created_at** | **String** |  | 
 **updated_at** | **String** |  | 
-**created_by_id** | Option<**String**> |  | 
-**updated_by_id** | Option<**String**> |  | 
+**created_by_id** | **String** |  | 
+**updated_by_id** | **String** |  | 
 **config_schema_id** | **String** |  | 
-**created_by** | Option<[**models::User**](User.md)> |  | 
-**updated_by** | Option<[**models::User**](User.md)> |  | 
+**created_by** | Option<[**models::Principal**](Principal.md)> |  | 
+**updated_by** | Option<[**models::Principal**](Principal.md)> |  | 
 **key_value_pairs** | Option<[**models::OverrideKeyValuePairList**](OverrideKeyValuePairList.md)> |  | 
 **config_schema** | Option<[**models::ConfigSchema**](ConfigSchema.md)> |  | 
 

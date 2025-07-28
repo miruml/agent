@@ -16,8 +16,8 @@ Name | Type | Description | Notes
 **branch_url** | **String** |  | 
 **commit_url** | **String** |  | 
 **created_at** | **String** |  | 
-**created_by_id** | Option<**String**> |  | 
-**created_by** | Option<[**models::User**](User.md)> |  | 
+**created_by_id** | **String** |  | 
+**created_by** | Option<[**models::Principal**](Principal.md)> |  | 
 **config_schema_git_commits** | Option<[**models::ConfigSchemaGitCommitList**](ConfigSchemaGitCommitList.md)> |  | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

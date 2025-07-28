@@ -15,32 +15,35 @@ use serde::{Deserialize, Serialize};
 pub struct DeviceTag {
     #[serde(rename = "object")]
     pub object: Object,
+    #[serde(rename = "id")]
+    pub id: String,
     #[serde(rename = "created_at")]
     pub created_at: String,
-    #[serde(rename = "created_by_id", deserialize_with = "Option::deserialize")]
-    pub created_by_id: Option<String>,
-    #[serde(rename = "device_id", skip_serializing_if = "Option::is_none")]
-    pub device_id: Option<String>,
-    #[serde(rename = "tag_id", skip_serializing_if = "Option::is_none")]
-    pub tag_id: Option<String>,
+    #[serde(rename = "created_by_id")]
+    pub created_by_id: String,
+    #[serde(rename = "device_id")]
+    pub device_id: String,
+    #[serde(rename = "tag_id")]
+    pub tag_id: String,
     #[serde(rename = "created_by", deserialize_with = "Option::deserialize")]
-    pub created_by: Option<Box<models::User>>,
-    #[serde(rename = "device", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
-    pub device: Option<Option<Box<models::Device>>>,
+    pub created_by: Option<Box<models::Principal>>,
+    #[serde(rename = "device", deserialize_with = "Option::deserialize")]
+    pub device: Option<Box<models::Device>>,
     #[serde(rename = "tag", deserialize_with = "Option::deserialize")]
     pub tag: Option<Box<models::Tag>>,
 }
 
 impl DeviceTag {
-    pub fn new(object: Object, created_at: String, created_by_id: Option<String>, created_by: Option<models::User>, tag: Option<models::Tag>) -> DeviceTag {
+    pub fn new(object: Object, id: String, created_at: String, created_by_id: String, device_id: String, tag_id: String, created_by: Option<models::Principal>, device: Option<models::Device>, tag: Option<models::Tag>) -> DeviceTag {
         DeviceTag {
             object,
+            id,
             created_at,
             created_by_id,
-            device_id: None,
-            tag_id: None,
+            device_id,
+            tag_id,
             created_by: if let Some(x) = created_by {Some(Box::new(x))} else {None},
-            device: None,
+            device: if let Some(x) = device {Some(Box::new(x))} else {None},
             tag: if let Some(x) = tag {Some(Box::new(x))} else {None},
         }
     }

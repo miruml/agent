@@ -10,8 +10,8 @@ Name | Type | Description | Notes
 **base_instance_id** | **String** |  | 
 **patched_instance_id** | **String** |  | 
 **created_at** | **String** |  | 
-**created_by_id** | Option<**String**> |  | 
-**created_by** | Option<[**models::User**](User.md)> |  | 
+**created_by_id** | **String** |  | 
+**created_by** | Option<[**models::Principal**](Principal.md)> |  | 
 **base_instance** | Option<[**models::ConfigInstance**](ConfigInstance.md)> |  | 
 **patched_instance** | Option<[**models::ConfigInstance**](ConfigInstance.md)> |  | 
 **comments** | Option<[**models::PatchCommentList**](PatchCommentList.md)> |  | 

@@ -29,20 +29,20 @@ pub struct Device {
     /// Timestamp of when the device was last updated
     #[serde(rename = "updated_at")]
     pub updated_at: String,
-    #[serde(rename = "created_by_id", deserialize_with = "Option::deserialize")]
-    pub created_by_id: Option<String>,
-    #[serde(rename = "updated_by_id", deserialize_with = "Option::deserialize")]
-    pub updated_by_id: Option<String>,
+    #[serde(rename = "created_by_id")]
+    pub created_by_id: String,
+    #[serde(rename = "updated_by_id")]
+    pub updated_by_id: String,
     #[serde(rename = "created_by", deserialize_with = "Option::deserialize")]
-    pub created_by: Option<Box<models::User>>,
+    pub created_by: Option<Box<models::Principal>>,
     #[serde(rename = "updated_by", deserialize_with = "Option::deserialize")]
-    pub updated_by: Option<Box<models::User>>,
+    pub updated_by: Option<Box<models::Principal>>,
     #[serde(rename = "device_tags", deserialize_with = "Option::deserialize")]
     pub device_tags: Option<Box<models::DeviceTagPaginatedList>>,
 }
 
 impl Device {
-    pub fn new(object: Object, id: String, name: String, status: models::DeviceStatus, created_at: String, updated_at: String, created_by_id: Option<String>, updated_by_id: Option<String>, created_by: Option<models::User>, updated_by: Option<models::User>, device_tags: Option<models::DeviceTagPaginatedList>) -> Device {
+    pub fn new(object: Object, id: String, name: String, status: models::DeviceStatus, created_at: String, updated_at: String, created_by_id: String, updated_by_id: String, created_by: Option<models::Principal>, updated_by: Option<models::Principal>, device_tags: Option<models::DeviceTagPaginatedList>) -> Device {
         Device {
             object,
             id,

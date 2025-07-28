@@ -25,10 +25,10 @@ pub struct PatchComment {
     pub patch_id: String,
     #[serde(rename = "created_at")]
     pub created_at: String,
-    #[serde(rename = "created_by_id", deserialize_with = "Option::deserialize")]
-    pub created_by_id: Option<String>,
+    #[serde(rename = "created_by_id")]
+    pub created_by_id: String,
     #[serde(rename = "created_by", deserialize_with = "Option::deserialize")]
-    pub created_by: Option<Box<models::User>>,
+    pub created_by: Option<Box<models::Principal>>,
 }
 
 impl PatchComment {
@@ -39,8 +39,8 @@ impl PatchComment {
         parameter_path: Vec<String>,
         patch_id: String,
         created_at: String,
-        created_by_id: Option<String>,
-        created_by: Option<models::User>,
+        created_by_id: String,
+        created_by: Option<models::Principal>,
     ) -> PatchComment {
         PatchComment {
             object,
@@ -50,11 +50,7 @@ impl PatchComment {
             patch_id,
             created_at,
             created_by_id,
-            created_by: if let Some(x) = created_by {
-                Some(Box::new(x))
-            } else {
-                None
-            },
+            created_by: created_by.map(Box::new),
         }
     }
 }

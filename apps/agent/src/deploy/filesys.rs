@@ -284,6 +284,6 @@ async fn prune_deployment_dir(deployment_dir: &Dir) {
                 "Error pruning deployment subdir directory {:?}: {:?}",
                 subdir, e
             );
-        } 
+        }
     }
 }

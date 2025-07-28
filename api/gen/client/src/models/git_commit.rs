@@ -37,16 +37,16 @@ pub struct GitCommit {
     pub commit_url: String,
     #[serde(rename = "created_at")]
     pub created_at: String,
-    #[serde(rename = "created_by_id", deserialize_with = "Option::deserialize")]
-    pub created_by_id: Option<String>,
+    #[serde(rename = "created_by_id")]
+    pub created_by_id: String,
     #[serde(rename = "created_by", deserialize_with = "Option::deserialize")]
-    pub created_by: Option<Box<models::User>>,
+    pub created_by: Option<Box<models::Principal>>,
     #[serde(rename = "config_schema_git_commits", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
     pub config_schema_git_commits: Option<Option<Box<models::ConfigSchemaGitCommitList>>>,
 }
 
 impl GitCommit {
-    pub fn new(object: Object, id: String, sha: String, message: String, branch: String, repository_owner: String, repository_name: String, repository_type: models::GitRepositoryType, repository_url: String, branch_url: String, commit_url: String, created_at: String, created_by_id: Option<String>, created_by: Option<models::User>) -> GitCommit {
+    pub fn new(object: Object, id: String, sha: String, message: String, branch: String, repository_owner: String, repository_name: String, repository_type: models::GitRepositoryType, repository_url: String, branch_url: String, commit_url: String, created_at: String, created_by_id: String, created_by: Option<models::Principal>) -> GitCommit {
         GitCommit {
             object,
             id,

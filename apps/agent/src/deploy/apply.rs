@@ -306,9 +306,7 @@ where
                 return true;
             }
 
-            matches_filepath_and_activity_status(
-                cfg_inst, &filepath, ActivityStatus::Deployed
-            )
+            matches_filepath_and_activity_status(cfg_inst, &filepath, ActivityStatus::Deployed)
         })
         .await
         .map_err(|e| {

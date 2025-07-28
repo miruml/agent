@@ -25,10 +25,10 @@ pub struct Patch {
     pub patched_instance_id: String,
     #[serde(rename = "created_at")]
     pub created_at: String,
-    #[serde(rename = "created_by_id", deserialize_with = "Option::deserialize")]
-    pub created_by_id: Option<String>,
+    #[serde(rename = "created_by_id")]
+    pub created_by_id: String,
     #[serde(rename = "created_by", deserialize_with = "Option::deserialize")]
-    pub created_by: Option<Box<models::User>>,
+    pub created_by: Option<Box<models::Principal>>,
     #[serde(rename = "base_instance", deserialize_with = "Option::deserialize")]
     pub base_instance: Option<Box<models::ConfigInstance>>,
     #[serde(rename = "patched_instance", deserialize_with = "Option::deserialize")]
@@ -45,8 +45,8 @@ impl Patch {
         base_instance_id: String,
         patched_instance_id: String,
         created_at: String,
-        created_by_id: Option<String>,
-        created_by: Option<models::User>,
+        created_by_id: String,
+        created_by: Option<models::Principal>,
         base_instance: Option<models::ConfigInstance>,
         patched_instance: Option<models::ConfigInstance>,
         comments: Option<models::PatchCommentList>,
@@ -59,26 +59,10 @@ impl Patch {
             patched_instance_id,
             created_at,
             created_by_id,
-            created_by: if let Some(x) = created_by {
-                Some(Box::new(x))
-            } else {
-                None
-            },
-            base_instance: if let Some(x) = base_instance {
-                Some(Box::new(x))
-            } else {
-                None
-            },
-            patched_instance: if let Some(x) = patched_instance {
-                Some(Box::new(x))
-            } else {
-                None
-            },
-            comments: if let Some(x) = comments {
-                Some(Box::new(x))
-            } else {
-                None
-            },
+            created_by: created_by.map(Box::new),
+            base_instance: base_instance.map(Box::new),
+            patched_instance: patched_instance.map(Box::new),
+            comments: comments.map(Box::new),
         }
     }
 }

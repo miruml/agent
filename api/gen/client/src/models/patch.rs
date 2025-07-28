@@ -25,10 +25,10 @@ pub struct Patch {
     pub patched_instance_id: String,
     #[serde(rename = "created_at")]
     pub created_at: String,
-    #[serde(rename = "created_by_id", deserialize_with = "Option::deserialize")]
-    pub created_by_id: Option<String>,
+    #[serde(rename = "created_by_id")]
+    pub created_by_id: String,
     #[serde(rename = "created_by", deserialize_with = "Option::deserialize")]
-    pub created_by: Option<Box<models::User>>,
+    pub created_by: Option<Box<models::Principal>>,
     #[serde(rename = "base_instance", deserialize_with = "Option::deserialize")]
     pub base_instance: Option<Box<models::ConfigInstance>>,
     #[serde(rename = "patched_instance", deserialize_with = "Option::deserialize")]
@@ -38,7 +38,7 @@ pub struct Patch {
 }
 
 impl Patch {
-    pub fn new(object: Object, id: String, description: String, base_instance_id: String, patched_instance_id: String, created_at: String, created_by_id: Option<String>, created_by: Option<models::User>, base_instance: Option<models::ConfigInstance>, patched_instance: Option<models::ConfigInstance>, comments: Option<models::PatchCommentList>) -> Patch {
+    pub fn new(object: Object, id: String, description: String, base_instance_id: String, patched_instance_id: String, created_at: String, created_by_id: String, created_by: Option<models::Principal>, base_instance: Option<models::ConfigInstance>, patched_instance: Option<models::ConfigInstance>, comments: Option<models::PatchCommentList>) -> Patch {
         Patch {
             object,
             id,

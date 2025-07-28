@@ -40,7 +40,11 @@ impl<HTTPClientT: DevicesExt> Installer<HTTPClientT> {
     }
 
     // walks user through the installation process
-    pub async fn install(&mut self, settings: &settings::Settings) -> Result<(), InstallerErr> {
+    pub async fn install(
+        &mut self,
+        settings: &settings::Settings,
+        token: Option<String>,
+    ) -> Result<(), InstallerErr> {
         // setup the storage so that the agent can authenticate its keys and such
         let agent = Agent {
             activated: false,
@@ -56,7 +60,7 @@ impl<HTTPClientT: DevicesExt> Installer<HTTPClientT> {
             })?;
 
         // authenticate the agent
-        let device_id = self.authenticate_agent().await?;
+        let device_id = self.authenticate_agent(token).await?;
 
         // update the storage layout to hold the device id and such
         let agent_file = self.layout.agent_file();
@@ -77,10 +81,24 @@ impl<HTTPClientT: DevicesExt> Installer<HTTPClientT> {
         Ok(())
     }
 
-    pub async fn authenticate_agent(&mut self) -> Result<DeviceID, InstallerErr> {
+    pub async fn authenticate_agent(
+        &mut self,
+        provided_token: Option<String>,
+    ) -> Result<DeviceID, InstallerErr> {
+        let mut attempt = 0;
+
         loop {
             // grab the jwt token from the user
-            let token = self.get_jwt_from_user()?;
+            let token = if let Some(ref provided_token) = provided_token {
+                if attempt == 0 {
+                    provided_token.clone()
+                } else {
+                    self.get_jwt_from_user()?
+                }
+            } else {
+                self.get_jwt_from_user()?
+            };
+            attempt += 1;
 
             // write the device id to the agent file
             let device_id = jwt::extract_device_id(&token).map_err(|e| {

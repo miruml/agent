@@ -299,7 +299,6 @@ async fn update_target_status_instances(
         };
         let updated_inst = ConfigInstance {
             target_status: cfg_inst.target_status,
-            updated_by_id: cfg_inst.updated_by_id,
             updated_at: cfg_inst.updated_at,
             ..cache_inst
         };

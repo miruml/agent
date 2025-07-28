@@ -76,8 +76,8 @@ List the config schemas for a workspace
 
 Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
-**offset** | Option<**i32**> | The offset to begin returning results from |  |[default to 0]
-**limit** | Option<**i32**> | The number of items to return |  |[default to 10]
+**offset** | Option<**i32**> | The offset of the items to return. An offset of 10 with a limit of 10 returns items 11-20. |  |[default to 0]
+**limit** | Option<**i32**> | The number of items to return. A limit of 15 with an offset of 0 returns items 1-15. |  |[default to 10]
 **order_by** | Option<[**Vec<models::ConfigSchemaOrderBy>**](models::ConfigSchemaOrderBy.md)> |  |  |
 **search** | Option<[**Vec<models::ConfigSchemaSearch>**](models::ConfigSchemaSearch.md)> |  |  |
 **expand_left_square_bracket_right_square_bracket** | Option<[**Vec<models::ConfigSchemaExpand>**](models::ConfigSchemaExpand.md)> |  |  |

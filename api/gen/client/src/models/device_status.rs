@@ -11,8 +11,8 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-/// DeviceStatus : The status of the device
-/// The status of the device
+/// DeviceStatus : The status of the device - Inactive: The miru agent has not yet been installed / authenticated - Activated: The miru agent has been installed and authenticated - Provisioned: The device has been optionally initialized with config instances 
+/// The status of the device - Inactive: The miru agent has not yet been installed / authenticated - Activated: The miru agent has been installed and authenticated - Provisioned: The device has been optionally initialized with config instances 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum DeviceStatus {
     #[serde(rename = "inactive")]

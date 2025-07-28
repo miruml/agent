@@ -21,7 +21,7 @@ pub struct BaseConfigType {
     /// Name of the config type
     #[serde(rename = "name")]
     pub name: String,
-    /// Slug of the config type
+    /// An immutable, code-friendly name for the config type
     #[serde(rename = "slug")]
     pub slug: String,
     /// Timestamp of when the config type was created
@@ -30,9 +30,6 @@ pub struct BaseConfigType {
     /// Timestamp of when the config type was last updated
     #[serde(rename = "updated_at")]
     pub updated_at: String,
-    /// Expand the config schemas using 'expand[]=config_schemas' in the query string
-    #[serde(rename = "config_schemas", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
-    pub config_schemas: Option<Option<Box<models::ConfigSchemaList>>>,
 }
 
 impl BaseConfigType {
@@ -44,7 +41,6 @@ impl BaseConfigType {
             slug,
             created_at,
             updated_at,
-            config_schemas: None,
         }
     }
 }

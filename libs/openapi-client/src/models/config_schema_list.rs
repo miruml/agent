@@ -15,12 +15,16 @@ use serde::{Deserialize, Serialize};
 pub struct ConfigSchemaList {
     #[serde(rename = "object")]
     pub object: Object,
+    /// The total number of items in the list. By default the total count is not returned. The total count must be expanded (using expand[]=total_count) to get the total number of items in the list.
     #[serde(rename = "total_count")]
     pub total_count: i64,
+    /// The number of items to return. A limit of 15 with an offset of 0 returns items 1-15.
     #[serde(rename = "limit")]
     pub limit: i32,
+    /// The offset of the items to return. An offset of 10 with a limit of 10 returns items 11-20.
     #[serde(rename = "offset")]
     pub offset: i32,
+    /// True if there are more items in the list to return. False if there are no more items to return.
     #[serde(rename = "has_more")]
     pub has_more: bool,
     #[serde(rename = "data")]

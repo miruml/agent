@@ -5,13 +5,14 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **object** | **String** |  | 
+**id** | **String** |  | 
 **file_path** | **String** |  | 
 **url** | **String** |  | 
 **git_commit_id** | **String** |  | 
 **config_schema_id** | **String** |  | 
 **created_at** | **String** |  | 
-**created_by_id** | Option<**String**> |  | 
-**created_by** | Option<[**models::User**](User.md)> |  | 
+**created_by_id** | **String** |  | 
+**created_by** | Option<[**models::Principal**](Principal.md)> |  | 
 **git_commit** | Option<[**models::GitCommit**](GitCommit.md)> |  | 
 **config_schema** | Option<[**models::ConfigSchema**](ConfigSchema.md)> |  | 
 

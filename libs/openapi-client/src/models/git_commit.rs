@@ -37,10 +37,10 @@ pub struct GitCommit {
     pub commit_url: String,
     #[serde(rename = "created_at")]
     pub created_at: String,
-    #[serde(rename = "created_by_id", deserialize_with = "Option::deserialize")]
-    pub created_by_id: Option<String>,
+    #[serde(rename = "created_by_id")]
+    pub created_by_id: String,
     #[serde(rename = "created_by", deserialize_with = "Option::deserialize")]
-    pub created_by: Option<Box<models::User>>,
+    pub created_by: Option<Box<models::Principal>>,
     #[serde(
         rename = "config_schema_git_commits",
         default,
@@ -64,8 +64,8 @@ impl GitCommit {
         branch_url: String,
         commit_url: String,
         created_at: String,
-        created_by_id: Option<String>,
-        created_by: Option<models::User>,
+        created_by_id: String,
+        created_by: Option<models::Principal>,
     ) -> GitCommit {
         GitCommit {
             object,
@@ -81,11 +81,7 @@ impl GitCommit {
             commit_url,
             created_at,
             created_by_id,
-            created_by: if let Some(x) = created_by {
-                Some(Box::new(x))
-            } else {
-                None
-            },
+            created_by: created_by.map(Box::new),
             config_schema_git_commits: None,
         }
     }

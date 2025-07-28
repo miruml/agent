@@ -40,6 +40,7 @@ Class | Method | HTTP request | Description
 ## Documentation For Models
 
  - [ActivateDeviceRequest](docs/ActivateDeviceRequest.md)
+ - [ApiKey](docs/ApiKey.md)
  - [BaseConfigInstance](docs/BaseConfigInstance.md)
  - [BaseConfigSchema](docs/BaseConfigSchema.md)
  - [BaseConfigType](docs/BaseConfigType.md)
@@ -83,6 +84,8 @@ Class | Method | HTTP request | Description
  - [Patch](docs/Patch.md)
  - [PatchComment](docs/PatchComment.md)
  - [PatchCommentList](docs/PatchCommentList.md)
+ - [Principal](docs/Principal.md)
+ - [PrincipalType](docs/PrincipalType.md)
  - [SchemaDigestResponse](docs/SchemaDigestResponse.md)
  - [SyncDevice](docs/SyncDevice.md)
  - [Tag](docs/Tag.md)

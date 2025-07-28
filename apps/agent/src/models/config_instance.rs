@@ -475,9 +475,7 @@ pub struct ConfigInstance {
     pub error_status: ErrorStatus,
     pub relative_filepath: String,
     pub patch_id: Option<String>,
-    pub created_by_id: Option<String>,
     pub created_at: DateTime<Utc>,
-    pub updated_by_id: Option<String>,
     pub updated_at: DateTime<Utc>,
     pub device_id: String,
     pub config_schema_id: String,
@@ -497,9 +495,7 @@ impl Default for ConfigInstance {
             error_status: ErrorStatus::None,
             relative_filepath: format!("unknown-{}", Uuid::new_v4()),
             patch_id: None,
-            created_by_id: None,
             created_at: DateTime::<Utc>::UNIX_EPOCH,
-            updated_by_id: None,
             updated_at: DateTime::<Utc>::UNIX_EPOCH,
             device_id: format!("unknown-{}", Uuid::new_v4()),
             config_schema_id: format!("unknown-{}", Uuid::new_v4()),
@@ -535,8 +531,6 @@ impl ConfigInstance {
                     error!("Error parsing updated_at: {}", e);
                     DateTime::<Utc>::UNIX_EPOCH
                 }),
-            created_by_id: backend_instance.created_by_id,
-            updated_by_id: backend_instance.updated_by_id,
             device_id: backend_instance.device_id,
             config_schema_id: backend_instance.config_schema_id,
             config_type_id: backend_instance.config_type_id,
@@ -626,8 +620,6 @@ impl<'de> Deserialize<'de> for ConfigInstance {
 
             // optional fields
             patch_id: Option<String>,
-            created_by_id: Option<String>,
-            updated_by_id: Option<String>,
         }
 
         let result = match DeserializeConfigInstance::deserialize(deserializer) {
@@ -664,9 +656,7 @@ impl<'de> Deserialize<'de> for ConfigInstance {
             error_status: result.error_status,
             relative_filepath: result.relative_filepath,
             patch_id: result.patch_id,
-            created_by_id: result.created_by_id,
             created_at,
-            updated_by_id: result.updated_by_id,
             updated_at,
             device_id: result.device_id,
             config_schema_id: result.config_schema_id,

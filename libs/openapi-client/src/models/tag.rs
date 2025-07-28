@@ -23,16 +23,16 @@ pub struct Tag {
     pub created_at: String,
     #[serde(rename = "updated_at")]
     pub updated_at: String,
-    #[serde(rename = "created_by_id", deserialize_with = "Option::deserialize")]
-    pub created_by_id: Option<String>,
-    #[serde(rename = "updated_by_id", deserialize_with = "Option::deserialize")]
-    pub updated_by_id: Option<String>,
+    #[serde(rename = "created_by_id")]
+    pub created_by_id: String,
+    #[serde(rename = "updated_by_id")]
+    pub updated_by_id: String,
     #[serde(rename = "tag_type_id")]
     pub tag_type_id: String,
     #[serde(rename = "created_by", deserialize_with = "Option::deserialize")]
-    pub created_by: Option<Box<models::User>>,
+    pub created_by: Option<Box<models::Principal>>,
     #[serde(rename = "updated_by", deserialize_with = "Option::deserialize")]
-    pub updated_by: Option<Box<models::User>>,
+    pub updated_by: Option<Box<models::Principal>>,
     #[serde(rename = "tag_type", deserialize_with = "Option::deserialize")]
     pub tag_type: Option<Box<models::TagType>>,
     #[serde(rename = "metadata", deserialize_with = "Option::deserialize")]
@@ -46,11 +46,11 @@ impl Tag {
         name: String,
         created_at: String,
         updated_at: String,
-        created_by_id: Option<String>,
-        updated_by_id: Option<String>,
+        created_by_id: String,
+        updated_by_id: String,
         tag_type_id: String,
-        created_by: Option<models::User>,
-        updated_by: Option<models::User>,
+        created_by: Option<models::Principal>,
+        updated_by: Option<models::Principal>,
         tag_type: Option<models::TagType>,
         metadata: Option<serde_json::Value>,
     ) -> Tag {
@@ -63,21 +63,9 @@ impl Tag {
             created_by_id,
             updated_by_id,
             tag_type_id,
-            created_by: if let Some(x) = created_by {
-                Some(Box::new(x))
-            } else {
-                None
-            },
-            updated_by: if let Some(x) = updated_by {
-                Some(Box::new(x))
-            } else {
-                None
-            },
-            tag_type: if let Some(x) = tag_type {
-                Some(Box::new(x))
-            } else {
-                None
-            },
+            created_by: created_by.map(Box::new),
+            updated_by: updated_by.map(Box::new),
+            tag_type: tag_type.map(Box::new),
             metadata,
         }
     }

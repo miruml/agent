@@ -21,7 +21,7 @@ pub struct ConfigType {
     /// Name of the config type
     #[serde(rename = "name")]
     pub name: String,
-    /// Slug of the config type
+    /// An immutable, code-friendly name for the config type
     #[serde(rename = "slug")]
     pub slug: String,
     /// Timestamp of when the config type was created
@@ -30,24 +30,24 @@ pub struct ConfigType {
     /// Timestamp of when the config type was last updated
     #[serde(rename = "updated_at")]
     pub updated_at: String,
-    /// Expand the config schemas using 'expand[]=config_schemas' in the query string
-    #[serde(rename = "config_schemas", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
-    pub config_schemas: Option<Option<Box<models::ConfigSchemaList>>>,
     /// Whether the config type requires user validation for deployments
     #[serde(rename = "user_validates_deployments")]
     pub user_validates_deployments: bool,
-    #[serde(rename = "created_by_id", deserialize_with = "Option::deserialize")]
-    pub created_by_id: Option<String>,
-    #[serde(rename = "updated_by_id", deserialize_with = "Option::deserialize")]
-    pub updated_by_id: Option<String>,
+    #[serde(rename = "created_by_id")]
+    pub created_by_id: String,
+    #[serde(rename = "updated_by_id")]
+    pub updated_by_id: String,
     #[serde(rename = "created_by", deserialize_with = "Option::deserialize")]
-    pub created_by: Option<Box<models::User>>,
+    pub created_by: Option<Box<models::Principal>>,
     #[serde(rename = "updated_by", deserialize_with = "Option::deserialize")]
-    pub updated_by: Option<Box<models::User>>,
+    pub updated_by: Option<Box<models::Principal>>,
+    /// Expand the config schemas using 'expand[]=config_schemas' in the query string
+    #[serde(rename = "config_schemas", deserialize_with = "Option::deserialize")]
+    pub config_schemas: Option<Box<models::ConfigSchemaList>>,
 }
 
 impl ConfigType {
-    pub fn new(object: Object, id: String, name: String, slug: String, created_at: String, updated_at: String, user_validates_deployments: bool, created_by_id: Option<String>, updated_by_id: Option<String>, created_by: Option<models::User>, updated_by: Option<models::User>) -> ConfigType {
+    pub fn new(object: Object, id: String, name: String, slug: String, created_at: String, updated_at: String, user_validates_deployments: bool, created_by_id: String, updated_by_id: String, created_by: Option<models::Principal>, updated_by: Option<models::Principal>, config_schemas: Option<models::ConfigSchemaList>) -> ConfigType {
         ConfigType {
             object,
             id,
@@ -55,12 +55,12 @@ impl ConfigType {
             slug,
             created_at,
             updated_at,
-            config_schemas: None,
             user_validates_deployments,
             created_by_id,
             updated_by_id,
             created_by: if let Some(x) = created_by {Some(Box::new(x))} else {None},
             updated_by: if let Some(x) = updated_by {Some(Box::new(x))} else {None},
+            config_schemas: if let Some(x) = config_schemas {Some(Box::new(x))} else {None},
         }
     }
 }

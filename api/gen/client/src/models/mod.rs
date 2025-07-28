@@ -1,5 +1,7 @@
 pub mod activate_device_request;
 pub use self::activate_device_request::ActivateDeviceRequest;
+pub mod api_key;
+pub use self::api_key::ApiKey;
 pub mod base_config_instance;
 pub use self::base_config_instance::BaseConfigInstance;
 pub mod base_config_schema;
@@ -86,6 +88,10 @@ pub mod patch_comment;
 pub use self::patch_comment::PatchComment;
 pub mod patch_comment_list;
 pub use self::patch_comment_list::PatchCommentList;
+pub mod principal;
+pub use self::principal::Principal;
+pub mod principal_type;
+pub use self::principal_type::PrincipalType;
 pub mod schema_digest_response;
 pub use self::schema_digest_response::SchemaDigestResponse;
 pub mod sync_device;

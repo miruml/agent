@@ -15,6 +15,8 @@ use serde::{Deserialize, Serialize};
 pub struct ConfigSchemaGitCommit {
     #[serde(rename = "object")]
     pub object: Object,
+    #[serde(rename = "id")]
+    pub id: String,
     #[serde(rename = "file_path")]
     pub file_path: String,
     #[serde(rename = "url")]
@@ -25,10 +27,10 @@ pub struct ConfigSchemaGitCommit {
     pub config_schema_id: String,
     #[serde(rename = "created_at")]
     pub created_at: String,
-    #[serde(rename = "created_by_id", deserialize_with = "Option::deserialize")]
-    pub created_by_id: Option<String>,
+    #[serde(rename = "created_by_id")]
+    pub created_by_id: String,
     #[serde(rename = "created_by", deserialize_with = "Option::deserialize")]
-    pub created_by: Option<Box<models::User>>,
+    pub created_by: Option<Box<models::Principal>>,
     #[serde(rename = "git_commit", deserialize_with = "Option::deserialize")]
     pub git_commit: Option<Box<models::GitCommit>>,
     #[serde(rename = "config_schema", deserialize_with = "Option::deserialize")]
@@ -36,9 +38,10 @@ pub struct ConfigSchemaGitCommit {
 }
 
 impl ConfigSchemaGitCommit {
-    pub fn new(object: Object, file_path: String, url: String, git_commit_id: String, config_schema_id: String, created_at: String, created_by_id: Option<String>, created_by: Option<models::User>, git_commit: Option<models::GitCommit>, config_schema: Option<models::ConfigSchema>) -> ConfigSchemaGitCommit {
+    pub fn new(object: Object, id: String, file_path: String, url: String, git_commit_id: String, config_schema_id: String, created_at: String, created_by_id: String, created_by: Option<models::Principal>, git_commit: Option<models::GitCommit>, config_schema: Option<models::ConfigSchema>) -> ConfigSchemaGitCommit {
         ConfigSchemaGitCommit {
             object,
+            id,
             file_path,
             url,
             git_commit_id,

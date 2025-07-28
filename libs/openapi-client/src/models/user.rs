@@ -54,11 +54,7 @@ impl User {
             created_at,
             updated_at,
             workspace_id,
-            workspace: if let Some(x) = workspace {
-                Some(Box::new(x))
-            } else {
-                None
-            },
+            workspace: workspace.map(Box::new),
         }
     }
 }

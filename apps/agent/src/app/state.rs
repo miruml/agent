@@ -100,7 +100,11 @@ impl AppState {
                 cfg_inst_content_cache: caches.cfg_inst_content.clone(),
                 deployment_dir: layout.config_instance_deployment_dir(),
                 fsm_settings,
-                cooldown_options: CooldownOptions::default(),
+                cooldown_options: CooldownOptions {
+                    base_secs: 1,
+                    growth_factor: 2,
+                    max_secs: 12 * 60 * 60, // 12 hours
+                },
             },
         )
         .map_err(|e| {

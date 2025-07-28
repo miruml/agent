@@ -20,28 +20,28 @@ pub struct ConfigInstance {
     pub id: String,
     #[serde(rename = "target_status")]
     pub target_status: models::ConfigInstanceTargetStatus,
-    #[serde(rename = "status")]
-    pub status: models::ConfigInstanceStatus,
     #[serde(rename = "activity_status")]
     pub activity_status: models::ConfigInstanceActivityStatus,
     #[serde(rename = "error_status")]
     pub error_status: models::ConfigInstanceErrorStatus,
-    /// The file path to deploy the config instance relative to /srv/miru/config_instances. v1/motion-control.json would deploy to /srv/miru/config_instances/v1/motion-control.json
+    #[serde(rename = "status")]
+    pub status: models::ConfigInstanceStatus,
+    /// The file path to deploy the config instance relative to `/srv/miru/config_instances`. `v1/motion-control.json` would deploy to `/srv/miru/config_instances/v1/motion-control.json`
     #[serde(rename = "relative_filepath")]
     pub relative_filepath: String,
-    /// The timestamp when the config instance was created
+    /// The timestamp of when the config instance was created
     #[serde(rename = "created_at")]
     pub created_at: String,
-    /// The timestamp when the config instance was last updated
+    /// The timestamp of when the config instance was last updated
     #[serde(rename = "updated_at")]
     pub updated_at: String,
-    /// The ID of the device which the config instance is associated with
+    /// ID of the device which the config instance is deployed to
     #[serde(rename = "device_id")]
     pub device_id: String,
-    /// The ID of the config schema which the config instance must adhere to
+    /// ID of the config schema which the config instance must adhere to
     #[serde(rename = "config_schema_id")]
     pub config_schema_id: String,
-    /// The ID of the config type which the config instance is a part of
+    /// ID of the config type which the config instance (and its schema) is a part of
     #[serde(rename = "config_type_id")]
     pub config_type_id: String,
     /// The configuration values associated with the config instance
@@ -54,9 +54,9 @@ impl ConfigInstance {
         object: Object,
         id: String,
         target_status: models::ConfigInstanceTargetStatus,
-        status: models::ConfigInstanceStatus,
         activity_status: models::ConfigInstanceActivityStatus,
         error_status: models::ConfigInstanceErrorStatus,
+        status: models::ConfigInstanceStatus,
         relative_filepath: String,
         created_at: String,
         updated_at: String,
@@ -69,9 +69,9 @@ impl ConfigInstance {
             object,
             id,
             target_status,
-            status,
             activity_status,
             error_status,
+            status,
             relative_filepath,
             created_at,
             updated_at,

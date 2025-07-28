@@ -23,14 +23,14 @@ pub struct TagType {
     pub created_at: String,
     #[serde(rename = "updated_at")]
     pub updated_at: String,
-    #[serde(rename = "created_by_id", deserialize_with = "Option::deserialize")]
-    pub created_by_id: Option<String>,
-    #[serde(rename = "updated_by_id", deserialize_with = "Option::deserialize")]
-    pub updated_by_id: Option<String>,
+    #[serde(rename = "created_by_id")]
+    pub created_by_id: String,
+    #[serde(rename = "updated_by_id")]
+    pub updated_by_id: String,
     #[serde(rename = "created_by", deserialize_with = "Option::deserialize")]
-    pub created_by: Option<Box<models::User>>,
+    pub created_by: Option<Box<models::Principal>>,
     #[serde(rename = "updated_by", deserialize_with = "Option::deserialize")]
-    pub updated_by: Option<Box<models::User>>,
+    pub updated_by: Option<Box<models::Principal>>,
     #[serde(rename = "schema", deserialize_with = "Option::deserialize")]
     pub schema: Option<serde_json::Value>,
     #[serde(rename = "tags", deserialize_with = "Option::deserialize")]
@@ -38,7 +38,7 @@ pub struct TagType {
 }
 
 impl TagType {
-    pub fn new(object: Object, id: String, name: String, created_at: String, updated_at: String, created_by_id: Option<String>, updated_by_id: Option<String>, created_by: Option<models::User>, updated_by: Option<models::User>, schema: Option<serde_json::Value>, tags: Option<models::TagList>) -> TagType {
+    pub fn new(object: Object, id: String, name: String, created_at: String, updated_at: String, created_by_id: String, updated_by_id: String, created_by: Option<models::Principal>, updated_by: Option<models::Principal>, schema: Option<serde_json::Value>, tags: Option<models::TagList>) -> TagType {
         TagType {
             object,
             id,
