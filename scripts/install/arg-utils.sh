@@ -120,7 +120,11 @@ token() {
 
 print_token() {
     token=$1
-    debug "Token provided"
+    if [ -n "$token" ]; then
+        debug "Token provided"
+    else
+        debug "No token provided"
+    fi
 }
 
 ### COPIED ARGUMENT UTILITIES END ###
