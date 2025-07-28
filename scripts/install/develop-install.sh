@@ -134,6 +134,10 @@ BRANCH=$(git_branch --default=dev "$@")
 if [ "$DEBUG" = true ]; then
     print_git_branch "$BRANCH"
 fi
+PRERELEASE=$(prerelease_flag --default=true "$@")
+if [ "$DEBUG" = true ]; then
+    print_prerelease_flag "$PRERELEASE"
+fi
 BACKEND_BASE_URL=$(backend_base_url --default="https://configs.dev.api.miruml.com/agent/v1" "$@")
 if [ "$DEBUG" = true ]; then
     print_backend_base_url "$BACKEND_BASE_URL"
@@ -150,6 +154,7 @@ fi
 curl -fsSL https://raw.githubusercontent.com/miruml/agent/"$BRANCH"/scripts/install/install.sh | sh -s -- \
 --debug="$DEBUG" \
 --git-branch="$BRANCH" \
+--prerelease="$PRERELEASE" \
 --backend-base-url="$BACKEND_BASE_URL" \
 --mqtt-broker-host="$MQTT_BROKER_HOST" \
 --token="$TOKEN"
