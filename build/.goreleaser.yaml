@@ -62,7 +62,7 @@ nfpms:
           group: miru
           mode: 0755
       - src: "../lib/miru/miru-agent-{{ .Version }}"
-        dst: "/usr/bin/miru-agent"
+        dst: "/usr/sbin/miru-agent"
         type: symlink
       - src: "debian/miru.service"
         dst: "/lib/systemd/system/miru.service"
