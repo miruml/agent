@@ -51,7 +51,7 @@ pub(crate) async fn serve(
     // build the app with the test route
     let state_for_middleware = state.clone();
     let app = Router::new()
-        .route("/v1/test", get(test))
+        .route("/v1/health", get(health))
         .route("/v1/version", get(version))
         // ============================ CONFIG INSTANCES ============================== //
         .route(
@@ -175,7 +175,7 @@ async fn version() -> (StatusCode, Json<serde_json::Value>) {
     (StatusCode::OK, Json(version_info()))
 }
 
-async fn test() -> (StatusCode, Json<serde_json::Value>) {
+async fn health() -> (StatusCode, Json<serde_json::Value>) {
     (
         StatusCode::OK,
         Json(json!({
