@@ -68,14 +68,11 @@ async fn install() -> Result<(), Box<dyn std::error::Error>> {
         settings.mqtt_broker.host = mqtt_broker_host.to_string();
     }
 
-    // retrieve the token from the $MIRU_TOKEN environment variable
-    let token = env::var("MIRU_TOKEN").ok();
-
     // create and run the installer
     let http_client = HTTPClient::new(&settings.backend.base_url).await;
     let mut installer = Installer::new(StorageLayout::default(), http_client);
     installer
-        .install(&settings, token)
+        .install(&settings, kv_args.get("token").map(|s| s.to_string()))
         .await?;
 
     drop(guard);

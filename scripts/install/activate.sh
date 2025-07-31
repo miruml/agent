@@ -107,6 +107,26 @@ print_mqtt_broker_host() {
     debug "MQTT Broker Host: '$mqtt_broker_host'"
 }
 
+# Token
+token() {
+    token=$(default_value "" "$@")
+    for arg in "$@"; do
+        case $arg in
+        --token=*) token="${arg#*=}";;
+        esac
+    done
+    echo "$token"
+}
+
+print_token() {
+    token=$1
+    if [ -n "$token" ]; then
+        debug "Token provided"
+    else
+        debug "No token provided"
+    fi
+}
+
 ### COPIED ARGUMENT UTILITIES END ###
 
 # CLI args
@@ -125,6 +145,10 @@ fi
 MQTT_BROKER_HOST=$(mqtt_broker_host --default="" "$@")
 if [ "$DEBUG" = true ]; then
     print_mqtt_broker_host "$MQTT_BROKER_HOST"
+fi
+TOKEN=$(token --default="" "$@")
+if [ "$DEBUG" = true ]; then
+    print_token "$TOKEN"
 fi
 
 # Configuration
@@ -241,6 +265,9 @@ if [ -n "$BACKEND_BASE_URL" ]; then
 fi
 if [ -n "$MQTT_BROKER_HOST" ]; then
     args="$args --mqtt-broker-host=$MQTT_BROKER_HOST"
+fi
+if [ -n "$TOKEN" ]; then
+    args="$args --token=$TOKEN"
 fi
 
 # Execute the installer
