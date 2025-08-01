@@ -1,7 +1,7 @@
 // internal crates
-use config_agent::filesys::{dir::Dir, path::PathExt};
+use config_agent::filesys::{dir::Dir, file::File, path::PathExt};
 use config_agent::storage::settings::Settings;
-use config_agent::storage::{agent::Agent, layout::StorageLayout, setup::setup_storage};
+use config_agent::storage::{agent::Agent, layout::StorageLayout, setup::clean_storage_setup};
 
 pub mod setup_storage {
     use super::*;
@@ -39,15 +39,82 @@ pub mod setup_storage {
         assert!(config_instance_deployment_dir.exists());
     }
 
+    async fn create_temp_key_files(layout: &StorageLayout) -> (File, File) {
+        let temp_dir = layout.temp_dir();
+        let private_key_file = temp_dir.file("private_key.pem");
+        private_key_file.write_string("test", true, true).await.unwrap();
+        let public_key_file = temp_dir.file("public_key.pem");
+        public_key_file.write_string("test", true, true).await.unwrap();
+
+        (private_key_file, public_key_file)
+    }
+
+    #[tokio::test]
+    async fn src_public_key_file_doesnt_exist() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let layout = StorageLayout::new(dir);
+        let settings = Settings::default();
+
+        // create the public / private key files
+        let (private_key_file, public_key_file) = create_temp_key_files(&layout).await;
+        public_key_file.delete().await.unwrap();
+
+        // setup the storage
+        let agent= Agent::default();
+        clean_storage_setup(
+            &layout,
+            &agent,
+            &settings,
+            &private_key_file,
+            &public_key_file,
+        )
+        .await
+        .unwrap_err();
+    }
+
+    #[tokio::test]
+    async fn src_private_key_file_doesnt_exist() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let layout = StorageLayout::new(dir);
+        let settings = Settings::default();
+
+        // create the public / private key files
+        let (private_key_file, public_key_file) = create_temp_key_files(&layout).await;
+        private_key_file.delete().await.unwrap();
+
+        // setup the storage
+        let agent= Agent::default();
+        clean_storage_setup(
+            &layout,
+            &agent,
+            &settings,
+            &private_key_file,
+            &public_key_file,
+        )
+        .await
+        .unwrap_err();
+    }
+
     #[tokio::test]
     async fn clean_install() {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
         let layout = StorageLayout::new(dir);
         let settings = Settings::default();
 
+        // create the public / private key files
+        let (private_key_file, public_key_file) = create_temp_key_files(&layout).await;
+
         // setup the storage
         let agent = Agent::default();
-        setup_storage(&layout, &agent, &settings).await.unwrap();
+        clean_storage_setup(
+            &layout,
+            &agent,
+            &settings,
+            &private_key_file,
+            &public_key_file,
+        )
+        .await
+        .unwrap();
 
         // validate the storage
         validate_storage(&layout).await;
@@ -59,6 +126,9 @@ pub mod setup_storage {
         let layout = StorageLayout::new(dir);
         let settings = Settings::default();
 
+        // create the public / private key files
+        let (private_key_file, public_key_file) = create_temp_key_files(&layout).await;
+
         // create the agent file
         let agent_file = layout.agent_file();
         agent_file
@@ -68,7 +138,15 @@ pub mod setup_storage {
 
         // setup the storage
         let agent = Agent::default();
-        setup_storage(&layout, &agent, &settings).await.unwrap();
+        clean_storage_setup(
+            &layout,
+            &agent,
+            &settings,
+            &private_key_file,
+            &public_key_file,
+        )
+        .await
+        .unwrap();
 
         // validate the storage
         validate_storage(&layout).await;
@@ -79,6 +157,9 @@ pub mod setup_storage {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
         let layout = StorageLayout::new(dir);
 
+        // create the public / private key files
+        let (private_key_file, public_key_file) = create_temp_key_files(&layout).await;
+
         // create the auth directory
         let auth_dir = layout.auth_dir();
         auth_dir.root.create(false).await.unwrap();
@@ -86,7 +167,15 @@ pub mod setup_storage {
         // setup the storage
         let agent = Agent::default();
         let settings = Settings::default();
-        setup_storage(&layout, &agent, &settings).await.unwrap();
+        clean_storage_setup(
+            &layout,
+            &agent,
+            &settings,
+            &private_key_file,
+            &public_key_file,
+        )
+        .await
+        .unwrap();
 
         // validate the storage
         validate_storage(&layout).await;
@@ -97,18 +186,21 @@ pub mod setup_storage {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
         let layout = StorageLayout::new(dir);
 
-        // create the private key file
-        let auth_layout = layout.auth_dir();
-        let private_key_file = auth_layout.private_key_file();
-        private_key_file
-            .write_string("test", true, true)
-            .await
-            .unwrap();
+        // create the public / private key files
+        let (private_key_file, public_key_file) = create_temp_key_files(&layout).await;
 
         // setup the storage
         let agent = Agent::default();
         let settings = Settings::default();
-        setup_storage(&layout, &agent, &settings).await.unwrap();
+        clean_storage_setup(
+            &layout,
+            &agent,
+            &settings,
+            &private_key_file,
+            &public_key_file,
+        )
+        .await
+        .unwrap();
 
         // validate the storage
         validate_storage(&layout).await;
@@ -119,18 +211,21 @@ pub mod setup_storage {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
         let layout = StorageLayout::new(dir);
 
-        // create the public key file
-        let auth_layout = layout.auth_dir();
-        let public_key_file = auth_layout.public_key_file();
-        public_key_file
-            .write_string("test", true, true)
-            .await
-            .unwrap();
+        // create the public / private key files
+        let (private_key_file, public_key_file) = create_temp_key_files(&layout).await;
 
         // setup the storage
         let agent = Agent::default();
         let settings = Settings::default();
-        setup_storage(&layout, &agent, &settings).await.unwrap();
+        clean_storage_setup(
+            &layout,
+            &agent,
+            &settings,
+            &private_key_file,
+            &public_key_file,
+        )
+        .await
+        .unwrap();
 
         // validate the storage
         validate_storage(&layout).await;
@@ -142,6 +237,9 @@ pub mod setup_storage {
         let layout = StorageLayout::new(dir);
         let settings = Settings::default();
 
+        // create the public / private key files
+        let (private_key_file, public_key_file) = create_temp_key_files(&layout).await;
+
         // create the caches directory
         let caches_dir = layout.caches_dir();
         let subfile = caches_dir.file("test");
@@ -150,7 +248,15 @@ pub mod setup_storage {
 
         // setup the storage
         let agent = Agent::default();
-        setup_storage(&layout, &agent, &settings).await.unwrap();
+        clean_storage_setup(
+            &layout,
+            &agent,
+            &settings,
+            &private_key_file,
+            &public_key_file,
+        )
+        .await
+        .unwrap();
 
         // validate the storage
         validate_storage(&layout).await;
@@ -165,6 +271,9 @@ pub mod setup_storage {
         let layout = StorageLayout::new(dir);
         let settings = Settings::default();
 
+        // create the public / private key files
+        let (private_key_file, public_key_file) = create_temp_key_files(&layout).await;
+
         // create the config instance deployment directory
         let config_instance_deployment_dir = layout.config_instance_deployment_dir();
         let subfile = config_instance_deployment_dir.file("test");
@@ -173,7 +282,15 @@ pub mod setup_storage {
 
         // setup the storage
         let agent = Agent::default();
-        setup_storage(&layout, &agent, &settings).await.unwrap();
+        clean_storage_setup(
+            &layout,
+            &agent,
+            &settings,
+            &private_key_file,
+            &public_key_file,
+        )
+        .await
+        .unwrap();
 
         // validate the storage
         validate_storage(&layout).await;

@@ -9,7 +9,7 @@ use config_agent::logs::{init, LogOptions};
 use config_agent::storage::layout::StorageLayout;
 use config_agent::storage::settings;
 use config_agent::utils::{has_version_flag, version_info};
-use config_agent_installer::installer::Installer;
+use config_agent_installer::installer;
 use config_agent_installer::utils;
 
 // external crates
@@ -51,7 +51,6 @@ async fn install() -> Result<(), Box<dyn std::error::Error>> {
     let mut settings = settings::Settings::default();
 
     let args: Vec<String> = env::args().collect();
-    // Parse key-value arguments into HashMap
     let mut kv_args: HashMap<String, String> = HashMap::new();
     for arg in args.iter().skip(1) {
         if let Some((key, value)) = arg.split_once('=') {
@@ -68,11 +67,15 @@ async fn install() -> Result<(), Box<dyn std::error::Error>> {
         settings.mqtt_broker.host = mqtt_broker_host.to_string();
     }
 
-    // create and run the installer
+    // run the installation
     let http_client = HTTPClient::new(&settings.backend.base_url).await;
-    let mut installer = Installer::new(StorageLayout::default(), http_client);
-    installer
-        .install(&settings, kv_args.get("token").map(|s| s.to_string()))
+    let layout = StorageLayout::default();
+    installer::install(
+        &layout,
+        &http_client,
+        &settings,
+        kv_args.get("token").map(|s| s.to_string()),
+    )
         .await?;
 
     drop(guard);

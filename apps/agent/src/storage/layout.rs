@@ -20,6 +20,10 @@ impl StorageLayout {
         self.root.subdir("var").subdir("lib").subdir("miru")
     }
 
+    pub fn temp_dir(&self) -> Dir {
+        self.internal_dir().subdir("tmp")
+    }
+
     pub fn auth_dir(&self) -> AuthLayout {
         AuthLayout::new(self.internal_dir().subdir("auth"))
     }

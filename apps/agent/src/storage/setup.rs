@@ -1,20 +1,23 @@
 // internal crates
 use crate::auth::token::Token;
-use crate::crypt::rsa;
+use crate::filesys::file::File;
 use crate::storage::agent::Agent;
 use crate::storage::settings::Settings;
 use crate::storage::{
-    errors::{StorageCryptErr, StorageErr, StorageFileSysErr},
+    errors::*,
     layout::StorageLayout,
 };
 use crate::trace;
 
-pub async fn setup_storage(
+pub async fn clean_storage_setup(
     layout: &StorageLayout,
     agent: &Agent,
     settings: &Settings,
+    private_key_file: &File,
+    public_key_file: &File,
 ) -> Result<(), StorageErr> {
-    // create the agent file
+
+    // overwrite the agent file
     let agent_file = layout.agent_file();
     agent_file
         .write_json(&agent, true, true)
@@ -26,7 +29,7 @@ pub async fn setup_storage(
             }))
         })?;
 
-    // create the settings file
+    // overwrite the settings file
     let settings_file = layout.settings_file();
     settings_file
         .write_json(&settings, true, true)
@@ -47,8 +50,7 @@ pub async fn setup_storage(
         }))
     })?;
 
-    // initialize the auth file with invalid authentication so that the agent doesn't
-    // use old authentication by accident
+    // overwrite the auth file
     let token = Token::default();
     let auth_file = auth_dir.token_file();
     auth_file
@@ -61,19 +63,21 @@ pub async fn setup_storage(
             }))
         })?;
 
-    // generate the public and private keys
-    let private_key_file = auth_dir.private_key_file();
-    let public_key_file = auth_dir.public_key_file();
-    rsa::gen_key_pair(4096, &private_key_file, &public_key_file, true)
-        .await
-        .map_err(|e| {
-            StorageErr::CryptErr(Box::new(StorageCryptErr {
-                source: e,
-                trace: trace!(),
-            }))
-        })?;
+    // move the private and public keys to the auth directory
+    private_key_file.move_to(&auth_dir.private_key_file(), true).await.map_err(|e| {
+        StorageErr::FileSysErr(Box::new(StorageFileSysErr {
+            source: e,
+            trace: trace!(),
+        }))
+    })?;
+    public_key_file.move_to(&auth_dir.public_key_file(), true).await.map_err(|e| {
+        StorageErr::FileSysErr(Box::new(StorageFileSysErr {
+            source: e,
+            trace: trace!(),
+        }))
+    })?;
 
-    // recreate the config instance deployment directory (wipe old contents)
+    // wipe the config instance deployment directory
     let config_instance_deployment_dir = layout.config_instance_deployment_dir();
     config_instance_deployment_dir.delete().await.map_err(|e| {
         StorageErr::FileSysErr(Box::new(StorageFileSysErr {
@@ -92,7 +96,7 @@ pub async fn setup_storage(
             }))
         })?;
 
-    // delete any lingering cache files so that the agent doesn't use old cache content
+    // wipe the cache
     let caches_dir = layout.caches_dir();
     caches_dir.delete().await.map_err(|e| {
         StorageErr::FileSysErr(Box::new(StorageFileSysErr {
