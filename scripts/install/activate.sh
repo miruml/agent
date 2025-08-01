@@ -257,7 +257,11 @@ fi
 
 # Execute the installer
 cd "$DOWNLOAD_DIR"
-MIRU_ACTIVATION_TOKEN=$MIRU_ACTIVATION_TOKEN sudo -u miru ./config-agent-installer $args
+if [ -n "$MIRU_ACTIVATION_TOKEN" ]; then
+    sudo -u miru -E env MIRU_ACTIVATION_TOKEN="$MIRU_ACTIVATION_TOKEN" ./config-agent-installer $args
+else
+    sudo -u miru ./config-agent-installer $args
+fi
 cd -
 
 # Remove the downloaded files
