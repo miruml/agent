@@ -108,22 +108,11 @@ print_mqtt_broker_host() {
 }
 
 # Token
-token() {
-    token=$(default_value "" "$@")
-    for arg in "$@"; do
-        case $arg in
-        --token=*) token="${arg#*=}";;
-        esac
-    done
-    echo "$token"
-}
-
-print_token() {
-    token=$1
-    if [ -n "$token" ]; then
-        debug "Token provided"
+report_token_existence() {
+    if [ -n "$MIRU_ACTIVATION_TOKEN" ]; then
+        debug "Activation token provided"
     else
-        debug "No token provided"
+        debug "No activation token provided"
     fi
 }
 
@@ -150,9 +139,8 @@ MQTT_BROKER_HOST=$(mqtt_broker_host --default="" "$@")
 if [ "$DEBUG" = true ]; then
     print_mqtt_broker_host "$MQTT_BROKER_HOST"
 fi
-TOKEN=$(token --default="" "$@")
 if [ "$DEBUG" = true ]; then
-    print_token "$TOKEN"
+    report_token_existence
 fi
 
 # install the debian package
@@ -165,12 +153,11 @@ echo ""
 echo ""
 echo "Activating the Miru Agent"
 echo "========================="
-curl -fsSL https://raw.githubusercontent.com/miruml/agent/"$BRANCH"/scripts/install/activate.sh | sh -s -- \
+MIRU_ACTIVATION_TOKEN=$MIRU_ACTIVATION_TOKEN curl -fsSL https://raw.githubusercontent.com/miruml/agent/"$BRANCH"/scripts/install/activate.sh | sh -s -- \
 --debug="$DEBUG" \
 --git-branch="$BRANCH" \
 --prerelease="$PRERELEASE" \
 --backend-base-url="$BACKEND_BASE_URL" \
 --mqtt-broker-host="$MQTT_BROKER_HOST" \
---token="$TOKEN"
 
 exit 0

@@ -108,22 +108,11 @@ print_mqtt_broker_host() {
 }
 
 # Token
-token() {
-    token=$(default_value "" "$@")
-    for arg in "$@"; do
-        case $arg in
-        --token=*) token="${arg#*=}";;
-        esac
-    done
-    echo "$token"
-}
-
-print_token() {
-    token=$1
-    if [ -n "$token" ]; then
-        debug "Token provided"
+report_token_existence() {
+    if [ -n "$MIRU_ACTIVATION_TOKEN" ]; then
+        debug "Activation token provided"
     else
-        debug "No token provided"
+        debug "No activation token provided"
     fi
 }
 
@@ -146,9 +135,8 @@ MQTT_BROKER_HOST=$(mqtt_broker_host --default="" "$@")
 if [ "$DEBUG" = true ]; then
     print_mqtt_broker_host "$MQTT_BROKER_HOST"
 fi
-TOKEN=$(token --default="" "$@")
 if [ "$DEBUG" = true ]; then
-    print_token "$TOKEN"
+    report_token_existence
 fi
 
 # Configuration
@@ -266,13 +254,10 @@ fi
 if [ -n "$MQTT_BROKER_HOST" ]; then
     args="$args --mqtt-broker-host=$MQTT_BROKER_HOST"
 fi
-if [ -n "$TOKEN" ]; then
-    args="$args --token=$TOKEN"
-fi
 
 # Execute the installer
 cd "$DOWNLOAD_DIR"
-sudo -u miru ./config-agent-installer $args
+MIRU_ACTIVATION_TOKEN=$MIRU_ACTIVATION_TOKEN sudo -u miru ./config-agent-installer $args
 cd -
 
 # Remove the downloaded files

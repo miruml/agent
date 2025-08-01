@@ -74,7 +74,7 @@ async fn install() -> Result<(), Box<dyn std::error::Error>> {
         &layout,
         &http_client,
         &settings,
-        kv_args.get("token").map(|s| s.to_string()),
+        env::var("MIRU_ACTIVATION_TOKEN").ok(),
     )
         .await?;
 

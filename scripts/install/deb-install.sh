@@ -108,22 +108,11 @@ print_mqtt_broker_host() {
 }
 
 # Token
-token() {
-    token=$(default_value "" "$@")
-    for arg in "$@"; do
-        case $arg in
-        --token=*) token="${arg#*=}";;
-        esac
-    done
-    echo "$token"
-}
-
-print_token() {
-    token=$1
-    if [ -n "$token" ]; then
-        debug "Token provided"
+report_token_existence() {
+    if [ -n "$MIRU_ACTIVATION_TOKEN" ]; then
+        debug "Activation token provided"
     else
-        debug "No token provided"
+        debug "No activation token provided"
     fi
 }
 
