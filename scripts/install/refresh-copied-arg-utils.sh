@@ -55,3 +55,8 @@ INSTALL_SH="$INSTALL_DIR/install.sh"
 assert_file_exists "$INSTALL_SH"
 echo "Refreshing $INSTALL_SH"
 refresh_copied_args_utils "$INSTALL_SH"
+
+PROVISION_SH="$INSTALL_DIR/provision.sh"
+assert_file_exists "$PROVISION_SH"
+echo "Refreshing $PROVISION_SH"
+refresh_copied_args_utils "$PROVISION_SH"

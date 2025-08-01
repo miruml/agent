@@ -16,7 +16,8 @@ NC='[0m' # No Color
 debug() { echo "${BLUE}==>${NC} $1"; }
 log() { echo "${GREEN}==>${NC} $1"; }
 warn() { echo "${YELLOW}Warning:${NC} $1"; }
-error() { echo "${RED}Error:${NC} $1"; exit 1; }
+error() { echo "${RED}Error:${NC} $1"; }
+fatal() { echo "${RED}Error:${NC} $1"; exit 1; }
 
 ### COPIED DISPLAY UTILITIES END ###
 
@@ -77,7 +78,7 @@ print_prerelease_flag() {
 
 # Backend URL
 backend_base_url() {
-    backend_base_url=$(default_value "" "$@")
+    backend_base_url=$(default_value "https://configs.api.miruml.com/v1" "$@")
     for arg in "$@"; do
         case $arg in
         --backend-base-url=*) backend_base_url="${arg#*=}";;
@@ -142,6 +143,8 @@ fi
 if [ "$DEBUG" = true ]; then
     report_token_existence
 fi
+echo ""
+echo ""
 
 # install the debian package
 echo "Installing the Miru Agent"

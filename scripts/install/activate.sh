@@ -16,7 +16,8 @@ NC='[0m' # No Color
 debug() { echo "${BLUE}==>${NC} $1"; }
 log() { echo "${GREEN}==>${NC} $1"; }
 warn() { echo "${YELLOW}Warning:${NC} $1"; }
-error() { echo "${RED}Error:${NC} $1"; exit 1; }
+error() { echo "${RED}Error:${NC} $1"; }
+fatal() { echo "${RED}Error:${NC} $1"; exit 1; }
 
 ### COPIED DISPLAY UTILITIES END ###
 
@@ -77,7 +78,7 @@ print_prerelease_flag() {
 
 # Backend URL
 backend_base_url() {
-    backend_base_url=$(default_value "" "$@")
+    backend_base_url=$(default_value "https://configs.api.miruml.com/v1" "$@")
     for arg in "$@"; do
         case $arg in
         --backend-base-url=*) backend_base_url="${arg#*=}";;
@@ -172,7 +173,7 @@ verify_checksum() {
 
 # Check for required commands
 for cmd in curl tar grep cut; do
-    command_exists "$cmd" || error "$cmd is required but not installed."
+    command_exists "$cmd" || fatal "$cmd is required but not installed."
 done
 
 # Determine OS and architecture
@@ -183,27 +184,27 @@ ARCH=$(uname -m)
 if [ "$PRERELEASE" = true ]; then
     log "Fetching latest pre-release version..."
     VERSION=$(curl -sL "https://api.github.com/repos/${GITHUB_REPO}/releases" | 
-        jq -r '.[] | select(.prerelease==true) | .tag_name' | head -n 1) || error "Failed to fetch latest pre-release version"
+        jq -r '.[] | select(.prerelease==true) | .tag_name' | head -n 1) || fatal "Failed to fetch latest pre-release version"
 else
     log "Fetching latest stable version..."
     VERSION=$(curl -sL "https://api.github.com/repos/${GITHUB_REPO}/releases/latest" | 
-        grep "tag_name" | cut -d '"' -f 4) || error "Failed to fetch latest version"
+        grep "tag_name" | cut -d '"' -f 4) || fatal "Failed to fetch latest version"
 fi
 
-[ -z "$VERSION" ] && error "Could not determine latest version"
+[ -z "$VERSION" ] && fatal "Could not determine latest version"
 log "Latest version: ${VERSION}"
 
 # Convert architecture names
 case $ARCH in
     x86_64|amd64) ARCH="x86_64" ;;
     aarch64|arm64) ARCH="arm64" ;;
-    *) error "Unsupported architecture: $ARCH" ;;
+    *) fatal "Unsupported architecture: $ARCH" ;;
 esac
 
 # Set download URL based on OS
 case $OS in
     linux) OS="Linux" ;;
-    *) error "Unsupported operating system: $OS" ;;
+    *) fatal "Unsupported operating system: $OS" ;;
 esac
 
 VERSION_WO_V=$(echo "$VERSION" | cut -d 'v' -f 2)
@@ -225,7 +226,7 @@ download_with_progress() {
 # Download files
 log "Downloading Miru Agent Installer ${VERSION}..."
 download_with_progress "$URL" "$DOWNLOAD_DIR/${BINARY_NAME}.tar.gz" ||
-    error "Failed to download ${BINARY_NAME}"
+    fatal "Failed to download ${BINARY_NAME}"
 
 # Download and verify checksum if available
 if curl -fsSL "$CHECKSUM_URL" -o "$DOWNLOAD_DIR/checksums.txt" 2>/dev/null; then
@@ -233,7 +234,7 @@ if curl -fsSL "$CHECKSUM_URL" -o "$DOWNLOAD_DIR/checksums.txt" 2>/dev/null; then
     EXPECTED_CHECKSUM=$(grep "${BINARY_NAME}_${OS}_${ARCH}.tar.gz" "$DOWNLOAD_DIR/checksums.txt" | cut -d ' ' -f 1)
     if [ -n "$EXPECTED_CHECKSUM" ]; then
         verify_checksum "$DOWNLOAD_DIR/${BINARY_NAME}.tar.gz" "$EXPECTED_CHECKSUM" ||
-            error "Checksum verification failed"
+            fatal "Checksum verification failed"
     else
         warn "Checksum not found in checksums.txt"
     fi
@@ -244,7 +245,7 @@ fi
 # Extract archive
 log "Extracting..."
 tar -xzf "$DOWNLOAD_DIR/${BINARY_NAME}.tar.gz" -C "$DOWNLOAD_DIR" || 
-    error "Failed to extract archive"
+    fatal "Failed to extract archive"
 
 # Collect the arguments
 args=""
