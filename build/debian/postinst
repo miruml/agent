@@ -40,31 +40,7 @@ create_miru_directories() {
   fi
 }
 
-clean_install() {
-    socket_name="$1"
-    printf "\033[32m Post Install of an clean install\033[0m\n"
-
-    # create the miru user and group
-    create_miru_user
-    create_miru_group
-    create_miru_directories
-
-    # enable the socket
-    printf "\033[32m Enable the socket\033[0m\n"
-    systemctl enable "${socket_name}"
-
-    # reload the unit from disk 
-    printf "\033[32m Reload the service unit from disk\033[0m\n"
-    systemctl daemon-reload
-
-    # socket installation
-    printf "\033[32m Set the enabled flag for the socket unit\033[0m\n"
-    systemctl enable "${socket_name}"
-    printf "\033[32m Restart the socket\033[0m\n"
-    systemctl restart "${socket_name}"
-}
-
-upgrade() {
+post_install() {
     socket_name="$1"
     printf "\033[32m Post Install of an upgrade\033[0m\n"
 
@@ -105,11 +81,12 @@ fi
 
 case "$action" in
   "install")
-    clean_install ${socket_name}
+    printf "\033[32m Post Install of an clean install\033[0m\n"
+    post_install ${socket_name}
     ;;
   "upgrade")
     printf "\033[32m Post Install of an upgrade\033[0m\n"
-    upgrade ${socket_name}
+    post_install ${socket_name}
     ;;
 esac
 
