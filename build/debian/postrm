@@ -1,13 +1,16 @@
 #!/bin/sh
 
-remove() {
-    # reload the systemd daemon
+reload_systemd() {
     printf "\033[32m Reloading the systemd daemon\033[0m\n"
     systemctl daemon-reload
+}
 
+remove() {
     # stop the systemd services
     printf "\033[32m Stopping the miru socket\033[0m\n"
     deb-systemd-invoke stop miru.socket
+    printf "\033[32m Stopping the miru service\033[0m\n"
+    deb-systemd-invoke stop miru.service
 
     # disable the systemd services
     printf "\033[32m Disabling the miru service\033[0m\n"
@@ -19,11 +22,7 @@ remove() {
 purge() {
     remove
 
-    # reload the systemd daemon
-    printf "\033[32m Reloading the systemd daemon\033[0m\n"
-    systemctl daemon-reload
-
-    # disable the systemd services
+    # purge the systemd services
     printf "\033[32m Purging the miru service\033[0m\n"
     deb-systemd-helper purge miru.service
     printf "\033[32m Purging the miru socket\033[0m\n"
@@ -38,30 +37,27 @@ purge() {
     rm -rf /srv/miru
 }
 
-upgrade() {
-    printf "\033[32m Post Remove of an upgrade\033[0m\n"
-}
-
 echo "$@"
 
 action="$1"
+
+reload_systemd
 
 case "$action" in
   "0" | "remove")
     printf "\033[32m Post Remove of a normal remove\033[0m\n"
     remove
     ;;
-  "1" | "upgrade")
-    upgrade
-    ;;
-  "purge")
+  "1" | "purge")
     printf "\033[32m Post Remove purge\033[0m\n"
     purge
     ;;
   *)
-    printf "\033[32m Alpine\033[0m"
+    printf "\033[32m Post Remove of an unknown action\033[0m\n"
     remove
     ;;
 esac
+
+reload_systemd
 
 exit 0
