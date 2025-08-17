@@ -36,6 +36,7 @@ pub async fn install<HTTPClientT: DevicesExt>(
     http_client: &HTTPClientT,
     settings: &settings::Settings,
     token: Option<String>,
+    device_name: Option<&str>,
 ) -> Result<(), InstallerErr> {
 
     // generate new public and private keys in a temporary directory which will be the
@@ -53,7 +54,12 @@ pub async fn install<HTTPClientT: DevicesExt>(
         })?;
 
     // activate the device
-    let device_id = activate_device(http_client, &public_key_file, token).await?;
+    let device_id = activate_device(
+        http_client,
+        &public_key_file,
+        token,
+        device_name,
+    ).await?;
 
     // setup a clean storage layout with the new authentication & device id
     clean_storage_setup(
@@ -89,6 +95,7 @@ pub async fn activate_device<HTTPClientT: DevicesExt>(
     http_client: &HTTPClientT,
     public_key_file: &File,
     provided_token: Option<String>,
+    device_name: Option<&str>,
 ) -> Result<DeviceID, InstallerErr> {
     let mut attempt = 0;
 
@@ -118,6 +125,7 @@ pub async fn activate_device<HTTPClientT: DevicesExt>(
             public_key_file,
             &token,
             &device_id,
+            device_name,
         ).await;
         match result {
             Ok(_) => {
@@ -180,6 +188,7 @@ pub async fn request_activation<HTTPClientT: DevicesExt>(
     public_key_file: &File,
     token: &str,
     device_id: &str,
+    device_name: Option<&str>,
 ) -> Result<(), InstallerErr> {
     utils::print_title(title);
 
