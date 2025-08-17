@@ -12,7 +12,7 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct OverrideList {
+pub struct ScopeList {
     #[serde(rename = "object")]
     pub object: Object,
     /// The total number of items in the list. By default the total count is not returned. The total count must be expanded (using expand[]=total_count) to get the total number of items in the list.
@@ -28,19 +28,19 @@ pub struct OverrideList {
     #[serde(rename = "has_more")]
     pub has_more: bool,
     #[serde(rename = "data")]
-    pub data: Vec<models::Override>,
+    pub data: Vec<models::Scope>,
 }
 
-impl OverrideList {
+impl ScopeList {
     pub fn new(
         object: Object,
         total_count: i64,
         limit: i32,
         offset: i32,
         has_more: bool,
-        data: Vec<models::Override>,
-    ) -> OverrideList {
-        OverrideList {
+        data: Vec<models::Scope>,
+    ) -> ScopeList {
+        ScopeList {
             object,
             total_count,
             limit,

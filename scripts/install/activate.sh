@@ -77,19 +77,19 @@ print_prerelease_flag() {
 }
 
 # Backend URL
-backend_base_url() {
-    backend_base_url=$(default_value "https://configs.api.miruml.com/v1" "$@")
+backend_host() {
+    backend_host=$(default_value "https://configs.api.miruml.com" "$@")
     for arg in "$@"; do
         case $arg in
-        --backend-base-url=*) backend_base_url="${arg#*=}";;
+        --backend-host=*) backend_host="${arg#*=}";;
         esac
     done
-    echo "$backend_base_url"
+    echo "$backend_host"
 }
 
-print_backend_base_url() {
-    backend_base_url=$1
-    debug "Backend Base URL: '$backend_base_url'"
+print_backend_host() {
+    backend_host=$1
+    debug "Backend Host: '$backend_host'"
 }
 
 # MQTT Broker Host
@@ -106,6 +106,22 @@ mqtt_broker_host() {
 print_mqtt_broker_host() {
     mqtt_broker_host=$1
     debug "MQTT Broker Host: '$mqtt_broker_host'"
+}
+
+device_name() {
+    default_device_name=$(hostname)
+    device_name=$(default_value "$default_device_name" "$@")
+    for arg in "$@"; do
+        case $arg in
+        --device-name=*) device_name="${arg#*=}";;
+        esac
+    done
+    echo "$device_name"
+}
+
+print_device_name() {
+    device_name=$1
+    debug "Device Name: '$device_name'"
 }
 
 # Token
@@ -128,9 +144,9 @@ PRERELEASE=$(prerelease_flag --default=false "$@")
 if [ "$DEBUG" = true ]; then
     print_prerelease_flag "$PRERELEASE"
 fi
-BACKEND_BASE_URL=$(backend_base_url --default="" "$@")
+BACKEND_HOST=$(backend_host --default="" "$@")
 if [ "$DEBUG" = true ]; then
-    print_backend_base_url "$BACKEND_BASE_URL"
+    print_backend_host "$BACKEND_HOST"
 fi
 MQTT_BROKER_HOST=$(mqtt_broker_host --default="" "$@")
 if [ "$DEBUG" = true ]; then
@@ -138,6 +154,10 @@ if [ "$DEBUG" = true ]; then
 fi
 if [ "$DEBUG" = true ]; then
     report_token_existence
+fi
+DEVICE_NAME=$(device_name --default="" "$@")
+if [ "$DEBUG" = true ]; then
+    print_device_name "$DEVICE_NAME"
 fi
 
 # Configuration
@@ -249,11 +269,14 @@ tar -xzf "$DOWNLOAD_DIR/${BINARY_NAME}.tar.gz" -C "$DOWNLOAD_DIR" ||
 
 # Collect the arguments
 args=""
-if [ -n "$BACKEND_BASE_URL" ]; then
-    args="$args --backend-base-url=$BACKEND_BASE_URL"
+if [ -n "$BACKEND_HOST" ]; then
+    args="$args --backend-host=$BACKEND_HOST"
 fi
 if [ -n "$MQTT_BROKER_HOST" ]; then
     args="$args --mqtt-broker-host=$MQTT_BROKER_HOST"
+fi
+if [ -n "$DEVICE_NAME" ]; then
+    args="$args --device-name=$DEVICE_NAME"
 fi
 
 # Execute the installer

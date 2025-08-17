@@ -18,7 +18,7 @@ pub struct OverrideList {
     /// The total number of items in the list. By default the total count is not returned. The total count must be expanded (using expand[]=total_count) to get the total number of items in the list.
     #[serde(rename = "total_count")]
     pub total_count: i64,
-    /// The number of items to return. A limit of 15 with an offset of 0 returns items 1-15.
+    /// The maximum number of items to return. A limit of 15 with an offset of 0 returns items 1-15.
     #[serde(rename = "limit")]
     pub limit: i32,
     /// The offset of the items to return. An offset of 10 with a limit of 10 returns items 11-20.

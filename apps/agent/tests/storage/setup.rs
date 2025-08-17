@@ -42,9 +42,15 @@ pub mod setup_storage {
     async fn create_temp_key_files(layout: &StorageLayout) -> (File, File) {
         let temp_dir = layout.temp_dir();
         let private_key_file = temp_dir.file("private_key.pem");
-        private_key_file.write_string("test", true, true).await.unwrap();
+        private_key_file
+            .write_string("test", true, true)
+            .await
+            .unwrap();
         let public_key_file = temp_dir.file("public_key.pem");
-        public_key_file.write_string("test", true, true).await.unwrap();
+        public_key_file
+            .write_string("test", true, true)
+            .await
+            .unwrap();
 
         (private_key_file, public_key_file)
     }
@@ -60,7 +66,7 @@ pub mod setup_storage {
         public_key_file.delete().await.unwrap();
 
         // setup the storage
-        let agent= Agent::default();
+        let agent = Agent::default();
         clean_storage_setup(
             &layout,
             &agent,
@@ -83,7 +89,7 @@ pub mod setup_storage {
         private_key_file.delete().await.unwrap();
 
         // setup the storage
-        let agent= Agent::default();
+        let agent = Agent::default();
         clean_storage_setup(
             &layout,
             &agent,

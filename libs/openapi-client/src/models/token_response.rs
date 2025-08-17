@@ -15,7 +15,7 @@ pub struct TokenResponse {
     /// The token
     #[serde(rename = "token")]
     pub token: String,
-    /// The expiration
+    /// The expiration date and time of the token
     #[serde(rename = "expires_at")]
     pub expires_at: String,
 }

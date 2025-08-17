@@ -26,6 +26,7 @@ Name | Type | Description | Notes
 **config_schema** | Option<[**models::ConfigSchema**](ConfigSchema.md)> | Expand the config schema using 'expand[]=config_schema' in the query string | 
 **config_type** | Option<[**models::ConfigType**](ConfigType.md)> | Expand the config type using 'expand[]=config_type' in the query string | 
 **content** | Option<[**serde_json::Value**](.md)> | The configuration values associated with the config instance | 
+**validation** | Option<[**models::ConfigInstanceValidation**](ConfigInstanceValidation.md)> |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

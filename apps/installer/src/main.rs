@@ -60,8 +60,8 @@ async fn install() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // set optional settings
-    if let Some(backend_url) = kv_args.get("backend-base-url") {
-        settings.backend.base_url = backend_url.to_string();
+    if let Some(backend_host) = kv_args.get("backend-host") {
+        settings.backend.base_url = format!("{}/agent/v1", backend_host);
     }
     if let Some(mqtt_broker_host) = kv_args.get("mqtt-broker-host") {
         settings.mqtt_broker.host = mqtt_broker_host.to_string();
@@ -75,8 +75,9 @@ async fn install() -> Result<(), Box<dyn std::error::Error>> {
         &http_client,
         &settings,
         env::var("MIRU_ACTIVATION_TOKEN").ok(),
+        kv_args.get("device-name").map(|name| name.to_string()),
     )
-        .await?;
+    .await?;
 
     drop(guard);
 

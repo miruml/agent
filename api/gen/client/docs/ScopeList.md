@@ -1,4 +1,4 @@
-# OverrideList
+# ScopeList
 
 ## Properties
 
@@ -9,7 +9,7 @@ Name | Type | Description | Notes
 **limit** | **i32** | The maximum number of items to return. A limit of 15 with an offset of 0 returns items 1-15. | [default to 10]
 **offset** | **i32** | The offset of the items to return. An offset of 10 with a limit of 10 returns items 11-20. | [default to 0]
 **has_more** | **bool** | True if there are more items in the list to return. False if there are no more items to return. | 
-**data** | [**Vec<models::Override>**](Override.md) |  | 
+**data** | [**Vec<models::Scope>**](Scope.md) |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

@@ -1,11 +1,12 @@
-# TokenResponse
+# Scope
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**token** | **String** | The token | 
-**expires_at** | **String** | The expiration date and time of the token | 
+**object** | **String** |  | 
+**slug** | **String** | ID of the scope | 
+**description** | **String** | Description of the scope | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

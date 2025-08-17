@@ -77,19 +77,19 @@ print_prerelease_flag() {
 }
 
 # Backend URL
-backend_base_url() {
-    backend_base_url=$(default_value "https://configs.api.miruml.com/v1" "$@")
+backend_host() {
+    backend_host=$(default_value "https://configs.api.miruml.com" "$@")
     for arg in "$@"; do
         case $arg in
-        --backend-base-url=*) backend_base_url="${arg#*=}";;
+        --backend-host=*) backend_host="${arg#*=}";;
         esac
     done
-    echo "$backend_base_url"
+    echo "$backend_host"
 }
 
-print_backend_base_url() {
-    backend_base_url=$1
-    debug "Backend Base URL: '$backend_base_url'"
+print_backend_host() {
+    backend_host=$1
+    debug "Backend Host: '$backend_host'"
 }
 
 # MQTT Broker Host
@@ -106,6 +106,22 @@ mqtt_broker_host() {
 print_mqtt_broker_host() {
     mqtt_broker_host=$1
     debug "MQTT Broker Host: '$mqtt_broker_host'"
+}
+
+device_name() {
+    default_device_name=$(hostname)
+    device_name=$(default_value "$default_device_name" "$@")
+    for arg in "$@"; do
+        case $arg in
+        --device-name=*) device_name="${arg#*=}";;
+        esac
+    done
+    echo "$device_name"
+}
+
+print_device_name() {
+    device_name=$1
+    debug "Device Name: '$device_name'"
 }
 
 # Token

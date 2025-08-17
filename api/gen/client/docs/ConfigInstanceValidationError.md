@@ -1,11 +1,11 @@
-# TokenResponse
+# ConfigInstanceValidationError
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**token** | **String** | The token | 
-**expires_at** | **String** | The expiration date and time of the token | 
+**parameter_path** | **Vec<String>** |  | 
+**message** | **String** |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

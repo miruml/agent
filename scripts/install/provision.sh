@@ -78,19 +78,19 @@ print_prerelease_flag() {
 }
 
 # Backend URL
-backend_base_url() {
-    backend_base_url=$(default_value "https://configs.api.miruml.com/v1" "$@")
+backend_host() {
+    backend_host=$(default_value "https://configs.api.miruml.com" "$@")
     for arg in "$@"; do
         case $arg in
-        --backend-base-url=*) backend_base_url="${arg#*=}";;
+        --backend-host=*) backend_host="${arg#*=}";;
         esac
     done
-    echo "$backend_base_url"
+    echo "$backend_host"
 }
 
-print_backend_base_url() {
-    backend_base_url=$1
-    debug "Backend Base URL: '$backend_base_url'"
+print_backend_host() {
+    backend_host=$1
+    debug "Backend Host: '$backend_host'"
 }
 
 # MQTT Broker Host
@@ -107,6 +107,22 @@ mqtt_broker_host() {
 print_mqtt_broker_host() {
     mqtt_broker_host=$1
     debug "MQTT Broker Host: '$mqtt_broker_host'"
+}
+
+device_name() {
+    default_device_name=$(hostname)
+    device_name=$(default_value "$default_device_name" "$@")
+    for arg in "$@"; do
+        case $arg in
+        --device-name=*) device_name="${arg#*=}";;
+        esac
+    done
+    echo "$device_name"
+}
+
+print_device_name() {
+    device_name=$1
+    debug "Device Name: '$device_name'"
 }
 
 # Token
@@ -127,17 +143,6 @@ if [ -z "$MIRU_API_KEY" ]; then
     exit 1
 fi
 
-device_name() {
-    default_device_name=$(hostname)
-    device_name=$(default_value "$default_device_name" "$@")
-    for arg in "$@"; do
-        case $arg in
-        --device-name=*) device_name="${arg#*=}";;
-        esac
-    done
-    echo "$device_name"
-}
-
 install_script_file() {
     install_script_file=$(default_value "install.sh" "$@")
     for arg in "$@"; do
@@ -148,16 +153,15 @@ install_script_file() {
     echo "$install_script_file"
 }
 
-BACKEND_BASE_URL=$(backend_base_url "$@")
+BACKEND_HOST=$(backend_host "$@")
 DEVICE_NAME=$(device_name "$@")
 
 # create the device
 echo "Provisioning Device"
 echo "==================="
 
-log "Creating device: $DEVICE_NAME"
 response_body=$(curl --request POST \
-  --url $BACKEND_BASE_URL/devices \
+  --url "$BACKEND_HOST"/v1/devices \
   --header 'Content-Type: application/json' \
   --header "X-API-Key: $MIRU_API_KEY" \
   --data "{
@@ -172,22 +176,40 @@ response_body=$(echo "$response_body" | head -n -1)
 
 # Check if the request succeeded
 if [ "$http_code" -eq 200 ] || [ "$http_code" -eq 201 ]; then
-    log "Device creation request succeeded (HTTP $http_code)"
+    log "Created device '$DEVICE_NAME'"
     device="$response_body"
+elif [ "$http_code" -eq 409 ]; then
+    log "Device '$DEVICE_NAME' already exists"
+    # Search for the device by name
+    response_body=$(curl --request GET \
+    --url "$BACKEND_HOST"/v1/devices?name="$DEVICE_NAME" \
+    --header "X-API-Key: $MIRU_API_KEY" \
+    --write-out "\n%{http_code}" \
+    --silent)
+
+    http_code=$(echo "$response_body" | tail -n1)
+    response_body=$(echo "$response_body" | head -n -1)
+
+    # check there is only one device
+    if [ "$(echo "$response_body" | jq -r '.data | length')" -ne 1 ]; then
+        error "Expected exactly one device with name '$DEVICE_NAME'. Instead got:"
+        fatal "$response_body"
+    fi
+
+    # Extract the first device from the array since the endpoint returns a list
+    device=$(echo "$response_body" | jq -r '.data[0]')
 else
-    error "Device creation failed with HTTP status: $http_code"
+    error "Device creation failed (HTTP status $http_code)"
     error "Response body:"
     fatal "$response_body"
 fi
 
-device_id=$(echo $device | jq -r '.id')
-device_name=$(echo $device | jq -r '.name')
-log "Successfully created device: $device_name"
+device_id=$(echo "$device" | jq -r '.id')
+device_name=$(echo "$device" | jq -r '.name')
 
-# fetch the activation token
-log "Fetching activation token"
+log "Creating activation token for device '$device_name'"
 response_body=$(curl --request POST \
-  --url $BACKEND_BASE_URL/devices/$device_id/activation_token \
+  --url "$BACKEND_HOST"/v1/devices/"$device_id"/activation_token \
   --header "X-API-Key: $MIRU_API_KEY" \
   --write-out "\n%{http_code}" \
   --silent)
@@ -198,17 +220,25 @@ response_body=$(echo "$response_body" | head -n -1)
 
 # Check if the request succeeded
 if [ "$http_code" -eq 200 ] || [ "$http_code" -eq 201 ]; then
-    log "Successfully fetched activation token (HTTP status: $http_code)"
+    log "Successfully created activation token"
     activation_token=$(echo "$response_body" | jq -r '.token')
 else
-    error "Activation token request failed with HTTP status: $http_code"
+    error "Activation token request failed (HTTP status $http_code)"
     error "Response body:"
     fatal "$response_body"
 fi
 
-GIT_BRANCH=$(git_branch "$@")
+BRANCH=$(git_branch "$@")
 INSTALL_SCRIPT_FILE=$(install_script_file "$@")
+DEBUG=$(debug_flag "$@")
+PRERELEASE=$(prerelease_flag "$@")
 
 # install the agent onto the device
 export MIRU_ACTIVATION_TOKEN=$activation_token
-curl -fsSL https://raw.githubusercontent.com/miruml/agent/"$GIT_BRANCH"/scripts/install/"$INSTALL_SCRIPT_FILE" | sh
+curl -fsSL https://raw.githubusercontent.com/miruml/agent/"$BRANCH"/scripts/install/"$INSTALL_SCRIPT_FILE" | sh -s -- \
+--debug="$DEBUG" \
+--git-branch="$BRANCH" \
+--prerelease="$PRERELEASE" \
+--backend-host="$BACKEND_HOST" \
+--device-name="$DEVICE_NAME"
+

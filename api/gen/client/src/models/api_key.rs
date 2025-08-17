@@ -37,10 +37,12 @@ pub struct ApiKey {
     pub created_by: Option<Box<models::User>>,
     #[serde(rename = "updated_by", deserialize_with = "Option::deserialize")]
     pub updated_by: Option<Box<models::User>>,
+    #[serde(rename = "scopes", deserialize_with = "Option::deserialize")]
+    pub scopes: Option<Box<models::ScopeList>>,
 }
 
 impl ApiKey {
-    pub fn new(object: Object, id: String, name: String, created_at: String, updated_at: String, created_by_id: String, updated_by_id: String, created_by: Option<models::User>, updated_by: Option<models::User>) -> ApiKey {
+    pub fn new(object: Object, id: String, name: String, created_at: String, updated_at: String, created_by_id: String, updated_by_id: String, created_by: Option<models::User>, updated_by: Option<models::User>, scopes: Option<models::ScopeList>) -> ApiKey {
         ApiKey {
             object,
             id,
@@ -51,6 +53,7 @@ impl ApiKey {
             updated_by_id,
             created_by: if let Some(x) = created_by {Some(Box::new(x))} else {None},
             updated_by: if let Some(x) = updated_by {Some(Box::new(x))} else {None},
+            scopes: if let Some(x) = scopes {Some(Box::new(x))} else {None},
         }
     }
 }

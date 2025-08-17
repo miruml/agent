@@ -77,19 +77,19 @@ print_prerelease_flag() {
 }
 
 # Backend URL
-backend_base_url() {
-    backend_base_url=$(default_value "https://configs.api.miruml.com/v1" "$@")
+backend_host() {
+    backend_host=$(default_value "https://configs.api.miruml.com" "$@")
     for arg in "$@"; do
         case $arg in
-        --backend-base-url=*) backend_base_url="${arg#*=}";;
+        --backend-host=*) backend_host="${arg#*=}";;
         esac
     done
-    echo "$backend_base_url"
+    echo "$backend_host"
 }
 
-print_backend_base_url() {
-    backend_base_url=$1
-    debug "Backend Base URL: '$backend_base_url'"
+print_backend_host() {
+    backend_host=$1
+    debug "Backend Host: '$backend_host'"
 }
 
 # MQTT Broker Host
@@ -106,6 +106,22 @@ mqtt_broker_host() {
 print_mqtt_broker_host() {
     mqtt_broker_host=$1
     debug "MQTT Broker Host: '$mqtt_broker_host'"
+}
+
+device_name() {
+    default_device_name=$(hostname)
+    device_name=$(default_value "$default_device_name" "$@")
+    for arg in "$@"; do
+        case $arg in
+        --device-name=*) device_name="${arg#*=}";;
+        esac
+    done
+    echo "$device_name"
+}
+
+print_device_name() {
+    device_name=$1
+    debug "Device Name: '$device_name'"
 }
 
 # Token
@@ -132,21 +148,27 @@ PRERELEASE=$(prerelease_flag --default=true "$@")
 if [ "$DEBUG" = true ]; then
     print_prerelease_flag "$PRERELEASE"
 fi
-BACKEND_BASE_URL=$(backend_base_url --default="https://configs.dev.api.miruml.com/agent/v1" "$@")
+BACKEND_HOST=$(backend_host --default="https://configs.dev.api.miruml.com" "$@")
 if [ "$DEBUG" = true ]; then
-    print_backend_base_url "$BACKEND_BASE_URL"
+    print_backend_host "$BACKEND_HOST"
 fi
 MQTT_BROKER_HOST=$(mqtt_broker_host --default="dev.mqtt.miruml.com" "$@")
 if [ "$DEBUG" = true ]; then
     print_mqtt_broker_host "$MQTT_BROKER_HOST"
 fi
+DEVICE_NAME=$(device_name --default="" "$@")
+if [ "$DEBUG" = true ]; then
+    print_device_name "$DEVICE_NAME"
+fi
 if [ "$DEBUG" = true ]; then
     report_token_existence
 fi
+
 
 MIRU_ACTIVATION_TOKEN=$MIRU_ACTIVATION_TOKEN curl -fsSL https://raw.githubusercontent.com/miruml/agent/"$BRANCH"/scripts/install/install.sh | sh -s -- \
 --debug="$DEBUG" \
 --git-branch="$BRANCH" \
 --prerelease="$PRERELEASE" \
---backend-base-url="$BACKEND_BASE_URL" \
+--backend-host="$BACKEND_HOST" \
 --mqtt-broker-host="$MQTT_BROKER_HOST" \
+--device-name="$DEVICE_NAME"

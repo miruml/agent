@@ -67,10 +67,12 @@ pub struct ConfigInstance {
     /// The configuration values associated with the config instance
     #[serde(rename = "content", deserialize_with = "Option::deserialize")]
     pub content: Option<serde_json::Value>,
+    #[serde(rename = "validation", deserialize_with = "Option::deserialize")]
+    pub validation: Option<Box<models::ConfigInstanceValidation>>,
 }
 
 impl ConfigInstance {
-    pub fn new(object: Object, id: String, target_status: models::ConfigInstanceTargetStatus, activity_status: models::ConfigInstanceActivityStatus, error_status: models::ConfigInstanceErrorStatus, status: models::ConfigInstanceStatus, relative_filepath: String, created_at: String, updated_at: String, device_id: String, config_schema_id: String, config_type_id: String, created_by_id: String, updated_by_id: String, patch_id: Option<String>, created_by: Option<models::Principal>, updated_by: Option<models::Principal>, patch: Option<models::Patch>, device: Option<models::Device>, config_schema: Option<models::ConfigSchema>, config_type: Option<models::ConfigType>, content: Option<serde_json::Value>) -> ConfigInstance {
+    pub fn new(object: Object, id: String, target_status: models::ConfigInstanceTargetStatus, activity_status: models::ConfigInstanceActivityStatus, error_status: models::ConfigInstanceErrorStatus, status: models::ConfigInstanceStatus, relative_filepath: String, created_at: String, updated_at: String, device_id: String, config_schema_id: String, config_type_id: String, created_by_id: String, updated_by_id: String, patch_id: Option<String>, created_by: Option<models::Principal>, updated_by: Option<models::Principal>, patch: Option<models::Patch>, device: Option<models::Device>, config_schema: Option<models::ConfigSchema>, config_type: Option<models::ConfigType>, content: Option<serde_json::Value>, validation: Option<models::ConfigInstanceValidation>) -> ConfigInstance {
         ConfigInstance {
             object,
             id,
@@ -94,6 +96,7 @@ impl ConfigInstance {
             config_schema: if let Some(x) = config_schema {Some(Box::new(x))} else {None},
             config_type: if let Some(x) = config_type {Some(Box::new(x))} else {None},
             content,
+            validation: if let Some(x) = validation {Some(Box::new(x))} else {None},
         }
     }
 }
