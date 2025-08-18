@@ -17,11 +17,11 @@ pub mod build_get_request {
     use super::*;
 
     #[tokio::test]
-    #[serial_test::serial(example_dot_com)]
-    async fn get_example_dot_com() {
+    #[serial_test::serial(httpbin_org)]
+    async fn get_httpbin_org() {
         let http_client = HTTPClient::new("doesntmatter").await;
         let request = http_client
-            .build_get_request("https://example.com/", Duration::from_secs(1), None)
+            .build_get_request("https://httpbin.org/get", Duration::from_secs(1), None)
             .unwrap();
         let result = http_client.send(request.0, &request.1).await.unwrap();
         assert!(result.status().is_success());
@@ -71,11 +71,11 @@ pub mod send {
         use super::*;
 
         #[tokio::test]
-        #[serial_test::serial(example_dot_com)]
-        async fn get_example_dot_com() {
+        #[serial_test::serial(httpbin_org)]
+        async fn get_httpbin_org() {
             let http_client = HTTPClient::new("doesntmatter").await;
             let request = http_client
-                .build_get_request("https://example.com/", Duration::from_secs(1), None)
+                .build_get_request("https://httpbin.org/get", Duration::from_secs(1), None)
                 .unwrap();
             let result = http_client.send(request.0, &request.1).await.unwrap();
             assert!(result.status().is_success());
@@ -118,7 +118,7 @@ pub mod send_cached {
         #[serial_test::serial(example_dot_com)]
         async fn sequential_cache_hit() {
             let http_client = HTTPClient::new("doesntmatter").await;
-            let url = "https://example.com/";
+            let url = "https://httpbin.org/get";
 
             // send the first request
             let start = Instant::now();
@@ -155,7 +155,7 @@ pub mod send_cached {
         #[serial_test::serial(example_dot_com)]
         async fn concurrent_cache_hit() {
             let http_client = Arc::new(HTTPClient::new("doesntmatter").await);
-            let url = "https://example.com/";
+            let url = "https://httpbin.org/get";
 
             let start = Instant::now();
             let mut handles = Vec::new();
@@ -229,9 +229,9 @@ pub mod send_cached {
         }
 
         #[tokio::test]
-        #[serial_test::serial(example_dot_com)]
+        #[serial_test::serial(httpbin_org)]
         async fn cache_expired() {
-            let url = "https://example.com/";
+            let url = "https://httpbin.org/get";
             let http_client = HTTPClient::new_with(
                 url,
                 Duration::from_secs(1),
@@ -286,11 +286,11 @@ pub mod send_cached {
         }
 
         #[tokio::test]
-        #[serial_test::serial(example_dot_com)]
+        #[serial_test::serial(httpbin_org)]
         async fn timeout_error() {
             let http_client = HTTPClient::new("doesntmatter").await;
             let request = http_client
-                .build_get_request("https://example.com/", Duration::from_millis(1), None)
+                .build_get_request("https://httpbin.org/get", Duration::from_millis(1), None)
                 .unwrap();
             let result = http_client
                 .send_cached("test".to_string(), request.0, &request.1)
@@ -310,7 +310,7 @@ pub mod handle_response {
         let http_client = HTTPClient::new("doesntmatter").await;
         let request = http_client
             .build_get_request(
-                "https://example.com/this-page-should-not-exist",
+                "https://httpbin.org/get/this-page-should-not-exist",
                 Duration::from_secs(1),
                 None,
             )
