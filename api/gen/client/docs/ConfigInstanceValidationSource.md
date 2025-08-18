@@ -1,12 +1,11 @@
-# DeviceStatus
+# ConfigInstanceValidationSource
 
 ## Enum Variants
 
 | Name | Value |
 |---- | -----|
-| DEVICE_STATUS_INACTIVE | inactive |
-| DEVICE_STATUS_STAGED | staged |
-| DEVICE_STATUS_ACTIVATED | activated |
+| CONFIG_INSTANCE_VALIDATION_SOURCE_MIRU | miru |
+| CONFIG_INSTANCE_VALIDATION_SOURCE_USER | user |
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

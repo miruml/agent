@@ -13,6 +13,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ActivateDeviceRequest {
+    #[serde(rename = "name", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
+    pub name: Option<Option<String>>,
     /// The public key in PEM format
     #[serde(rename = "public_key_pem")]
     pub public_key_pem: String,
@@ -21,6 +23,7 @@ pub struct ActivateDeviceRequest {
 impl ActivateDeviceRequest {
     pub fn new(public_key_pem: String) -> ActivateDeviceRequest {
         ActivateDeviceRequest {
+            name: None,
             public_key_pem,
         }
     }

@@ -75,9 +75,9 @@ async fn install() -> Result<(), Box<dyn std::error::Error>> {
         &http_client,
         &settings,
         env::var("MIRU_ACTIVATION_TOKEN").ok(),
-        kv_args.get("device-name").map(|name| name.as_str()),
+        kv_args.get("device-name").map(|name| name.to_string()),
     )
-        .await?;
+    .await?;
 
     drop(guard);
 

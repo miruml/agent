@@ -13,6 +13,7 @@ Name | Type | Description | Notes
 **updated_by_id** | **String** | ID of the user who last updated the API key | 
 **created_by** | Option<[**models::User**](User.md)> |  | 
 **updated_by** | Option<[**models::User**](User.md)> |  | 
+**scopes** | Option<[**models::ScopeList**](ScopeList.md)> |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

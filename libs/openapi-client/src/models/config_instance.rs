@@ -67,6 +67,8 @@ pub struct ConfigInstance {
     /// The configuration values associated with the config instance
     #[serde(rename = "content", deserialize_with = "Option::deserialize")]
     pub content: Option<serde_json::Value>,
+    #[serde(rename = "validation", deserialize_with = "Option::deserialize")]
+    pub validation: Option<Box<models::ConfigInstanceValidation>>,
 }
 
 impl ConfigInstance {
@@ -93,6 +95,7 @@ impl ConfigInstance {
         config_schema: Option<models::ConfigSchema>,
         config_type: Option<models::ConfigType>,
         content: Option<serde_json::Value>,
+        validation: Option<models::ConfigInstanceValidation>,
     ) -> ConfigInstance {
         ConfigInstance {
             object,
@@ -117,6 +120,7 @@ impl ConfigInstance {
             config_schema: config_schema.map(Box::new),
             config_type: config_type.map(Box::new),
             content,
+            validation: validation.map(Box::new),
         }
     }
 }

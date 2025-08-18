@@ -11,10 +11,7 @@ use config_agent::crypt::{jwt, rsa};
 use config_agent::filesys::file::File;
 use config_agent::http::devices::DevicesExt;
 use config_agent::storage::{
-    agent::Agent,
-    layout::StorageLayout,
-    settings,
-    setup::clean_storage_setup,
+    agent::Agent, layout::StorageLayout, settings, setup::clean_storage_setup,
 };
 use config_agent::trace;
 use openapi_client::models::ActivateDeviceRequest;
@@ -36,9 +33,8 @@ pub async fn install<HTTPClientT: DevicesExt>(
     http_client: &HTTPClientT,
     settings: &settings::Settings,
     token: Option<String>,
-    device_name: Option<&str>,
+    device_name: Option<String>,
 ) -> Result<(), InstallerErr> {
-
     // generate new public and private keys in a temporary directory which will be the
     // device's new authentication if the activation is successful
     let temp_dir = layout.temp_dir();
@@ -54,12 +50,7 @@ pub async fn install<HTTPClientT: DevicesExt>(
         })?;
 
     // activate the device
-    let device_id = activate_device(
-        http_client,
-        &public_key_file,
-        token,
-        device_name,
-    ).await?;
+    let device_id = activate_device(http_client, &public_key_file, token, device_name).await?;
 
     // setup a clean storage layout with the new authentication & device id
     clean_storage_setup(
@@ -72,13 +63,13 @@ pub async fn install<HTTPClientT: DevicesExt>(
         &private_key_file,
         &public_key_file,
     )
-        .await
-        .map_err(|e| {
-            InstallerErr::StorageErr(InstallerStorageErr {
-                source: e,
-                trace: trace!(),
-            })
-        })?;
+    .await
+    .map_err(|e| {
+        InstallerErr::StorageErr(InstallerStorageErr {
+            source: e,
+            trace: trace!(),
+        })
+    })?;
 
     // delete the temporary directory
     temp_dir.delete().await.map_err(|e| {
@@ -95,7 +86,7 @@ pub async fn activate_device<HTTPClientT: DevicesExt>(
     http_client: &HTTPClientT,
     public_key_file: &File,
     provided_token: Option<String>,
-    device_name: Option<&str>,
+    device_name: Option<String>,
 ) -> Result<DeviceID, InstallerErr> {
     let mut attempt = 0;
 
@@ -125,8 +116,9 @@ pub async fn activate_device<HTTPClientT: DevicesExt>(
             public_key_file,
             &token,
             &device_id,
-            device_name,
-        ).await;
+            device_name.clone(),
+        )
+        .await;
         match result {
             Ok(_) => {
                 return Ok(device_id);
@@ -135,8 +127,7 @@ pub async fn activate_device<HTTPClientT: DevicesExt>(
             Err(e) => {
                 error!("Activation Error: {:?}", e);
                 utils::print_err_msg(Some(e.to_string()));
-                let retry =
-                    utils::confirm("Would you like to retry the activation process?")?;
+                let retry = utils::confirm("Would you like to retry the activation process?")?;
                 utils::clear_terminal();
                 if !retry {
                     return Err(e);
@@ -146,9 +137,7 @@ pub async fn activate_device<HTTPClientT: DevicesExt>(
     }
 }
 
-pub fn prompt_for_jwt(
-    title: &str,
-) -> Result<String, InstallerErr> {
+pub fn prompt_for_jwt(title: &str) -> Result<String, InstallerErr> {
     utils::clear_terminal();
     utils::print_title(title);
     println!(
@@ -188,7 +177,7 @@ pub async fn request_activation<HTTPClientT: DevicesExt>(
     public_key_file: &File,
     token: &str,
     device_id: &str,
-    device_name: Option<&str>,
+    device_name: Option<String>,
 ) -> Result<(), InstallerErr> {
     utils::print_title(title);
 
@@ -210,7 +199,10 @@ pub async fn request_activation<HTTPClientT: DevicesExt>(
             trace: trace!(),
         })
     })?;
-    let payload = ActivateDeviceRequest { public_key_pem };
+    let payload = ActivateDeviceRequest { 
+        public_key_pem,
+        name: Some(device_name),
+    };
     let device = http_client
         .activate_device(device_id, &payload, token)
         .await

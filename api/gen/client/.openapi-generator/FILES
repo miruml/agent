@@ -19,6 +19,9 @@ docs/ConfigInstanceOrderBy.md
 docs/ConfigInstanceSearch.md
 docs/ConfigInstanceStatus.md
 docs/ConfigInstanceTargetStatus.md
+docs/ConfigInstanceValidation.md
+docs/ConfigInstanceValidationError.md
+docs/ConfigInstanceValidationSource.md
 docs/ConfigInstancesApi.md
 docs/ConfigSchema.md
 docs/ConfigSchemaExpand.md
@@ -56,6 +59,8 @@ docs/PatchCommentList.md
 docs/Principal.md
 docs/PrincipalType.md
 docs/SchemaDigestResponse.md
+docs/Scope.md
+docs/ScopeList.md
 docs/SyncDevice.md
 docs/Tag.md
 docs/TagList.md
@@ -90,6 +95,9 @@ src/models/config_instance_order_by.rs
 src/models/config_instance_search.rs
 src/models/config_instance_status.rs
 src/models/config_instance_target_status.rs
+src/models/config_instance_validation.rs
+src/models/config_instance_validation_error.rs
+src/models/config_instance_validation_source.rs
 src/models/config_schema.rs
 src/models/config_schema_expand.rs
 src/models/config_schema_git_commit.rs
@@ -123,6 +131,8 @@ src/models/patch_comment_list.rs
 src/models/principal.rs
 src/models/principal_type.rs
 src/models/schema_digest_response.rs
+src/models/scope.rs
+src/models/scope_list.rs
 src/models/sync_device.rs
 src/models/tag.rs
 src/models/tag_list.rs

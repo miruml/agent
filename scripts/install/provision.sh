@@ -179,8 +179,6 @@ response_body=$(echo "$response_body" | head -n -1)
 if [ "$http_code" -eq 200 ] || [ "$http_code" -eq 201 ]; then
     log "Device creation request succeeded (HTTP $http_code)"
     device="$response_body"
-elif [ "$http_code" -eq 409 ]; then
-    log "Device '$DEVICE_NAME' already exists"
 else
     error "Device creation failed with HTTP status: $http_code"
     error "Response body:"

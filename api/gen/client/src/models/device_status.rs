@@ -11,16 +11,16 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-/// DeviceStatus : The status of the device - Inactive: The miru agent has not yet been installed / authenticated - Activated: The miru agent has been installed and authenticated - Provisioned: The device has been optionally initialized with config instances 
-/// The status of the device - Inactive: The miru agent has not yet been installed / authenticated - Activated: The miru agent has been installed and authenticated - Provisioned: The device has been optionally initialized with config instances 
+/// DeviceStatus : The status of the device - Inactive: The miru agent has not yet been installed / authenticated - Staged: The device has been staged for activation - Activated: The miru agent has been installed and authenticated 
+/// The status of the device - Inactive: The miru agent has not yet been installed / authenticated - Staged: The device has been staged for activation - Activated: The miru agent has been installed and authenticated 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum DeviceStatus {
     #[serde(rename = "inactive")]
     DEVICE_STATUS_INACTIVE,
+    #[serde(rename = "staged")]
+    DEVICE_STATUS_STAGED,
     #[serde(rename = "activated")]
     DEVICE_STATUS_ACTIVATED,
-    #[serde(rename = "provisioned")]
-    DEVICE_STATUS_PROVISIONED,
 
 }
 
@@ -28,8 +28,8 @@ impl std::fmt::Display for DeviceStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Self::DEVICE_STATUS_INACTIVE => write!(f, "inactive"),
+            Self::DEVICE_STATUS_STAGED => write!(f, "staged"),
             Self::DEVICE_STATUS_ACTIVATED => write!(f, "activated"),
-            Self::DEVICE_STATUS_PROVISIONED => write!(f, "provisioned"),
         }
     }
 }

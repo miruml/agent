@@ -37,6 +37,8 @@ pub struct ApiKey {
     pub created_by: Option<Box<models::User>>,
     #[serde(rename = "updated_by", deserialize_with = "Option::deserialize")]
     pub updated_by: Option<Box<models::User>>,
+    #[serde(rename = "scopes", deserialize_with = "Option::deserialize")]
+    pub scopes: Option<Box<models::ScopeList>>,
 }
 
 impl ApiKey {
@@ -50,6 +52,7 @@ impl ApiKey {
         updated_by_id: String,
         created_by: Option<models::User>,
         updated_by: Option<models::User>,
+        scopes: Option<models::ScopeList>,
     ) -> ApiKey {
         ApiKey {
             object,
@@ -61,6 +64,7 @@ impl ApiKey {
             updated_by_id,
             created_by: created_by.map(Box::new),
             updated_by: updated_by.map(Box::new),
+            scopes: scopes.map(Box::new),
         }
     }
 }
