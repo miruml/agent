@@ -14,6 +14,7 @@ NC='\033[0m' # No Color
 debug() { echo "${BLUE}==>${NC} $1"; }
 log() { echo "${GREEN}==>${NC} $1"; }
 warn() { echo "${YELLOW}Warning:${NC} $1"; }
-error() { echo "${RED}Error:${NC} $1"; exit 1; }
+error() { echo "${RED}Error:${NC} $1"; }
+fatal() { echo "${RED}Error:${NC} $1"; exit 1; }
 
 ### COPIED DISPLAY UTILITIES END ###

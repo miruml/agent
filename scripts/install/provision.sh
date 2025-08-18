@@ -109,6 +109,22 @@ print_mqtt_broker_host() {
     debug "MQTT Broker Host: '$mqtt_broker_host'"
 }
 
+device_name() {
+    default_device_name=$(hostname)
+    device_name=$(default_value "$default_device_name" "$@")
+    for arg in "$@"; do
+        case $arg in
+        --device-name=*) device_name="${arg#*=}";;
+        esac
+    done
+    echo "$device_name"
+}
+
+print_device_name() {
+    device_name=$1
+    debug "Device Name: '$device_name'"
+}
+
 # Token
 report_token_existence() {
     if [ -n "$MIRU_ACTIVATION_TOKEN" ]; then
@@ -126,17 +142,6 @@ if [ -z "$MIRU_API_KEY" ]; then
     echo "MIRU_API_KEY is not set"
     exit 1
 fi
-
-device_name() {
-    default_device_name=$(hostname)
-    device_name=$(default_value "$default_device_name" "$@")
-    for arg in "$@"; do
-        case $arg in
-        --device-name=*) device_name="${arg#*=}";;
-        esac
-    done
-    echo "$device_name"
-}
 
 install_script_file() {
     install_script_file=$(default_value "install.sh" "$@")
@@ -174,6 +179,8 @@ response_body=$(echo "$response_body" | head -n -1)
 if [ "$http_code" -eq 200 ] || [ "$http_code" -eq 201 ]; then
     log "Device creation request succeeded (HTTP $http_code)"
     device="$response_body"
+elif [ "$http_code" -eq 409 ]; then
+    log "Device '$DEVICE_NAME' already exists"
 else
     error "Device creation failed with HTTP status: $http_code"
     error "Response body:"

@@ -108,6 +108,22 @@ print_mqtt_broker_host() {
     debug "MQTT Broker Host: '$mqtt_broker_host'"
 }
 
+device_name() {
+    default_device_name=$(hostname)
+    device_name=$(default_value "$default_device_name" "$@")
+    for arg in "$@"; do
+        case $arg in
+        --device-name=*) device_name="${arg#*=}";;
+        esac
+    done
+    echo "$device_name"
+}
+
+print_device_name() {
+    device_name=$1
+    debug "Device Name: '$device_name'"
+}
+
 # Token
 report_token_existence() {
     if [ -n "$MIRU_ACTIVATION_TOKEN" ]; then
@@ -143,6 +159,10 @@ fi
 if [ "$DEBUG" = true ]; then
     report_token_existence
 fi
+DEVICE_NAME=$(device_name --default="" "$@")
+if [ "$DEBUG" = true ]; then
+    print_device_name "$DEVICE_NAME"
+fi
 echo ""
 echo ""
 
@@ -162,5 +182,6 @@ MIRU_ACTIVATION_TOKEN=$MIRU_ACTIVATION_TOKEN curl -fsSL https://raw.githubuserco
 --prerelease="$PRERELEASE" \
 --backend-base-url="$BACKEND_BASE_URL" \
 --mqtt-broker-host="$MQTT_BROKER_HOST" \
+--device-name="$DEVICE_NAME" \
 
 exit 0
