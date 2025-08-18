@@ -111,7 +111,6 @@ pub async fn activate_device<HTTPClientT: DevicesExt>(
 
         // request the activation from the server
         let result = request_activation(
-            "Miru Agent Activation",
             http_client,
             public_key_file,
             &token,
@@ -172,14 +171,12 @@ pub fn prompt_for_jwt(title: &str) -> Result<String, InstallerErr> {
 }
 
 pub async fn request_activation<HTTPClientT: DevicesExt>(
-    title: &str,
     http_client: &HTTPClientT,
     public_key_file: &File,
     token: &str,
     device_id: &str,
     device_name: Option<String>,
 ) -> Result<(), InstallerErr> {
-    utils::print_title(title);
 
     // progress bar
     let pb = ProgressBar::new_spinner();
