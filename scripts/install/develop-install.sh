@@ -156,9 +156,14 @@ MQTT_BROKER_HOST=$(mqtt_broker_host --default="dev.mqtt.miruml.com" "$@")
 if [ "$DEBUG" = true ]; then
     print_mqtt_broker_host "$MQTT_BROKER_HOST"
 fi
+DEVICE_NAME=$(device_name --default="" "$@")
+if [ "$DEBUG" = true ]; then
+    print_device_name "$DEVICE_NAME"
+fi
 if [ "$DEBUG" = true ]; then
     report_token_existence
 fi
+
 
 MIRU_ACTIVATION_TOKEN=$MIRU_ACTIVATION_TOKEN curl -fsSL https://raw.githubusercontent.com/miruml/agent/"$BRANCH"/scripts/install/install.sh | sh -s -- \
 --debug="$DEBUG" \
@@ -166,3 +171,4 @@ MIRU_ACTIVATION_TOKEN=$MIRU_ACTIVATION_TOKEN curl -fsSL https://raw.githubuserco
 --prerelease="$PRERELEASE" \
 --backend-base-url="$BACKEND_BASE_URL" \
 --mqtt-broker-host="$MQTT_BROKER_HOST" \
+--device-name="$DEVICE_NAME"
