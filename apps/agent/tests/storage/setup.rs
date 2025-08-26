@@ -1,7 +1,7 @@
 // internal crates
 use config_agent::filesys::{dir::Dir, file::File, path::PathExt};
 use config_agent::storage::settings::Settings;
-use config_agent::storage::{agent::Agent, layout::StorageLayout, setup::clean_storage_setup};
+use config_agent::storage::{device::Agent, layout::StorageLayout, setup::clean_storage_setup};
 
 pub mod setup_storage {
     use super::*;

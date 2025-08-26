@@ -2,9 +2,13 @@
 use std::sync::Arc;
 
 // internal crates
-use crate::auth::{errors::*, token::Token};
+use crate::auth::{errors::*, token, token::Token};
 use crate::crypt::{base64, rsa};
-use crate::filesys::{cached_file::CachedFile, file::File, path::PathExt};
+use crate::filesys::{
+    cached_file::SingleThreadCachedFile,
+    file::File,
+    path::PathExt,
+};
 use crate::http::{client::HTTPClient, devices::DevicesExt};
 use crate::trace;
 use openapi_client::models::{IssueDeviceClaims, IssueDeviceTokenRequest};
@@ -18,7 +22,7 @@ use tokio::task::JoinHandle;
 use tracing::{error, info};
 use uuid::Uuid;
 
-pub type TokenFile = CachedFile<Token>;
+pub type TokenFile = SingleThreadCachedFile<Token, token::Updates>;
 
 #[derive(Serialize)]
 struct IssueTokenClaim {
@@ -39,7 +43,7 @@ pub trait TokenManagerExt {
 pub struct SingleThreadTokenManager<HTTPClientT: DevicesExt> {
     device_id: String,
     http_client: Arc<HTTPClientT>,
-    token_file: CachedFile<Token>,
+    token_file: TokenFile,
     private_key_file: File,
 }
 
@@ -47,7 +51,7 @@ impl<HTTPClientT: DevicesExt> SingleThreadTokenManager<HTTPClientT> {
     pub fn new(
         device_id: String,
         http_client: Arc<HTTPClientT>,
-        token_file: CachedFile<Token>,
+        token_file: TokenFile,
         private_key_file: File,
     ) -> Result<Self, AuthErr> {
         token_file.file.assert_exists().map_err(|e| {
@@ -72,7 +76,7 @@ impl<HTTPClientT: DevicesExt> SingleThreadTokenManager<HTTPClientT> {
 
     async fn get_token(&self) -> Arc<Token> {
         // get the token
-        self.token_file.read()
+        self.token_file.read().await
     }
 
     async fn refresh_token(&mut self) -> Result<(), AuthErr> {
@@ -200,8 +204,8 @@ impl<HTTPClientT: DevicesExt> Worker<HTTPClientT> {
         while let Some(cmd) = self.receiver.recv().await {
             match cmd {
                 WorkerCommand::Shutdown { respond_to } => {
-                    if let Err(e) = respond_to.send(Ok(())) {
-                        error!("Actor failed to send shutdown response: {:?}", e);
+                    if respond_to.send(Ok(())).is_err() {
+                        error!("Actor failed to send shutdown response");
                     }
                     break;
                 }
@@ -211,8 +215,8 @@ impl<HTTPClientT: DevicesExt> Worker<HTTPClientT> {
                 }
                 WorkerCommand::RefreshToken { respond_to } => {
                     let result = self.token_mngr.refresh_token().await;
-                    if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to refresh token: {:?}", e);
+                    if respond_to.send(result).is_err() {
+                        error!("Actor failed to refresh token");
                     }
                 }
             }
@@ -230,7 +234,7 @@ impl TokenManager {
         buffer_size: usize,
         device_id: String,
         http_client: Arc<HTTPClient>,
-        token_file: CachedFile<Token>,
+        token_file: TokenFile,
         private_key_file: File,
     ) -> Result<(Self, JoinHandle<()>), AuthErr> {
         let (sender, receiver) = mpsc::channel(buffer_size);

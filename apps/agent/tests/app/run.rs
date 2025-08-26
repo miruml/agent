@@ -6,7 +6,7 @@ use config_agent::app::options::{AppOptions, LifecycleOptions, StorageOptions};
 use config_agent::app::run::run;
 use config_agent::filesys::{dir::Dir, file::File};
 use config_agent::server::serve::ServerOptions;
-use config_agent::storage::agent::Agent;
+use config_agent::storage::device::Agent;
 use config_agent::storage::layout::StorageLayout;
 
 // external crates

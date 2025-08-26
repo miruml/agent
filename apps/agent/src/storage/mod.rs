@@ -1,7 +1,7 @@
-pub mod agent;
 pub mod caches;
 pub mod config_instances;
 pub mod config_schemas;
+pub mod device;
 pub mod digests;
 pub mod errors;
 pub mod layout;

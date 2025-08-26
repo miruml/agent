@@ -46,7 +46,7 @@ impl fmt::Display for ServerCacheErr {
 
 #[derive(Debug)]
 pub struct MissingDeviceIDErr {
-    pub agent_file_err: FileSysErr,
+    pub device_file_err: FileSysErr,
     pub jwt_err: CryptErr,
     pub trace: Box<Trace>,
 }
@@ -71,7 +71,7 @@ impl MiruError for MissingDeviceIDErr {
 
 impl fmt::Display for MissingDeviceIDErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "unable to determine device id from the agent file or the token on file: agent file error: {}, jwt error: {}", self.agent_file_err, self.jwt_err)
+        write!(f, "unable to determine device id from the device file or the token on file: device file error: {}, jwt error: {}", self.device_file_err, self.jwt_err)
     }
 }
 

@@ -51,3 +51,7 @@ impl Default for CooldownOptions {
         }
     }
 }
+
+pub trait Mergeable<UpdatesT> {
+    fn merge(&mut self, updates: UpdatesT);
+}

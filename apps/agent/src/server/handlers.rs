@@ -3,7 +3,7 @@ use std::sync::Arc;
 // internal crates
 use crate::auth::token_mngr::TokenManagerExt;
 use crate::errors::MiruError;
-use crate::server::errors::{ServerAuthErr, ServerErr, ServerServiceErr};
+use crate::server::errors::*;
 use crate::server::state::ServerState;
 use crate::services::config_instances::{read_deployed, read_deployed::ReadDeployedArgs};
 use crate::services::config_schemas::{hash, hash::HashSchemaArgsI};
@@ -80,8 +80,15 @@ pub async fn read_deployed_config_instance(
             }))
         })?;
 
+        let device = state.device_file.read().await.map_err(|e| {
+            ServerErr::FileSysErr(Box::new(ServerFileSysErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
+
         let args = ReadDeployedArgs {
-            device_id: state.device_id.clone(),
+            device_id: device.id.clone(),
             config_type_slug: query.config_type_slug,
             config_schema_digest: query.config_schema_digest,
         };

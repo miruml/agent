@@ -6,16 +6,17 @@ use std::sync::Arc;
 use crate::activity::ActivityTracker;
 use crate::auth::{
     token::Token,
-    token_mngr::{TokenManager, TokenManagerExt},
+    token_mngr::{TokenManager, TokenManagerExt, TokenFile},
 };
 use crate::crypt::jwt;
 use crate::deploy::fsm;
-use crate::filesys::{cached_file::CachedFile, file::File, path::PathExt};
+use crate::filesys::path::PathExt;
 use crate::http::client::HTTPClient;
+use crate::models::device;
 use crate::server::errors::*;
 use crate::storage::{
-    agent::Agent,
     caches::{CacheCapacities, Caches},
+    device::DeviceFile,
     layout::StorageLayout,
 };
 use crate::sync::syncer::{Syncer, SyncerArgs, SyncerExt};
@@ -26,7 +27,7 @@ pub type DeviceID = String;
 
 #[derive(Clone, Debug)]
 pub struct AppState {
-    pub device_id: String,
+    pub device_file: Arc<DeviceFile>,
     pub http_client: Arc<HTTPClient>,
     pub syncer: Arc<Syncer>,
     pub caches: Arc<Caches>,
@@ -50,8 +51,26 @@ impl AppState {
                 trace: trace!(),
             }))
         })?;
-        let agent_file = layout.agent_file();
-        let token_file = CachedFile::new_with_default(auth_dir.token_file(), Token::default())
+        let (device_file, device_file_handle) = DeviceFile::spawn(64, layout.device_file())
+        .await
+        .map_err(|e| {
+            ServerErr::FileSysErr(Box::new(ServerFileSysErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
+        // always set the device to be offline on boot
+        device_file.patch(device::Updates {
+            status: Some(device::DeviceStatus::Offline),
+            ..device::Updates::empty()
+        }).await.map_err(|e| {
+            ServerErr::FileSysErr(Box::new(ServerFileSysErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
+        let device_file = Arc::new(device_file);
+        let token_file = TokenFile::new_with_default(auth_dir.token_file(), Token::default())
             .await
             .map_err(|e| {
                 ServerErr::FileSysErr(Box::new(ServerFileSysErr {
@@ -61,7 +80,7 @@ impl AppState {
             })?;
 
         // get the device id
-        let device_id = Self::init_device_id(&agent_file, &token_file).await?;
+        let device_id = Self::init_device_id(&device_file, &token_file).await?;
 
         // initialize the caches
         let (caches, caches_shutdown_handle) =
@@ -119,14 +138,16 @@ impl AppState {
         let activity_tracker = Arc::new(ActivityTracker::new());
 
         let shutdown_handle = async move {
-            let handles = vec![token_mngr_handle, syncer_handle];
+            let handles = vec![
+                token_mngr_handle, syncer_handle, device_file_handle,
+            ];
 
             futures::future::join(futures::future::join_all(handles), caches_shutdown_handle).await;
         };
 
         Ok((
             AppState {
-                device_id,
+                device_file,
                 http_client,
                 syncer,
                 caches,
@@ -138,25 +159,25 @@ impl AppState {
     }
 
     async fn init_device_id(
-        agent_file: &File,
-        token_file: &CachedFile<Token>,
+        device_file: &DeviceFile,
+        token_file: &TokenFile,
     ) -> Result<DeviceID, ServerErr> {
         // attempt to get the device id from the agent file
-        let agent_file_err = match agent_file.read_json::<Agent>().await {
-            Ok(agent) => {
-                return Ok(agent.device_id);
+        let device_file_err = match device_file.read().await {
+            Ok(device) => {
+                return Ok(device.id.clone());
             }
             Err(e) => e,
         };
 
         // attempt to get the device id from the existing token on file
-        let token = token_file.read();
+        let token = token_file.read().await;
         let device_id = match jwt::extract_device_id(&token.token) {
             Ok(device_id) => device_id,
             Err(e) => {
                 return Err(ServerErr::MissingDeviceIDErr(Box::new(
                     MissingDeviceIDErr {
-                        agent_file_err,
+                        device_file_err,
                         jwt_err: e,
                         trace: trace!(),
                     },
@@ -168,6 +189,23 @@ impl AppState {
     }
 
     pub async fn shutdown(&self) -> Result<(), ServerErr> {
+        // shutdown the device file
+        self.device_file.patch(device::Updates {
+            status: Some(device::DeviceStatus::Offline),
+            ..device::Updates::empty()
+        }).await.map_err(|e| {
+            ServerErr::FileSysErr(Box::new(ServerFileSysErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
+        self.device_file.shutdown().await.map_err(|e| {
+            ServerErr::FileSysErr(Box::new(ServerFileSysErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
+
         // shutdown the syncer
         self.syncer.shutdown().await.map_err(|e| {
             ServerErr::SyncErr(Box::new(ServerSyncErr {
