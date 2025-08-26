@@ -31,14 +31,12 @@ pub struct TagType {
     pub created_by: Option<Box<models::Principal>>,
     #[serde(rename = "updated_by", deserialize_with = "Option::deserialize")]
     pub updated_by: Option<Box<models::Principal>>,
-    #[serde(rename = "schema", deserialize_with = "Option::deserialize")]
-    pub schema: Option<serde_json::Value>,
     #[serde(rename = "tags", deserialize_with = "Option::deserialize")]
     pub tags: Option<Box<models::TagList>>,
 }
 
 impl TagType {
-    pub fn new(object: Object, id: String, name: String, created_at: String, updated_at: String, created_by_id: String, updated_by_id: String, created_by: Option<models::Principal>, updated_by: Option<models::Principal>, schema: Option<serde_json::Value>, tags: Option<models::TagList>) -> TagType {
+    pub fn new(object: Object, id: String, name: String, created_at: String, updated_at: String, created_by_id: String, updated_by_id: String, created_by: Option<models::Principal>, updated_by: Option<models::Principal>, tags: Option<models::TagList>) -> TagType {
         TagType {
             object,
             id,
@@ -49,7 +47,6 @@ impl TagType {
             updated_by_id,
             created_by: if let Some(x) = created_by {Some(Box::new(x))} else {None},
             updated_by: if let Some(x) = updated_by {Some(Box::new(x))} else {None},
-            schema,
             tags: if let Some(x) = tags {Some(Box::new(x))} else {None},
         }
     }

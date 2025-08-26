@@ -4,6 +4,7 @@ use std::time::{Duration, Instant};
 // internal crates
 use config_agent::crud::prelude::*;
 use config_agent::crypt::sha256;
+use config_agent::errors::MiruError;
 use config_agent::filesys::dir::Dir;
 use config_agent::http::client::HTTPClient;
 use config_agent::http::errors::{HTTPErr, MockErr};
@@ -19,8 +20,6 @@ use crate::http::mock::MockConfigSchemasClient;
 use serde_json::json;
 
 pub mod errors {
-    use config_agent::errors::MiruError;
-
     use super::*;
 
     #[tokio::test]
@@ -63,8 +62,6 @@ pub mod errors {
 }
 
 pub mod success {
-    use config_agent::filesys::dir::Dir;
-
     use super::*;
 
     #[tokio::test]

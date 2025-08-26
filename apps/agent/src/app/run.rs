@@ -10,7 +10,7 @@ use crate::app::{
     options::{AppOptions, LifecycleOptions},
     state::AppState,
 };
-use crate::auth::token_mngr::{TokenManager, TokenManagerExt};
+use crate::authn::token_mngr::{TokenManager, TokenManagerExt};
 use crate::http::client::HTTPClient;
 use crate::server::{errors::*, serve::serve, state::ServerState};
 use crate::trace;
@@ -193,14 +193,14 @@ async fn init_token_refresh_worker(
 
 async fn refresh_if_expired(token_mngr: &TokenManager) -> Result<(), ServerErr> {
     let token = token_mngr.get_token().await.map_err(|e| {
-        ServerErr::AuthErr(Box::new(ServerAuthErr {
+        ServerErr::AuthnErr(Box::new(ServerAuthnErr {
             source: e,
             trace: trace!(),
         }))
     })?;
     if token.is_expired() {
         token_mngr.refresh_token().await.map_err(|e| {
-            ServerErr::AuthErr(Box::new(ServerAuthErr {
+            ServerErr::AuthnErr(Box::new(ServerAuthnErr {
                 source: e,
                 trace: trace!(),
             }))
@@ -217,16 +217,16 @@ async fn init_backend_sync_worker(
 ) -> Result<(), ServerErr> {
     info!("Initializing backend sync worker...");
 
-    let device_id = app_state.device_id.clone();
     let token_mngr = app_state.token_mngr.clone();
     let syncer = app_state.syncer.clone();
+    let device_file = app_state.device_file.clone();
 
     let backend_sync_handle = tokio::spawn(async move {
         run_backend_sync_worker(
-            device_id.as_ref(),
             &options,
             token_mngr.as_ref(),
             syncer.as_ref(),
+            device_file.as_ref(),
             Box::pin(async move {
                 let _ = shutdown_rx.recv().await;
             }),
@@ -247,7 +247,7 @@ async fn init_socket_server(
 
     // run the axum server with graceful shutdown
     let server_state = ServerState::new(
-        app_state.device_id.clone(),
+        app_state.device_file.clone(),
         app_state.http_client.clone(),
         app_state.syncer.clone(),
         app_state.caches.clone(),

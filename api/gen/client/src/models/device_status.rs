@@ -11,8 +11,8 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-/// DeviceStatus : The status of the device - Inactive: The miru agent has not yet been installed / authenticated - Staged: The device has been staged for activation - Activated: The miru agent has been installed and authenticated 
-/// The status of the device - Inactive: The miru agent has not yet been installed / authenticated - Staged: The device has been staged for activation - Activated: The miru agent has been installed and authenticated 
+/// DeviceStatus : The status of the device - Inactive: The miru agent has not yet been installed / authenticated - Staged: The device has been staged for activation - Activated: The miru agent has been installed and authenticated - Online: The miru agent is connected - Offline: The miru agent is disconnected (e.g. network issues, device is powered off, etc.) 
+/// The status of the device - Inactive: The miru agent has not yet been installed / authenticated - Staged: The device has been staged for activation - Activated: The miru agent has been installed and authenticated - Online: The miru agent is connected - Offline: The miru agent is disconnected (e.g. network issues, device is powered off, etc.) 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum DeviceStatus {
     #[serde(rename = "inactive")]
@@ -21,6 +21,10 @@ pub enum DeviceStatus {
     DEVICE_STATUS_STAGED,
     #[serde(rename = "activated")]
     DEVICE_STATUS_ACTIVATED,
+    #[serde(rename = "online")]
+    DEVICE_STATUS_ONLINE,
+    #[serde(rename = "offline")]
+    DEVICE_STATUS_OFFLINE,
 
 }
 
@@ -30,6 +34,8 @@ impl std::fmt::Display for DeviceStatus {
             Self::DEVICE_STATUS_INACTIVE => write!(f, "inactive"),
             Self::DEVICE_STATUS_STAGED => write!(f, "staged"),
             Self::DEVICE_STATUS_ACTIVATED => write!(f, "activated"),
+            Self::DEVICE_STATUS_ONLINE => write!(f, "online"),
+            Self::DEVICE_STATUS_OFFLINE => write!(f, "offline"),
         }
     }
 }

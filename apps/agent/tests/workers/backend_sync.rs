@@ -2,12 +2,15 @@
 use std::sync::Arc;
 
 // internal crates
-use config_agent::auth::token::Token;
+use config_agent::authn::token::Token;
+use config_agent::filesys::dir::Dir;
+use config_agent::models::device::{Device, DeviceStatus};
 use config_agent::mqtt::{
     client::{MQTTClient, Options},
     device::SyncDevice,
     errors::*,
 };
+use config_agent::storage::{device::DeviceFile, layout::StorageLayout};
 use config_agent::sync::{
     errors::{MockErr as SyncMockErr, SyncErr},
     syncer::{CooldownEnd, SyncEvent, SyncFailure, SyncState},
@@ -17,20 +20,28 @@ use config_agent::workers::backend_sync::{
     BackendSyncWorkerOptions,
 };
 
-use crate::auth::mock::MockTokenManager;
+use crate::authn::mock::MockTokenManager;
 use crate::mock::SleepController;
 use crate::mqtt::mock::MockDeviceClient;
 use crate::sync::mock::MockSyncer;
 
 // external crates
 use chrono::{TimeDelta, Utc};
-use rumqttc::{Event, Incoming, Publish, QoS};
+use rumqttc::{ConnAck, ConnectReturnCode, Event, Incoming, Publish, QoS};
 
 pub mod run_polling_sync {
     use super::*;
 
     #[tokio::test]
     async fn syncer_not_in_cooldown() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let layout = StorageLayout::new(dir);
+
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, layout.device_file(), Device::default())
+                .await
+                .unwrap();
+
         let options = BackendSyncWorkerOptions::default();
         let syncer = Arc::new(MockSyncer::default());
         let sleep_ctrl = Arc::new(SleepController::new());
@@ -41,6 +52,7 @@ pub mod run_polling_sync {
             run_polling_sync_worker(
                 options.poll_interval_secs,
                 syncer_for_spawn.as_ref(),
+                &device_file,
                 sleep_ctrl_for_spawn.sleep_fn(),
             )
             .await;
@@ -48,8 +60,8 @@ pub mod run_polling_sync {
 
         let secs_since_last_sync = 30;
         let state = SyncState {
-            last_sync_attempted_at: Utc::now() - TimeDelta::seconds(secs_since_last_sync),
-            last_successful_sync_at: Utc::now(),
+            last_attempted_sync_at: Utc::now() - TimeDelta::seconds(secs_since_last_sync),
+            last_synced_at: Utc::now(),
             cooldown_ends_at: Utc::now(),
             err_streak: 0,
         };
@@ -100,6 +112,14 @@ pub mod run_polling_sync {
 
     #[tokio::test]
     async fn syncer_in_cooldown() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let layout = StorageLayout::new(dir);
+
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, layout.device_file(), Device::default())
+                .await
+                .unwrap();
+
         let options = BackendSyncWorkerOptions {
             poll_interval_secs: 30,
             ..Default::default()
@@ -113,6 +133,7 @@ pub mod run_polling_sync {
             run_polling_sync_worker(
                 options.poll_interval_secs,
                 syncer_for_spawn.as_ref(),
+                &device_file,
                 sleep_ctrl_for_spawn.sleep_fn(),
             )
             .await;
@@ -120,8 +141,8 @@ pub mod run_polling_sync {
 
         let secs_until_cooldown_ends = 120;
         let state = SyncState {
-            last_sync_attempted_at: Utc::now(),
-            last_successful_sync_at: Utc::now(),
+            last_attempted_sync_at: Utc::now(),
+            last_synced_at: Utc::now(),
             cooldown_ends_at: Utc::now() + TimeDelta::seconds(secs_until_cooldown_ends),
             err_streak: 0,
         };
@@ -171,6 +192,14 @@ pub mod run_polling_sync {
 
     #[tokio::test]
     async fn ignored_syncer_events() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let layout = StorageLayout::new(dir);
+
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, layout.device_file(), Device::default())
+                .await
+                .unwrap();
+
         let options = BackendSyncWorkerOptions::default();
         let syncer = Arc::new(MockSyncer::default());
         let sleep_ctrl = Arc::new(SleepController::new());
@@ -181,6 +210,7 @@ pub mod run_polling_sync {
             run_polling_sync_worker(
                 options.poll_interval_secs,
                 syncer_for_spawn.as_ref(),
+                &device_file,
                 sleep_ctrl_for_spawn.sleep_fn(),
             )
             .await;
@@ -188,8 +218,8 @@ pub mod run_polling_sync {
 
         let secs_since_last_sync = 30;
         let state = SyncState {
-            last_sync_attempted_at: Utc::now() - TimeDelta::seconds(secs_since_last_sync),
-            last_successful_sync_at: Utc::now(),
+            last_attempted_sync_at: Utc::now() - TimeDelta::seconds(secs_since_last_sync),
+            last_synced_at: Utc::now(),
             cooldown_ends_at: Utc::now(),
             err_streak: 0,
         };
@@ -219,6 +249,14 @@ pub mod run_polling_sync {
 
     #[tokio::test]
     async fn syncer_cooldown_end_from_sync_failure_event() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let layout = StorageLayout::new(dir);
+
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, layout.device_file(), Device::default())
+                .await
+                .unwrap();
+
         let options = BackendSyncWorkerOptions::default();
         let syncer = Arc::new(MockSyncer::default());
         let sleep_ctrl = Arc::new(SleepController::new());
@@ -229,6 +267,7 @@ pub mod run_polling_sync {
             run_polling_sync_worker(
                 options.poll_interval_secs,
                 syncer_for_spawn.as_ref(),
+                &device_file,
                 sleep_ctrl_for_spawn.sleep_fn(),
             )
             .await;
@@ -236,8 +275,8 @@ pub mod run_polling_sync {
 
         let secs_since_last_sync = 45;
         let state = SyncState {
-            last_sync_attempted_at: Utc::now() - TimeDelta::seconds(secs_since_last_sync),
-            last_successful_sync_at: Utc::now(),
+            last_attempted_sync_at: Utc::now() - TimeDelta::seconds(secs_since_last_sync),
+            last_synced_at: Utc::now(),
             cooldown_ends_at: Utc::now() - TimeDelta::seconds(10),
             err_streak: 0,
         };
@@ -292,29 +331,115 @@ pub mod handle_mqtt_event {
     use super::*;
 
     #[tokio::test]
-    async fn non_publish_event() {
-        let event = Event::Incoming(Incoming::PingReq);
+    async fn unsuccessful_connack_event_is_ignored() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let layout = StorageLayout::new(dir);
+
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, layout.device_file(), Device::default())
+                .await
+                .unwrap();
+
+        let event = Event::Incoming(Incoming::ConnAck(ConnAck {
+            code: ConnectReturnCode::RefusedProtocolVersion,
+            session_present: false,
+        }));
         let syncer = MockSyncer::default();
-        handle_mqtt_event(&event, &syncer).await;
+        handle_mqtt_event(&event, &syncer, &device_file).await;
 
         assert_eq!(syncer.num_sync_calls(), 0);
     }
 
     #[tokio::test]
+    async fn successful_connack_event() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let layout = StorageLayout::new(dir);
+
+        let (device_file, _) = DeviceFile::spawn_with_default(
+            64,
+            layout.device_file(),
+            Device {
+                status: DeviceStatus::Offline,
+                last_connected_at: Utc::now(),
+                ..Device::default()
+            },
+        )
+        .await
+        .unwrap();
+
+        let event = Event::Incoming(Incoming::ConnAck(ConnAck {
+            code: ConnectReturnCode::Success,
+            session_present: false,
+        }));
+        let syncer = MockSyncer::default();
+        let before_event = Utc::now();
+        handle_mqtt_event(&event, &syncer, &device_file).await;
+
+        let device = device_file.read().await.unwrap();
+        assert_eq!(device.status, DeviceStatus::Online);
+        assert!(device.last_connected_at >= before_event);
+        assert!(device.last_connected_at <= Utc::now());
+    }
+
+    #[tokio::test]
+    async fn disconnect_event() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let layout = StorageLayout::new(dir);
+
+        let (device_file, _) = DeviceFile::spawn_with_default(
+            64,
+            layout.device_file(),
+            Device {
+                status: DeviceStatus::Online,
+                last_disconnected_at: Utc::now(),
+                ..Device::default()
+            },
+        )
+        .await
+        .unwrap();
+
+        let event = Event::Incoming(Incoming::Disconnect);
+        let syncer = MockSyncer::default();
+        let before_event = Utc::now();
+        handle_mqtt_event(&event, &syncer, &device_file).await;
+
+        let device = device_file.read().await.unwrap();
+        assert_eq!(device.status, DeviceStatus::Offline);
+        assert!(device.last_disconnected_at >= before_event);
+        assert!(device.last_disconnected_at <= Utc::now());
+    }
+
+    #[tokio::test]
     async fn sync_request_unserializable() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let layout = StorageLayout::new(dir);
+
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, layout.device_file(), Device::default())
+                .await
+                .unwrap();
+
         let event = Event::Incoming(Incoming::Publish(Publish::new(
             "test".to_string(),
             QoS::AtLeastOnce,
             "test".to_string(),
         )));
         let syncer = MockSyncer::default();
-        handle_mqtt_event(&event, &syncer).await;
+        handle_mqtt_event(&event, &syncer, &device_file).await;
 
         assert_eq!(syncer.num_sync_calls(), 1);
     }
 
     #[tokio::test]
     async fn sync_request_is_synced() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let layout = StorageLayout::new(dir);
+
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, layout.device_file(), Device::default())
+                .await
+                .unwrap();
+
         let payload = SyncDevice { is_synced: true };
         let payload_bytes = serde_json::to_vec(&payload).unwrap();
         let event = Event::Incoming(Incoming::Publish(Publish::new(
@@ -323,13 +448,21 @@ pub mod handle_mqtt_event {
             payload_bytes,
         )));
         let syncer = MockSyncer::default();
-        handle_mqtt_event(&event, &syncer).await;
+        handle_mqtt_event(&event, &syncer, &device_file).await;
 
         assert_eq!(syncer.num_sync_calls(), 0);
     }
 
     #[tokio::test]
     async fn sync_request_is_not_synced() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let layout = StorageLayout::new(dir);
+
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, layout.device_file(), Device::default())
+                .await
+                .unwrap();
+
         let payload = SyncDevice { is_synced: false };
         let payload_bytes = serde_json::to_vec(&payload).unwrap();
         let event = Event::Incoming(Incoming::Publish(Publish::new(
@@ -338,13 +471,21 @@ pub mod handle_mqtt_event {
             payload_bytes,
         )));
         let syncer = MockSyncer::default();
-        handle_mqtt_event(&event, &syncer).await;
+        handle_mqtt_event(&event, &syncer, &device_file).await;
 
         assert_eq!(syncer.num_sync_calls(), 1);
     }
 
     #[tokio::test]
     async fn sync_error() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let layout = StorageLayout::new(dir);
+
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, layout.device_file(), Device::default())
+                .await
+                .unwrap();
+
         let payload = SyncDevice { is_synced: false };
         let payload_bytes = serde_json::to_vec(&payload).unwrap();
         let event = Event::Incoming(Incoming::Publish(Publish::new(
@@ -358,7 +499,7 @@ pub mod handle_mqtt_event {
                 is_network_connection_error: false,
             })))
         });
-        handle_mqtt_event(&event, &syncer).await;
+        handle_mqtt_event(&event, &syncer, &device_file).await;
 
         assert_eq!(syncer.num_sync_calls(), 1);
     }

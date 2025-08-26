@@ -16,7 +16,7 @@ type GetSyncStateFn = Box<dyn Fn() -> SyncState + Send + Sync>;
 type SyncFn = Box<dyn Fn() -> Result<(), SyncErr> + Send + Sync>;
 
 pub struct MockSyncer {
-    pub last_sync_attempted_at: Arc<Mutex<DateTime<Utc>>>,
+    pub last_attempted_sync_at: Arc<Mutex<DateTime<Utc>>>,
     pub num_sync_calls: AtomicUsize,
     pub get_sync_state_fn: Arc<Mutex<GetSyncStateFn>>,
     pub sync_fn: Arc<Mutex<SyncFn>>,
@@ -37,11 +37,11 @@ impl MockSyncer {
         let (tx, rx) = watch::channel(SyncEvent::SyncSuccess);
 
         Self {
-            last_sync_attempted_at: Arc::new(Mutex::new(DateTime::<Utc>::UNIX_EPOCH)),
+            last_attempted_sync_at: Arc::new(Mutex::new(DateTime::<Utc>::UNIX_EPOCH)),
             num_sync_calls: AtomicUsize::new(0),
             get_sync_state_fn: Arc::new(Mutex::new(Box::new(|| SyncState {
-                last_sync_attempted_at: DateTime::<Utc>::UNIX_EPOCH,
-                last_successful_sync_at: DateTime::<Utc>::UNIX_EPOCH,
+                last_attempted_sync_at: DateTime::<Utc>::UNIX_EPOCH,
+                last_synced_at: DateTime::<Utc>::UNIX_EPOCH,
                 cooldown_ends_at: DateTime::<Utc>::UNIX_EPOCH,
                 err_streak: 0,
             }))),
@@ -92,13 +92,13 @@ impl SyncerExt for MockSyncer {
         Ok(state.cooldown_ends_at)
     }
 
-    async fn get_last_sync_attempted_at(&self) -> Result<DateTime<Utc>, SyncErr> {
+    async fn get_last_attempted_sync_at(&self) -> Result<DateTime<Utc>, SyncErr> {
         let state = self.get_sync_state().await.unwrap();
-        Ok(state.last_sync_attempted_at)
+        Ok(state.last_attempted_sync_at)
     }
 
     async fn sync(&self) -> Result<(), SyncErr> {
-        *self.last_sync_attempted_at.lock().unwrap() = Utc::now();
+        *self.last_attempted_sync_at.lock().unwrap() = Utc::now();
         self.num_sync_calls.fetch_add(1, Ordering::Relaxed);
         (*self.sync_fn.lock().unwrap())()
     }

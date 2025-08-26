@@ -1,6 +1,6 @@
 # \ErrorsApi
 
-All URIs are relative to *https://configs.dev.api.miruml.com/agent/v1*
+All URIs are relative to *http://localhost/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
@@ -23,7 +23,7 @@ This endpoint does not need any parameter.
 
 ### Authorization
 
-[ClerkAuth](../README.md#ClerkAuth)
+No authorization required
 
 ### HTTP request headers
 

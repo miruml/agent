@@ -15,7 +15,6 @@ Name | Type | Description | Notes
 **created_by** | Option<[**models::Principal**](Principal.md)> |  | 
 **updated_by** | Option<[**models::Principal**](Principal.md)> |  | 
 **tag_type** | Option<[**models::TagType**](TagType.md)> |  | 
-**metadata** | Option<[**serde_json::Value**](.md)> |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

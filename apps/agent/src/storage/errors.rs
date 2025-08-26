@@ -8,12 +8,12 @@ use crate::errors::{Code, HTTPCode, MiruError, Trace};
 use crate::filesys::errors::FileSysErr;
 
 #[derive(Debug)]
-pub struct AgentNotActivatedErr {
+pub struct DeviceNotActivatedErr {
     pub msg: String,
     pub trace: Box<Trace>,
 }
 
-impl MiruError for AgentNotActivatedErr {
+impl MiruError for DeviceNotActivatedErr {
     fn code(&self) -> Code {
         Code::InternalServerError
     }
@@ -31,9 +31,9 @@ impl MiruError for AgentNotActivatedErr {
     }
 }
 
-impl fmt::Display for AgentNotActivatedErr {
+impl fmt::Display for DeviceNotActivatedErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "agent is not activated: {}", self.msg)
+        write!(f, "device is not activated: {}", self.msg)
     }
 }
 
@@ -190,7 +190,7 @@ impl fmt::Display for PruneCacheErrs {
 #[derive(Debug)]
 pub enum StorageErr {
     // storage errors
-    AgentNotActivatedErr(Box<AgentNotActivatedErr>),
+    DeviceNotActivatedErr(Box<DeviceNotActivatedErr>),
     PruneCacheErrs(Box<PruneCacheErrs>),
 
     // internal crate errors
@@ -205,7 +205,7 @@ pub enum StorageErr {
 macro_rules! forward_error_method {
     ($self:ident, $method:ident $(, $arg:expr)?) => {
         match $self {
-            Self::AgentNotActivatedErr(e) => e.$method($($arg)?),
+            Self::DeviceNotActivatedErr(e) => e.$method($($arg)?),
             Self::PruneCacheErrs(e) => e.$method($($arg)?),
             Self::CacheErr(e) => e.$method($($arg)?),
             Self::CryptErr(e) => e.$method($($arg)?),

@@ -33,9 +33,6 @@ pub async fn hash_config_schema_serialized(configuration: &configuration::Config
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
     }
-    if let Some(ref token) = configuration.bearer_access_token {
-        req_builder = req_builder.bearer_auth(token.to_owned());
-    };
     req_builder = req_builder.json(&p_hash_schema_serialized_request);
 
     let req = req_builder.build()?;

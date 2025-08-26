@@ -12,15 +12,12 @@ use crate::server::errors::{BindUnixSocketErr, RunAxumServerErr, ServerErr, Serv
 use crate::server::handlers;
 use crate::server::state::ServerState;
 use crate::trace;
-use crate::utils::version_info;
 
 // external
 use axum::{
-    http::StatusCode,
     routing::{get, post},
-    Json, Router,
+    Router,
 };
-use serde_json::json;
 use tokio::net::UnixListener;
 use tokio::task::JoinHandle;
 use tower::ServiceBuilder;
@@ -51,18 +48,23 @@ pub(crate) async fn serve(
     // build the app with the test route
     let state_for_middleware = state.clone();
     let app = Router::new()
-        .route("/v1/health", get(health))
-        .route("/v1/version", get(version))
-        // ============================ CONFIG INSTANCES ============================== //
+        // =============================== AGENT INFO ============================== //
+        .route("/v1/health", get(handlers::health))
+        .route("/v1/version", get(handlers::version))
+        // ============================ CONFIG INSTANCES =========================== //
         .route(
             "/v1/config_instances/deployed",
-            get(handlers::read_deployed_config_instance),
+            get(handlers::get_deployed_config_instance),
         )
-        // ============================ CONFIG SCHEMAS ============================== //
+        // ============================= CONFIG SCHEMAS ============================ //
         .route(
             "/v1/config_schemas/hash/serialized",
             post(handlers::hash_schema),
         )
+        // ============================= DEVICE ==================================== //
+        .route("/v1/device", get(handlers::get_device))
+        .route("/v1/device/sync", post(handlers::sync_device))
+        // ============================= LAYERS ===================================== //
         .layer(
             ServiceBuilder::new()
                 // activity middleware
@@ -169,18 +171,4 @@ async fn create_unix_socket_listener(socket_file: &File) -> Result<UnixListener,
             trace: trace!(),
         }))
     })
-}
-
-async fn version() -> (StatusCode, Json<serde_json::Value>) {
-    (StatusCode::OK, Json(version_info()))
-}
-
-async fn health() -> (StatusCode, Json<serde_json::Value>) {
-    (
-        StatusCode::OK,
-        Json(json!({
-            "status": "ok",
-            "server": "miru-config-agent"
-        })),
-    )
 }

@@ -3,7 +3,7 @@ use config_agent::app::options::{AppOptions, LifecycleOptions};
 use config_agent::app::run::run;
 use config_agent::logs::{init, LogOptions};
 use config_agent::mqtt::client::ConnectAddress;
-use config_agent::storage::agent::assert_activated;
+use config_agent::storage::device::assert_activated;
 use config_agent::storage::layout::StorageLayout;
 use config_agent::storage::settings::Settings;
 use config_agent::utils::{has_version_flag, version_info};
@@ -17,15 +17,15 @@ use tracing::{error, info};
 async fn main() {
     // print the version and exit if that is all that is requested
     if has_version_flag() {
-        println!("{}", version_info());
+        println!("{:?}", version_info());
         return;
     }
 
     // check the agent has been activated
     let layout = StorageLayout::default();
-    let agent_file = layout.agent_file();
-    if let Err(e) = assert_activated(&agent_file).await {
-        error!("Agent is not yet activated: {}", e);
+    let device_file = layout.device_file();
+    if let Err(e) = assert_activated(&device_file).await {
+        error!("Device is not yet activated: {}", e);
         return;
     }
 

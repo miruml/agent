@@ -2,7 +2,7 @@
 use std::sync::{Arc, Mutex};
 
 // internal crates
-use config_agent::auth::{
+use config_agent::authn::{
     token::Token,
     token_mngr::{TokenFile, TokenManager},
 };
@@ -25,7 +25,7 @@ use config_agent::sync::{
 };
 use config_agent::utils::{calc_exp_backoff, CooldownOptions};
 
-use crate::auth::token_mngr::spawn as spawn_token_manager;
+use crate::authn::token_mngr::spawn as spawn_token_manager;
 use crate::http::mock::{MockAuthClient, MockConfigInstancesClient};
 
 // external crates
@@ -73,8 +73,8 @@ pub mod sync_state {
     async fn is_in_cooldown() {
         // not in cooldown
         let state = SyncState {
-            last_sync_attempted_at: Utc::now(),
-            last_successful_sync_at: Utc::now(),
+            last_attempted_sync_at: Utc::now(),
+            last_synced_at: Utc::now(),
             cooldown_ends_at: Utc::now() + TimeDelta::seconds(10),
             err_streak: 0,
         };
@@ -82,8 +82,8 @@ pub mod sync_state {
 
         // in cooldown
         let state = SyncState {
-            last_sync_attempted_at: Utc::now(),
-            last_successful_sync_at: Utc::now(),
+            last_attempted_sync_at: Utc::now(),
+            last_synced_at: Utc::now(),
             cooldown_ends_at: Utc::now() - TimeDelta::seconds(10),
             err_streak: 0,
         };
@@ -377,10 +377,10 @@ pub mod sync {
             syncer.get_cooldown_ends_at().await.unwrap(),
             state.cooldown_ends_at
         );
-        assert!(state.last_sync_attempted_at > before);
-        assert!(state.last_sync_attempted_at < after);
-        assert!(state.last_successful_sync_at > before);
-        assert!(state.last_successful_sync_at < after);
+        assert!(state.last_attempted_sync_at > before);
+        assert!(state.last_attempted_sync_at < after);
+        assert!(state.last_synced_at > before);
+        assert!(state.last_synced_at < after);
         let base_cooldown_duration = TimeDelta::seconds(cooldown_options.base_secs);
         assert!(state.cooldown_ends_at > before + base_cooldown_duration);
         assert!(state.cooldown_ends_at < after + base_cooldown_duration);
@@ -449,9 +449,9 @@ pub mod sync {
                 syncer.get_cooldown_ends_at().await.unwrap(),
                 state.cooldown_ends_at
             );
-            assert!(state.last_sync_attempted_at > before);
-            assert!(state.last_sync_attempted_at < after);
-            assert_eq!(state.last_successful_sync_at, DateTime::<Utc>::UNIX_EPOCH);
+            assert!(state.last_attempted_sync_at > before);
+            assert!(state.last_attempted_sync_at < after);
+            assert_eq!(state.last_synced_at, DateTime::<Utc>::UNIX_EPOCH);
             assert!(state.cooldown_ends_at > before + base_cooldown_duration);
             assert!(state.cooldown_ends_at < after + base_cooldown_duration);
             assert_eq!(state.err_streak, 0);
@@ -534,9 +534,9 @@ pub mod sync {
                 syncer.get_cooldown_ends_at().await.unwrap(),
                 state.cooldown_ends_at
             );
-            assert!(state.last_sync_attempted_at > before);
-            assert!(state.last_sync_attempted_at < after);
-            assert_eq!(state.last_successful_sync_at, DateTime::<Utc>::UNIX_EPOCH);
+            assert!(state.last_attempted_sync_at > before);
+            assert!(state.last_attempted_sync_at < after);
+            assert_eq!(state.last_synced_at, DateTime::<Utc>::UNIX_EPOCH);
             let cooldown_secs = calc_exp_backoff(
                 cooldown_options.base_secs,
                 cooldown_options.growth_factor,
@@ -625,9 +625,9 @@ pub mod sync {
                 syncer.get_cooldown_ends_at().await.unwrap(),
                 state.cooldown_ends_at
             );
-            assert!(state.last_sync_attempted_at > before);
-            assert!(state.last_sync_attempted_at < after);
-            assert_eq!(state.last_successful_sync_at, DateTime::<Utc>::UNIX_EPOCH);
+            assert!(state.last_attempted_sync_at > before);
+            assert!(state.last_attempted_sync_at < after);
+            assert_eq!(state.last_synced_at, DateTime::<Utc>::UNIX_EPOCH);
             let cooldown_secs = calc_exp_backoff(
                 cooldown_options.base_secs,
                 cooldown_options.growth_factor,
@@ -678,9 +678,9 @@ pub mod sync {
 
             // check the sync state
             let state = syncer.get_sync_state().await.unwrap();
-            assert!(state.last_sync_attempted_at > before);
-            assert!(state.last_sync_attempted_at < after);
-            assert_eq!(state.last_successful_sync_at, DateTime::<Utc>::UNIX_EPOCH);
+            assert!(state.last_attempted_sync_at > before);
+            assert!(state.last_attempted_sync_at < after);
+            assert_eq!(state.last_synced_at, DateTime::<Utc>::UNIX_EPOCH);
             assert!(state.cooldown_ends_at > before + base_cooldown_duration);
             assert!(state.cooldown_ends_at < after + base_cooldown_duration);
             assert_eq!(state.err_streak, cur_err_streak);
@@ -720,10 +720,10 @@ pub mod sync {
                 syncer.get_cooldown_ends_at().await.unwrap(),
                 state.cooldown_ends_at
             );
-            assert!(state.last_sync_attempted_at > before);
-            assert!(state.last_sync_attempted_at < after);
-            assert!(state.last_successful_sync_at > before);
-            assert!(state.last_successful_sync_at < after);
+            assert!(state.last_attempted_sync_at > before);
+            assert!(state.last_attempted_sync_at < after);
+            assert!(state.last_synced_at > before);
+            assert!(state.last_synced_at < after);
             assert!(state.cooldown_ends_at > before + base_cooldown_duration);
             assert!(state.cooldown_ends_at < after + base_cooldown_duration);
             assert_eq!(state.err_streak, 0);
@@ -783,8 +783,8 @@ pub mod sync {
         #[cfg(feature = "test")]
         syncer
             .set_sync_state(SyncState {
-                last_sync_attempted_at: DateTime::<Utc>::UNIX_EPOCH,
-                last_successful_sync_at: DateTime::<Utc>::UNIX_EPOCH,
+                last_attempted_sync_at: DateTime::<Utc>::UNIX_EPOCH,
+                last_synced_at: DateTime::<Utc>::UNIX_EPOCH,
                 cooldown_ends_at: Utc::now() + TimeDelta::seconds(10),
                 err_streak: 0,
             })
@@ -839,8 +839,8 @@ pub mod sync_if_not_in_cooldown {
         #[cfg(feature = "test")]
         syncer
             .set_sync_state(SyncState {
-                last_sync_attempted_at: DateTime::<Utc>::UNIX_EPOCH,
-                last_successful_sync_at: DateTime::<Utc>::UNIX_EPOCH,
+                last_attempted_sync_at: DateTime::<Utc>::UNIX_EPOCH,
+                last_synced_at: DateTime::<Utc>::UNIX_EPOCH,
                 cooldown_ends_at: Utc::now() + TimeDelta::seconds(10),
                 err_streak: 0,
             })
@@ -853,7 +853,7 @@ pub mod sync_if_not_in_cooldown {
                 .get_sync_state()
                 .await
                 .unwrap()
-                .last_sync_attempted_at,
+                .last_attempted_sync_at,
             DateTime::<Utc>::UNIX_EPOCH
         );
 
@@ -861,8 +861,8 @@ pub mod sync_if_not_in_cooldown {
         #[cfg(feature = "test")]
         syncer
             .set_sync_state(SyncState {
-                last_sync_attempted_at: DateTime::<Utc>::UNIX_EPOCH,
-                last_successful_sync_at: DateTime::<Utc>::UNIX_EPOCH,
+                last_attempted_sync_at: DateTime::<Utc>::UNIX_EPOCH,
+                last_synced_at: DateTime::<Utc>::UNIX_EPOCH,
                 cooldown_ends_at: DateTime::<Utc>::UNIX_EPOCH,
                 err_streak: 0,
             })
@@ -877,7 +877,7 @@ pub mod sync_if_not_in_cooldown {
                 .get_sync_state()
                 .await
                 .unwrap()
-                .last_sync_attempted_at
+                .last_attempted_sync_at
                 > before
         );
         assert!(
@@ -885,7 +885,7 @@ pub mod sync_if_not_in_cooldown {
                 .get_sync_state()
                 .await
                 .unwrap()
-                .last_sync_attempted_at
+                .last_attempted_sync_at
                 < after
         );
     }

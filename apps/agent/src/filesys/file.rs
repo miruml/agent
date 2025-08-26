@@ -51,22 +51,25 @@ impl File {
 
     /// Return the name of the file
     pub fn name(&self) -> Result<&str, FileSysErr> {
-        let file_name_os_str: &std::ffi::OsStr;
-        match self.path.file_name() {
-            Some(name) => file_name_os_str = name,
+        let file_name_os_str = match self.path.file_name() {
+            Some(name) => name,
             None => {
-                return Err(FileSysErr::UnknownFileNameErr(UnknownFileNameErr {
-                    file: self.clone(),
-                    trace: trace!(),
-                }))
+                return Err(FileSysErr::UnknownFileNameErr(Box::new(
+                    UnknownFileNameErr {
+                        file: self.clone(),
+                        trace: trace!(),
+                    },
+                )));
             }
-        }
+        };
         match file_name_os_str.to_str() {
             Some(name) => Ok(name),
-            None => Err(FileSysErr::UnknownFileNameErr(UnknownFileNameErr {
-                file: self.clone(),
-                trace: trace!(),
-            })),
+            None => Err(FileSysErr::UnknownFileNameErr(Box::new(
+                UnknownFileNameErr {
+                    file: self.clone(),
+                    trace: trace!(),
+                },
+            ))),
         }
     }
 
@@ -76,12 +79,12 @@ impl File {
         let parent = self
             .path
             .parent()
-            .ok_or(FileSysErr::UnknownParentDirForFileErr(
+            .ok_or(FileSysErr::UnknownParentDirForFileErr(Box::new(
                 UnknownParentDirForFileErr {
                     file: self.clone(),
                     trace: trace!(),
                 },
-            ))?;
+            )))?;
         Ok(Dir::new(parent))
     }
 
@@ -97,19 +100,19 @@ impl File {
 
         // read file
         let mut file = TokioFile::open(self.to_string()).await.map_err(|e| {
-            FileSysErr::OpenFileErr(OpenFileErr {
+            FileSysErr::OpenFileErr(Box::new(OpenFileErr {
                 source: Box::new(e),
                 file: self.clone(),
                 trace: trace!(),
-            })
+            }))
         })?;
         let mut buf = Vec::new();
         file.read_to_end(&mut buf).await.map_err(|e| {
-            FileSysErr::ReadFileErr(ReadFileErr {
+            FileSysErr::ReadFileErr(Box::new(ReadFileErr {
                 source: Box::new(e),
                 file: self.clone(),
                 trace: trace!(),
-            })
+            }))
         })?;
         Ok(buf)
     }
@@ -118,11 +121,11 @@ impl File {
         self.assert_exists()?;
 
         let mut file = TokioFile::open(self.to_string()).await.map_err(|e| {
-            FileSysErr::OpenFileErr(OpenFileErr {
+            FileSysErr::OpenFileErr(Box::new(OpenFileErr {
                 source: Box::new(e),
                 file: self.clone(),
                 trace: trace!(),
-            })
+            }))
         })?;
 
         // Get file size to pre-allocate
@@ -135,11 +138,11 @@ impl File {
         file.read_to_end(secret.expose_secret_mut())
             .await
             .map_err(|e| {
-                FileSysErr::ReadFileErr(ReadFileErr {
+                FileSysErr::ReadFileErr(Box::new(ReadFileErr {
                     source: Box::new(e),
                     file: self.clone(),
                     trace: trace!(),
-                })
+                }))
             })?;
 
         Ok(secret)
@@ -149,10 +152,10 @@ impl File {
     pub async fn read_string(&self) -> Result<String, FileSysErr> {
         let bytes = self.read_bytes().await?;
         let str_ = std::str::from_utf8(&bytes).map_err(|e| {
-            FileSysErr::ConvertUTF8Err(ConvertUTF8Err {
+            FileSysErr::ConvertUTF8Err(Box::new(ConvertUTF8Err {
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })?;
         Ok(str_.to_string())
     }
@@ -164,24 +167,24 @@ impl File {
         // read file
         let bytes = self.read_bytes().await?;
         let obj: T = serde_json::from_slice(&bytes).map_err(|e| {
-            FileSysErr::ParseJSONErr(ParseJSONErr {
+            FileSysErr::ParseJSONErr(Box::new(ParseJSONErr {
                 source: Box::new(e),
                 file: self.clone(),
                 trace: trace!(),
-            })
+            }))
         })?;
         Ok(obj)
     }
 
     fn validate_overwrite(dest: &File, overwrite: bool) -> Result<(), FileSysErr> {
         if !overwrite && dest.exists() {
-            return Err(FileSysErr::InvalidFileOverwriteErr(
+            return Err(FileSysErr::InvalidFileOverwriteErr(Box::new(
                 InvalidFileOverwriteErr {
                     file: dest.clone(),
                     overwrite,
                     trace: trace!(),
                 },
-            ));
+            )));
         }
         Ok(())
     }
@@ -202,26 +205,26 @@ impl File {
         if atomic {
             let af = AtomicFile::new(self.to_string(), AllowOverwrite);
             af.write(|f| f.write_all(buf)).map_err(|e| {
-                FileSysErr::AtomicWriteFileErr(AtomicWriteFileErr {
+                FileSysErr::AtomicWriteFileErr(Box::new(AtomicWriteFileErr {
                     source: Box::new(e.into()),
                     file: self.clone(),
                     trace: trace!(),
-                })
+                }))
             })?;
         } else {
             let mut file = TokioFile::create(self.to_string()).await.map_err(|e| {
-                FileSysErr::OpenFileErr(OpenFileErr {
+                FileSysErr::OpenFileErr(Box::new(OpenFileErr {
                     source: Box::new(e),
                     file: self.clone(),
                     trace: trace!(),
-                })
+                }))
             })?;
             file.write_all(buf).await.map_err(|e| {
-                FileSysErr::WriteFileErr(WriteFileErr {
+                FileSysErr::WriteFileErr(Box::new(WriteFileErr {
                     source: Box::new(e),
                     file: self.clone(),
                     trace: trace!(),
-                })
+                }))
             })?;
         }
         Ok(())
@@ -246,11 +249,11 @@ impl File {
     ) -> Result<(), FileSysErr> {
         // Convert to JSON bytes first
         let json_bytes = serde_json::to_vec(obj).map_err(|e| {
-            FileSysErr::ParseJSONErr(ParseJSONErr {
+            FileSysErr::ParseJSONErr(Box::new(ParseJSONErr {
                 source: Box::new(e),
                 file: self.clone(),
                 trace: trace!(),
-            })
+            }))
         })?;
 
         self.write_bytes(&json_bytes, overwrite, atomic).await
@@ -264,11 +267,11 @@ impl File {
         tokio::fs::remove_file(self.to_string())
             .await
             .map_err(|e| {
-                FileSysErr::DeleteFileErr(DeleteFileErr {
+                FileSysErr::DeleteFileErr(Box::new(DeleteFileErr {
                     source: Box::new(e),
                     file: self.clone(),
                     trace: trace!(),
-                })
+                }))
             })?;
         Ok(())
     }
@@ -295,12 +298,12 @@ impl File {
         tokio::fs::rename(self.to_string(), new_file.to_string())
             .await
             .map_err(|e| {
-                FileSysErr::MoveFileErr(MoveFileErr {
+                FileSysErr::MoveFileErr(Box::new(MoveFileErr {
                     source: Box::new(e),
                     src_file: self.clone(),
                     dest_file: new_file.clone(),
                     trace: trace!(),
-                })
+                }))
             })?;
         Ok(())
     }
@@ -314,11 +317,11 @@ impl File {
         tokio::fs::set_permissions(self.to_string(), std::fs::Permissions::from_mode(mode))
             .await
             .map_err(|e| {
-                FileSysErr::WriteFileErr(WriteFileErr {
+                FileSysErr::WriteFileErr(Box::new(WriteFileErr {
                     source: Box::new(e),
                     file: self.clone(),
                     trace: trace!(),
-                })
+                }))
             })?;
         Ok(())
     }
@@ -333,12 +336,12 @@ impl File {
         tokio::fs::symlink(self.to_string(), link.to_string())
             .await
             .map_err(|e| {
-                FileSysErr::CreateSymlinkErr(CreateSymlinkErr {
+                FileSysErr::CreateSymlinkErr(Box::new(CreateSymlinkErr {
                     source: Box::new(e),
                     file: self.clone(),
                     link: link.clone(),
                     trace: trace!(),
-                })
+                }))
             })?;
         Ok(())
     }
@@ -346,11 +349,11 @@ impl File {
     async fn metadata(&self) -> Result<std::fs::Metadata, FileSysErr> {
         self.assert_exists()?;
         tokio::fs::metadata(self.to_string()).await.map_err(|e| {
-            FileSysErr::FileMetadataErr(FileMetadataErr {
+            FileSysErr::FileMetadataErr(Box::new(FileMetadataErr {
                 file: self.clone(),
                 source: Box::new(e),
                 trace: trace!(),
-            })
+            }))
         })
     }
 

@@ -36,6 +36,32 @@ pub async fn deploy_with_rollback<R>(
 where
     R: Read<ConfigInstanceID, serde_json::Value>,
 {
+    let result = deploy_with_rollback_impl(
+        to_remove,
+        to_deploy,
+        cfg_inst_content_reader,
+        deployment_dir,
+        settings,
+        observers,
+    )
+    .await;
+
+    prune_deployment_dir(deployment_dir).await;
+
+    result
+}
+
+async fn deploy_with_rollback_impl<R>(
+    to_remove: Vec<ConfigInstance>,
+    to_deploy: Vec<ConfigInstance>,
+    cfg_inst_content_reader: &R,
+    deployment_dir: &Dir,
+    settings: &fsm::Settings,
+    observers: &mut [&mut dyn Observer],
+) -> (DeployResults, Result<(), DeployErr>)
+where
+    R: Read<ConfigInstanceID, serde_json::Value>,
+{
     // remove the previous config instance. Don't worry whether it failed or not as we want
     // to attempt to deploy the next config instance regardless
     let (to_remove, result) = remove_many(to_remove, deployment_dir, settings, observers).await;
@@ -194,8 +220,6 @@ where
             }))
         })?;
 
-    prune_deployment_dir(deployment_dir).await;
-
     Ok(())
 }
 
@@ -264,8 +288,6 @@ async fn delete_cfg_inst_from_deployment_dir(
             trace: trace!(),
         }))
     })?;
-
-    prune_deployment_dir(deployment_dir).await;
 
     Ok(())
 }

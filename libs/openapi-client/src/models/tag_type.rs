@@ -31,8 +31,6 @@ pub struct TagType {
     pub created_by: Option<Box<models::Principal>>,
     #[serde(rename = "updated_by", deserialize_with = "Option::deserialize")]
     pub updated_by: Option<Box<models::Principal>>,
-    #[serde(rename = "schema", deserialize_with = "Option::deserialize")]
-    pub schema: Option<serde_json::Value>,
     #[serde(rename = "tags", deserialize_with = "Option::deserialize")]
     pub tags: Option<Box<models::TagList>>,
 }
@@ -48,7 +46,6 @@ impl TagType {
         updated_by_id: String,
         created_by: Option<models::Principal>,
         updated_by: Option<models::Principal>,
-        schema: Option<serde_json::Value>,
         tags: Option<models::TagList>,
     ) -> TagType {
         TagType {
@@ -61,7 +58,6 @@ impl TagType {
             updated_by_id,
             created_by: created_by.map(Box::new),
             updated_by: updated_by.map(Box::new),
-            schema,
             tags: tags.map(Box::new),
         }
     }

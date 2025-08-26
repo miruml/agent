@@ -15,15 +15,15 @@ use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
 
-/// struct for typed errors of method [`get_latest_config_instance`]
+/// struct for typed errors of method [`get_deployed_config_instance`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum GetLatestConfigInstanceError {
+pub enum GetDeployedConfigInstanceError {
     UnknownValue(serde_json::Value),
 }
 
 
-pub async fn get_latest_config_instance(configuration: &configuration::Configuration, config_schema_digest: &str, config_type_slug: &str) -> Result<models::ConfigInstance, Error<GetLatestConfigInstanceError>> {
+pub async fn get_deployed_config_instance(configuration: &configuration::Configuration, config_schema_digest: &str, config_type_slug: &str) -> Result<models::ConfigInstance, Error<GetDeployedConfigInstanceError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_config_schema_digest = config_schema_digest;
     let p_config_type_slug = config_type_slug;
@@ -36,9 +36,6 @@ pub async fn get_latest_config_instance(configuration: &configuration::Configura
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
     }
-    if let Some(ref token) = configuration.bearer_access_token {
-        req_builder = req_builder.bearer_auth(token.to_owned());
-    };
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -60,7 +57,7 @@ pub async fn get_latest_config_instance(configuration: &configuration::Configura
         }
     } else {
         let content = resp.text().await?;
-        let entity: Option<GetLatestConfigInstanceError> = serde_json::from_str(&content).ok();
+        let entity: Option<GetDeployedConfigInstanceError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

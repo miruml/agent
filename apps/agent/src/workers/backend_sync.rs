@@ -2,20 +2,23 @@
 use std::cmp::max;
 use std::future::Future;
 use std::pin::Pin;
+use std::sync::Arc;
 use std::time::Duration;
 
 // internal modules
-use crate::auth::{token::Token, token_mngr::TokenManagerExt};
+use crate::authn::{token::Token, token_mngr::TokenManagerExt};
 use crate::errors::*;
+use crate::models::device;
 use crate::mqtt::client::{poll, ConnectAddress, Credentials, MQTTClient, OptionsBuilder};
 use crate::mqtt::device::{DeviceExt, SyncDevice};
 use crate::mqtt::errors::*;
+use crate::storage::device::DeviceFile;
 use crate::sync::syncer::{CooldownEnd, SyncEvent, SyncerExt};
 use crate::utils::{calc_exp_backoff, CooldownOptions};
 
 // external crates
 use chrono::{TimeDelta, Utc};
-use rumqttc::{Event, EventLoop, Incoming};
+use rumqttc::{ConnectReturnCode, Event, EventLoop, Incoming};
 use tokio::sync::watch;
 use tracing::{debug, error, info};
 
@@ -44,10 +47,10 @@ impl Default for BackendSyncWorkerOptions {
 }
 
 pub async fn run_backend_sync_worker<TokenManagerT: TokenManagerExt, SyncerT: SyncerExt>(
-    device_id: &str,
     options: &BackendSyncWorkerOptions,
     token_mngr: &TokenManagerT,
     syncer: &SyncerT,
+    device_file: &DeviceFile,
     mut shutdown_signal: Pin<Box<impl Future<Output = ()> + Send + 'static>>,
 ) {
     if options.mqtt_enabled {
@@ -59,9 +62,10 @@ pub async fn run_backend_sync_worker<TokenManagerT: TokenManagerExt, SyncerT: Sy
             _ = run_polling_sync_worker(
                 options.poll_interval_secs,
                 syncer,
+                device_file,
                 tokio::time::sleep,
             ) => {}
-            _ = run_mqtt_sync_worker(device_id, options, token_mngr, syncer) => {}
+            _ = run_mqtt_sync_worker(options, token_mngr, syncer, device_file) => {}
         }
     } else {
         tokio::select! {
@@ -72,6 +76,7 @@ pub async fn run_backend_sync_worker<TokenManagerT: TokenManagerExt, SyncerT: Sy
             _ = run_polling_sync_worker(
                 options.poll_interval_secs,
                 syncer,
+                device_file,
                 tokio::time::sleep,
             ) => {}
         }
@@ -82,6 +87,7 @@ pub async fn run_backend_sync_worker<TokenManagerT: TokenManagerExt, SyncerT: Sy
 pub async fn run_polling_sync_worker<F, Fut, SyncerT: SyncerExt>(
     poll_interval_secs: i64,
     syncer: &SyncerT,
+    device_file: &DeviceFile,
     sleep_fn: F, // for testing purposes
 ) where
     F: Fn(Duration) -> Fut,
@@ -101,12 +107,12 @@ pub async fn run_polling_sync_worker<F, Fut, SyncerT: SyncerExt>(
 
     loop {
         // poll from the last sync attempt, not the current time
-        let last_sync_attempted_at = syncer
-            .get_last_sync_attempted_at()
+        let last_attempted_sync_at = syncer
+            .get_last_attempted_sync_at()
             .await
             .unwrap_or_default()
             .timestamp();
-        let secs_since_last_sync = Utc::now().timestamp() - last_sync_attempted_at;
+        let secs_since_last_sync = Utc::now().timestamp() - last_attempted_sync_at;
         let secs_until_next_sync = poll_interval_secs - secs_since_last_sync;
 
         // wait until the cooldown ends or the poll interval elapses (max of the two)
@@ -134,9 +140,19 @@ pub async fn run_polling_sync_worker<F, Fut, SyncerT: SyncerExt>(
             // listen for syncer events from the syncer worker (this device)
             _ = syncer_subscriber.changed() => {
                 let syncer_event = syncer_subscriber.borrow().clone();
-                // retry synchronization when the cooldown ends from a failed sync
-                if let SyncEvent::CooldownEnd(CooldownEnd::FromSyncFailure) = syncer_event {
-                    let _ = syncer.sync_if_not_in_cooldown().await;
+
+                match &syncer_event {
+                    SyncEvent::CooldownEnd(CooldownEnd::FromSyncFailure) => {
+                        let _ = syncer.sync_if_not_in_cooldown().await;
+                    }
+                    SyncEvent::SyncSuccess => {
+                        let patch = device::Updates {
+                            last_synced_at: Some(Utc::now()),
+                            ..device::Updates::empty()
+                        };
+                        let _ = device_file.patch(patch).await;
+                    }
+                    _ => {}
                 }
             }
         }
@@ -145,10 +161,10 @@ pub async fn run_polling_sync_worker<F, Fut, SyncerT: SyncerExt>(
 
 // ============================= MQTT SYNC LISTENER ================================ //
 pub async fn run_mqtt_sync_worker<TokenManagerT: TokenManagerExt, SyncerT: SyncerExt>(
-    device_id: &str,
     options: &BackendSyncWorkerOptions,
     token_mngr: &TokenManagerT,
     syncer: &SyncerT,
+    device_file: &DeviceFile,
 ) -> Result<(), MQTTError> {
     info!("Running mqtt backend sync worker");
 
@@ -159,9 +175,14 @@ pub async fn run_mqtt_sync_worker<TokenManagerT: TokenManagerExt, SyncerT: Synce
         watch::channel(SyncEvent::SyncSuccess).1
     });
 
+    let device = device_file
+        .read()
+        .await
+        .unwrap_or_else(|_| Arc::new(device::Device::default()));
+
     // create the mqtt client
     let (mut mqtt_client, mut eventloop) =
-        init_mqtt_client(device_id, token_mngr, options.mqtt_broker_address.clone()).await;
+        init_mqtt_client(&device.id, token_mngr, options.mqtt_broker_address.clone()).await;
 
     let mut mqtt_client_err_streak = 0;
     loop {
@@ -171,7 +192,7 @@ pub async fn run_mqtt_sync_worker<TokenManagerT: TokenManagerExt, SyncerT: Synce
                 let syncer_event = syncer_subscriber.borrow().clone();
                 handle_syncer_event(
                     &syncer_event,
-                    device_id,
+                    &device.id,
                     &mqtt_client,
                 ).await;
             }
@@ -181,13 +202,13 @@ pub async fn run_mqtt_sync_worker<TokenManagerT: TokenManagerExt, SyncerT: Synce
                 match mqtt_result {
                     Ok(mqtt_event) => {
                         mqtt_client_err_streak = 0;
-                        handle_mqtt_event(&mqtt_event, syncer).await;
+                        handle_mqtt_event(&mqtt_event, syncer, device_file).await;
                     }
                     Err(e) => {
                         mqtt_client_err_streak += 1;
                         (mqtt_client, eventloop) = handle_mqtt_error(
                             e,
-                            device_id,
+                            &device.id,
                             token_mngr,
                             &options.mqtt_broker_address,
                             mqtt_client,
@@ -262,27 +283,40 @@ async fn init_mqtt_client<TokenManagerT: TokenManagerExt>(
     (mqtt_client, eventloop)
 }
 
-pub async fn handle_mqtt_event<SyncerT: SyncerExt>(event: &Event, syncer: &SyncerT) {
-    // ignore non-publish events
-    let publish = match event {
-        Event::Incoming(Incoming::Publish(publish)) => publish,
-        // non-publish events are not sync requests so device is still considered synced
-        _ => return,
-    };
+pub async fn handle_mqtt_event<SyncerT: SyncerExt>(
+    event: &Event,
+    syncer: &SyncerT,
+    device_file: &DeviceFile,
+) {
+    match event {
+        // sync the device if the payload is a sync request
+        Event::Incoming(Incoming::Publish(publish)) => {
+            let is_synced = match serde_json::from_slice::<SyncDevice>(&publish.payload) {
+                Ok(sync_req) => sync_req.is_synced,
+                Err(e) => {
+                    error!("error deserializing sync request: {e:?}");
+                    false
+                }
+            };
+            if is_synced {
+                return;
+            }
 
-    // deserialize the sync request
-    let is_synced = match serde_json::from_slice::<SyncDevice>(&publish.payload) {
-        Ok(sync_req) => sync_req.is_synced,
-        Err(e) => {
-            error!("error deserializing sync request: {e:?}");
-            false
+            let _ = syncer.sync_if_not_in_cooldown().await;
         }
-    };
-    if is_synced {
-        return;
+        // update the device connection status on successful connections
+        Event::Incoming(Incoming::ConnAck(connack)) => {
+            if connack.code != ConnectReturnCode::Success {
+                return;
+            }
+            let _ = device_file.patch(device::Updates::connected()).await;
+        }
+        // update the device connection status on successful disconnections
+        Event::Incoming(Incoming::Disconnect) => {
+            let _ = device_file.patch(device::Updates::disconnected()).await;
+        }
+        _ => {}
     }
-
-    let _ = syncer.sync_if_not_in_cooldown().await;
 }
 
 pub async fn handle_mqtt_error<TokenManagerT: TokenManagerExt>(

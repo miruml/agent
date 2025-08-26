@@ -1,6 +1,6 @@
 pub mod activity;
 pub mod app;
-pub mod auth;
+pub mod authn;
 pub mod cache;
 pub mod crud;
 pub mod crypt;

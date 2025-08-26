@@ -834,36 +834,98 @@ impl fmt::Display for WriteFileErr {
 }
 
 #[derive(Debug)]
+pub struct SendActorMessageErr {
+    pub source: Box<dyn std::error::Error + Send + Sync>,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for SendActorMessageErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for SendActorMessageErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "failed to send actor message: {:?}", self.source)
+    }
+}
+
+#[derive(Debug)]
+pub struct ReceiveActorMessageErr {
+    pub source: Box<dyn std::error::Error + Send + Sync>,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for ReceiveActorMessageErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for ReceiveActorMessageErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "failed to receive actor message: {}", self.source)
+    }
+}
+
+#[derive(Debug)]
 pub enum FileSysErr {
-    InvalidDirNameErr(InvalidDirNameErr),
-    UnknownDirNameErr(UnknownDirNameErr),
-    InvalidFileOverwriteErr(InvalidFileOverwriteErr),
-    UnknownFileNameErr(UnknownFileNameErr),
-    PathDoesNotExistErr(PathDoesNotExistErr),
-    PathExistsErr(PathExistsErr),
-    UnknownParentDirForDirErr(UnknownParentDirForDirErr),
-    UnknownParentDirForFileErr(UnknownParentDirForFileErr),
+    InvalidDirNameErr(Box<InvalidDirNameErr>),
+    UnknownDirNameErr(Box<UnknownDirNameErr>),
+    InvalidFileOverwriteErr(Box<InvalidFileOverwriteErr>),
+    UnknownFileNameErr(Box<UnknownFileNameErr>),
+    PathDoesNotExistErr(Box<PathDoesNotExistErr>),
+    PathExistsErr(Box<PathExistsErr>),
+    UnknownParentDirForDirErr(Box<UnknownParentDirForDirErr>),
+    UnknownParentDirForFileErr(Box<UnknownParentDirForFileErr>),
 
     // internal crate errors
 
     // external crate errors
-    AtomicWriteFileErr(AtomicWriteFileErr),
-    ConvertUTF8Err(ConvertUTF8Err),
-    CopyFileErr(CopyFileErr),
-    CreateDirErr(CreateDirErr),
-    CreateSymlinkErr(CreateSymlinkErr),
-    CreateTmpDirErr(CreateTmpDirErr),
-    DeleteDirErr(DeleteDirErr),
-    DeleteFileErr(DeleteFileErr),
-    FileMetadataErr(FileMetadataErr),
-    MoveFileErr(MoveFileErr),
-    OpenFileErr(OpenFileErr),
-    ParseJSONErr(ParseJSONErr),
-    ReadDirErr(ReadDirErr),
-    ReadFileErr(ReadFileErr),
-    UnknownCurrentDirErr(UnknownCurrentDirErr),
-    UnknownHomeDirErr(UnknownHomeDirErr),
-    WriteFileErr(WriteFileErr),
+    AtomicWriteFileErr(Box<AtomicWriteFileErr>),
+    ConvertUTF8Err(Box<ConvertUTF8Err>),
+    CopyFileErr(Box<CopyFileErr>),
+    CreateDirErr(Box<CreateDirErr>),
+    CreateSymlinkErr(Box<CreateSymlinkErr>),
+    CreateTmpDirErr(Box<CreateTmpDirErr>),
+    DeleteDirErr(Box<DeleteDirErr>),
+    DeleteFileErr(Box<DeleteFileErr>),
+    FileMetadataErr(Box<FileMetadataErr>),
+    MoveFileErr(Box<MoveFileErr>),
+    OpenFileErr(Box<OpenFileErr>),
+    ParseJSONErr(Box<ParseJSONErr>),
+    ReadDirErr(Box<ReadDirErr>),
+    ReadFileErr(Box<ReadFileErr>),
+    UnknownCurrentDirErr(Box<UnknownCurrentDirErr>),
+    UnknownHomeDirErr(Box<UnknownHomeDirErr>),
+    WriteFileErr(Box<WriteFileErr>),
+    SendActorMessageErr(Box<SendActorMessageErr>),
+    ReceiveActorMessageErr(Box<ReceiveActorMessageErr>),
 }
 
 macro_rules! forward_error_method {
@@ -894,6 +956,8 @@ macro_rules! forward_error_method {
             Self::UnknownCurrentDirErr(e) => e.$method($($arg)?),
             Self::UnknownHomeDirErr(e) => e.$method($($arg)?),
             Self::WriteFileErr(e) => e.$method($($arg)?),
+            Self::SendActorMessageErr(e) => e.$method($($arg)?),
+            Self::ReceiveActorMessageErr(e) => e.$method($($arg)?),
         }
     };
 }

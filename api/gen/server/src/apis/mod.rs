@@ -113,6 +113,8 @@ impl From<&str> for ContentType {
 
 pub mod config_instances_api;
 pub mod config_schemas_api;
+pub mod devices_api;
 pub mod errors_api;
+pub mod info_api;
 
 pub mod configuration;

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 // internal crates
-use config_agent::auth::{errors::*, token::Token};
+use config_agent::authn::{errors::*, token::Token};
 use config_agent::trace;
 use config_agent::utils::calc_exp_backoff;
 use config_agent::utils::CooldownOptions;
@@ -11,7 +11,7 @@ use config_agent::workers::token_refresh::{
     calc_refresh_wait, run_token_refresh_worker, TokenRefreshWorkerOptions,
 };
 
-use crate::auth::mock::MockTokenManager;
+use crate::authn::mock::MockTokenManager;
 use crate::mock::SleepController;
 
 // external crates
@@ -120,7 +120,7 @@ pub mod run_refresh_token_worker {
         };
         let token_mngr = MockTokenManager::new(token);
         token_mngr.set_refresh_token(Box::new(|| {
-            Err(AuthErr::MockError(Box::new(MockError {
+            Err(AuthnErr::MockError(Box::new(MockError {
                 is_network_connection_error: true,
                 trace: trace!(),
             })))
@@ -194,7 +194,7 @@ pub mod run_refresh_token_worker {
         };
         let token_mngr = MockTokenManager::new(token);
         token_mngr.set_refresh_token(Box::new(|| {
-            Err(AuthErr::MockError(Box::new(MockError {
+            Err(AuthnErr::MockError(Box::new(MockError {
                 is_network_connection_error: false,
                 trace: trace!(),
             })))
@@ -273,7 +273,7 @@ pub mod run_refresh_token_worker {
         };
         let token_mngr = Arc::new(MockTokenManager::new(token));
         token_mngr.set_refresh_token(Box::new(|| {
-            Err(AuthErr::MockError(Box::new(MockError {
+            Err(AuthnErr::MockError(Box::new(MockError {
                 is_network_connection_error: false,
                 trace: trace!(),
             })))

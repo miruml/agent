@@ -1,1 +1,1 @@
-pub mod read_deployed;
+pub mod get_deployed;

@@ -496,8 +496,8 @@ fn serialize_deserialize_config_instance() {
     assert_eq!(deserialized, expected);
 }
 
-#[tokio::test]
-async fn deserialize_config_instance() {
+#[test]
+fn deserialize_config_instance() {
     // valid deserialization
     let expected = ConfigInstance {
         id: "123".to_string(),
@@ -530,7 +530,6 @@ async fn deserialize_config_instance() {
         "cooldown_ends_at": expected.cooldown_ends_at,
     });
     let config_instance: ConfigInstance = serde_json::from_value(valid_input).unwrap();
-    info!("config_instance: {:?}", config_instance);
     assert_eq!(config_instance, expected);
 
     // exclude required fields
@@ -544,6 +543,7 @@ async fn deserialize_config_instance() {
         target_status: TargetStatus::Created,
         activity_status: ActivityStatus::Created,
         error_status: ErrorStatus::None,
+        relative_filepath: "test".to_string(),
         device_id: "dvc_123".to_string(),
         config_schema_id: "123".to_string(),
         config_type_id: "123".to_string(),
@@ -554,8 +554,8 @@ async fn deserialize_config_instance() {
         "id": expected.id,
         "target_status": expected.target_status,
         "activity_status": expected.activity_status,
-        "relative_filepath": expected.relative_filepath,
         "error_status": expected.error_status,
+        "relative_filepath": expected.relative_filepath,
         "device_id": expected.device_id,
         "config_schema_id": expected.config_schema_id,
         "config_type_id": expected.config_type_id,

@@ -45,20 +45,13 @@ pub struct ConfigSchema {
     pub updated_by_id: String,
     #[serde(rename = "created_by", deserialize_with = "Option::deserialize")]
     pub created_by: Option<Box<models::Principal>>,
-    #[serde(
-        rename = "updated_by",
-        default,
-        with = "::serde_with::rust::double_option",
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub updated_by: Option<Option<Box<models::Principal>>>,
+    #[serde(rename = "updated_by", deserialize_with = "Option::deserialize")]
+    pub updated_by: Option<Box<models::Principal>>,
     #[serde(
         rename = "config_schema_git_commits",
         deserialize_with = "Option::deserialize"
     )]
     pub config_schema_git_commits: Option<Box<models::ConfigSchemaGitCommitList>>,
-    #[serde(rename = "overrides", deserialize_with = "Option::deserialize")]
-    pub overrides: Option<Box<models::OverrideList>>,
     /// Expand the config type using 'expand[]=config_type' in the query string
     #[serde(rename = "config_type", deserialize_with = "Option::deserialize")]
     pub config_type: Option<Box<models::ConfigType>>,
@@ -78,8 +71,8 @@ impl ConfigSchema {
         created_by_id: String,
         updated_by_id: String,
         created_by: Option<models::Principal>,
+        updated_by: Option<models::Principal>,
         config_schema_git_commits: Option<models::ConfigSchemaGitCommitList>,
-        overrides: Option<models::OverrideList>,
         config_type: Option<models::ConfigType>,
     ) -> ConfigSchema {
         ConfigSchema {
@@ -95,9 +88,8 @@ impl ConfigSchema {
             created_by_id,
             updated_by_id,
             created_by: created_by.map(Box::new),
-            updated_by: None,
+            updated_by: updated_by.map(Box::new),
             config_schema_git_commits: config_schema_git_commits.map(Box::new),
-            overrides: overrides.map(Box::new),
             config_type: config_type.map(Box::new),
         }
     }

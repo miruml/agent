@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use config_agent::app::options::{AppOptions, LifecycleOptions, StorageOptions};
 use config_agent::app::run::run;
 use config_agent::filesys::{dir::Dir, file::File};
+use config_agent::models::device::Device;
 use config_agent::server::serve::ServerOptions;
-use config_agent::storage::agent::Agent;
 use config_agent::storage::layout::StorageLayout;
 
 // external crates
@@ -22,10 +22,10 @@ async fn prepare_valid_server_storage(dir: Dir) {
         .await
         .unwrap();
 
-    // create the agent file
-    let agent_file = layout.agent_file();
-    let agent = Agent::default();
-    agent_file.write_json(&agent, false, false).await.unwrap();
+    // create the device file
+    let device_file = layout.device_file();
+    let device = Device::default();
+    device_file.write_json(&device, false, false).await.unwrap();
 }
 
 #[tokio::test]

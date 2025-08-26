@@ -2,9 +2,6 @@
 use std::cmp::min;
 use std::env;
 
-// external
-use serde_json::json;
-
 // globals
 pub const PATH_DELIMITER: &str = "__SEP__";
 pub const GIT_RELEASE_TAG_KEY: Option<&str> = option_env!("MIRU_AGENT_GIT_RELEASE_TAG");
@@ -24,11 +21,17 @@ pub fn has_version_flag() -> bool {
         .any(|arg| arg == "version" || arg == "--version" || arg == "-v")
 }
 
-pub fn version_info() -> serde_json::Value {
-    json!({
-        "version": GIT_RELEASE_TAG_KEY.unwrap_or("unknown"),
-        "commit": GIT_COMMIT_HASH_KEY.unwrap_or("unknown"),
-    })
+#[derive(Debug, Clone)]
+pub struct VersionInfo {
+    pub version: String,
+    pub commit: String,
+}
+
+pub fn version_info() -> VersionInfo {
+    VersionInfo {
+        version: GIT_RELEASE_TAG_KEY.unwrap_or("unknown").to_string(),
+        commit: GIT_COMMIT_HASH_KEY.unwrap_or("unknown").to_string(),
+    }
 }
 
 pub fn calc_exp_backoff(base: i64, growth_factor: i64, exp: u32, max: i64) -> i64 {
@@ -50,4 +53,8 @@ impl Default for CooldownOptions {
             max_secs: 12 * 60 * 60, // 12 hours
         }
     }
+}
+
+pub trait Mergeable<UpdatesT> {
+    fn merge(&mut self, updates: UpdatesT);
 }

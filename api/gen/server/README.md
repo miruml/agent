@@ -22,13 +22,17 @@ openapi-server = { path = "./openapi-server" }
 
 ## Documentation for API Endpoints
 
-All URIs are relative to *https://configs.dev.api.miruml.com/agent/v1*
+All URIs are relative to *http://localhost/v1*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
-*ConfigInstancesApi* | [**get_latest_config_instance**](docs/ConfigInstancesApi.md#get_latest_config_instance) | **GET** /config_instances/deployed | Get the latest config instance
+*ConfigInstancesApi* | [**get_deployed_config_instance**](docs/ConfigInstancesApi.md#get_deployed_config_instance) | **GET** /config_instances/deployed | Get the deployed config instance
 *ConfigSchemasApi* | [**hash_config_schema_serialized**](docs/ConfigSchemasApi.md#hash_config_schema_serialized) | **POST** /config_schemas/hash/serialized | Hash a serialized config schema
+*DevicesApi* | [**get_device**](docs/DevicesApi.md#get_device) | **GET** /device | Get the device
+*DevicesApi* | [**sync_device**](docs/DevicesApi.md#sync_device) | **POST** /device/sync | Sync the device
 *ErrorsApi* | [**get_error**](docs/ErrorsApi.md#get_error) | **GET** /example-error | Get an error
+*InfoApi* | [**health_get**](docs/InfoApi.md#health_get) | **GET** /health | Get the health of the agent
+*InfoApi* | [**version_get**](docs/InfoApi.md#version_get) | **GET** /version | Get the version of the agent
 
 
 ## Documentation For Models
@@ -39,11 +43,17 @@ Class | Method | HTTP request | Description
  - [ConfigInstanceErrorStatus](docs/ConfigInstanceErrorStatus.md)
  - [ConfigInstanceStatus](docs/ConfigInstanceStatus.md)
  - [ConfigInstanceTargetStatus](docs/ConfigInstanceTargetStatus.md)
+ - [Device](docs/Device.md)
+ - [DeviceStatus](docs/DeviceStatus.md)
  - [Error](docs/Error.md)
  - [ErrorResponse](docs/ErrorResponse.md)
  - [HashSchemaSerializedRequest](docs/HashSchemaSerializedRequest.md)
  - [HashSerializedConfigSchemaFormat](docs/HashSerializedConfigSchemaFormat.md)
+ - [HealthResponse](docs/HealthResponse.md)
  - [SchemaDigestResponse](docs/SchemaDigestResponse.md)
+ - [SyncDeviceResponse](docs/SyncDeviceResponse.md)
+ - [SyncDeviceResult](docs/SyncDeviceResult.md)
+ - [VersionResponse](docs/VersionResponse.md)
 
 
 To get access to the crate's generated documentation, use:

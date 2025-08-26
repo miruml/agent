@@ -18,10 +18,10 @@ pub trait PathExt {
             true => self.path().clone(),
             false => {
                 let current_dir = env::current_dir().map_err(|e| {
-                    FileSysErr::UnknownCurrentDirErr(UnknownCurrentDirErr {
+                    FileSysErr::UnknownCurrentDirErr(Box::new(UnknownCurrentDirErr {
                         source: Box::new(e),
                         trace: trace!(),
-                    })
+                    }))
                 })?;
                 current_dir.join(self.path())
             }
@@ -35,20 +35,22 @@ pub trait PathExt {
 
     fn assert_exists(&self) -> Result<(), FileSysErr> {
         if !self.exists() {
-            return Err(FileSysErr::PathDoesNotExistErr(PathDoesNotExistErr {
-                path: self.path().clone(),
-                trace: trace!(),
-            }));
+            return Err(FileSysErr::PathDoesNotExistErr(Box::new(
+                PathDoesNotExistErr {
+                    path: self.path().clone(),
+                    trace: trace!(),
+                },
+            )));
         }
         Ok(())
     }
 
     fn assert_doesnt_exist(&self) -> Result<(), FileSysErr> {
         if self.exists() {
-            return Err(FileSysErr::PathExistsErr(PathExistsErr {
+            return Err(FileSysErr::PathExistsErr(Box::new(PathExistsErr {
                 path: self.path().clone(),
                 trace: trace!(),
-            }));
+            })));
         }
         Ok(())
     }

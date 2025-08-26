@@ -4,29 +4,37 @@ use std::sync::Arc;
 
 // internal crates
 use crate::activity::ActivityTracker;
-use crate::auth::{
+use crate::authn::{
     token::Token,
-    token_mngr::{TokenManager, TokenManagerExt},
+    token_mngr::{TokenFile, TokenManager, TokenManagerExt},
 };
 use crate::crypt::jwt;
 use crate::deploy::fsm;
-use crate::filesys::{cached_file::CachedFile, file::File, path::PathExt};
+use crate::filesys::path::PathExt;
 use crate::http::client::HTTPClient;
+use crate::models::{
+    device,
+    device::{Device, DeviceStatus},
+};
 use crate::server::errors::*;
 use crate::storage::{
-    agent::Agent,
     caches::{CacheCapacities, Caches},
+    device::DeviceFile,
     layout::StorageLayout,
 };
 use crate::sync::syncer::{Syncer, SyncerArgs, SyncerExt};
 use crate::trace;
 use crate::utils::CooldownOptions;
 
+// external crates
+use tokio::task::JoinHandle;
+use tracing::info;
+
 pub type DeviceID = String;
 
 #[derive(Clone, Debug)]
 pub struct AppState {
-    pub device_id: String,
+    pub device_file: Arc<DeviceFile>,
     pub http_client: Arc<HTTPClient>,
     pub syncer: Arc<Syncer>,
     pub caches: Arc<Caches>,
@@ -50,8 +58,8 @@ impl AppState {
                 trace: trace!(),
             }))
         })?;
-        let agent_file = layout.agent_file();
-        let token_file = CachedFile::new_with_default(auth_dir.token_file(), Token::default())
+
+        let token_file = TokenFile::new_with_default(auth_dir.token_file(), Token::default())
             .await
             .map_err(|e| {
                 ServerErr::FileSysErr(Box::new(ServerFileSysErr {
@@ -61,7 +69,11 @@ impl AppState {
             })?;
 
         // get the device id
-        let device_id = Self::init_device_id(&agent_file, &token_file).await?;
+        let device_id = Self::init_device_id(layout, &token_file).await?;
+
+        let (device_file, device_file_handle) =
+            Self::init_device_file(layout, device_id.clone()).await?;
+        let device_file = Arc::new(device_file);
 
         // initialize the caches
         let (caches, caches_shutdown_handle) =
@@ -82,7 +94,7 @@ impl AppState {
             private_key_file,
         )
         .map_err(|e| {
-            ServerErr::AuthErr(Box::new(ServerAuthErr {
+            ServerErr::AuthnErr(Box::new(ServerAuthnErr {
                 source: e,
                 trace: trace!(),
             }))
@@ -119,14 +131,14 @@ impl AppState {
         let activity_tracker = Arc::new(ActivityTracker::new());
 
         let shutdown_handle = async move {
-            let handles = vec![token_mngr_handle, syncer_handle];
+            let handles = vec![token_mngr_handle, syncer_handle, device_file_handle];
 
             futures::future::join(futures::future::join_all(handles), caches_shutdown_handle).await;
         };
 
         Ok((
             AppState {
-                device_id,
+                device_file,
                 http_client,
                 syncer,
                 caches,
@@ -138,25 +150,25 @@ impl AppState {
     }
 
     async fn init_device_id(
-        agent_file: &File,
-        token_file: &CachedFile<Token>,
+        layout: &StorageLayout,
+        token_file: &TokenFile,
     ) -> Result<DeviceID, ServerErr> {
         // attempt to get the device id from the agent file
-        let agent_file_err = match agent_file.read_json::<Agent>().await {
-            Ok(agent) => {
-                return Ok(agent.device_id);
+        let device_file_err = match layout.device_file().read_json::<Device>().await {
+            Ok(device) => {
+                return Ok(device.id.clone());
             }
             Err(e) => e,
         };
 
         // attempt to get the device id from the existing token on file
-        let token = token_file.read();
+        let token = token_file.read().await;
         let device_id = match jwt::extract_device_id(&token.token) {
             Ok(device_id) => device_id,
             Err(e) => {
                 return Err(ServerErr::MissingDeviceIDErr(Box::new(
                     MissingDeviceIDErr {
-                        agent_file_err,
+                        device_file_err,
                         jwt_err: e,
                         trace: trace!(),
                     },
@@ -167,7 +179,48 @@ impl AppState {
         Ok(device_id)
     }
 
+    async fn init_device_file(
+        layout: &StorageLayout,
+        device_id: String,
+    ) -> Result<(DeviceFile, JoinHandle<()>), ServerErr> {
+        // initialize the device file with some reasonable defaults
+        let (device_file, device_file_handle) = DeviceFile::spawn_with_default(
+            64,
+            layout.device_file(),
+            Device {
+                id: device_id.clone(),
+                activated: true,
+                status: DeviceStatus::Offline,
+                ..Device::default()
+            },
+        )
+        .await
+        .map_err(|e| {
+            ServerErr::FileSysErr(Box::new(ServerFileSysErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
+
+        // always set the device to be offline on boot
+        device_file
+            .patch(device::Updates {
+                status: Some(DeviceStatus::Offline),
+                ..device::Updates::empty()
+            })
+            .await
+            .map_err(|e| {
+                ServerErr::FileSysErr(Box::new(ServerFileSysErr {
+                    source: e,
+                    trace: trace!(),
+                }))
+            })?;
+        Ok((device_file, device_file_handle))
+    }
+
     pub async fn shutdown(&self) -> Result<(), ServerErr> {
+        self.shutdown_device_file().await?;
+
         // shutdown the syncer
         self.syncer.shutdown().await.map_err(|e| {
             ServerErr::SyncErr(Box::new(ServerSyncErr {
@@ -186,12 +239,46 @@ impl AppState {
 
         // shutdown the token manager
         self.token_mngr.shutdown().await.map_err(|e| {
-            ServerErr::AuthErr(Box::new(ServerAuthErr {
+            ServerErr::AuthnErr(Box::new(ServerAuthnErr {
                 source: e,
                 trace: trace!(),
             }))
         })?;
 
         Ok(())
+    }
+
+    async fn shutdown_device_file(&self) -> Result<(), ServerErr> {
+        let device = self.device_file.read().await.map_err(|e| {
+            ServerErr::FileSysErr(Box::new(ServerFileSysErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
+
+        // if the last known device status was online, we'll set it to be offline
+        match device.status {
+            device::DeviceStatus::Online => {
+                info!("Shutting down device file, setting device to offline");
+                self.device_file
+                    .patch(device::Updates::disconnected())
+                    .await
+                    .map_err(|e| {
+                        ServerErr::FileSysErr(Box::new(ServerFileSysErr {
+                            source: e,
+                            trace: trace!(),
+                        }))
+                    })?;
+            }
+            device::DeviceStatus::Offline => {
+                info!("Shutting down device file, device is already offline");
+            }
+        }
+        self.device_file.shutdown().await.map_err(|e| {
+            ServerErr::FileSysErr(Box::new(ServerFileSysErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })
     }
 }

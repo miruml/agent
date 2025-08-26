@@ -2,7 +2,7 @@
 use std::fmt;
 
 // internal crates
-use config_agent::auth::errors::AuthErr;
+use config_agent::authn::errors::AuthnErr;
 use config_agent::crypt::errors::CryptErr;
 use config_agent::errors::{Code, HTTPCode, MiruError, Trace};
 use config_agent::filesys::errors::FileSysErr;
@@ -136,12 +136,12 @@ impl fmt::Display for InvalidOSGroupErr {
 }
 
 #[derive(Debug)]
-pub struct InstallerAuthErr {
-    pub source: AuthErr,
+pub struct InstallerAuthnErr {
+    pub source: AuthnErr,
     pub trace: Box<Trace>,
 }
 
-impl MiruError for InstallerAuthErr {
+impl MiruError for InstallerAuthnErr {
     fn code(&self) -> Code {
         Code::InternalServerError
     }
@@ -159,7 +159,7 @@ impl MiruError for InstallerAuthErr {
     }
 }
 
-impl fmt::Display for InstallerAuthErr {
+impl fmt::Display for InstallerAuthnErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.source)
     }
@@ -324,7 +324,7 @@ pub enum InstallerErr {
     InvalidOSGroupErr(InvalidOSGroupErr),
 
     // internal crate errors
-    AuthErr(InstallerAuthErr),
+    AuthnErr(InstallerAuthnErr),
     CryptErr(InstallerCryptErr),
     FileSysErr(InstallerFileSysErr),
     HTTPErr(InstallerHTTPErr),
@@ -344,7 +344,7 @@ macro_rules! forward_error_method {
             Self::InvalidOSGroupErr(e) => e.$method($($arg)?),
 
             // internal crate errors
-            Self::AuthErr(e) => e.$method($($arg)?),
+            Self::AuthnErr(e) => e.$method($($arg)?),
             Self::CryptErr(e) => e.$method($($arg)?),
             Self::FileSysErr(e) => e.$method($($arg)?),
             Self::HTTPErr(e) => e.$method($($arg)?),

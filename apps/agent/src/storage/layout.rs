@@ -28,8 +28,8 @@ impl StorageLayout {
         AuthLayout::new(self.internal_dir().subdir("auth"))
     }
 
-    pub fn agent_file(&self) -> File {
-        self.internal_dir().file("agent.json")
+    pub fn device_file(&self) -> File {
+        self.internal_dir().file("device.json")
     }
 
     pub fn settings_file(&self) -> File {

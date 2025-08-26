@@ -2,7 +2,7 @@
 use std::fmt;
 
 // internal crates
-use crate::auth::errors::AuthErr;
+use crate::authn::errors::AuthnErr;
 use crate::cache::errors::CacheErr;
 use crate::crud::errors::CrudErr;
 use crate::deploy::errors::DeployErr;
@@ -14,12 +14,12 @@ use crate::storage::errors::StorageErr;
 use chrono::{DateTime, Utc};
 
 #[derive(Debug)]
-pub struct SyncAuthErr {
-    pub source: AuthErr,
+pub struct SyncAuthnErr {
+    pub source: AuthnErr,
     pub trace: Box<Trace>,
 }
 
-impl MiruError for SyncAuthErr {
+impl MiruError for SyncAuthnErr {
     fn code(&self) -> Code {
         self.source.code()
     }
@@ -37,7 +37,7 @@ impl MiruError for SyncAuthErr {
     }
 }
 
-impl fmt::Display for SyncAuthErr {
+impl fmt::Display for SyncAuthnErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Auth error: {}", self.source)
     }
@@ -371,7 +371,7 @@ impl fmt::Display for MockErr {
 
 #[derive(Debug)]
 pub enum SyncErr {
-    AuthErr(Box<SyncAuthErr>),
+    AuthnErr(Box<SyncAuthnErr>),
     CacheErr(Box<SyncCacheErr>),
     CrudErr(Box<SyncCrudErr>),
     DeployErr(Box<SyncDeployErr>),
@@ -391,7 +391,7 @@ pub enum SyncErr {
 macro_rules! forward_error_method {
     ($self:ident, $method:ident $(, $arg:expr)?) => {
         match $self {
-            SyncErr::AuthErr(e) => e.$method($($arg)?),
+            SyncErr::AuthnErr(e) => e.$method($($arg)?),
             SyncErr::CacheErr(e) => e.$method($($arg)?),
             SyncErr::CrudErr(e) => e.$method($($arg)?),
             SyncErr::DeployErr(e) => e.$method($($arg)?),

@@ -13,7 +13,6 @@ Name | Type | Description | Notes
 **updated_by_id** | **String** |  | 
 **created_by** | Option<[**models::Principal**](Principal.md)> |  | 
 **updated_by** | Option<[**models::Principal**](Principal.md)> |  | 
-**schema** | Option<[**serde_json::Value**](.md)> |  | 
 **tags** | Option<[**models::TagList**](TagList.md)> |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

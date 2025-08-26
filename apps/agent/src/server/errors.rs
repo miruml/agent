@@ -2,7 +2,7 @@
 use std::fmt;
 
 // internal crates
-use crate::auth::errors::AuthErr;
+use crate::authn::errors::AuthnErr;
 use crate::cache::errors::CacheErr;
 use crate::crypt::errors::CryptErr;
 use crate::errors::MiruError;
@@ -46,7 +46,7 @@ impl fmt::Display for ServerCacheErr {
 
 #[derive(Debug)]
 pub struct MissingDeviceIDErr {
-    pub agent_file_err: FileSysErr,
+    pub device_file_err: FileSysErr,
     pub jwt_err: CryptErr,
     pub trace: Box<Trace>,
 }
@@ -71,7 +71,7 @@ impl MiruError for MissingDeviceIDErr {
 
 impl fmt::Display for MissingDeviceIDErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "unable to determine device id from the agent file or the token on file: agent file error: {}, jwt error: {}", self.agent_file_err, self.jwt_err)
+        write!(f, "unable to determine device id from the device file or the token on file: device file error: {}, jwt error: {}", self.device_file_err, self.jwt_err)
     }
 }
 
@@ -110,12 +110,12 @@ impl fmt::Display for ShutdownMngrDuplicateArgErr {
 }
 
 #[derive(Debug)]
-pub struct ServerAuthErr {
-    pub source: AuthErr,
+pub struct ServerAuthnErr {
+    pub source: AuthnErr,
     pub trace: Box<Trace>,
 }
 
-impl MiruError for ServerAuthErr {
+impl MiruError for ServerAuthnErr {
     fn code(&self) -> Code {
         self.source.code()
     }
@@ -133,7 +133,7 @@ impl MiruError for ServerAuthErr {
     }
 }
 
-impl fmt::Display for ServerAuthErr {
+impl fmt::Display for ServerAuthnErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "server auth error: {}", self.source)
     }
@@ -482,7 +482,7 @@ pub enum ServerErr {
     ShutdownMngrDuplicateArgErr(Box<ShutdownMngrDuplicateArgErr>),
 
     // internal crate errors
-    AuthErr(Box<ServerAuthErr>),
+    AuthnErr(Box<ServerAuthnErr>),
     CacheErr(Box<ServerCacheErr>),
     CryptErr(Box<ServerCryptErr>),
     FileSysErr(Box<ServerFileSysErr>),
@@ -504,7 +504,7 @@ macro_rules! forward_error_method {
             Self::MissingDeviceIDErr(e) => e.$method($($arg)?),
             Self::TimestampConversionErr(e) => e.$method($($arg)?),
             Self::ShutdownMngrDuplicateArgErr(e) => e.$method($($arg)?),
-            Self::AuthErr(e) => e.$method($($arg)?),
+            Self::AuthnErr(e) => e.$method($($arg)?),
             Self::CryptErr(e) => e.$method($($arg)?),
             Self::FileSysErr(e) => e.$method($($arg)?),
             Self::HTTPErr(e) => e.$method($($arg)?),

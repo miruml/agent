@@ -45,19 +45,17 @@ pub struct ConfigSchema {
     pub updated_by_id: String,
     #[serde(rename = "created_by", deserialize_with = "Option::deserialize")]
     pub created_by: Option<Box<models::Principal>>,
-    #[serde(rename = "updated_by", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
-    pub updated_by: Option<Option<Box<models::Principal>>>,
+    #[serde(rename = "updated_by", deserialize_with = "Option::deserialize")]
+    pub updated_by: Option<Box<models::Principal>>,
     #[serde(rename = "config_schema_git_commits", deserialize_with = "Option::deserialize")]
     pub config_schema_git_commits: Option<Box<models::ConfigSchemaGitCommitList>>,
-    #[serde(rename = "overrides", deserialize_with = "Option::deserialize")]
-    pub overrides: Option<Box<models::OverrideList>>,
     /// Expand the config type using 'expand[]=config_type' in the query string
     #[serde(rename = "config_type", deserialize_with = "Option::deserialize")]
     pub config_type: Option<Box<models::ConfigType>>,
 }
 
 impl ConfigSchema {
-    pub fn new(object: Object, id: String, version: i32, digest: String, relative_filepath: String, created_at: String, updated_at: String, config_type_id: String, content: Option<serde_json::Value>, created_by_id: String, updated_by_id: String, created_by: Option<models::Principal>, config_schema_git_commits: Option<models::ConfigSchemaGitCommitList>, overrides: Option<models::OverrideList>, config_type: Option<models::ConfigType>) -> ConfigSchema {
+    pub fn new(object: Object, id: String, version: i32, digest: String, relative_filepath: String, created_at: String, updated_at: String, config_type_id: String, content: Option<serde_json::Value>, created_by_id: String, updated_by_id: String, created_by: Option<models::Principal>, updated_by: Option<models::Principal>, config_schema_git_commits: Option<models::ConfigSchemaGitCommitList>, config_type: Option<models::ConfigType>) -> ConfigSchema {
         ConfigSchema {
             object,
             id,
@@ -71,9 +69,8 @@ impl ConfigSchema {
             created_by_id,
             updated_by_id,
             created_by: if let Some(x) = created_by {Some(Box::new(x))} else {None},
-            updated_by: None,
+            updated_by: if let Some(x) = updated_by {Some(Box::new(x))} else {None},
             config_schema_git_commits: if let Some(x) = config_schema_git_commits {Some(Box::new(x))} else {None},
-            overrides: if let Some(x) = overrides {Some(Box::new(x))} else {None},
             config_type: if let Some(x) = config_type {Some(Box::new(x))} else {None},
         }
     }

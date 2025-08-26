@@ -3,14 +3,14 @@ use std::sync::Arc;
 
 // internal crates
 use crate::activity::ActivityTracker;
-use crate::auth::token_mngr::TokenManager;
+use crate::authn::token_mngr::TokenManager;
 use crate::http::client::HTTPClient;
-use crate::storage::caches::Caches;
+use crate::storage::{caches::Caches, device::DeviceFile};
 use crate::sync::syncer::Syncer;
 
 #[derive(Clone, Debug)]
 pub struct ServerState {
-    pub device_id: String,
+    pub device_file: Arc<DeviceFile>,
     pub http_client: Arc<HTTPClient>,
     pub syncer: Arc<Syncer>,
     pub caches: Arc<Caches>,
@@ -20,7 +20,7 @@ pub struct ServerState {
 
 impl ServerState {
     pub fn new(
-        device_id: String,
+        device_file: Arc<DeviceFile>,
         http_client: Arc<HTTPClient>,
         syncer: Arc<Syncer>,
         caches: Arc<Caches>,
@@ -28,7 +28,7 @@ impl ServerState {
         activity_tracker: Arc<ActivityTracker>,
     ) -> Self {
         ServerState {
-            device_id,
+            device_file,
             http_client,
             syncer,
             caches,

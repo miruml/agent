@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 // internal crates
-use crate::auth::token_mngr::{TokenManager, TokenManagerExt};
+use crate::authn::token_mngr::{TokenManager, TokenManagerExt};
 use crate::crud::prelude::*;
 use crate::deploy::{apply::apply, fsm};
 use crate::errors::*;
@@ -55,10 +55,21 @@ pub struct SyncerArgs<HTTPClientT: ConfigInstancesExt, TokenManagerT: TokenManag
 
 #[derive(Debug, Clone)]
 pub struct SyncState {
-    pub last_sync_attempted_at: DateTime<Utc>,
-    pub last_successful_sync_at: DateTime<Utc>,
+    pub last_attempted_sync_at: DateTime<Utc>,
+    pub last_synced_at: DateTime<Utc>,
     pub cooldown_ends_at: DateTime<Utc>,
     pub err_streak: u32,
+}
+
+impl Default for SyncState {
+    fn default() -> Self {
+        Self {
+            last_attempted_sync_at: DateTime::<Utc>::UNIX_EPOCH,
+            last_synced_at: DateTime::<Utc>::UNIX_EPOCH,
+            cooldown_ends_at: DateTime::<Utc>::UNIX_EPOCH,
+            err_streak: 0,
+        }
+    }
 }
 
 impl SyncState {
@@ -98,8 +109,8 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
             fsm_settings: args.fsm_settings,
             cooldown_options: args.cooldown_options,
             state: SyncState {
-                last_sync_attempted_at: DateTime::<Utc>::UNIX_EPOCH,
-                last_successful_sync_at: DateTime::<Utc>::UNIX_EPOCH,
+                last_attempted_sync_at: DateTime::<Utc>::UNIX_EPOCH,
+                last_synced_at: DateTime::<Utc>::UNIX_EPOCH,
                 cooldown_ends_at: DateTime::<Utc>::UNIX_EPOCH,
                 err_streak: 0,
             },
@@ -150,7 +161,7 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
             info!("skipping device sync since the cooldown ends at {:?} (err streak: {}, last successful sync at: {:?})",
                 self.state.cooldown_ends_at,
                 self.state.err_streak,
-                self.state.last_successful_sync_at
+                self.state.last_synced_at
             );
             return Ok(());
         }
@@ -166,7 +177,7 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
             })));
         }
 
-        self.state.last_sync_attempted_at = Utc::now();
+        self.state.last_attempted_sync_at = Utc::now();
         let result = self.sync_impl().await;
         let (success, cooldown_secs) = match &result {
             Ok(_) => {
@@ -181,7 +192,7 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
                 } else {
                     info!("successfully synced with backend");
                 }
-                self.state.last_successful_sync_at = Utc::now();
+                self.state.last_synced_at = Utc::now();
                 self.state.cooldown_ends_at = Utc::now();
                 self.state.err_streak = 0;
                 (true, self.cooldown_options.base_secs)
@@ -229,7 +240,7 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
 
     async fn sync_impl(&mut self) -> Result<(), SyncErr> {
         let token = self.token_mngr.get_token().await.map_err(|e| {
-            SyncErr::AuthErr(Box::new(SyncAuthErr {
+            SyncErr::AuthnErr(Box::new(SyncAuthnErr {
                 source: e,
                 trace: trace!(),
             }))
@@ -320,7 +331,7 @@ pub trait SyncerExt {
     async fn get_sync_state(&self) -> Result<SyncState, SyncErr>;
     async fn is_in_cooldown(&self) -> Result<bool, SyncErr>;
     async fn get_cooldown_ends_at(&self) -> Result<DateTime<Utc>, SyncErr>;
-    async fn get_last_sync_attempted_at(&self) -> Result<DateTime<Utc>, SyncErr>;
+    async fn get_last_attempted_sync_at(&self) -> Result<DateTime<Utc>, SyncErr>;
     async fn sync(&self) -> Result<(), SyncErr>;
     async fn sync_if_not_in_cooldown(&self) -> Result<(), SyncErr>;
     async fn subscribe(&self) -> Result<watch::Receiver<SyncEvent>, SyncErr>;
@@ -512,9 +523,9 @@ impl SyncerExt for Syncer {
         Ok(state.cooldown_ends_at)
     }
 
-    async fn get_last_sync_attempted_at(&self) -> Result<DateTime<Utc>, SyncErr> {
+    async fn get_last_attempted_sync_at(&self) -> Result<DateTime<Utc>, SyncErr> {
         let state = self.get_sync_state().await?;
-        Ok(state.last_sync_attempted_at)
+        Ok(state.last_attempted_sync_at)
     }
 
     async fn sync_if_not_in_cooldown(&self) -> Result<(), SyncErr> {

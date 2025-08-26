@@ -10,13 +10,13 @@ use crate::{utils, utils::Colors};
 use config_agent::crypt::{jwt, rsa};
 use config_agent::filesys::file::File;
 use config_agent::http::devices::DevicesExt;
-use config_agent::storage::{
-    agent::Agent, layout::StorageLayout, settings, setup::clean_storage_setup,
-};
+use config_agent::models::device::{Device, DeviceStatus};
+use config_agent::storage::{layout::StorageLayout, settings, setup::clean_storage_setup};
 use config_agent::trace;
 use openapi_client::models::ActivateDeviceRequest;
 
 // external crates
+use chrono::{DateTime, Utc};
 use dialoguer::Password;
 use indicatif::{ProgressBar, ProgressStyle};
 #[allow(unused_imports)]
@@ -24,8 +24,6 @@ use tracing::{debug, error, info, warn};
 
 const LANDING_PAGE_URL: &str = "https://miruml.com";
 const MIRU_DEVICES_PAGE: &str = "https://configs.miruml.com/devices";
-
-type DeviceID = String;
 
 // walks user through the installation process
 pub async fn install<HTTPClientT: DevicesExt>(
@@ -50,14 +48,19 @@ pub async fn install<HTTPClientT: DevicesExt>(
         })?;
 
     // activate the device
-    let device_id = activate_device(http_client, &public_key_file, token, device_name).await?;
+    let device = activate_device(http_client, &public_key_file, token, device_name).await?;
 
     // setup a clean storage layout with the new authentication & device id
     clean_storage_setup(
         layout,
-        &Agent {
-            device_id,
+        &Device {
+            id: device.id,
+            name: device.name,
             activated: true,
+            status: DeviceStatus::Online,
+            last_synced_at: DateTime::<Utc>::UNIX_EPOCH,
+            last_connected_at: DateTime::<Utc>::UNIX_EPOCH,
+            last_disconnected_at: DateTime::<Utc>::UNIX_EPOCH,
         },
         settings,
         &private_key_file,
@@ -87,7 +90,7 @@ pub async fn activate_device<HTTPClientT: DevicesExt>(
     public_key_file: &File,
     provided_token: Option<String>,
     device_name: Option<String>,
-) -> Result<DeviceID, InstallerErr> {
+) -> Result<openapi_client::models::Device, InstallerErr> {
     let mut attempt = 0;
 
     loop {
@@ -119,8 +122,8 @@ pub async fn activate_device<HTTPClientT: DevicesExt>(
         )
         .await;
         match result {
-            Ok(_) => {
-                return Ok(device_id);
+            Ok(device) => {
+                return Ok(device);
             }
             // error -> let user decide if they want to retry
             Err(e) => {
@@ -176,8 +179,7 @@ pub async fn request_activation<HTTPClientT: DevicesExt>(
     token: &str,
     device_id: &str,
     device_name: Option<String>,
-) -> Result<(), InstallerErr> {
-
+) -> Result<openapi_client::models::Device, InstallerErr> {
     // progress bar
     let pb = ProgressBar::new_spinner();
     pb.set_style(
@@ -196,7 +198,7 @@ pub async fn request_activation<HTTPClientT: DevicesExt>(
             trace: trace!(),
         })
     })?;
-    let payload = ActivateDeviceRequest { 
+    let payload = ActivateDeviceRequest {
         public_key_pem,
         name: Some(device_name),
     };
@@ -217,5 +219,5 @@ pub async fn request_activation<HTTPClientT: DevicesExt>(
     );
     pb.finish_with_message(msg);
 
-    Ok(())
+    Ok(device)
 }

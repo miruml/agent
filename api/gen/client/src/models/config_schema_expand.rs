@@ -24,8 +24,6 @@ pub enum ConfigSchemaExpand {
     CONFIG_SCHEMA_EXPAND_CONFIG_TYPE,
     #[serde(rename = "config_schema_git_commits")]
     CONFIG_SCHEMA_EXPAND_CONFIG_SCHEMA_GIT_COMMITS,
-    #[serde(rename = "overrides")]
-    CONFIG_SCHEMA_EXPAND_OVERRIDES,
 
 }
 
@@ -37,7 +35,6 @@ impl std::fmt::Display for ConfigSchemaExpand {
             Self::CONFIG_SCHEMA_EXPAND_CONTENT => write!(f, "content"),
             Self::CONFIG_SCHEMA_EXPAND_CONFIG_TYPE => write!(f, "config_type"),
             Self::CONFIG_SCHEMA_EXPAND_CONFIG_SCHEMA_GIT_COMMITS => write!(f, "config_schema_git_commits"),
-            Self::CONFIG_SCHEMA_EXPAND_OVERRIDES => write!(f, "overrides"),
         }
     }
 }

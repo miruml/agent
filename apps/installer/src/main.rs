@@ -20,7 +20,7 @@ use tracing::{debug, error, info, trace, warn};
 async fn main() {
     // print the version and exit if that is all the is requested
     if has_version_flag() {
-        println!("{}", version_info());
+        println!("{:?}", version_info());
         return;
     }
 

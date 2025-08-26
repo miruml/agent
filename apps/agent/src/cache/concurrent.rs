@@ -142,33 +142,33 @@ where
         while let Some(cmd) = self.receiver.recv().await {
             match cmd {
                 WorkerCommand::Shutdown { respond_to } => {
-                    if let Err(e) = respond_to.send(Ok(())) {
-                        error!("Actor failed to send shutdown response: {:?}", e);
+                    if respond_to.send(Ok(())).is_err() {
+                        error!("Actor failed to send shutdown response");
                     }
                     break;
                 }
                 WorkerCommand::ReadEntryOptional { key, respond_to } => {
                     let result = self.cache.read_entry_optional(&key).await;
-                    if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to read optional cache entry: {:?}", e);
+                    if respond_to.send(result).is_err() {
+                        error!("Actor failed to read optional cache entry");
                     }
                 }
                 WorkerCommand::ReadEntry { key, respond_to } => {
                     let result = self.cache.read_entry(&key).await;
-                    if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to read cache entry: {:?}", e);
+                    if respond_to.send(result).is_err() {
+                        error!("Actor failed to read cache entry");
                     }
                 }
                 WorkerCommand::ReadOptional { key, respond_to } => {
                     let result = self.cache.read_optional(&key).await;
-                    if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to read optional cache entry: {:?}", e);
+                    if respond_to.send(result).is_err() {
+                        error!("Actor failed to read optional cache entry");
                     }
                 }
                 WorkerCommand::Read { key, respond_to } => {
                     let result = self.cache.read(&key).await;
-                    if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to read cache entry: {:?}", e);
+                    if respond_to.send(result).is_err() {
+                        error!("Actor failed to read cache entry");
                     }
                 }
                 WorkerCommand::Write {
@@ -179,62 +179,62 @@ where
                     respond_to,
                 } => {
                     let result = self.cache.write(key, value, is_dirty, overwrite).await;
-                    if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to write cache entry: {:?}", e);
+                    if respond_to.send(result).is_err() {
+                        error!("Actor failed to write cache entry");
                     }
                 }
                 WorkerCommand::Delete { key, respond_to } => {
                     let result = self.cache.delete(&key).await;
-                    if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to delete cache entry: {:?}", e);
+                    if respond_to.send(result).is_err() {
+                        error!("Actor failed to delete cache entry");
                     }
                 }
                 WorkerCommand::Prune { respond_to } => {
                     let result = self.cache.prune().await;
-                    if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to prune cache: {:?}", e);
+                    if respond_to.send(result).is_err() {
+                        error!("Actor failed to prune cache");
                     }
                 }
                 WorkerCommand::Size { respond_to } => {
                     let result = self.cache.size().await;
-                    if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to get cache size: {:?}", e);
+                    if respond_to.send(result).is_err() {
+                        error!("Actor failed to get cache size");
                     }
                 }
                 WorkerCommand::Entries { respond_to } => {
                     let result = self.cache.entries().await;
-                    if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to get cache entries: {:?}", e);
+                    if respond_to.send(result).is_err() {
+                        error!("Actor failed to get cache entries");
                     }
                 }
                 WorkerCommand::Values { respond_to } => {
                     let result = self.cache.values().await;
-                    if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to get cache values: {:?}", e);
+                    if respond_to.send(result).is_err() {
+                        error!("Actor failed to get cache values");
                     }
                 }
                 WorkerCommand::EntryMap { respond_to } => {
                     let result = self.cache.entry_map().await;
-                    if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to get cache entry map: {:?}", e);
+                    if respond_to.send(result).is_err() {
+                        error!("Actor failed to get cache entry map");
                     }
                 }
                 WorkerCommand::ValueMap { respond_to } => {
                     let result = self.cache.value_map().await;
-                    if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to get cache value map: {:?}", e);
+                    if respond_to.send(result).is_err() {
+                        error!("Actor failed to get cache value map");
                     }
                 }
                 WorkerCommand::FindEntriesWhere { filter, respond_to } => {
                     let result = self.cache.find_entries_where(filter).await;
-                    if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to find all cache entries: {:?}", e);
+                    if respond_to.send(result).is_err() {
+                        error!("Actor failed to find all cache entries");
                     }
                 }
                 WorkerCommand::FindWhere { filter, respond_to } => {
                     let result = self.cache.find_where(filter).await;
-                    if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to find all cache entries: {:?}", e);
+                    if respond_to.send(result).is_err() {
+                        error!("Actor failed to find all cache entries");
                     }
                 }
                 WorkerCommand::FindOneEntryOptional {
@@ -246,8 +246,8 @@ where
                         .cache
                         .find_one_entry_optional(filter_name, filter)
                         .await;
-                    if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to find one cache entry: {:?}", e);
+                    if respond_to.send(result).is_err() {
+                        error!("Actor failed to find one cache entry");
                     }
                 }
                 WorkerCommand::FindOneOptional {
@@ -256,8 +256,8 @@ where
                     respond_to,
                 } => {
                     let result = self.cache.find_one_optional(filter_name, filter).await;
-                    if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to find one cache entry: {:?}", e);
+                    if respond_to.send(result).is_err() {
+                        error!("Actor failed to find one cache entry");
                     }
                 }
                 WorkerCommand::FindOneEntry {
@@ -266,8 +266,8 @@ where
                     respond_to,
                 } => {
                     let result = self.cache.find_one_entry(filter_name, filter).await;
-                    if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to find one cache entry: {:?}", e);
+                    if respond_to.send(result).is_err() {
+                        error!("Actor failed to find one cache entry");
                     }
                 }
                 WorkerCommand::FindOne {
@@ -276,14 +276,14 @@ where
                     respond_to,
                 } => {
                     let result = self.cache.find_one(filter_name, filter).await;
-                    if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to find one cache entry: {:?}", e);
+                    if respond_to.send(result).is_err() {
+                        error!("Actor failed to find one cache entry");
                     }
                 }
                 WorkerCommand::GetDirtyEntries { respond_to } => {
                     let result = self.cache.get_dirty_entries().await;
-                    if let Err(e) = respond_to.send(result) {
-                        error!("Actor failed to get dirty entries: {:?}", e);
+                    if respond_to.send(result).is_err() {
+                        error!("Actor failed to get dirty entries");
                     }
                 }
             }

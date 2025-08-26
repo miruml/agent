@@ -16,9 +16,8 @@ Name | Type | Description | Notes
 **created_by_id** | **String** |  | 
 **updated_by_id** | **String** |  | 
 **created_by** | Option<[**models::Principal**](Principal.md)> |  | 
-**updated_by** | Option<[**models::Principal**](Principal.md)> |  | [optional]
+**updated_by** | Option<[**models::Principal**](Principal.md)> |  | 
 **config_schema_git_commits** | Option<[**models::ConfigSchemaGitCommitList**](ConfigSchemaGitCommitList.md)> |  | 
-**overrides** | Option<[**models::OverrideList**](OverrideList.md)> |  | 
 **config_type** | Option<[**models::ConfigType**](ConfigType.md)> | Expand the config type using 'expand[]=config_type' in the query string | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

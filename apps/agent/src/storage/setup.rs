@@ -1,22 +1,22 @@
 // internal crates
-use crate::auth::token::Token;
+use crate::authn::token::Token;
 use crate::filesys::file::File;
-use crate::storage::agent::Agent;
+use crate::models::device::Device;
 use crate::storage::settings::Settings;
 use crate::storage::{errors::*, layout::StorageLayout};
 use crate::trace;
 
 pub async fn clean_storage_setup(
     layout: &StorageLayout,
-    agent: &Agent,
+    device: &Device,
     settings: &Settings,
     private_key_file: &File,
     public_key_file: &File,
 ) -> Result<(), StorageErr> {
-    // overwrite the agent file
-    let agent_file = layout.agent_file();
-    agent_file
-        .write_json(&agent, true, true)
+    // overwrite the device file
+    let device_file = layout.device_file();
+    device_file
+        .write_json(&device, true, true)
         .await
         .map_err(|e| {
             StorageErr::FileSysErr(Box::new(StorageFileSysErr {

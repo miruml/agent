@@ -1,16 +1,17 @@
 // internal crates
 use config_agent::filesys::{dir::Dir, file::File, path::PathExt};
+use config_agent::models::device::Device;
 use config_agent::storage::settings::Settings;
-use config_agent::storage::{agent::Agent, layout::StorageLayout, setup::clean_storage_setup};
+use config_agent::storage::{layout::StorageLayout, setup::clean_storage_setup};
 
 pub mod setup_storage {
     use super::*;
 
     async fn validate_storage(layout: &StorageLayout) {
         // agent file
-        let agent_file = layout.agent_file();
-        let agent_file_content = agent_file.read_json::<Agent>().await.unwrap();
-        assert_eq!(agent_file_content, Agent::default());
+        let device_file = layout.device_file();
+        let device_file_content = device_file.read_json::<Device>().await.unwrap();
+        assert_eq!(device_file_content, Device::default());
 
         // settings file
         let settings_file = layout.settings_file();
@@ -66,10 +67,10 @@ pub mod setup_storage {
         public_key_file.delete().await.unwrap();
 
         // setup the storage
-        let agent = Agent::default();
+        let device = Device::default();
         clean_storage_setup(
             &layout,
-            &agent,
+            &device,
             &settings,
             &private_key_file,
             &public_key_file,
@@ -89,10 +90,10 @@ pub mod setup_storage {
         private_key_file.delete().await.unwrap();
 
         // setup the storage
-        let agent = Agent::default();
+        let device = Device::default();
         clean_storage_setup(
             &layout,
-            &agent,
+            &device,
             &settings,
             &private_key_file,
             &public_key_file,
@@ -111,10 +112,10 @@ pub mod setup_storage {
         let (private_key_file, public_key_file) = create_temp_key_files(&layout).await;
 
         // setup the storage
-        let agent = Agent::default();
+        let device = Device::default();
         clean_storage_setup(
             &layout,
-            &agent,
+            &device,
             &settings,
             &private_key_file,
             &public_key_file,
@@ -127,7 +128,7 @@ pub mod setup_storage {
     }
 
     #[tokio::test]
-    async fn agent_file_already_exists() {
+    async fn device_file_already_exists() {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
         let layout = StorageLayout::new(dir);
         let settings = Settings::default();
@@ -136,17 +137,17 @@ pub mod setup_storage {
         let (private_key_file, public_key_file) = create_temp_key_files(&layout).await;
 
         // create the agent file
-        let agent_file = layout.agent_file();
-        agent_file
-            .write_json(&Agent::default(), true, true)
+        let device_file = layout.device_file();
+        device_file
+            .write_json(&Device::default(), true, true)
             .await
             .unwrap();
 
         // setup the storage
-        let agent = Agent::default();
+        let device = Device::default();
         clean_storage_setup(
             &layout,
-            &agent,
+            &device,
             &settings,
             &private_key_file,
             &public_key_file,
@@ -171,11 +172,11 @@ pub mod setup_storage {
         auth_dir.root.create(false).await.unwrap();
 
         // setup the storage
-        let agent = Agent::default();
+        let device = Device::default();
         let settings = Settings::default();
         clean_storage_setup(
             &layout,
-            &agent,
+            &device,
             &settings,
             &private_key_file,
             &public_key_file,
@@ -196,11 +197,11 @@ pub mod setup_storage {
         let (private_key_file, public_key_file) = create_temp_key_files(&layout).await;
 
         // setup the storage
-        let agent = Agent::default();
+        let device = Device::default();
         let settings = Settings::default();
         clean_storage_setup(
             &layout,
-            &agent,
+            &device,
             &settings,
             &private_key_file,
             &public_key_file,
@@ -221,11 +222,11 @@ pub mod setup_storage {
         let (private_key_file, public_key_file) = create_temp_key_files(&layout).await;
 
         // setup the storage
-        let agent = Agent::default();
+        let device = Device::default();
         let settings = Settings::default();
         clean_storage_setup(
             &layout,
-            &agent,
+            &device,
             &settings,
             &private_key_file,
             &public_key_file,
@@ -253,10 +254,10 @@ pub mod setup_storage {
         assert!(subfile.exists());
 
         // setup the storage
-        let agent = Agent::default();
+        let device = Device::default();
         clean_storage_setup(
             &layout,
-            &agent,
+            &device,
             &settings,
             &private_key_file,
             &public_key_file,
@@ -287,10 +288,10 @@ pub mod setup_storage {
         assert!(subfile.exists());
 
         // setup the storage
-        let agent = Agent::default();
+        let device = Device::default();
         clean_storage_setup(
             &layout,
-            &agent,
+            &device,
             &settings,
             &private_key_file,
             &public_key_file,
