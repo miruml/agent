@@ -230,7 +230,7 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
         // schedule the cooldown end notification
         self.state.cooldown_ends_at = Utc::now() + TimeDelta::seconds(cooldown_secs);
         self.schedule_cooldown_end_notification(self.state.cooldown_ends_at, success);
-        info!(
+        debug!(
             "backend syncer cooling down for {cooldown_secs} seconds (until {:?})",
             self.state.cooldown_ends_at
         );

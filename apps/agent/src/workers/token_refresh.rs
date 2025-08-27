@@ -91,7 +91,7 @@ pub async fn run_token_refresh_worker<F, Fut, TokenManagerT: TokenManagerExt>(
         };
 
         let refresh_time = Utc::now() + next_wait;
-        info!("waiting until {:?} to refresh token", refresh_time);
+        debug!("waiting until {:?} to refresh token", refresh_time);
 
         // wait to refresh or shutdown if the signal is received
         tokio::select! {

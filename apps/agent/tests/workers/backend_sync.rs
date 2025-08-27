@@ -17,7 +17,7 @@ use config_agent::sync::{
 };
 use config_agent::workers::backend_sync::{
     handle_mqtt_error, handle_mqtt_event, handle_syncer_event, run_polling_sync_worker,
-    BackendSyncWorkerOptions,
+    BackendSyncWorkerOptions, MqttState,
 };
 
 use crate::authn::mock::MockTokenManager;
@@ -345,7 +345,8 @@ pub mod handle_mqtt_event {
             session_present: false,
         }));
         let syncer = MockSyncer::default();
-        handle_mqtt_event(&event, &syncer, &device_file).await;
+        let err_streak = handle_mqtt_event(&event, &syncer, &device_file).await;
+        assert_eq!(err_streak, 0);
 
         assert_eq!(syncer.num_sync_calls(), 0);
     }
@@ -373,7 +374,8 @@ pub mod handle_mqtt_event {
         }));
         let syncer = MockSyncer::default();
         let before_event = Utc::now();
-        handle_mqtt_event(&event, &syncer, &device_file).await;
+        let err_streak = handle_mqtt_event(&event, &syncer, &device_file).await;
+        assert_eq!(err_streak, 0);
 
         let device = device_file.read().await.unwrap();
         assert_eq!(device.status, DeviceStatus::Online);
@@ -401,7 +403,8 @@ pub mod handle_mqtt_event {
         let event = Event::Incoming(Incoming::Disconnect);
         let syncer = MockSyncer::default();
         let before_event = Utc::now();
-        handle_mqtt_event(&event, &syncer, &device_file).await;
+        let err_streak = handle_mqtt_event(&event, &syncer, &device_file).await;
+        assert_eq!(err_streak, 0);
 
         let device = device_file.read().await.unwrap();
         assert_eq!(device.status, DeviceStatus::Offline);
@@ -425,7 +428,8 @@ pub mod handle_mqtt_event {
             "test".to_string(),
         )));
         let syncer = MockSyncer::default();
-        handle_mqtt_event(&event, &syncer, &device_file).await;
+        let err_streak = handle_mqtt_event(&event, &syncer, &device_file).await;
+        assert_eq!(err_streak, 0);
 
         assert_eq!(syncer.num_sync_calls(), 1);
     }
@@ -448,7 +452,8 @@ pub mod handle_mqtt_event {
             payload_bytes,
         )));
         let syncer = MockSyncer::default();
-        handle_mqtt_event(&event, &syncer, &device_file).await;
+        let err_streak = handle_mqtt_event(&event, &syncer, &device_file).await;
+        assert_eq!(err_streak, 0);
 
         assert_eq!(syncer.num_sync_calls(), 0);
     }
@@ -471,7 +476,8 @@ pub mod handle_mqtt_event {
             payload_bytes,
         )));
         let syncer = MockSyncer::default();
-        handle_mqtt_event(&event, &syncer, &device_file).await;
+        let err_streak = handle_mqtt_event(&event, &syncer, &device_file).await;
+        assert_eq!(err_streak, 0);
 
         assert_eq!(syncer.num_sync_calls(), 1);
     }
@@ -499,7 +505,8 @@ pub mod handle_mqtt_event {
                 is_network_connection_error: false,
             })))
         });
-        handle_mqtt_event(&event, &syncer, &device_file).await;
+        let err_streak = handle_mqtt_event(&event, &syncer, &device_file).await;
+        assert_eq!(err_streak, 0);
 
         assert_eq!(syncer.num_sync_calls(), 1);
     }
@@ -510,6 +517,18 @@ pub mod handle_mqtt_error {
 
     #[tokio::test]
     async fn authentication_error_triggers_token_refresh() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let layout = StorageLayout::new(dir);
+
+        let device = Device {
+            status: DeviceStatus::Offline,
+            ..Device::default()
+        };
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, layout.device_file(), device)
+                .await
+                .unwrap();
+
         let token = Token {
             token: "token".to_string(),
             expires_at: Utc::now(),
@@ -524,22 +543,49 @@ pub mod handle_mqtt_error {
         let (mqtt_client, eventloop) = MQTTClient::new(&options).await;
         let created_at = mqtt_client.created_at;
 
-        let (mqtt_client, _) = handle_mqtt_error(
+        let before_patch = Utc::now();
+        let mqtt_state = MqttState {
+            mqtt_client,
+            eventloop,
+            err_streak: 2,
+        };
+        let mqtt_state = handle_mqtt_error(
+            mqtt_state,
             error,
             "device_id",
             &token_mngr,
-            &options.connect_address,
-            mqtt_client,
-            eventloop,
+            &options.connect_address, 
+            &device_file,
         )
         .await;
         assert_eq!(token_mngr.num_refresh_token_calls(), 1);
+
+        // should increment the error streak
+        assert_eq!(mqtt_state.err_streak, 3);
+
         // should reinitialize the mqtt client
-        assert_ne!(mqtt_client.created_at, created_at);
+        assert_ne!(mqtt_state.mqtt_client.created_at, created_at);
+
+        // shouldn't update the last disconnected at time since it was already offline
+        let device = device_file.read().await.unwrap();
+        assert_eq!(device.status, DeviceStatus::Offline);
+        assert!(device.last_disconnected_at <= before_patch);
     }
 
     #[tokio::test]
     async fn other_errors_are_ignored() {
+        let dir = Dir::create_temp_dir("testing").await.unwrap();
+        let layout = StorageLayout::new(dir);
+
+        let device = Device {
+            status: DeviceStatus::Online,
+            ..Device::default()
+        };
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, layout.device_file(), device)
+                .await
+                .unwrap();
+
         let token = Token {
             token: "token".to_string(),
             expires_at: Utc::now(),
@@ -554,17 +600,33 @@ pub mod handle_mqtt_error {
         let (mqtt_client, eventloop) = MQTTClient::new(&options).await;
         let created_at = mqtt_client.created_at;
 
-        let (mqtt_client, _) = handle_mqtt_error(
+        let before_patch = Utc::now();
+        let mqtt_state = MqttState {
+            mqtt_client,
+            eventloop,
+            err_streak: 1,
+        };
+        let mqtt_state = handle_mqtt_error(
+            mqtt_state,
             error,
             "device_id",
             &token_mngr,
             &options.connect_address,
-            mqtt_client,
-            eventloop,
+            &device_file,
         )
         .await;
         assert_eq!(token_mngr.num_refresh_token_calls(), 0);
+
+        // should not increment the error streak
+        assert_eq!(mqtt_state.err_streak, 1);
+
         // should not reinitialize the mqtt client
-        assert_eq!(mqtt_client.created_at, created_at);
+        assert_eq!(mqtt_state.mqtt_client.created_at, created_at);
+
+        // should patch the device file to disconnected since it was online
+        let device = device_file.read().await.unwrap();
+        assert_eq!(device.status, DeviceStatus::Offline);
+        assert!(device.last_disconnected_at >= before_patch);
+        assert!(device.last_disconnected_at <= Utc::now());
     }
 }

@@ -8,7 +8,7 @@ use std::time::Duration;
 // internal modules
 use crate::authn::{token::Token, token_mngr::TokenManagerExt};
 use crate::errors::*;
-use crate::models::device;
+use crate::models::device::{self, DeviceStatus};
 use crate::mqtt::client::{poll, ConnectAddress, Credentials, MQTTClient, OptionsBuilder};
 use crate::mqtt::device::{DeviceExt, SyncDevice};
 use crate::mqtt::errors::*;
@@ -126,7 +126,7 @@ pub async fn run_polling_sync_worker<F, Fut, SyncerT: SyncerExt>(
 
         // log the next scheduled sync time
         let next_sync_at = Utc::now() + TimeDelta::seconds(wait_secs);
-        info!(
+        debug!(
             "Waiting until {:?} ({:?} seconds) for next *scheduled* device sync",
             next_sync_at, wait_secs
         );
@@ -181,10 +181,15 @@ pub async fn run_mqtt_sync_worker<TokenManagerT: TokenManagerExt, SyncerT: Synce
         .unwrap_or_else(|_| Arc::new(device::Device::default()));
 
     // create the mqtt client
-    let (mut mqtt_client, mut eventloop) =
+    let (mqtt_client, eventloop) =
         init_mqtt_client(&device.id, token_mngr, options.mqtt_broker_address.clone()).await;
 
-    let mut mqtt_client_err_streak = 0;
+    let mut mqtt_state = MqttState {
+        mqtt_client,
+        eventloop,
+        err_streak: 0,
+    };
+
     loop {
         tokio::select! {
             // listen for syncer events from the syncer worker (this device)
@@ -193,26 +198,28 @@ pub async fn run_mqtt_sync_worker<TokenManagerT: TokenManagerExt, SyncerT: Synce
                 handle_syncer_event(
                     &syncer_event,
                     &device.id,
-                    &mqtt_client,
+                    &mqtt_state.mqtt_client,
                 ).await;
             }
 
             // listen for sync commands from the backend (via mqtt broker)
-            mqtt_result = poll(&mut eventloop) => {
+            mqtt_result = poll(&mut mqtt_state.eventloop) => {
                 match mqtt_result {
                     Ok(mqtt_event) => {
-                        mqtt_client_err_streak = 0;
-                        handle_mqtt_event(&mqtt_event, syncer, device_file).await;
+                        mqtt_state.err_streak = handle_mqtt_event(
+                            &mqtt_event,
+                            syncer,
+                            device_file,
+                        ).await;
                     }
                     Err(e) => {
-                        mqtt_client_err_streak += 1;
-                        (mqtt_client, eventloop) = handle_mqtt_error(
+                        mqtt_state = handle_mqtt_error(
+                            mqtt_state,
                             e,
                             &device.id,
                             token_mngr,
                             &options.mqtt_broker_address,
-                            mqtt_client,
-                            eventloop
+                            device_file,
                         ).await;
                     }
                 }
@@ -223,7 +230,7 @@ pub async fn run_mqtt_sync_worker<TokenManagerT: TokenManagerExt, SyncerT: Synce
         let cooldown_secs = calc_exp_backoff(
             options.mqtt_cooldown.base_secs,
             options.mqtt_cooldown.growth_factor,
-            mqtt_client_err_streak,
+            mqtt_state.err_streak,
             options.mqtt_cooldown.max_secs,
         );
         let cooldown_duration = Duration::from_secs(cooldown_secs as u64);
@@ -283,11 +290,15 @@ async fn init_mqtt_client<TokenManagerT: TokenManagerExt>(
     (mqtt_client, eventloop)
 }
 
+type ErrStreak = u32;
+
 pub async fn handle_mqtt_event<SyncerT: SyncerExt>(
     event: &Event,
     syncer: &SyncerT,
     device_file: &DeviceFile,
-) {
+) -> ErrStreak {
+    let err_streak = 0;
+
     match event {
         // sync the device if the payload is a sync request
         Event::Incoming(Incoming::Publish(publish)) => {
@@ -299,7 +310,7 @@ pub async fn handle_mqtt_event<SyncerT: SyncerExt>(
                 }
             };
             if is_synced {
-                return;
+                return err_streak;
             }
 
             let _ = syncer.sync_if_not_in_cooldown().await;
@@ -307,26 +318,56 @@ pub async fn handle_mqtt_event<SyncerT: SyncerExt>(
         // update the device connection status on successful connections
         Event::Incoming(Incoming::ConnAck(connack)) => {
             if connack.code != ConnectReturnCode::Success {
-                return;
+                return err_streak;
             }
+            info!("Established connection to mqtt broker");
             let _ = device_file.patch(device::Updates::connected()).await;
         }
         // update the device connection status on successful disconnections
         Event::Incoming(Incoming::Disconnect) => {
+            info!("Disconnected from mqtt broker");
             let _ = device_file.patch(device::Updates::disconnected()).await;
         }
         _ => {}
     }
+
+    err_streak
+}
+
+
+pub struct MqttState {
+    pub mqtt_client: MQTTClient,
+    pub eventloop: EventLoop,
+    pub err_streak: ErrStreak,
 }
 
 pub async fn handle_mqtt_error<TokenManagerT: TokenManagerExt>(
+    mut mqtt_state: MqttState,
     e: MQTTError,
     device_id: &str,
     token_mngr: &TokenManagerT,
     broker_address: &ConnectAddress,
-    mqtt_client: MQTTClient,
-    eventloop: EventLoop,
-) -> (MQTTClient, EventLoop) {
+    device_file: &DeviceFile,
+) -> MqttState {
+    mqtt_state.err_streak = if e.is_network_connection_error() {
+        // don't increment the error streak on network connection errors
+        mqtt_state.err_streak
+    } else {
+        mqtt_state.err_streak + 1
+    };
+
+    // update the device to be offline
+    match device_file.read().await {
+        Ok(device) => {
+            if device.status == DeviceStatus::Online {
+                let _ = device_file.patch(device::Updates::disconnected()).await;
+            }
+        }
+        Err(_) => {
+            let _ = device_file.patch(device::Updates::disconnected()).await;
+        }
+    }
+
     // auth error -> refresh token and reinitialize the mqtt client
     if e.is_authentication_error() {
         error!("authentication error while polling backend for sync command via mqtt: {e:?}");
@@ -334,15 +375,19 @@ pub async fn handle_mqtt_error<TokenManagerT: TokenManagerExt>(
         if let Err(e) = token_mngr.refresh_token().await {
             error!("error refreshing token for backend sync worker: {e:?}");
         }
-        init_mqtt_client(device_id, token_mngr, broker_address.clone()).await
+        let (mqtt_client, eventloop) =
+            init_mqtt_client(device_id, token_mngr, broker_address.clone()).await;
+        mqtt_state.mqtt_client = mqtt_client;
+        mqtt_state.eventloop = eventloop;
+        mqtt_state
     }
     // network connection error -> ignore
     else if e.is_network_connection_error() {
         debug!("network connection error while polling backend for sync command via mqtt: {e:?}");
-        (mqtt_client, eventloop)
+        mqtt_state
     // other errors -> log
     } else {
         error!("error polling backend for sync command via mqtt: {e:?}");
-        (mqtt_client, eventloop)
+        mqtt_state
     }
 }

@@ -138,7 +138,7 @@ impl OptionsBuilder {
                 connect_address: ConnectAddress::default(),
                 client_id: credentials.username.clone(),
                 credentials,
-                keep_alive: Duration::from_secs(60),
+                keep_alive: Duration::from_secs(20),
                 timeouts: Timeouts::default(),
                 capacity: 64,
             },
@@ -300,6 +300,8 @@ pub async fn poll(eventloop: &mut EventLoop) -> Result<Event, MQTTError> {
         match e {
             // poor network connection errors
             rumqttc::ConnectionError::NetworkTimeout
+            | rumqttc::ConnectionError::Io(_)
+            | rumqttc::ConnectionError::MqttState(rumqttc::StateError::AwaitPingResp)
             | rumqttc::ConnectionError::FlushTimeout
             | rumqttc::ConnectionError::NotConnAck(_) => {
                 MQTTError::NetworkConnectionErr(Box::new(NetworkConnectionErr {
