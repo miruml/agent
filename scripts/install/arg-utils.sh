@@ -78,7 +78,7 @@ print_prerelease_flag() {
 
 # Backend URL
 backend_host() {
-    backend_host=$(default_value "https://configs.api.miruml.com" "$@")
+    backend_host=$(default_value "" "$@")
     for arg in "$@"; do
         case $arg in
         --backend-host=*) backend_host="${arg#*=}";;
@@ -127,10 +127,26 @@ print_device_name() {
 # Token
 report_token_existence() {
     if [ -n "$MIRU_ACTIVATION_TOKEN" ]; then
-        debug "Activation token provided"
+        debug "Activation token IS provided"
     else
-        debug "No activation token provided"
+        debug "Activation token IS NOT provided"
     fi
+}
+
+# version flag
+version_flag() {
+    version_flag=$(default_value "" "$@")
+    for arg in "$@"; do
+        case $arg in
+        --version=*) version_flag="${arg#*=}";;
+        esac
+    done
+    echo "$version_flag"
+}
+
+print_version_flag() {
+    version_flag=$1
+    debug "Version flag: '$version_flag' (should be a semantic version string like 'v1.2.3')"
 }
 
 ### COPIED ARGUMENT UTILITIES END ###

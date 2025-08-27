@@ -78,7 +78,7 @@ print_prerelease_flag() {
 
 # Backend URL
 backend_host() {
-    backend_host=$(default_value "https://configs.api.miruml.com" "$@")
+    backend_host=$(default_value "" "$@")
     for arg in "$@"; do
         case $arg in
         --backend-host=*) backend_host="${arg#*=}";;
@@ -127,10 +127,26 @@ print_device_name() {
 # Token
 report_token_existence() {
     if [ -n "$MIRU_ACTIVATION_TOKEN" ]; then
-        debug "Activation token provided"
+        debug "Activation token IS provided"
     else
-        debug "No activation token provided"
+        debug "Activation token IS NOT provided"
     fi
+}
+
+# version flag
+version_flag() {
+    version_flag=$(default_value "" "$@")
+    for arg in "$@"; do
+        case $arg in
+        --version=*) version_flag="${arg#*=}";;
+        esac
+    done
+    echo "$version_flag"
+}
+
+print_version_flag() {
+    version_flag=$1
+    debug "Version flag: '$version_flag' (should be a semantic version string like 'v1.2.3')"
 }
 
 ### COPIED ARGUMENT UTILITIES END ###
@@ -156,13 +172,18 @@ MQTT_BROKER_HOST=$(mqtt_broker_host --default="dev.mqtt.miruml.com" "$@")
 if [ "$DEBUG" = true ]; then
     print_mqtt_broker_host "$MQTT_BROKER_HOST"
 fi
-DEVICE_NAME=$(device_name --default="" "$@")
+DEVICE_NAME=$(device_name "$@")
 if [ "$DEBUG" = true ]; then
     print_device_name "$DEVICE_NAME"
 fi
 if [ "$DEBUG" = true ]; then
     report_token_existence
 fi
+VERSION=$(version_flag "$@")
+if [ "$DEBUG" = true ]; then
+    print_version_flag "$VERSION"
+fi
+
 
 
 MIRU_ACTIVATION_TOKEN=$MIRU_ACTIVATION_TOKEN curl -fsSL https://raw.githubusercontent.com/miruml/agent/"$BRANCH"/scripts/install/install.sh | sh -s -- \
@@ -171,4 +192,6 @@ MIRU_ACTIVATION_TOKEN=$MIRU_ACTIVATION_TOKEN curl -fsSL https://raw.githubuserco
 --prerelease="$PRERELEASE" \
 --backend-host="$BACKEND_HOST" \
 --mqtt-broker-host="$MQTT_BROKER_HOST" \
---device-name="$DEVICE_NAME"
+--device-name="$DEVICE_NAME" \
+--version="$VERSION"
+

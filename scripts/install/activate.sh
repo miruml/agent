@@ -78,7 +78,7 @@ print_prerelease_flag() {
 
 # Backend URL
 backend_host() {
-    backend_host=$(default_value "https://configs.api.miruml.com" "$@")
+    backend_host=$(default_value "" "$@")
     for arg in "$@"; do
         case $arg in
         --backend-host=*) backend_host="${arg#*=}";;
@@ -127,37 +127,57 @@ print_device_name() {
 # Token
 report_token_existence() {
     if [ -n "$MIRU_ACTIVATION_TOKEN" ]; then
-        debug "Activation token provided"
+        debug "Activation token IS provided"
     else
-        debug "No activation token provided"
+        debug "Activation token IS NOT provided"
     fi
+}
+
+# version flag
+version_flag() {
+    version_flag=$(default_value "" "$@")
+    for arg in "$@"; do
+        case $arg in
+        --version=*) version_flag="${arg#*=}";;
+        esac
+    done
+    echo "$version_flag"
+}
+
+print_version_flag() {
+    version_flag=$1
+    debug "Version flag: '$version_flag' (should be a semantic version string like 'v1.2.3')"
 }
 
 ### COPIED ARGUMENT UTILITIES END ###
 
 # CLI args
-DEBUG=$(debug_flag --default=false "$@")
+DEBUG=$(debug_flag "$@")
 if [ "$DEBUG" = true ]; then
     debug "Script: activate.sh"
 fi
-PRERELEASE=$(prerelease_flag --default=false "$@")
+PRERELEASE=$(prerelease_flag "$@")
 if [ "$DEBUG" = true ]; then
     print_prerelease_flag "$PRERELEASE"
 fi
-BACKEND_HOST=$(backend_host --default="" "$@")
+BACKEND_HOST=$(backend_host "$@")
 if [ "$DEBUG" = true ]; then
     print_backend_host "$BACKEND_HOST"
 fi
-MQTT_BROKER_HOST=$(mqtt_broker_host --default="" "$@")
+MQTT_BROKER_HOST=$(mqtt_broker_host "$@")
 if [ "$DEBUG" = true ]; then
     print_mqtt_broker_host "$MQTT_BROKER_HOST"
 fi
 if [ "$DEBUG" = true ]; then
     report_token_existence
 fi
-DEVICE_NAME=$(device_name --default="" "$@")
+DEVICE_NAME=$(device_name "$@")
 if [ "$DEBUG" = true ]; then
     print_device_name "$DEVICE_NAME"
+fi
+VERSION=$(version_flag "$@")
+if [ "$DEBUG" = true ]; then
+    print_version_flag "$VERSION"
 fi
 
 # Configuration
@@ -201,18 +221,20 @@ OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)
 
 # Get latest version
-if [ "$PRERELEASE" = true ]; then
-    log "Fetching latest pre-release version..."
-    VERSION=$(curl -sL "https://api.github.com/repos/${GITHUB_REPO}/releases" | 
-        jq -r '.[] | select(.prerelease==true) | .tag_name' | head -n 1) || fatal "Failed to fetch latest pre-release version"
-else
-    log "Fetching latest stable version..."
-    VERSION=$(curl -sL "https://api.github.com/repos/${GITHUB_REPO}/releases/latest" | 
-        grep "tag_name" | cut -d '"' -f 4) || fatal "Failed to fetch latest version"
+if [ "$VERSION" = "" ]; then
+    if [ "$PRERELEASE" = true ]; then
+        log "Fetching latest pre-release version..."
+        VERSION=$(curl -sL "https://api.github.com/repos/${GITHUB_REPO}/releases" | 
+            jq -r '.[] | select(.prerelease==true) | .tag_name' | head -n 1) || fatal "Failed to fetch latest pre-release version"
+    else
+        log "Fetching latest stable version..."
+        VERSION=$(curl -sL "https://api.github.com/repos/${GITHUB_REPO}/releases/latest" | 
+            grep "tag_name" | cut -d '"' -f 4) || fatal "Failed to fetch latest version"
+    fi
 fi
 
 [ -z "$VERSION" ] && fatal "Could not determine latest version"
-log "Latest version: ${VERSION}"
+log "Version: ${VERSION}"
 
 # Convert architecture names
 case $ARCH in

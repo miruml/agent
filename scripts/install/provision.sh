@@ -79,7 +79,7 @@ print_prerelease_flag() {
 
 # Backend URL
 backend_host() {
-    backend_host=$(default_value "https://configs.api.miruml.com" "$@")
+    backend_host=$(default_value "" "$@")
     for arg in "$@"; do
         case $arg in
         --backend-host=*) backend_host="${arg#*=}";;
@@ -128,10 +128,26 @@ print_device_name() {
 # Token
 report_token_existence() {
     if [ -n "$MIRU_ACTIVATION_TOKEN" ]; then
-        debug "Activation token provided"
+        debug "Activation token IS provided"
     else
-        debug "No activation token provided"
+        debug "Activation token IS NOT provided"
     fi
+}
+
+# version flag
+version_flag() {
+    version_flag=$(default_value "" "$@")
+    for arg in "$@"; do
+        case $arg in
+        --version=*) version_flag="${arg#*=}";;
+        esac
+    done
+    echo "$version_flag"
+}
+
+print_version_flag() {
+    version_flag=$1
+    debug "Version flag: '$version_flag' (should be a semantic version string like 'v1.2.3')"
 }
 
 ### COPIED ARGUMENT UTILITIES END ###
@@ -228,10 +244,11 @@ else
     fatal "$response_body"
 fi
 
-BRANCH=$(git_branch "$@")
-INSTALL_SCRIPT_FILE=$(install_script_file "$@")
 DEBUG=$(debug_flag "$@")
+BRANCH=$(git_branch "$@")
 PRERELEASE=$(prerelease_flag "$@")
+INSTALL_SCRIPT_FILE=$(install_script_file "$@")
+VERSION=$(version_flag "$@")
 
 # install the agent onto the device
 export MIRU_ACTIVATION_TOKEN=$activation_token
@@ -240,5 +257,5 @@ curl -fsSL https://raw.githubusercontent.com/miruml/agent/"$BRANCH"/scripts/inst
 --git-branch="$BRANCH" \
 --prerelease="$PRERELEASE" \
 --backend-host="$BACKEND_HOST" \
---device-name="$DEVICE_NAME"
-
+--device-name="$DEVICE_NAME" \
+--version="$VERSION"
