@@ -23,6 +23,12 @@ pub struct BaseDevice {
     pub name: String,
     #[serde(rename = "status")]
     pub status: models::DeviceStatus,
+    /// Timestamp of when the device was last made an initial connection (this is not the same as the last time the device was seen).
+    #[serde(rename = "last_connected_at", deserialize_with = "Option::deserialize")]
+    pub last_connected_at: Option<String>,
+    /// Timestamp of when the device was last disconnected (this is not the same as the last time the device was seen).
+    #[serde(rename = "last_disconnected_at", deserialize_with = "Option::deserialize")]
+    pub last_disconnected_at: Option<String>,
     /// Timestamp of when the device was created
     #[serde(rename = "created_at")]
     pub created_at: String,
@@ -32,12 +38,14 @@ pub struct BaseDevice {
 }
 
 impl BaseDevice {
-    pub fn new(object: Object, id: String, name: String, status: models::DeviceStatus, created_at: String, updated_at: String) -> BaseDevice {
+    pub fn new(object: Object, id: String, name: String, status: models::DeviceStatus, last_connected_at: Option<String>, last_disconnected_at: Option<String>, created_at: String, updated_at: String) -> BaseDevice {
         BaseDevice {
             object,
             id,
             name,
             status,
+            last_connected_at,
+            last_disconnected_at,
             created_at,
             updated_at,
         }

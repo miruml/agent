@@ -4,7 +4,6 @@ use crate::trace;
 use crate::{errors::MiruError, services::errors::*};
 use openapi_server::models::{SyncDeviceResponse, SyncDeviceResult};
 
-
 pub async fn sync_device<SyncerT: SyncerExt>(
     syncer: &SyncerT,
 ) -> Result<SyncDeviceResponse, ServiceErr> {

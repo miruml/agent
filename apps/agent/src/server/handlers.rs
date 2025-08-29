@@ -12,13 +12,8 @@ use crate::services::device::{get, sync};
 use crate::trace;
 use crate::utils::version_info;
 use openapi_server::models::{
-    Error,
-    ErrorResponse,
-    HealthResponse,
-    HashSchemaSerializedRequest,
-    HashSerializedConfigSchemaFormat,
-    SchemaDigestResponse,
-    VersionResponse
+    Error, ErrorResponse, HashSchemaSerializedRequest, HashSerializedConfigSchemaFormat,
+    HealthResponse, SchemaDigestResponse, VersionResponse,
 };
 
 // external
@@ -31,7 +26,9 @@ use tracing::error;
 pub async fn health() -> impl IntoResponse {
     (
         StatusCode::OK,
-        Json(HealthResponse { status: "ok".to_string() })
+        Json(HealthResponse {
+            status: "ok".to_string(),
+        }),
     )
 }
 
@@ -42,10 +39,9 @@ pub async fn version() -> impl IntoResponse {
         Json(VersionResponse {
             version: version_info.version,
             commit: version_info.commit,
-        })
+        }),
     )
 }
-
 
 // =============================== CONFIG SCHEMAS ================================== //
 impl HashSchemaArgsI for HashSchemaSerializedRequest {
@@ -152,9 +148,7 @@ pub async fn get_deployed_config_instance(
 }
 
 // ================================= DEVICE ======================================== //
-pub async fn get_device(
-    State(state): State<Arc<ServerState>>,
-) -> impl IntoResponse {
+pub async fn get_device(State(state): State<Arc<ServerState>>) -> impl IntoResponse {
     let service = async move {
         let device = get::get_device(&state.device_file).await.map_err(|e| {
             ServerErr::ServiceErr(Box::new(ServerServiceErr {
@@ -162,17 +156,15 @@ pub async fn get_device(
                 trace: trace!(),
             }))
         })?;
-        Ok::<openapi_server::models::Device, ServerErr>(
-            openapi_server::models::Device {
-                object: openapi_server::models::device::Object::Device,
-                id: device.id.clone(),
-                name: device.name.clone(),
-                status: DeviceStatus::to_sdk(&device.status),
-                last_synced_at: device.last_synced_at.to_rfc3339(),
-                last_connected_at: device.last_connected_at.to_rfc3339(),
-                last_disconnected_at: device.last_disconnected_at.to_rfc3339(),
-            }
-        )
+        Ok::<openapi_server::models::Device, ServerErr>(openapi_server::models::Device {
+            object: openapi_server::models::device::Object::Device,
+            id: device.id.clone(),
+            name: device.name.clone(),
+            status: DeviceStatus::to_sdk(&device.status),
+            last_synced_at: device.last_synced_at.to_rfc3339(),
+            last_connected_at: device.last_connected_at.to_rfc3339(),
+            last_disconnected_at: device.last_disconnected_at.to_rfc3339(),
+        })
     };
 
     match service.await {
@@ -184,9 +176,7 @@ pub async fn get_device(
     }
 }
 
-pub async fn sync_device(
-    State(state): State<Arc<ServerState>>,
-) -> impl IntoResponse {
+pub async fn sync_device(State(state): State<Arc<ServerState>>) -> impl IntoResponse {
     let service = async move {
         sync::sync_device(state.syncer.as_ref()).await.map_err(|e| {
             ServerErr::ServiceErr(Box::new(ServerServiceErr {

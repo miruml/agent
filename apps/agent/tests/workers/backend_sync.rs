@@ -521,13 +521,14 @@ pub mod handle_mqtt_error {
         let layout = StorageLayout::new(dir);
 
         let device = Device {
+            id: "device_id".to_string(),
+            session_id: "device_session_id".to_string(),
             status: DeviceStatus::Offline,
             ..Device::default()
         };
-        let (device_file, _) =
-            DeviceFile::spawn_with_default(64, layout.device_file(), device)
-                .await
-                .unwrap();
+        let (device_file, _) = DeviceFile::spawn_with_default(64, layout.device_file(), device.clone())
+            .await
+            .unwrap();
 
         let token = Token {
             token: "token".to_string(),
@@ -552,9 +553,9 @@ pub mod handle_mqtt_error {
         let mqtt_state = handle_mqtt_error(
             mqtt_state,
             error,
-            "device_id",
+            &device,
             &token_mngr,
-            &options.connect_address, 
+            &options.connect_address,
             &device_file,
         )
         .await;
@@ -578,13 +579,14 @@ pub mod handle_mqtt_error {
         let layout = StorageLayout::new(dir);
 
         let device = Device {
+            id: "device_id".to_string(),
+            session_id: "device_session_id".to_string(),
             status: DeviceStatus::Online,
             ..Device::default()
         };
-        let (device_file, _) =
-            DeviceFile::spawn_with_default(64, layout.device_file(), device)
-                .await
-                .unwrap();
+        let (device_file, _) = DeviceFile::spawn_with_default(64, layout.device_file(), device.clone())
+            .await
+            .unwrap();
 
         let token = Token {
             token: "token".to_string(),
@@ -609,7 +611,7 @@ pub mod handle_mqtt_error {
         let mqtt_state = handle_mqtt_error(
             mqtt_state,
             error,
-            "device_id",
+            &device,
             &token_mngr,
             &options.connect_address,
             &device_file,

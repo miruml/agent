@@ -23,12 +23,24 @@ pub struct Device {
     pub name: String,
     #[serde(rename = "status")]
     pub status: models::DeviceStatus,
+    /// Timestamp of when the device was last made an initial connection (this is not the same as the last time the device was seen).
+    #[serde(rename = "last_connected_at", deserialize_with = "Option::deserialize")]
+    pub last_connected_at: Option<String>,
+    /// Timestamp of when the device was last disconnected (this is not the same as the last time the device was seen).
+    #[serde(
+        rename = "last_disconnected_at",
+        deserialize_with = "Option::deserialize"
+    )]
+    pub last_disconnected_at: Option<String>,
     /// Timestamp of when the device was created
     #[serde(rename = "created_at")]
     pub created_at: String,
     /// Timestamp of when the device was last updated
     #[serde(rename = "updated_at")]
     pub updated_at: String,
+    /// Session ID of the device
+    #[serde(rename = "session_id")]
+    pub session_id: String,
     #[serde(rename = "created_by_id")]
     pub created_by_id: String,
     #[serde(rename = "updated_by_id")]
@@ -47,8 +59,11 @@ impl Device {
         id: String,
         name: String,
         status: models::DeviceStatus,
+        last_connected_at: Option<String>,
+        last_disconnected_at: Option<String>,
         created_at: String,
         updated_at: String,
+        session_id: String,
         created_by_id: String,
         updated_by_id: String,
         created_by: Option<models::Principal>,
@@ -60,8 +75,11 @@ impl Device {
             id,
             name,
             status,
+            last_connected_at,
+            last_disconnected_at,
             created_at,
             updated_at,
+            session_id,
             created_by_id,
             updated_by_id,
             created_by: created_by.map(Box::new),

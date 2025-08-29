@@ -8,7 +8,7 @@ use std::time::Duration;
 // internal modules
 use crate::authn::{token::Token, token_mngr::TokenManagerExt};
 use crate::errors::*;
-use crate::models::device::{self, DeviceStatus};
+use crate::models::device::{self, Device, DeviceStatus};
 use crate::mqtt::client::{poll, ConnectAddress, Credentials, MQTTClient, OptionsBuilder};
 use crate::mqtt::device::{DeviceExt, SyncDevice};
 use crate::mqtt::errors::*;
@@ -182,7 +182,13 @@ pub async fn run_mqtt_sync_worker<TokenManagerT: TokenManagerExt, SyncerT: Synce
 
     // create the mqtt client
     let (mqtt_client, eventloop) =
-        init_mqtt_client(&device.id, token_mngr, options.mqtt_broker_address.clone()).await;
+        init_mqtt_client(
+            &device.id,
+            &device.session_id,
+            token_mngr,
+            options.mqtt_broker_address.clone(),
+        )
+        .await;
 
     let mut mqtt_state = MqttState {
         mqtt_client,
@@ -216,7 +222,7 @@ pub async fn run_mqtt_sync_worker<TokenManagerT: TokenManagerExt, SyncerT: Synce
                         mqtt_state = handle_mqtt_error(
                             mqtt_state,
                             e,
-                            &device.id,
+                            &device,
                             token_mngr,
                             &options.mqtt_broker_address,
                             device_file,
@@ -261,6 +267,7 @@ pub async fn handle_syncer_event<MQTTClientT: DeviceExt>(
 
 async fn init_mqtt_client<TokenManagerT: TokenManagerExt>(
     device_id: &str,
+    device_session_id: &str,
     token_mngr: &TokenManagerT,
     broker_address: ConnectAddress,
 ) -> (MQTTClient, EventLoop) {
@@ -272,11 +279,12 @@ async fn init_mqtt_client<TokenManagerT: TokenManagerExt>(
 
     // initialize the mqtt options
     let credentials = Credentials {
-        username: device_id.to_string(),
+        username: device_session_id.to_string(),
         password: token,
     };
     let options = OptionsBuilder::new(credentials)
         .with_connect_address(broker_address)
+        .with_client_id(device_id.to_string())
         .build();
 
     // create the mqtt client
@@ -334,7 +342,6 @@ pub async fn handle_mqtt_event<SyncerT: SyncerExt>(
     err_streak
 }
 
-
 pub struct MqttState {
     pub mqtt_client: MQTTClient,
     pub eventloop: EventLoop,
@@ -344,7 +351,7 @@ pub struct MqttState {
 pub async fn handle_mqtt_error<TokenManagerT: TokenManagerExt>(
     mut mqtt_state: MqttState,
     e: MQTTError,
-    device_id: &str,
+    device: &Device,
     token_mngr: &TokenManagerT,
     broker_address: &ConnectAddress,
     device_file: &DeviceFile,
@@ -376,7 +383,13 @@ pub async fn handle_mqtt_error<TokenManagerT: TokenManagerExt>(
             error!("error refreshing token for backend sync worker: {e:?}");
         }
         let (mqtt_client, eventloop) =
-            init_mqtt_client(device_id, token_mngr, broker_address.clone()).await;
+            init_mqtt_client(
+                &device.id,
+                &device.session_id,
+                token_mngr,
+                broker_address.clone(),
+            )
+                .await;
         mqtt_state.mqtt_client = mqtt_client;
         mqtt_state.eventloop = eventloop;
         mqtt_state

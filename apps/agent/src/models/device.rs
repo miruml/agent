@@ -58,6 +58,7 @@ impl<'de> Deserialize<'de> for DeviceStatus {
 pub struct Device {
     #[serde(rename = "device_id")]
     pub id: String,
+    pub session_id: String,
     pub name: String,
     pub activated: bool,
     pub status: DeviceStatus,
@@ -70,6 +71,7 @@ impl Default for Device {
     fn default() -> Self {
         Self {
             id: "placeholder".to_string(),
+            session_id: "placeholder".to_string(),
             name: "placeholder".to_string(),
             activated: false,
             status: DeviceStatus::Offline,
@@ -90,6 +92,7 @@ impl<'de> Deserialize<'de> for Device {
             // the old field name was device_id so we'll keep it for backwards
             // compatibility
             device_id: String,
+            session_id: String,
             name: Option<String>,
             activated: Option<bool>,
             status: Option<DeviceStatus>,
@@ -110,6 +113,7 @@ impl<'de> Deserialize<'de> for Device {
 
         Ok(Device {
             id: result.device_id,
+            session_id: result.session_id,
             name: result
                 .name
                 .unwrap_or_else(|| deserialize_error!("device", "name", default.name)),

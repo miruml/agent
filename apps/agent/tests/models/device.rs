@@ -85,6 +85,7 @@ fn device_status_sdk_conversion() {
 fn serialize_deserialize_device() {
     let expected = Device {
         id: "123".to_string(),
+        session_id: "123".to_string(),
         name: "test".to_string(),
         activated: true,
         status: DeviceStatus::Online,
@@ -101,6 +102,7 @@ fn serialize_deserialize_device() {
 fn deserialize_device() {
     let expected = Device {
         id: "123".to_string(), // serialized as 'device_id'
+        session_id: "123".to_string(),
         name: "test".to_string(),
         activated: true,
         status: DeviceStatus::Online,
@@ -110,6 +112,7 @@ fn deserialize_device() {
     };
     let valid_input = json!({
         "device_id": expected.id,
+        "session_id": expected.session_id,
         "name": expected.name,
         "activated": expected.activated,
         "status": expected.status,
@@ -131,6 +134,7 @@ fn deserialize_device() {
     };
     let valid_input = json!({
         "device_id": expected.id,
+        "session_id": expected.session_id,
     });
     let device: Device = serde_json::from_value(valid_input).unwrap();
     assert_eq!(device, expected);
@@ -143,6 +147,7 @@ fn deserialize_device() {
 fn device_merge_empty() {
     let initial = Device {
         id: "123".to_string(),
+        session_id: "123".to_string(),
         name: "test".to_string(),
         activated: true,
         status: DeviceStatus::Online,
@@ -161,6 +166,7 @@ fn device_merge_empty() {
 fn device_merge_all() {
     let initial = Device {
         id: "123".to_string(),
+        session_id: "123".to_string(),
         name: "test".to_string(),
         activated: true,
         status: DeviceStatus::Online,
@@ -179,6 +185,7 @@ fn device_merge_all() {
     };
     let expected = Device {
         id: updates.id.clone().unwrap(),
+        session_id: initial.session_id.clone(),
         name: updates.name.clone().unwrap(),
         activated: updates.activated.unwrap(),
         status: updates.status.clone().unwrap(),
