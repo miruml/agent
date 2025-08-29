@@ -11,7 +11,9 @@ use crate::http::{
         TimeoutErr, UnmarshalJSONErr,
     },
 };
+use crate::telemetry::SystemInfo;
 use crate::trace;
+use crate::utils::version_info;
 use openapi_client::models::ErrorResponse;
 
 // external crates
@@ -49,11 +51,62 @@ impl fmt::Display for RequestContext {
 }
 
 #[derive(Debug)]
+pub struct Headers {
+    // build information
+    pub agent_version: String,
+
+    // host information
+    pub host_name: String,
+    pub arch: String,
+    pub language: String,
+    pub os: String,
+}
+
+impl Default for Headers {
+    fn default() -> Self {
+        let version_info = version_info();
+        Self {
+            // build information
+            agent_version: version_info.version,
+
+            // host information
+            host_name: SystemInfo::host_name(),
+            arch: SystemInfo::arch(),
+            language: "rust".to_string(),
+            os: SystemInfo::os(),
+        }
+    }
+}
+
+impl Headers {
+    pub fn to_map(&self) -> HeaderMap {
+        let mut headers = HeaderMap::new();
+        if let Ok(value) = HeaderValue::from_str(&self.agent_version) {
+            headers.insert("X-Miru-Agent-Version", value);
+        }
+        if let Ok(value) = HeaderValue::from_str(&self.host_name) {
+            headers.insert("X-Host-Name", value);
+        }
+        if let Ok(value) = HeaderValue::from_str(&self.arch) {
+            headers.insert("X-Arch", value);
+        }
+        if let Ok(value) = HeaderValue::from_str(&self.language) {
+            headers.insert("X-Language", value);
+        }
+        if let Ok(value) = HeaderValue::from_str(&self.os) {
+            headers.insert("X-OS", value);
+        }
+        headers
+    }
+}
+
+#[derive(Debug)]
 pub struct HTTPClient {
     // allow crate access since this struct is defined throughout the crate
     pub(crate) client: reqwest::Client,
     pub(crate) base_url: String,
     pub(crate) default_timeout: Duration,
+    headers: Headers,
     cache: Cache<RequestKey, (Response, RequestID)>,
 }
 
@@ -90,6 +143,7 @@ impl HTTPClient {
             client: client.clone(),
             base_url: base_url.to_string(),
             default_timeout: Duration::from_secs(10),
+            headers: Headers::default(),
             cache: Cache::builder()
                 .time_to_live(Duration::from_secs(2))
                 .build(),
@@ -122,7 +176,7 @@ impl HTTPClient {
         let mut request = self.client.request(method.clone(), url);
 
         // headers
-        let mut headers = HeaderMap::new();
+        let mut headers = self.headers.to_map();
         if let Some(token) = token {
             self.add_token_to_headers(&mut headers, token)?;
         }
@@ -303,6 +357,7 @@ impl HTTPClient {
             client: reqwest::Client::new(),
             base_url: base_url.to_string(),
             default_timeout,
+            headers: Headers::default(),
             cache,
         }
     }

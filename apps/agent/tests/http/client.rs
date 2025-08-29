@@ -13,6 +13,25 @@ use moka::future::Cache;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, trace, warn};
 
+pub mod headers {
+    use super::*;
+
+    #[tokio::test]
+    #[serial_test::serial(httpbin_org)]
+    async fn validate_headers() {
+        let http_client = HTTPClient::new("doesntmatter").await;
+        let request = http_client
+            .build_get_request("https://httpbin.org/get", Duration::from_secs(1), None)
+            .unwrap();
+        let headers = request.0.headers();
+        assert!(headers.contains_key("X-Miru-Agent-Version"));
+        assert!(headers.contains_key("X-Host-Name"));
+        assert!(headers.contains_key("X-Arch"));
+        assert!(headers.contains_key("X-Language"));
+        assert!(headers.contains_key("X-OS"));
+    }
+}
+
 pub mod build_get_request {
     use super::*;
 
