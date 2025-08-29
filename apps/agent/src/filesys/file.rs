@@ -247,8 +247,7 @@ impl File {
         overwrite: bool,
         atomic: bool,
     ) -> Result<(), FileSysErr> {
-        // Convert to JSON bytes first
-        let json_bytes = serde_json::to_vec(obj).map_err(|e| {
+        let json_bytes = serde_json::to_vec_pretty(obj).map_err(|e| {
             FileSysErr::ParseJSONErr(Box::new(ParseJSONErr {
                 source: Box::new(e),
                 file: self.clone(),
