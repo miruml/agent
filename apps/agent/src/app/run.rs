@@ -15,7 +15,7 @@ use crate::http::client::HTTPClient;
 use crate::server::{errors::*, serve::serve, state::ServerState};
 use crate::trace;
 use crate::workers::{
-    backend_sync::{run_backend_sync_worker, BackendSyncWorkerOptions},
+    mqtt, poller,
     token_refresh::{run_token_refresh_worker, TokenRefreshWorkerOptions},
 };
 
@@ -47,7 +47,7 @@ pub async fn run(
 
     // if the app is not persistent, wait for ctrl-c, an idle timeout, or max runtime
     // reached to trigger a shutdown
-    if options.lifecycle.is_socket_activated {
+    if !options.lifecycle.is_persistent {
         tokio::select! {
             _ = shutdown_signal => {
                 info!("Shutdown signal received, shutting down...");
@@ -122,9 +122,9 @@ async fn init(
     )
     .await?;
 
-    if options.enable_backend_sync_worker {
-        init_backend_sync_worker(
-            options.backend_sync_worker.clone(),
+    if options.enable_socket_server {
+        init_socket_server(
+            options,
             app_state.clone(),
             shutdown_manager,
             shutdown_tx.subscribe(),
@@ -132,9 +132,19 @@ async fn init(
         .await?;
     }
 
-    if options.enable_socket_server {
-        init_socket_server(
-            options,
+    if options.enable_poller {
+        init_poller_worker(
+            options.poller.clone(),
+            app_state.clone(),
+            shutdown_manager,
+            shutdown_tx.subscribe(),
+        )
+        .await?;
+    }
+
+    if options.enable_mqtt_worker {
+        init_mqtt_worker(
+            options.mqtt_worker.clone(),
             app_state.clone(),
             shutdown_manager,
             shutdown_tx.subscribe(),
@@ -209,24 +219,52 @@ async fn refresh_if_expired(token_mngr: &TokenManager) -> Result<(), ServerErr> 
     Ok(())
 }
 
-async fn init_backend_sync_worker(
-    options: BackendSyncWorkerOptions,
+async fn init_poller_worker(
+    options: poller::Options,
     app_state: Arc<AppState>,
     shutdown_manager: &mut ShutdownManager,
     mut shutdown_rx: broadcast::Receiver<()>,
 ) -> Result<(), ServerErr> {
-    info!("Initializing backend sync worker...");
+    info!("Initializing poller worker...");
+
+    let syncer = app_state.syncer.clone();
+    let device_file = app_state.device_file.clone();
+
+    let backend_sync_handle = tokio::spawn(async move {
+        poller::run(
+            &options,
+            syncer.as_ref(),
+            device_file.as_ref(),
+            tokio::time::sleep,
+            Box::pin(async move {
+                let _ = shutdown_rx.recv().await;
+            }),
+        )
+        .await;
+    });
+    shutdown_manager.with_backend_sync_worker_handle(backend_sync_handle)?;
+    Ok(())
+}
+
+async fn init_mqtt_worker(
+    options: mqtt::Options,
+    app_state: Arc<AppState>,
+    shutdown_manager: &mut ShutdownManager,
+    mut shutdown_rx: broadcast::Receiver<()>,
+) -> Result<(), ServerErr> {
+    info!("Initializing mqtt worker...");
 
     let token_mngr = app_state.token_mngr.clone();
     let syncer = app_state.syncer.clone();
     let device_file = app_state.device_file.clone();
 
     let backend_sync_handle = tokio::spawn(async move {
-        run_backend_sync_worker(
+        mqtt::run(
             &options,
             token_mngr.as_ref(),
             syncer.as_ref(),
             device_file.as_ref(),
+            tokio::time::sleep,
             Box::pin(async move {
                 let _ = shutdown_rx.recv().await;
             }),

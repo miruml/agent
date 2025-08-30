@@ -34,6 +34,8 @@ Class | Method | HTTP request | Description
 *DevicesApi* | [**activate_device**](docs/DevicesApi.md#activate_device) | **POST** /devices/{device_id}/activate | Activate a device
 *DevicesApi* | [**issue_device_token**](docs/DevicesApi.md#issue_device_token) | **POST** /devices/{device_id}/issue_token | Issue a device token
 *ErrorsApi* | [**get_error**](docs/ErrorsApi.md#get_error) | **GET** /example-error | Get an error
+*MqttApi* | [**device_ping**](docs/MqttApi.md#device_ping) | **GET** /cmd/devices/{device_id}/ping | Ping a device
+*MqttApi* | [**device_pong**](docs/MqttApi.md#device_pong) | **GET** /resp/devices/{device_id}/pong | Ping device response
 *MqttApi* | [**sync_device**](docs/MqttApi.md#sync_device) | **GET** /cmd/devices/{device_id}/sync | Trigger a device sync
 
 
@@ -83,6 +85,8 @@ Class | Method | HTTP request | Description
  - [Patch](docs/Patch.md)
  - [PatchComment](docs/PatchComment.md)
  - [PatchCommentList](docs/PatchCommentList.md)
+ - [Ping](docs/Ping.md)
+ - [Pong](docs/Pong.md)
  - [Principal](docs/Principal.md)
  - [PrincipalType](docs/PrincipalType.md)
  - [SchemaDigestResponse](docs/SchemaDigestResponse.md)

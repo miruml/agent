@@ -5,13 +5,11 @@ use std::time::Duration;
 use crate::deploy::fsm;
 use crate::server::serve::ServerOptions;
 use crate::storage::{caches::CacheCapacities, layout::StorageLayout};
-use crate::workers::{
-    backend_sync::BackendSyncWorkerOptions, token_refresh::TokenRefreshWorkerOptions,
-};
+use crate::workers::{mqtt, poller, token_refresh::TokenRefreshWorkerOptions};
 
 #[derive(Debug, Clone, Copy)]
 pub struct LifecycleOptions {
-    pub is_socket_activated: bool,
+    pub is_persistent: bool,
     pub max_runtime: Duration,
     pub idle_timeout: Duration,
     pub idle_timeout_poll_interval: Duration,
@@ -21,7 +19,7 @@ pub struct LifecycleOptions {
 impl Default for LifecycleOptions {
     fn default() -> Self {
         Self {
-            is_socket_activated: true,
+            is_persistent: true,
             max_runtime: Duration::from_secs(60 * 15), // 15 minutes
             idle_timeout: Duration::from_secs(60),
             idle_timeout_poll_interval: Duration::from_secs(5),
@@ -49,8 +47,11 @@ pub struct AppOptions {
     pub enable_socket_server: bool,
     pub server: ServerOptions,
 
-    pub enable_backend_sync_worker: bool,
-    pub backend_sync_worker: BackendSyncWorkerOptions,
+    pub enable_mqtt_worker: bool,
+    pub mqtt_worker: mqtt::Options,
+
+    pub enable_poller: bool,
+    pub poller: poller::Options,
 }
 
 impl Default for AppOptions {
@@ -67,8 +68,11 @@ impl Default for AppOptions {
             enable_socket_server: true,
             server: ServerOptions::default(),
 
-            enable_backend_sync_worker: true,
-            backend_sync_worker: BackendSyncWorkerOptions::default(),
+            enable_mqtt_worker: true,
+            mqtt_worker: mqtt::Options::default(),
+
+            enable_poller: true,
+            poller: poller::Options::default(),
         }
     }
 }

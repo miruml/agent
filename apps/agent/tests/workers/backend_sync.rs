@@ -15,7 +15,7 @@ use config_agent::sync::{
     errors::{MockErr as SyncMockErr, SyncErr},
     syncer::{CooldownEnd, SyncEvent, SyncFailure, SyncState},
 };
-use config_agent::workers::backend_sync::{
+use config_agent::workers::poller::{
     handle_mqtt_error, handle_mqtt_event, handle_syncer_event, run_polling_sync_worker,
     BackendSyncWorkerOptions, MqttState,
 };
@@ -526,9 +526,10 @@ pub mod handle_mqtt_error {
             status: DeviceStatus::Offline,
             ..Device::default()
         };
-        let (device_file, _) = DeviceFile::spawn_with_default(64, layout.device_file(), device.clone())
-            .await
-            .unwrap();
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, layout.device_file(), device.clone())
+                .await
+                .unwrap();
 
         let token = Token {
             token: "token".to_string(),
@@ -584,9 +585,10 @@ pub mod handle_mqtt_error {
             status: DeviceStatus::Online,
             ..Device::default()
         };
-        let (device_file, _) = DeviceFile::spawn_with_default(64, layout.device_file(), device.clone())
-            .await
-            .unwrap();
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, layout.device_file(), device.clone())
+                .await
+                .unwrap();
 
         let token = Token {
             token: "token".to_string(),

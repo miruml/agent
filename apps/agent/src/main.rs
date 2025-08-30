@@ -7,7 +7,7 @@ use config_agent::storage::device::assert_activated;
 use config_agent::storage::layout::StorageLayout;
 use config_agent::storage::settings::Settings;
 use config_agent::utils::{has_version_flag, version_info};
-use config_agent::workers::backend_sync::BackendSyncWorkerOptions;
+use config_agent::workers::mqtt;
 
 // external
 use tokio::signal::unix::signal;
@@ -52,14 +52,15 @@ async fn main() {
     // run the server
     let options = AppOptions {
         lifecycle: LifecycleOptions {
-            is_socket_activated: settings.is_socket_activated,
+            is_persistent: settings.is_persistent,
             ..Default::default()
         },
         backend_base_url: settings.backend.base_url,
         enable_socket_server: settings.enable_socket_server,
-        enable_backend_sync_worker: settings.enable_backend_sync_worker,
-        backend_sync_worker: BackendSyncWorkerOptions {
-            mqtt_broker_address: ConnectAddress {
+        enable_mqtt_worker: settings.enable_mqtt_worker,
+        enable_poller: settings.enable_poller,
+        mqtt_worker: mqtt::Options {
+            broker_address: ConnectAddress {
                 broker: settings.mqtt_broker.host,
                 ..Default::default()
             },

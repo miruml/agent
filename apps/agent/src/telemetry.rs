@@ -24,7 +24,7 @@ impl SystemInfo {
         // create a new system
         let sys = System::new_all();
 
-        // gather system info       
+        // gather system info
         SystemInfo {
             host_name: Self::host_name(),
             arch: Self::arch(),

@@ -11,9 +11,10 @@ pub struct Settings {
     pub log_level: LogLevel,
     pub backend: Backend,
     pub mqtt_broker: MQTTBroker,
-    pub is_socket_activated: bool,
+    pub is_persistent: bool,
     pub enable_socket_server: bool,
-    pub enable_backend_sync_worker: bool,
+    pub enable_mqtt_worker: bool,
+    pub enable_poller: bool,
 }
 
 impl Default for Settings {
@@ -22,9 +23,10 @@ impl Default for Settings {
             log_level: LogLevel::Info,
             backend: Backend::default(),
             mqtt_broker: MQTTBroker::default(),
-            is_socket_activated: false,
+            is_persistent: true,
             enable_socket_server: true,
-            enable_backend_sync_worker: true,
+            enable_mqtt_worker: true,
+            enable_poller: true,
         }
     }
 }
@@ -39,9 +41,10 @@ impl<'de> Deserialize<'de> for Settings {
             log_level: Option<LogLevel>,
             backend: Option<Backend>,
             mqtt_broker: Option<MQTTBroker>,
-            is_socket_activated: Option<bool>,
+            is_persistent: Option<bool>,
             enable_socket_server: Option<bool>,
-            enable_backend_sync_worker: Option<bool>,
+            enable_mqtt_worker: Option<bool>,
+            enable_poller: Option<bool>,
         }
 
         let default = Settings::default();
@@ -64,11 +67,11 @@ impl<'de> Deserialize<'de> for Settings {
             mqtt_broker: result.mqtt_broker.unwrap_or_else(|| {
                 deserialize_warn!("settings", "mqtt_broker", default.mqtt_broker)
             }),
-            is_socket_activated: result.is_socket_activated.unwrap_or_else(|| {
+            is_persistent: result.is_persistent.unwrap_or_else(|| {
                 deserialize_warn!(
                     "settings",
-                    "is_socket_activated",
-                    default.is_socket_activated
+                    "is_persistent",
+                    default.is_persistent
                 )
             }),
             enable_socket_server: result.enable_socket_server.unwrap_or_else(|| {
@@ -78,11 +81,18 @@ impl<'de> Deserialize<'de> for Settings {
                     default.enable_socket_server
                 )
             }),
-            enable_backend_sync_worker: result.enable_backend_sync_worker.unwrap_or_else(|| {
+            enable_mqtt_worker: result.enable_mqtt_worker.unwrap_or_else(|| {
                 deserialize_warn!(
                     "settings",
-                    "enable_backend_sync_worker",
-                    default.enable_backend_sync_worker
+                    "enable_mqtt_worker",
+                    default.enable_mqtt_worker
+                )
+            }),
+            enable_poller: result.enable_poller.unwrap_or_else(|| {
+                deserialize_warn!(
+                    "settings",
+                    "enable_poller",
+                    default.enable_poller
                 )
             }),
         })

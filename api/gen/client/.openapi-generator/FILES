@@ -52,6 +52,8 @@ docs/PaginatedList.md
 docs/Patch.md
 docs/PatchComment.md
 docs/PatchCommentList.md
+docs/Ping.md
+docs/Pong.md
 docs/Principal.md
 docs/PrincipalType.md
 docs/SchemaDigestResponse.md
@@ -119,6 +121,8 @@ src/models/paginated_list.rs
 src/models/patch.rs
 src/models/patch_comment.rs
 src/models/patch_comment_list.rs
+src/models/ping.rs
+src/models/pong.rs
 src/models/principal.rs
 src/models/principal_type.rs
 src/models/schema_digest_response.rs
