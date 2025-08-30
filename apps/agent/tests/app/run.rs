@@ -59,6 +59,7 @@ async fn max_runtime_reached() {
             ..Default::default()
         },
         lifecycle: LifecycleOptions {
+            is_persistent: false,
             max_runtime: Duration::from_millis(100),
             ..Default::default()
         },
@@ -81,7 +82,7 @@ async fn max_runtime_reached() {
 }
 
 #[tokio::test]
-async fn not_socket_activated() {
+async fn is_persistent() {
     let dir = Dir::create_temp_dir("testing").await.unwrap();
     let max_runtime = Duration::from_millis(100);
     prepare_valid_server_storage(dir.clone()).await;
@@ -91,7 +92,7 @@ async fn not_socket_activated() {
             ..Default::default()
         },
         lifecycle: LifecycleOptions {
-            is_socket_activated: false,
+            is_persistent: true,
             max_runtime,
             ..Default::default()
         },
@@ -123,6 +124,7 @@ async fn idle_timeout_reached() {
             ..Default::default()
         },
         lifecycle: LifecycleOptions {
+            is_persistent: false,
             idle_timeout: Duration::from_millis(100),
             idle_timeout_poll_interval: Duration::from_millis(10),
             ..Default::default()
@@ -150,6 +152,10 @@ async fn shutdown_signal_received() {
     let dir = Dir::create_temp_dir("testing").await.unwrap();
     prepare_valid_server_storage(dir.clone()).await;
     let options = AppOptions {
+        lifecycle: LifecycleOptions {
+            is_persistent: true,
+            ..Default::default()
+        },
         storage: StorageOptions {
             layout: StorageLayout::new(dir),
             ..Default::default()

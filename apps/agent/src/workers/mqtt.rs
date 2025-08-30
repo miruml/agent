@@ -32,12 +32,12 @@ pub struct Options {
 
 impl Default for Options {
     fn default() -> Self {
-        let twelve_hrs = 12 * 60 * 60;
+        let five_mins = 5 * 60;
         Self {
             cooldown: CooldownOptions {
                 base_secs: 1,
                 growth_factor: 2,
-                max_secs: twelve_hrs,
+                max_secs: five_mins,
             },
             broker_address: ConnectAddress::default(),
         }
@@ -159,6 +159,41 @@ pub async fn run_impl<F, Fut, TokenManagerT: TokenManagerExt, SyncerT: SyncerExt
     }
 }
 
+
+async fn init_client<TokenManagerT: TokenManagerExt>(
+    device_id: &str,
+    device_session_id: &str,
+    token_mngr: &TokenManagerT,
+    broker_address: ConnectAddress,
+) -> (MQTTClient, EventLoop) {
+    // update the mqtt password
+    let token = match token_mngr.get_token().await {
+        Ok(token) => token.token.clone(),
+        Err(_) => Token::default().token,
+    };
+
+    // initialize the mqtt client
+    let credentials = Credentials {
+        username: device_session_id.to_string(),
+        password: token,
+    };
+    let options = OptionsBuilder::new(credentials)
+        .with_connect_address(broker_address)
+        .with_client_id(device_id.to_string())
+        .build();
+    let (mqtt_client, eventloop) = MQTTClient::new(&options).await;
+
+    // subscribe to device synchronization updates
+    if let Err(e) = mqtt_client.subscribe_device_sync(device_id).await {
+        error!("error subscribing to device synchronization updates: {e:?}");
+    };
+    if let Err(e) = mqtt_client.subscribe_device_ping(device_id).await {
+        error!("error subscribing to device ping updates: {e:?}");
+    };
+
+    (mqtt_client, eventloop)
+}
+
 pub async fn handle_syncer_event<MQTTClientT: DeviceExt>(
     event: &SyncEvent,
     device_id: &str,
@@ -180,44 +215,11 @@ pub async fn handle_syncer_event<MQTTClientT: DeviceExt>(
     }
 }
 
-async fn init_client<TokenManagerT: TokenManagerExt>(
-    device_id: &str,
-    device_session_id: &str,
-    token_mngr: &TokenManagerT,
-    broker_address: ConnectAddress,
-) -> (MQTTClient, EventLoop) {
-    // update the mqtt password
-    let token = match token_mngr.get_token().await {
-        Ok(token) => token.token.clone(),
-        Err(_) => Token::default().token,
-    };
-
-    // initialize the mqtt options
-    let credentials = Credentials {
-        username: device_session_id.to_string(),
-        password: token,
-    };
-    let options = OptionsBuilder::new(credentials)
-        .with_connect_address(broker_address)
-        .with_client_id(device_id.to_string())
-        .build();
-
-    // create the mqtt client
-    let (mqtt_client, eventloop) = MQTTClient::new(&options).await;
-
-    // subscribe to device synchronization updates
-    if let Err(e) = mqtt_client.subscribe_device_sync(device_id).await {
-        error!("error subscribing to device synchronization updates: {e:?}");
-    };
-
-    (mqtt_client, eventloop)
-}
-
 type ErrStreak = u32;
 
-pub async fn handle_event<SyncerT: SyncerExt>(
+pub async fn handle_event<MQTTClientT: DeviceExt, SyncerT: SyncerExt>(
     event: &Event,
-    mqtt_client: &MQTTClient,
+    mqtt_client: &MQTTClientT,
     syncer: &SyncerT,
     device_id: &str,
     device_file: &DeviceFile,
@@ -225,6 +227,20 @@ pub async fn handle_event<SyncerT: SyncerExt>(
     let err_streak = 0;
 
     match event {
+        // update the device connection status on successful connections
+        Event::Incoming(Incoming::ConnAck(connack)) => {
+            if connack.code != ConnectReturnCode::Success {
+                return err_streak;
+            }
+            info!("Established connection to mqtt broker");
+            let _ = device_file.patch(device::Updates::connected()).await;
+        }
+        // update the device connection status on successful disconnections
+        Event::Incoming(Incoming::Disconnect) => {
+            info!("Disconnected from mqtt broker");
+            let _ = device_file.patch(device::Updates::disconnected()).await;
+        }
+
         // sync the device if the payload is a sync request
         Event::Incoming(Incoming::Publish(publish)) => {
             let topic = topics::parse_subscription(device_id, &publish.topic);
@@ -241,26 +257,13 @@ pub async fn handle_event<SyncerT: SyncerExt>(
             }
         }
 
-        // update the device connection status on successful connections
-        Event::Incoming(Incoming::ConnAck(connack)) => {
-            if connack.code != ConnectReturnCode::Success {
-                return err_streak;
-            }
-            info!("Established connection to mqtt broker");
-            let _ = device_file.patch(device::Updates::connected()).await;
-        }
-        // update the device connection status on successful disconnections
-        Event::Incoming(Incoming::Disconnect) => {
-            info!("Disconnected from mqtt broker");
-            let _ = device_file.patch(device::Updates::disconnected()).await;
-        }
         _ => {}
     }
 
     err_streak
 }
 
-pub async fn handle_sync_event<SyncerT: SyncerExt>(
+async fn handle_sync_event<SyncerT: SyncerExt>(
     publish: &Publish,
     syncer: &SyncerT,
 ) {
@@ -279,9 +282,9 @@ pub async fn handle_sync_event<SyncerT: SyncerExt>(
     }
 }
 
-pub async fn handle_ping_event(
+async fn handle_ping_event<MQTTClientT: DeviceExt>(
     publish: &Publish,
-    client: &MQTTClient,
+    client: &MQTTClientT,
     device_id: &str,
 ) {
     let message_id = match serde_json::from_slice::<Ping>(&publish.payload) {

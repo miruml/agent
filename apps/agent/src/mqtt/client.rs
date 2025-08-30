@@ -112,6 +112,10 @@ impl Options {
             capacity,
         }
     }
+
+    pub fn set_password(&mut self, password: String) {
+        self.credentials.password = password;
+    }
 }
 
 impl Default for Options {

@@ -9,9 +9,10 @@ use serde_json::json;
 fn serialize_deserialize_settings() {
     let settings = Settings {
         log_level: LogLevel::Debug,
-        is_socket_activated: true,
+        is_persistent: false,
         enable_socket_server: false,
-        enable_backend_sync_worker: false,
+        enable_mqtt_worker: false,
+        enable_poller: false,
         backend: Backend {
             base_url: "http://arglebargle.com/agent/v1".to_string(),
         },
@@ -35,17 +36,19 @@ fn deserialize_settings() {
         mqtt_broker: MQTTBroker {
             host: "mqtt.arglebargle.com".to_string(),
         },
-        is_socket_activated: true,
+        is_persistent: false,
         enable_socket_server: false,
-        enable_backend_sync_worker: false,
+        enable_mqtt_worker: false,
+        enable_poller: false,
     };
     let valid_input = json!({
         "log_level": settings.log_level,
         "backend": settings.backend,
         "mqtt_broker": settings.mqtt_broker,
-        "is_socket_activated": settings.is_socket_activated,
+        "is_persistent": settings.is_persistent,
         "enable_socket_server": settings.enable_socket_server,
-        "enable_backend_sync_worker": settings.enable_backend_sync_worker,
+        "enable_mqtt_worker": settings.enable_mqtt_worker,
+        "enable_poller": settings.enable_poller,
     });
     let deserialized = serde_json::from_value::<Settings>(valid_input).unwrap();
     assert_eq!(deserialized, settings);

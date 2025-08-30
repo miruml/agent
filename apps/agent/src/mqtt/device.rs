@@ -3,7 +3,7 @@ use crate::mqtt::client::MQTTClient;
 // use crate::mqtt::device::
 use crate::mqtt::{
     errors::MQTTError,
-    topics::{device_ping_topic, device_pong_topic, device_sync_topic},
+    topics::{device_ping, device_pong, device_sync},
 };
 
 // external crates
@@ -30,12 +30,12 @@ pub trait DeviceExt {
 
 impl DeviceExt for MQTTClient {
     async fn subscribe_device_sync(&self, device_id: &str) -> Result<(), MQTTError> {
-        let topic = device_sync_topic(device_id);
+        let topic = device_sync(device_id);
         self.subscribe(&topic, QoS::AtLeastOnce).await
     }
 
     async fn publish_device_sync(&self, device_id: &str) -> Result<(), MQTTError> {
-        let topic = device_sync_topic(device_id);
+        let topic = device_sync(device_id);
         let payload = SyncDevice { is_synced: true };
         let payload_bytes = serde_json::to_vec(&payload).unwrap();
         self.publish(&topic, QoS::AtLeastOnce, true, &payload_bytes)
@@ -43,7 +43,7 @@ impl DeviceExt for MQTTClient {
     }
 
     async fn subscribe_device_ping(&self, device_id: &str) -> Result<(), MQTTError> {
-        let topic = device_ping_topic(device_id);
+        let topic = device_ping(device_id);
         self.subscribe(&topic, QoS::AtLeastOnce).await
     }
 
@@ -52,7 +52,7 @@ impl DeviceExt for MQTTClient {
         device_id: &str,
         ping_message_id: String,
     ) -> Result<(), MQTTError> {
-        let topic = device_pong_topic(device_id);
+        let topic = device_pong(device_id);
         let payload = Pong {
             message_id: ping_message_id,
             timestamp: Utc::now().to_rfc3339(),

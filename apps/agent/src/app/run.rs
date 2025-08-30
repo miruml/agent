@@ -230,7 +230,7 @@ async fn init_poller_worker(
     let syncer = app_state.syncer.clone();
     let device_file = app_state.device_file.clone();
 
-    let backend_sync_handle = tokio::spawn(async move {
+    let poller_handle = tokio::spawn(async move {
         poller::run(
             &options,
             syncer.as_ref(),
@@ -242,7 +242,7 @@ async fn init_poller_worker(
         )
         .await;
     });
-    shutdown_manager.with_backend_sync_worker_handle(backend_sync_handle)?;
+    shutdown_manager.with_poller_worker_handle(poller_handle)?;
     Ok(())
 }
 
@@ -258,7 +258,7 @@ async fn init_mqtt_worker(
     let syncer = app_state.syncer.clone();
     let device_file = app_state.device_file.clone();
 
-    let backend_sync_handle = tokio::spawn(async move {
+    let mqtt_handle = tokio::spawn(async move {
         mqtt::run(
             &options,
             token_mngr.as_ref(),
@@ -271,7 +271,7 @@ async fn init_mqtt_worker(
         )
         .await;
     });
-    shutdown_manager.with_backend_sync_worker_handle(backend_sync_handle)?;
+    shutdown_manager.with_mqtt_worker_handle(mqtt_handle)?;
     Ok(())
 }
 
@@ -314,9 +314,10 @@ struct ShutdownManager {
 
     // server components requiring shutdown
     app_state: Option<AppStateShutdownParams>,
-    token_refresh_worker_handle: Option<JoinHandle<()>>,
-    backend_sync_worker_handle: Option<JoinHandle<()>>,
     socket_server_handle: Option<JoinHandle<Result<(), ServerErr>>>,
+    poller_worker_handle: Option<JoinHandle<()>>,
+    mqtt_worker_handle: Option<JoinHandle<()>>,
+    token_refresh_worker_handle: Option<JoinHandle<()>>,
 }
 
 impl ShutdownManager {
@@ -325,9 +326,10 @@ impl ShutdownManager {
             shutdown_tx,
             lifecycle_options,
             app_state: None,
-            token_refresh_worker_handle: None,
-            backend_sync_worker_handle: None,
             socket_server_handle: None,
+            poller_worker_handle: None,
+            mqtt_worker_handle: None,
+            token_refresh_worker_handle: None,
         }
     }
 
@@ -367,19 +369,35 @@ impl ShutdownManager {
         Ok(())
     }
 
-    pub fn with_backend_sync_worker_handle(
+    pub fn with_poller_worker_handle(
         &mut self,
-        backend_sync_handle: JoinHandle<()>,
+        poller_handle: JoinHandle<()>,
     ) -> Result<(), ServerErr> {
-        if self.backend_sync_worker_handle.is_some() {
+        if self.poller_worker_handle.is_some() {
             return Err(ServerErr::ShutdownMngrDuplicateArgErr(Box::new(
                 ShutdownMngrDuplicateArgErr {
-                    arg_name: "backend_sync_handle".to_string(),
+                    arg_name: "poller_handle".to_string(),
                     trace: trace!(),
                 },
             )));
         }
-        self.backend_sync_worker_handle = Some(backend_sync_handle);
+        self.poller_worker_handle = Some(poller_handle);
+        Ok(())
+    }
+
+    pub fn with_mqtt_worker_handle(
+        &mut self,
+        mqtt_handle: JoinHandle<()>,
+    ) -> Result<(), ServerErr> {
+        if self.mqtt_worker_handle.is_some() {
+            return Err(ServerErr::ShutdownMngrDuplicateArgErr(Box::new(
+                ShutdownMngrDuplicateArgErr {
+                    arg_name: "mqtt_handle".to_string(),
+                    trace: trace!(),
+                },
+            )));
+        }
+        self.mqtt_worker_handle = Some(mqtt_handle);
         Ok(())
     }
 
@@ -439,19 +457,31 @@ impl ShutdownManager {
             );
         }
 
-        // 2. backend sync
-        if let Some(backend_sync_worker_handle) = self.backend_sync_worker_handle.take() {
-            backend_sync_worker_handle.await.map_err(|e| {
+        // 2. poller
+        if let Some(poller_worker_handle) = self.poller_worker_handle.take() {
+            poller_worker_handle.await.map_err(|e| {
                 ServerErr::JoinHandleErr(Box::new(JoinHandleErr {
                     source: Box::new(e),
                     trace: trace!(),
                 }))
             })?;
         } else {
-            info!("Backend sync worker handle not found, skipping backend sync worker shutdown...");
+            info!("Poller worker handle not found, skipping poller worker shutdown...");
         }
 
-        // 3. server
+        // 3. mqtt
+        if let Some(mqtt_worker_handle) = self.mqtt_worker_handle.take() {
+            mqtt_worker_handle.await.map_err(|e| {
+                ServerErr::JoinHandleErr(Box::new(JoinHandleErr {
+                    source: Box::new(e),
+                    trace: trace!(),
+                }))
+            })?;
+        } else {
+            info!("MQTT worker handle not found, skipping MQTT worker shutdown...");
+        }
+
+        // 4. server
         if let Some(socket_server_handle) = self.socket_server_handle.take() {
             socket_server_handle.await.map_err(|e| {
                 ServerErr::JoinHandleErr(Box::new(JoinHandleErr {
@@ -463,7 +493,7 @@ impl ShutdownManager {
             info!("Socket server handle not found, skipping socket server shutdown...");
         }
 
-        // 4. app state
+        // 5. app state
         if let Some(app_state) = self.app_state.take() {
             app_state.state.shutdown().await?;
             app_state.state_handle.await;
