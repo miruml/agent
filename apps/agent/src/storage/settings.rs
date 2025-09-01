@@ -68,11 +68,7 @@ impl<'de> Deserialize<'de> for Settings {
                 deserialize_warn!("settings", "mqtt_broker", default.mqtt_broker)
             }),
             is_persistent: result.is_persistent.unwrap_or_else(|| {
-                deserialize_warn!(
-                    "settings",
-                    "is_persistent",
-                    default.is_persistent
-                )
+                deserialize_warn!("settings", "is_persistent", default.is_persistent)
             }),
             enable_socket_server: result.enable_socket_server.unwrap_or_else(|| {
                 deserialize_warn!(
@@ -82,18 +78,10 @@ impl<'de> Deserialize<'de> for Settings {
                 )
             }),
             enable_mqtt_worker: result.enable_mqtt_worker.unwrap_or_else(|| {
-                deserialize_warn!(
-                    "settings",
-                    "enable_mqtt_worker",
-                    default.enable_mqtt_worker
-                )
+                deserialize_warn!("settings", "enable_mqtt_worker", default.enable_mqtt_worker)
             }),
             enable_poller: result.enable_poller.unwrap_or_else(|| {
-                deserialize_warn!(
-                    "settings",
-                    "enable_poller",
-                    default.enable_poller
-                )
+                deserialize_warn!("settings", "enable_poller", default.enable_poller)
             }),
         })
     }

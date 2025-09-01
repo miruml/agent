@@ -34,7 +34,6 @@ pub struct PublishDevicePongCall {
     pub ping_message_id: String,
 }
 
-
 pub struct MockDeviceClient {
     pub publish_device_sync_fn: Box<dyn Fn() -> Result<(), MQTTError> + Send + Sync>,
     pub subscribe_device_sync_fn: Box<dyn Fn() -> Result<(), MQTTError> + Send + Sync>,
@@ -159,7 +158,11 @@ impl DeviceExt for MockDeviceClient {
         (self.subscribe_device_ping_fn)()
     }
 
-    async fn publish_device_pong(&self, device_id: &str, ping_message_id: String) -> Result<(), MQTTError> {
+    async fn publish_device_pong(
+        &self,
+        device_id: &str,
+        ping_message_id: String,
+    ) -> Result<(), MQTTError> {
         let call = PublishDevicePongCall {
             device_id: device_id.to_string(),
             ping_message_id,

@@ -1,3 +1,3 @@
 pub mod client;
-pub mod topic;
 pub mod mock;
+pub mod topic;

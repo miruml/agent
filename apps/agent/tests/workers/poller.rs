@@ -17,7 +17,7 @@ use crate::sync::mock::MockSyncer;
 // external crates
 use chrono::{TimeDelta, Utc};
 
-pub mod run{
+pub mod run {
     use super::*;
 
     #[tokio::test]

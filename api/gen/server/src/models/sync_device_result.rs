@@ -19,10 +19,8 @@ pub enum SyncDeviceResult {
     SYNC_DEVICE_RESULT_SUCCESS,
     #[serde(rename = "network_connection_error")]
     SYNC_DEVICE_RESULT_NETWORK_CONNECTION_ERROR,
-    #[serde(rename = "device_in_cooldown")]
-    SYNC_DEVICE_RESULT_DEVICE_IN_COOLDOWN,
-    #[serde(rename = "internal_server_error")]
-    SYNC_DEVICE_RESULT_INTERNAL_SERVER_ERROR,
+    #[serde(rename = "in_cooldown")]
+    SYNC_DEVICE_RESULT_IN_COOLDOWN,
 
 }
 
@@ -31,8 +29,7 @@ impl std::fmt::Display for SyncDeviceResult {
         match self {
             Self::SYNC_DEVICE_RESULT_SUCCESS => write!(f, "success"),
             Self::SYNC_DEVICE_RESULT_NETWORK_CONNECTION_ERROR => write!(f, "network_connection_error"),
-            Self::SYNC_DEVICE_RESULT_DEVICE_IN_COOLDOWN => write!(f, "device_in_cooldown"),
-            Self::SYNC_DEVICE_RESULT_INTERNAL_SERVER_ERROR => write!(f, "internal_server_error"),
+            Self::SYNC_DEVICE_RESULT_IN_COOLDOWN => write!(f, "in_cooldown"),
         }
     }
 }

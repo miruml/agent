@@ -7,13 +7,12 @@ use crate::mqtt::{
 };
 
 // external crates
-use rumqttc::QoS;
 use chrono::Utc;
+use rumqttc::QoS;
 
 pub type SyncDevice = openapi_client::models::SyncDevice;
 pub type Ping = openapi_client::models::Ping;
 pub type Pong = openapi_client::models::Pong;
-
 
 // =================================== TRAIT ======================================= //
 #[allow(async_fn_in_trait)]

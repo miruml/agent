@@ -25,8 +25,8 @@ pub struct SyncDeviceResponse {
     #[serde(rename = "last_attempted_sync_at")]
     pub last_attempted_sync_at: String,
     /// Whether the device is currently in cooldown
-    #[serde(rename = "is_cooling_down")]
-    pub is_cooling_down: bool,
+    #[serde(rename = "in_cooldown")]
+    pub in_cooldown: bool,
     /// Timestamp of when the cooldown will end
     #[serde(rename = "cooldown_ends_at")]
     pub cooldown_ends_at: String,
@@ -38,7 +38,7 @@ impl SyncDeviceResponse {
         message: String,
         last_synced_at: String,
         last_attempted_sync_at: String,
-        is_cooling_down: bool,
+        in_cooldown: bool,
         cooldown_ends_at: String,
     ) -> SyncDeviceResponse {
         SyncDeviceResponse {
@@ -46,7 +46,7 @@ impl SyncDeviceResponse {
             message,
             last_synced_at,
             last_attempted_sync_at,
-            is_cooling_down,
+            in_cooldown,
             cooldown_ends_at,
         }
     }

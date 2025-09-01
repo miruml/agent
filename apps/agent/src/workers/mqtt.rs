@@ -23,7 +23,6 @@ use rumqttc::{ConnectReturnCode, Event, EventLoop, Incoming, Publish};
 use tokio::sync::watch;
 use tracing::{debug, error, info, warn};
 
-
 #[derive(Debug, Clone)]
 pub struct Options {
     pub cooldown: CooldownOptions,
@@ -159,7 +158,6 @@ pub async fn run_impl<F, Fut, TokenManagerT: TokenManagerExt, SyncerT: SyncerExt
     }
 }
 
-
 async fn init_client<TokenManagerT: TokenManagerExt>(
     device_id: &str,
     device_session_id: &str,
@@ -263,10 +261,7 @@ pub async fn handle_event<MQTTClientT: DeviceExt, SyncerT: SyncerExt>(
     err_streak
 }
 
-async fn handle_sync_event<SyncerT: SyncerExt>(
-    publish: &Publish,
-    syncer: &SyncerT,
-) {
+async fn handle_sync_event<SyncerT: SyncerExt>(publish: &Publish, syncer: &SyncerT) {
     let is_synced = match serde_json::from_slice::<SyncDevice>(&publish.payload) {
         Ok(sync_req) => sync_req.is_synced,
         Err(e) => {
@@ -291,7 +286,7 @@ async fn handle_ping_event<MQTTClientT: DeviceExt>(
         Ok(ping) => ping.message_id,
         Err(e) => {
             error!("error deserializing ping request: {e:?}");
-            return
+            return;
         }
     };
     if let Err(e) = client.publish_device_pong(device_id, message_id).await {

@@ -1,7 +1,7 @@
 const VERSION: &str = "v1";
 
 // device sync was the first topic we supported and we didn't use the /v1 prefix :(
-// we're just going to keep using it for now 
+// we're just going to keep using it for now
 pub fn device_sync(device_id: &str) -> String {
     format!("cmd/devices/{device_id}/sync")
 }
@@ -19,10 +19,7 @@ pub enum SubscriptionTopics {
     Unknown,
 }
 
-pub fn parse_subscription(
-    device_id: &str,
-    topic: &str
-) -> SubscriptionTopics {
+pub fn parse_subscription(device_id: &str, topic: &str) -> SubscriptionTopics {
     if topic == device_sync(device_id) {
         SubscriptionTopics::Sync
     } else if topic == device_ping(device_id) {

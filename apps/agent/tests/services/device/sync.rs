@@ -32,11 +32,11 @@ pub mod errors {
 
         let resp = sync::sync_device(&syncer).await.unwrap();
         let expected = SyncDeviceResponse {
-            code: SyncDeviceResult::SYNC_DEVICE_RESULT_DEVICE_IN_COOLDOWN,
+            code: SyncDeviceResult::SYNC_DEVICE_RESULT_IN_COOLDOWN,
             message: resp.message.clone(),
             last_synced_at: sync_state.last_synced_at.to_rfc3339(),
             last_attempted_sync_at: sync_state.last_attempted_sync_at.to_rfc3339(),
-            is_cooling_down: true,
+            in_cooldown: true,
             cooldown_ends_at: sync_state.cooldown_ends_at.to_rfc3339(),
         };
 
@@ -61,7 +61,7 @@ pub mod errors {
             message: resp.message.clone(),
             last_synced_at: sync_state.last_synced_at.to_rfc3339(),
             last_attempted_sync_at: sync_state.last_attempted_sync_at.to_rfc3339(),
-            is_cooling_down: sync_state.is_in_cooldown(),
+            in_cooldown: sync_state.is_in_cooldown(),
             cooldown_ends_at: sync_state.cooldown_ends_at.to_rfc3339(),
         };
 
@@ -80,17 +80,7 @@ pub mod errors {
             })))
         });
 
-        let resp = sync::sync_device(&syncer).await.unwrap();
-        let expected = SyncDeviceResponse {
-            code: SyncDeviceResult::SYNC_DEVICE_RESULT_INTERNAL_SERVER_ERROR,
-            message: resp.message.clone(),
-            last_synced_at: sync_state.last_synced_at.to_rfc3339(),
-            last_attempted_sync_at: sync_state.last_attempted_sync_at.to_rfc3339(),
-            is_cooling_down: sync_state.is_in_cooldown(),
-            cooldown_ends_at: sync_state.cooldown_ends_at.to_rfc3339(),
-        };
-
-        assert_eq!(resp, expected);
+        sync::sync_device(&syncer).await.unwrap_err();
     }
 }
 
@@ -109,7 +99,7 @@ pub mod success {
             message: resp.message.clone(),
             last_synced_at: sync_state.last_synced_at.to_rfc3339(),
             last_attempted_sync_at: sync_state.last_attempted_sync_at.to_rfc3339(),
-            is_cooling_down: sync_state.is_in_cooldown(),
+            in_cooldown: sync_state.is_in_cooldown(),
             cooldown_ends_at: sync_state.cooldown_ends_at.to_rfc3339(),
         };
 
