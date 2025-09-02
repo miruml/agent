@@ -1,3 +1,3 @@
 pub mod errors;
-pub mod installer;
+pub mod install;
 pub mod utils;

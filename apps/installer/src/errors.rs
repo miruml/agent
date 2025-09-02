@@ -9,131 +9,131 @@ use config_agent::filesys::errors::FileSysErr;
 use config_agent::http::errors::HTTPErr;
 use config_agent::storage::errors::StorageErr;
 
-#[derive(Debug)]
-pub struct UknownOSUserErr {
-    pub trace: Box<Trace>,
-}
+// #[derive(Debug)]
+// pub struct UknownOSUserErr {
+//     pub trace: Box<Trace>,
+// }
 
-impl MiruError for UknownOSUserErr {
-    fn code(&self) -> Code {
-        Code::InternalServerError
-    }
+// impl MiruError for UknownOSUserErr {
+//     fn code(&self) -> Code {
+//         Code::InternalServerError
+//     }
 
-    fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
-    }
+//     fn http_status(&self) -> HTTPCode {
+//         HTTPCode::INTERNAL_SERVER_ERROR
+//     }
 
-    fn is_network_connection_error(&self) -> bool {
-        false
-    }
+//     fn is_network_connection_error(&self) -> bool {
+//         false
+//     }
 
-    fn params(&self) -> Option<serde_json::Value> {
-        None
-    }
-}
+//     fn params(&self) -> Option<serde_json::Value> {
+//         None
+//     }
+// }
 
-impl fmt::Display for UknownOSUserErr {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "Unable to determine the os user (must be run as the 'miru' user)"
-        )
-    }
-}
+// impl fmt::Display for UknownOSUserErr {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!(
+//             f,
+//             "Unable to determine the os user (must be run as the 'miru' user)"
+//         )
+//     }
+// }
 
-#[derive(Debug)]
-pub struct UknownOSGroupErr {
-    pub trace: Box<Trace>,
-}
+// #[derive(Debug)]
+// pub struct UknownOSGroupErr {
+//     pub trace: Box<Trace>,
+// }
 
-impl MiruError for UknownOSGroupErr {
-    fn code(&self) -> Code {
-        Code::InternalServerError
-    }
+// impl MiruError for UknownOSGroupErr {
+//     fn code(&self) -> Code {
+//         Code::InternalServerError
+//     }
 
-    fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
-    }
+//     fn http_status(&self) -> HTTPCode {
+//         HTTPCode::INTERNAL_SERVER_ERROR
+//     }
 
-    fn is_network_connection_error(&self) -> bool {
-        false
-    }
+//     fn is_network_connection_error(&self) -> bool {
+//         false
+//     }
 
-    fn params(&self) -> Option<serde_json::Value> {
-        None
-    }
-}
+//     fn params(&self) -> Option<serde_json::Value> {
+//         None
+//     }
+// }
 
-impl fmt::Display for UknownOSGroupErr {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "Unable to determine the os group (must be run as the 'miru' group)"
-        )
-    }
-}
+// impl fmt::Display for UknownOSGroupErr {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!(
+//             f,
+//             "Unable to determine the os group (must be run as the 'miru' group)"
+//         )
+//     }
+// }
 
-#[derive(Debug)]
-pub struct InvalidOSUserErr {
-    pub target_user: String,
-    pub actual_user: String,
-    pub trace: Box<Trace>,
-}
+// #[derive(Debug)]
+// pub struct InvalidOSUserErr {
+//     pub target_user: String,
+//     pub actual_user: String,
+//     pub trace: Box<Trace>,
+// }
 
-impl MiruError for InvalidOSUserErr {
-    fn code(&self) -> Code {
-        Code::InternalServerError
-    }
+// impl MiruError for InvalidOSUserErr {
+//     fn code(&self) -> Code {
+//         Code::InternalServerError
+//     }
 
-    fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
-    }
+//     fn http_status(&self) -> HTTPCode {
+//         HTTPCode::INTERNAL_SERVER_ERROR
+//     }
 
-    fn is_network_connection_error(&self) -> bool {
-        false
-    }
+//     fn is_network_connection_error(&self) -> bool {
+//         false
+//     }
 
-    fn params(&self) -> Option<serde_json::Value> {
-        None
-    }
-}
+//     fn params(&self) -> Option<serde_json::Value> {
+//         None
+//     }
+// }
 
-impl fmt::Display for InvalidOSUserErr {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Installation must be run as the '{}' user (prepend with sudo -u '{}') not the '{}' user", self.target_user, self.target_user, self.actual_user)
-    }
-}
+// impl fmt::Display for InvalidOSUserErr {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!(f, "Installation must be run as the '{}' user (prepend with sudo -u '{}') not the '{}' user", self.target_user, self.target_user, self.actual_user)
+//     }
+// }
 
-#[derive(Debug)]
-pub struct InvalidOSGroupErr {
-    pub target_group: String,
-    pub actual_group: String,
-    pub trace: Box<Trace>,
-}
+// #[derive(Debug)]
+// pub struct InvalidOSGroupErr {
+//     pub target_group: String,
+//     pub actual_group: String,
+//     pub trace: Box<Trace>,
+// }
 
-impl MiruError for InvalidOSGroupErr {
-    fn code(&self) -> Code {
-        Code::InternalServerError
-    }
+// impl MiruError for InvalidOSGroupErr {
+//     fn code(&self) -> Code {
+//         Code::InternalServerError
+//     }
 
-    fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
-    }
+//     fn http_status(&self) -> HTTPCode {
+//         HTTPCode::INTERNAL_SERVER_ERROR
+//     }
 
-    fn is_network_connection_error(&self) -> bool {
-        false
-    }
+//     fn is_network_connection_error(&self) -> bool {
+//         false
+//     }
 
-    fn params(&self) -> Option<serde_json::Value> {
-        None
-    }
-}
+//     fn params(&self) -> Option<serde_json::Value> {
+//         None
+//     }
+// }
 
-impl fmt::Display for InvalidOSGroupErr {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Installation must be run as the '{}' group (prepend with sudo -g '{}') not the '{}' group", self.target_group, self.target_group, self.actual_group)
-    }
-}
+// impl fmt::Display for InvalidOSGroupErr {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!(f, "Installation must be run as the '{}' group (prepend with sudo -g '{}') not the '{}' group", self.target_group, self.target_group, self.actual_group)
+//     }
+// }
 
 #[derive(Debug)]
 pub struct InstallerAuthnErr {
@@ -286,72 +286,24 @@ impl fmt::Display for InstallerStorageErr {
 }
 
 #[derive(Debug)]
-pub struct DialoguerErr {
-    pub source: dialoguer::Error,
-    pub trace: Box<Trace>,
-}
-
-impl MiruError for DialoguerErr {
-    fn code(&self) -> Code {
-        Code::InternalServerError
-    }
-
-    fn http_status(&self) -> HTTPCode {
-        HTTPCode::INTERNAL_SERVER_ERROR
-    }
-
-    fn is_network_connection_error(&self) -> bool {
-        false
-    }
-
-    fn params(&self) -> Option<serde_json::Value> {
-        None
-    }
-}
-
-impl fmt::Display for DialoguerErr {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.source)
-    }
-}
-
-#[derive(Debug)]
 pub enum InstallerErr {
-    // installer errors
-    UknownOSUserErr(UknownOSUserErr),
-    UknownOSGroupErr(UknownOSGroupErr),
-    InvalidOSUserErr(InvalidOSUserErr),
-    InvalidOSGroupErr(InvalidOSGroupErr),
-
     // internal crate errors
     AuthnErr(InstallerAuthnErr),
     CryptErr(InstallerCryptErr),
     FileSysErr(InstallerFileSysErr),
     HTTPErr(InstallerHTTPErr),
     StorageErr(InstallerStorageErr),
-
-    // external crate errors
-    DialoguerErr(DialoguerErr),
 }
 
 macro_rules! forward_error_method {
     ($self:ident, $method:ident $(, $arg:expr)?) => {
         match $self {
-            // installer errors
-            Self::UknownOSUserErr(e) => e.$method($($arg)?),
-            Self::UknownOSGroupErr(e) => e.$method($($arg)?),
-            Self::InvalidOSUserErr(e) => e.$method($($arg)?),
-            Self::InvalidOSGroupErr(e) => e.$method($($arg)?),
-
             // internal crate errors
             Self::AuthnErr(e) => e.$method($($arg)?),
             Self::CryptErr(e) => e.$method($($arg)?),
             Self::FileSysErr(e) => e.$method($($arg)?),
             Self::HTTPErr(e) => e.$method($($arg)?),
             Self::StorageErr(e) => e.$method($($arg)?),
-
-            // external crate errors
-            Self::DialoguerErr(e) => e.$method($($arg)?),
         }
     };
 }

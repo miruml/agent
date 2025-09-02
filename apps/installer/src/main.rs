@@ -9,7 +9,7 @@ use config_agent::logs::{init, LogOptions};
 use config_agent::storage::layout::StorageLayout;
 use config_agent::storage::settings;
 use config_agent::utils::{has_version_flag, version_info};
-use config_agent_installer::installer;
+use config_agent_installer::install;
 use config_agent_installer::utils;
 
 // external crates
@@ -59,6 +59,16 @@ async fn install() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    // retrieve the activation token
+    let token_env_var = "MIRU_ACTIVATION_TOKEN";
+    let activation_token = match env::var(token_env_var) {
+        Ok(token) => token,
+        Err(_) => {
+            error!("The {} environment variable is not set", token_env_var);
+            return Err(format!("The {} environment variable is not set", token_env_var).into());
+        }
+    };
+
     // set optional settings
     if let Some(backend_host) = kv_args.get("backend-host") {
         settings.backend.base_url = format!("{}/agent/v1", backend_host);
@@ -70,11 +80,11 @@ async fn install() -> Result<(), Box<dyn std::error::Error>> {
     // run the installation
     let http_client = HTTPClient::new(&settings.backend.base_url).await;
     let layout = StorageLayout::default();
-    installer::install(
+    install::install(
         &layout,
         &http_client,
         &settings,
-        env::var("MIRU_ACTIVATION_TOKEN").ok(),
+        activation_token.as_str(),
         kv_args.get("device-name").map(|name| name.to_string()),
     )
     .await?;

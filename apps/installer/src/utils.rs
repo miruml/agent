@@ -1,13 +1,7 @@
 // standard library
 use std::io::{self, Write};
 
-// internal crates
-use crate::errors::{DialoguerErr, InstallerErr};
-use config_agent::trace;
-
 // external crates
-use dialoguer::console::{style, Style};
-use dialoguer::{theme::ColorfulTheme, Confirm, Password};
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
 
@@ -27,55 +21,6 @@ pub fn clear_terminal() {
     // ANSI escape code to move the cursor to the top left
     print!("{}[H", 27_u8 as char);
     io::stdout().flush().unwrap_or_default(); // Ensure the clear command is executed
-}
-
-pub fn input_theme() -> ColorfulTheme {
-    ColorfulTheme {
-        prompt_prefix: style("".to_string()),
-        ..Default::default()
-    }
-}
-
-pub fn confirm_theme() -> ColorfulTheme {
-    ColorfulTheme {
-        prompt_prefix: style("".to_string()),
-        ..Default::default()
-    }
-}
-
-pub fn select_theme() -> ColorfulTheme {
-    ColorfulTheme {
-        prompt_prefix: style("".to_string()),
-        prompt_style: Style::new().for_stderr(),
-        ..Default::default()
-    }
-}
-
-pub fn wait(prompt: &str) -> Result<(), InstallerErr> {
-    let _: String = Password::with_theme(&input_theme())
-        .with_prompt(prompt)
-        .allow_empty_password(true)
-        .interact()
-        .map_err(|e| {
-            InstallerErr::DialoguerErr(DialoguerErr {
-                source: e,
-                trace: trace!(),
-            })
-        })?;
-    Ok(())
-}
-
-pub fn confirm(prompt: &str) -> Result<bool, InstallerErr> {
-    let continue_: bool = Confirm::with_theme(&confirm_theme())
-        .with_prompt(prompt)
-        .interact()
-        .map_err(|e| {
-            InstallerErr::DialoguerErr(DialoguerErr {
-                source: e,
-                trace: trace!(),
-            })
-        })?;
-    Ok(continue_)
 }
 
 pub fn color_text(text: &str, color: Colors) -> String {
