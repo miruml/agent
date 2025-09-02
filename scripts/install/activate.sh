@@ -151,6 +151,29 @@ print_version_flag() {
 
 ### COPIED ARGUMENT UTILITIES END ###
 
+cleanup() {
+    exit_code=$?
+
+    log "Removing the downloaded files"
+    # Remove the downloaded files
+    if [ -d "$DOWNLOAD_DIR" ]; then
+        rm -rf "$DOWNLOAD_DIR"
+        debug "Removed download directory: $DOWNLOAD_DIR"
+    fi
+
+    # restart the agent
+    log "Restarting the Miru Agent"
+    sudo systemctl restart miru >/dev/null 2>&1
+
+    exit $exit_code
+}
+
+trap cleanup INT TERM QUIT HUP
+
+if systemctl is-active --quiet miru; then
+    log "Temporarily disabling the curently running Miru Agent"
+fi
+
 # CLI args
 DEBUG=$(debug_flag "$@")
 if [ "$DEBUG" = true ]; then
@@ -223,11 +246,11 @@ ARCH=$(uname -m)
 # Get latest version
 if [ "$VERSION" = "" ]; then
     if [ "$PRERELEASE" = true ]; then
-        log "Fetching latest pre-release version..."
+        log "Fetching latest pre-release version"
         VERSION=$(curl -sL "https://api.github.com/repos/${GITHUB_REPO}/releases" | 
             jq -r '.[] | select(.prerelease==true) | .tag_name' | head -n 1) || fatal "Failed to fetch latest pre-release version"
     else
-        log "Fetching latest stable version..."
+        log "Fetching latest stable version"
         VERSION=$(curl -sL "https://api.github.com/repos/${GITHUB_REPO}/releases/latest" | 
             grep "tag_name" | cut -d '"' -f 4) || fatal "Failed to fetch latest version"
     fi
@@ -266,13 +289,13 @@ download_with_progress() {
 }
 
 # Download files
-log "Downloading Miru Agent Installer ${VERSION}..."
+log "Downloading Miru Agent Installer ${VERSION}"
 download_with_progress "$URL" "$DOWNLOAD_DIR/${BINARY_NAME}.tar.gz" ||
     fatal "Failed to download ${BINARY_NAME}"
 
 # Download and verify checksum if available
 if curl -fsSL "$CHECKSUM_URL" -o "$DOWNLOAD_DIR/checksums.txt" 2>/dev/null; then
-    log "Verifying checksum..."
+    log "Verifying checksum"
     EXPECTED_CHECKSUM=$(grep "${BINARY_NAME}_${OS}_${ARCH}.tar.gz" "$DOWNLOAD_DIR/checksums.txt" | cut -d ' ' -f 1)
     if [ -n "$EXPECTED_CHECKSUM" ]; then
         verify_checksum "$DOWNLOAD_DIR/${BINARY_NAME}.tar.gz" "$EXPECTED_CHECKSUM" ||
@@ -285,7 +308,7 @@ else
 fi
 
 # Extract archive
-log "Extracting..."
+log "Extracting"
 tar -xzf "$DOWNLOAD_DIR/${BINARY_NAME}.tar.gz" -C "$DOWNLOAD_DIR" || 
     fatal "Failed to extract archive"
 
@@ -308,12 +331,6 @@ if [ -n "$MIRU_ACTIVATION_TOKEN" ]; then
 else
     sudo -u miru ./config-agent-installer $args
 fi
-cd -
+cd - >/dev/null 2>&1
 
-# Remove the downloaded files
-rm -rf "$DOWNLOAD_DIR"
-
-# Restart the agent
-sudo systemctl restart miru
-
-exit 0
+cleanup

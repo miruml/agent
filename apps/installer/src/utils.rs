@@ -58,7 +58,7 @@ fn print_boxed_title(title: &str) {
 }
 
 pub fn print_err_msg(err: Option<String>) {
-    println!("Our apologies, but an error occurred during your installation :/ Please send us an email at ben@miruml.com for immediate support.\n");
+    println!("An error occurred during your installation. Contact us at ben@miruml.com or 832-461-3504 for immediate support.\n");
 
     if let Some(e) = err {
         println!("Error: {e}\n");
