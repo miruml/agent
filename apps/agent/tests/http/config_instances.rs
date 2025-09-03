@@ -14,7 +14,7 @@ pub mod build_search_query_func {
         let builder = ConfigInstanceFiltersBuilder::new("dvc_123".to_string());
         let filters = builder
             .with_id_filter(IDFilter {
-                not: false,
+                negate: false,
                 op: SearchOperator::Equals,
                 val: vec!["1".to_string(), "2".to_string(), "3".to_string()],
             })
@@ -31,7 +31,7 @@ pub mod build_search_query_func {
         let builder = ConfigInstanceFiltersBuilder::new("dvc_123".to_string());
         let filters = builder
             .with_config_schema_id_filter(ConfigSchemaIDFilter {
-                not: false,
+                negate: false,
                 op: SearchOperator::Equals,
                 val: vec!["1".to_string(), "2".to_string(), "3".to_string()],
             })
@@ -48,7 +48,7 @@ pub mod build_search_query_func {
         let builder = ConfigInstanceFiltersBuilder::new("dvc_123".to_string());
         let filters = builder.with_target_status_filter(
             TargetStatusFilter {
-                not: false,
+                negate: false,
                 op: SearchOperator::Equals,
                 val: vec![openapi_client::models::ConfigInstanceTargetStatus::CONFIG_INSTANCE_TARGET_STATUS_REMOVED],
             }
@@ -65,7 +65,7 @@ pub mod build_search_query_func {
         let builder = ConfigInstanceFiltersBuilder::new("dvc_123".to_string());
         let filters = builder.with_activity_status_filter(
             ActivityStatusFilter {
-                not: false,
+                negate: false,
                 op: SearchOperator::Equals,
                 val: vec![openapi_client::models::ConfigInstanceActivityStatus::CONFIG_INSTANCE_ACTIVITY_STATUS_DEPLOYED],
             }
@@ -82,7 +82,7 @@ pub mod build_search_query_func {
         let builder = ConfigInstanceFiltersBuilder::new("dvc_123".to_string());
         let filters = builder.with_error_status_filter(
             ErrorStatusFilter {
-                not: false,
+                negate: false,
                 op: SearchOperator::Equals,
                 val: vec![openapi_client::models::ConfigInstanceErrorStatus::CONFIG_INSTANCE_ERROR_STATUS_NONE],
             }

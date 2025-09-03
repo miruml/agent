@@ -60,7 +60,7 @@ pub struct Device {
     pub id: String,
     pub session_id: String,
     pub name: String,
-    pub version: String,
+    pub agent_version: String,
     pub activated: bool,
     pub status: DeviceStatus,
     pub last_synced_at: DateTime<Utc>,
@@ -74,7 +74,7 @@ impl Default for Device {
             id: "placeholder".to_string(),
             session_id: "placeholder".to_string(),
             name: "placeholder".to_string(),
-            version: "placeholder".to_string(),
+            agent_version: "placeholder".to_string(),
             activated: false,
             status: DeviceStatus::Offline,
             last_synced_at: DateTime::<Utc>::UNIX_EPOCH,
@@ -96,7 +96,7 @@ impl<'de> Deserialize<'de> for Device {
             device_id: String,
             session_id: String,
             name: Option<String>,
-            version: Option<String>,
+            agent_version: Option<String>,
             activated: Option<bool>,
             status: Option<DeviceStatus>,
             last_synced_at: Option<DateTime<Utc>>,
@@ -123,9 +123,9 @@ impl<'de> Deserialize<'de> for Device {
             activated: result
                 .activated
                 .unwrap_or_else(|| deserialize_error!("device", "activated", default.activated)),
-            version: result
-                .version
-                .unwrap_or_else(|| deserialize_error!("device", "version", default.version)),
+            agent_version: result
+                .agent_version
+                .unwrap_or_else(|| deserialize_error!("device", "agent_version", default.agent_version)),
             status: result
                 .status
                 .unwrap_or_else(|| deserialize_error!("device", "status", default.status)),
@@ -154,8 +154,8 @@ impl Mergeable<Updates> for Device {
         if let Some(name) = updates.name {
             self.name = name;
         }
-        if let Some(version) = updates.version {
-            self.version = version;
+        if let Some(agent_version) = updates.agent_version {
+            self.agent_version = agent_version;
         }
         if let Some(activated) = updates.activated {
             self.activated = activated;
@@ -179,7 +179,7 @@ impl Mergeable<Updates> for Device {
 pub struct Updates {
     pub id: Option<String>,
     pub name: Option<String>,
-    pub version: Option<String>,
+    pub agent_version: Option<String>,
     pub activated: Option<bool>,
     pub status: Option<DeviceStatus>,
     pub last_synced_at: Option<DateTime<Utc>>,
@@ -192,7 +192,7 @@ impl Updates {
         Self {
             id: None,
             name: None,
-            version: None,
+            agent_version: None,
             activated: None,
             status: None,
             last_synced_at: None,
@@ -217,9 +217,9 @@ impl Updates {
         }
     }
 
-    pub fn set_version(version: String) -> Self {
+    pub fn set_agent_version(version: String) -> Self {
         Self {
-            version: Some(version),
+            agent_version: Some(version),
             ..Self::empty()
         }
     }

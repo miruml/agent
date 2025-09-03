@@ -14,7 +14,7 @@ use openapi_client::models::SchemaDigestResponse;
 use openapi_server::models::HashSerializedConfigSchemaFormat;
 
 // test crates
-use crate::http::mock::MockConfigSchemasClient;
+use crate::http::mock::MockCfgSchsClient;
 
 // external crates
 use serde_json::json;
@@ -32,7 +32,7 @@ pub mod errors {
             .unwrap();
 
         // create the mock
-        let mut mock_client = MockConfigSchemasClient::default();
+        let mut mock_client = MockCfgSchsClient::default();
         let server_resp = || -> Result<SchemaDigestResponse, HTTPErr> {
             Err(HTTPErr::MockErr(Box::new(MockErr {
                 is_network_connection_error: true,
@@ -127,7 +127,7 @@ pub mod success {
             .unwrap();
 
         // create the mock
-        let mut mock_client = MockConfigSchemasClient::default();
+        let mut mock_client = MockCfgSchsClient::default();
         let resolved_digest = "sha256:a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r";
         let server_resp = || -> Result<SchemaDigestResponse, HTTPErr> {
             Ok(SchemaDigestResponse {

@@ -197,7 +197,7 @@ pub mod refresh_token {
             token: "token".to_string(),
             expires_at: Utc::now().to_rfc3339(),
         };
-        mock_http_client.issue_device_token_result = Box::new(move || Ok(expected.clone()));
+        mock_http_client.issue_device_token_fn = Box::new(move || Ok(expected.clone()));
 
         // spawn the token manager
         let (token_mngr, _) = spawn(
@@ -229,7 +229,7 @@ pub mod refresh_token {
 
         // prepare the mock http client
         let mock_http_client = MockDevicesClient {
-            issue_device_token_result: Box::new(move || {
+            issue_device_token_fn: Box::new(move || {
                 Err(HTTPErr::MockErr(Box::new(MockErr {
                     is_network_connection_error: false,
                 })))
@@ -273,7 +273,7 @@ pub mod refresh_token {
         };
         let resp_clone = resp.clone();
         let mock_http_client = MockDevicesClient {
-            issue_device_token_result: Box::new(move || Ok(resp_clone.clone())),
+            issue_device_token_fn: Box::new(move || Ok(resp_clone.clone())),
             ..Default::default()
         };
 
@@ -319,7 +319,7 @@ pub mod refresh_token {
         };
         let resp_clone = resp.clone();
         let mock_http_client = MockDevicesClient {
-            issue_device_token_result: Box::new(move || Ok(resp_clone.clone())),
+            issue_device_token_fn: Box::new(move || Ok(resp_clone.clone())),
             ..Default::default()
         };
 

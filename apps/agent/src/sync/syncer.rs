@@ -4,15 +4,20 @@ use std::time::Duration;
 
 // internal crates
 use crate::authn::token_mngr::{TokenManager, TokenManagerExt};
-use crate::crud::prelude::*;
-use crate::deploy::{apply::apply, fsm};
+use crate::deploy::fsm;
 use crate::errors::*;
 use crate::filesys::dir::Dir;
-use crate::http::{client::HTTPClient, config_instances::ConfigInstancesExt};
-use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceContentCache};
+use crate::http::{
+    client::HTTPClient,
+    config_instances::ConfigInstancesExt,
+    devices::DevicesExt,
+};
+use crate::storage::{
+    config_instances::{ConfigInstanceCache, ConfigInstanceContentCache},
+    device::DeviceFile,
+};
 use crate::sync::errors::*;
-use crate::sync::pull::pull_config_instances;
-use crate::sync::push::push_config_instances;
+use crate::sync::{agent_version, config_instances};
 use crate::trace;
 use crate::utils::{calc_exp_backoff, CooldownOptions};
 
@@ -44,6 +49,7 @@ pub enum SyncEvent {
 // ======================== SINGLE-THREADED IMPLEMENTATION ========================= //
 pub struct SyncerArgs<HTTPClientT: ConfigInstancesExt, TokenManagerT: TokenManagerExt> {
     pub device_id: String,
+    pub device_file: Arc<DeviceFile>,
     pub http_client: Arc<HTTPClientT>,
     pub token_mngr: Arc<TokenManagerT>,
     pub cfg_inst_cache: Arc<ConfigInstanceCache>,
@@ -51,6 +57,7 @@ pub struct SyncerArgs<HTTPClientT: ConfigInstancesExt, TokenManagerT: TokenManag
     pub deployment_dir: Dir,
     pub fsm_settings: fsm::Settings,
     pub cooldown_options: CooldownOptions,
+    pub agent_version: String,
 }
 
 #[derive(Debug, Clone)]
@@ -80,12 +87,14 @@ impl SyncState {
 
 pub struct SingleThreadSyncer<HTTPClientT: ConfigInstancesExt> {
     device_id: String,
+    device_file: Arc<DeviceFile>,
     http_client: Arc<HTTPClientT>,
     token_mngr: Arc<TokenManager>,
     cfg_inst_cache: Arc<ConfigInstanceCache>,
     cfg_inst_content_cache: Arc<ConfigInstanceContentCache>,
     deployment_dir: Dir,
     fsm_settings: fsm::Settings,
+    agent_version: String,
 
     // subscribers
     subscriber_tx: watch::Sender<SyncEvent>,
@@ -96,11 +105,12 @@ pub struct SingleThreadSyncer<HTTPClientT: ConfigInstancesExt> {
     state: SyncState,
 }
 
-impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
+impl<HTTPClientT: ConfigInstancesExt + DevicesExt> SingleThreadSyncer<HTTPClientT> {
     pub fn new(args: SyncerArgs<HTTPClientT, TokenManager>) -> Self {
         let (subscriber_tx, subscriber_rx) = watch::channel(SyncEvent::SyncSuccess);
         Self {
             device_id: args.device_id,
+            device_file: args.device_file,
             http_client: args.http_client,
             token_mngr: args.token_mngr,
             cfg_inst_cache: args.cfg_inst_cache,
@@ -108,6 +118,7 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
             deployment_dir: args.deployment_dir,
             fsm_settings: args.fsm_settings,
             cooldown_options: args.cooldown_options,
+            agent_version: args.agent_version,
             state: SyncState {
                 last_attempted_sync_at: DateTime::<Utc>::UNIX_EPOCH,
                 last_synced_at: DateTime::<Utc>::UNIX_EPOCH,
@@ -246,81 +257,25 @@ impl<HTTPClientT: ConfigInstancesExt> SingleThreadSyncer<HTTPClientT> {
             }))
         })?;
 
-        let mut errors = Vec::new();
+        if let Err(e) = agent_version::push(
+            self.device_file.as_ref(),
+            self.http_client.as_ref(),
+            &token.token,
+            self.agent_version.clone(),
+        ).await {
+            error!("Failed to push agent version to backend: {:?}", e);
+            return Err(e);
+        }
 
-        // pull config instances from server
-        debug!("Pulling config instances from server");
-        let result = pull_config_instances(
+        config_instances::sync(
             self.cfg_inst_cache.as_ref(),
             self.cfg_inst_content_cache.as_ref(),
             self.http_client.as_ref(),
             &self.device_id,
-            &token.token,
-        )
-        .await;
-        match result {
-            Ok(_) => (),
-            Err(e) => {
-                errors.push(e);
-            }
-        };
-
-        // read the config instances which need to be applied
-        debug!("Reading config instances which need to be applied");
-        let cfg_insts_to_apply = self
-            .cfg_inst_cache
-            .find_where(|cfg_inst| fsm::is_action_required(fsm::next_action(cfg_inst, true)))
-            .await
-            .map_err(|e| {
-                SyncErr::CrudErr(Box::new(SyncCrudErr {
-                    source: e,
-                    trace: trace!(),
-                }))
-            })?;
-        let cfg_insts_to_apply = cfg_insts_to_apply
-            .into_iter()
-            .map(|cfg_inst| (cfg_inst.id.clone(), cfg_inst))
-            .collect();
-
-        // apply deployments
-        apply(
-            cfg_insts_to_apply,
-            self.cfg_inst_cache.as_ref(),
-            self.cfg_inst_content_cache.as_ref(),
             &self.deployment_dir,
             &self.fsm_settings,
-        )
-        .await
-        .map_err(|e| {
-            SyncErr::DeployErr(Box::new(SyncDeployErr {
-                source: e,
-                trace: trace!(),
-            }))
-        })?;
-
-        // push config instances to server
-        debug!("Pushing config instances to server");
-        let result = push_config_instances(
-            self.cfg_inst_cache.as_ref(),
-            self.http_client.as_ref(),
             &token.token,
-        )
-        .await;
-        match result {
-            Ok(_) => (),
-            Err(e) => {
-                errors.push(e);
-            }
-        };
-
-        if errors.is_empty() {
-            Ok(())
-        } else {
-            Err(SyncErr::SyncErrors(Box::new(SyncErrors {
-                source: errors,
-                trace: trace!(),
-            })))
-        }
+        ).await
     }
 }
 
@@ -374,7 +329,7 @@ impl<HTTPClientT: ConfigInstancesExt + Send> Worker<HTTPClientT> {
     }
 }
 
-impl<HTTPClientT: ConfigInstancesExt + Send> Worker<HTTPClientT> {
+impl<HTTPClientT: ConfigInstancesExt + DevicesExt + Send> Worker<HTTPClientT> {
     pub async fn run(mut self) {
         while let Some(cmd) = self.receiver.recv().await {
             match cmd {

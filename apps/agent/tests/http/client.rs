@@ -94,7 +94,7 @@ pub mod send {
         async fn get_httpbin_org() {
             let http_client = HTTPClient::new("doesntmatter").await;
             let request = http_client
-                .build_get_request("https://httpbin.org/get", Duration::from_secs(1), None)
+                .build_get_request("https://httpbin.org/get", Duration::from_secs(3), None)
                 .unwrap();
             let result = http_client.send(request.0, &request.1).await.unwrap();
             assert!(result.status().is_success());

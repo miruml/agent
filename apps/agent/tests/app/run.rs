@@ -39,7 +39,7 @@ async fn invalid_app_state_initialization() {
         ..Default::default()
     };
     tokio::time::timeout(Duration::from_secs(5), async move {
-        run(Device::default().version, options, async {
+        run(Device::default().agent_version, options, async {
             let _ = tokio::signal::ctrl_c().await;
         })
         .await
@@ -71,7 +71,7 @@ async fn max_runtime_reached() {
 
     // should safely run and shutdown in about 100ms
     tokio::time::timeout(Duration::from_secs(5), async move {
-        run(Device::default().version, options, async {
+        run(Device::default().agent_version, options, async {
             let _ = tokio::signal::ctrl_c().await;
         })
         .await
@@ -103,7 +103,7 @@ async fn is_persistent() {
     };
 
     tokio::time::timeout(2 * max_runtime, async move {
-        run(Device::default().version, options, async {
+        run(Device::default().agent_version, options, async {
             let _ = tokio::signal::ctrl_c().await;
         })
         .await
@@ -137,7 +137,7 @@ async fn idle_timeout_reached() {
 
     // should safely run and shutdown in about 100ms
     tokio::time::timeout(Duration::from_secs(5), async move {
-        run(Device::default().version, options, async {
+        run(Device::default().agent_version, options, async {
             let _ = tokio::signal::ctrl_c().await;
         })
         .await
@@ -171,7 +171,7 @@ async fn shutdown_signal_received() {
 
     // Spawn the server in a task
     let server_handle = tokio::spawn(async move {
-        run(Device::default().version, options, async {
+        run(Device::default().agent_version, options, async {
             let _ = rx.await;
         })
         .await

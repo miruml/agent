@@ -14,8 +14,11 @@ use config_agent::http::{
     client::HTTPClient,
     errors::{HTTPErr, MockErr},
 };
-use config_agent::models::config_instance::ActivityStatus;
-use config_agent::storage::config_instances::{ConfigInstanceCache, ConfigInstanceContentCache};
+use config_agent::models::{config_instance::ActivityStatus, device::Device};
+use config_agent::storage::{
+    config_instances::{ConfigInstanceCache, ConfigInstanceContentCache},
+    device::DeviceFile,
+};
 use config_agent::sync::{
     errors::SyncErr,
     syncer::{
@@ -26,7 +29,7 @@ use config_agent::sync::{
 use config_agent::utils::{calc_exp_backoff, CooldownOptions};
 
 use crate::authn::token_mngr::spawn as spawn_token_manager;
-use crate::http::mock::{MockDevicesClient, MockConfigInstancesClient};
+use crate::http::mock::{MockClient, MockDevicesClient};
 
 // external crates
 use chrono::{DateTime, TimeDelta, Utc};
@@ -58,7 +61,7 @@ pub async fn create_token_manager(
 
 pub fn spawn(
     buffer_size: usize,
-    args: SyncerArgs<MockConfigInstancesClient, TokenManager>,
+    args: SyncerArgs<MockClient, TokenManager>,
 ) -> Result<(Syncer, JoinHandle<()>), SyncErr> {
     let (sender, receiver) = mpsc::channel(buffer_size);
     let worker = Worker::new(SingleThreadSyncer::new(args), receiver);
@@ -109,12 +112,18 @@ pub mod shutdown {
             ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
+        let (device_file, _) = DeviceFile::spawn_with_default(
+            64,
+            dir.file("device.json"),
+            Device::default(),
+        ).await.unwrap();
 
         let http_client = Arc::new(HTTPClient::new("doesntmatter").await);
         let (syncer, worker_handler) = Syncer::spawn(
             32,
             SyncerArgs {
                 device_id: "device_id".to_string(),
+                device_file: Arc::new(device_file),
                 http_client: http_client.clone(),
                 token_mngr: Arc::new(token_mngr),
                 cfg_inst_cache: Arc::new(cfg_inst_cache),
@@ -122,6 +131,7 @@ pub mod shutdown {
                 deployment_dir: dir,
                 fsm_settings: fsm::Settings::default(),
                 cooldown_options: CooldownOptions::default(),
+                agent_version: Device::default().agent_version,
             },
         )
         .unwrap();
@@ -139,7 +149,7 @@ pub mod subscribe {
         let dir = Dir::create_temp_dir("spawn").await.unwrap();
         let auth_client = Arc::new(MockDevicesClient::default());
         let (token_mngr, _) = create_token_manager(&dir, auth_client.clone()).await;
-        let http_client = Arc::new(MockConfigInstancesClient::default());
+        let http_client = Arc::new(MockClient::default());
 
         // create the caches
         let (cfg_inst_cache, _) =
@@ -150,6 +160,7 @@ pub mod subscribe {
             ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
+        let (device_file, _) = DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default()).await.unwrap();
 
         let cooldown_options = CooldownOptions {
             base_secs: 1,
@@ -159,6 +170,7 @@ pub mod subscribe {
             32,
             SyncerArgs {
                 device_id: "device_id".to_string(),
+                device_file: Arc::new(device_file),
                 http_client: http_client.clone(),
                 token_mngr: Arc::new(token_mngr),
                 cfg_inst_cache: Arc::new(cfg_inst_cache),
@@ -166,6 +178,7 @@ pub mod subscribe {
                 deployment_dir: dir.clone(),
                 fsm_settings: fsm::Settings::default(),
                 cooldown_options,
+                agent_version: Device::default().agent_version,
             },
         )
         .unwrap();
@@ -213,7 +226,7 @@ pub mod subscribe {
         let auth_client = Arc::new(MockDevicesClient::default());
         let (token_mngr, _) = create_token_manager(&dir, auth_client.clone()).await;
 
-        let http_client = Arc::new(MockConfigInstancesClient::default());
+        let http_client = Arc::new(MockClient::default());
         http_client.set_list_all_config_instances(|| {
             Err(HTTPErr::MockErr(Box::new(MockErr {
                 is_network_connection_error: true,
@@ -234,6 +247,7 @@ pub mod subscribe {
             ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
+        let (device_file, _) = DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default()).await.unwrap();
 
         let cooldown_options = CooldownOptions {
             base_secs: 1,
@@ -243,6 +257,7 @@ pub mod subscribe {
             32,
             SyncerArgs {
                 device_id: "device_id".to_string(),
+                device_file: Arc::new(device_file),
                 http_client: http_client.clone(),
                 token_mngr: Arc::new(token_mngr),
                 cfg_inst_cache: Arc::new(cfg_inst_cache),
@@ -250,6 +265,7 @@ pub mod subscribe {
                 deployment_dir: dir.clone(),
                 fsm_settings: fsm::Settings::default(),
                 cooldown_options,
+                agent_version: Device::default().agent_version,
             },
         )
         .unwrap();
@@ -304,7 +320,7 @@ pub mod sync {
     use super::*;
 
     #[tokio::test]
-    async fn pull_deploy_and_push() {
+    async fn config_instances() {
         let dir = Dir::create_temp_dir("spawn").await.unwrap();
         let auth_client = Arc::new(MockDevicesClient::default());
         let (token_mngr, _) = create_token_manager(&dir, auth_client.clone()).await;
@@ -320,7 +336,7 @@ pub mod sync {
             relative_filepath: "/test/filepath".to_string(),
             ..Default::default()
         };
-        let http_client = Arc::new(MockConfigInstancesClient::default());
+        let http_client = Arc::new(MockClient::default());
         let new_instance_cloned = new_instance.clone();
         http_client.set_list_all_config_instances(move || Ok(vec![new_instance_cloned.clone()]));
 
@@ -335,6 +351,7 @@ pub mod sync {
                 .unwrap();
         let cfg_inst_cache = Arc::new(cfg_inst_cache);
         let cfg_inst_content_cache = Arc::new(cfg_inst_content_cache);
+        let (device_file, _) = DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default()).await.unwrap();
 
         let cooldown_options = CooldownOptions {
             base_secs: 10,
@@ -344,6 +361,7 @@ pub mod sync {
             32,
             SyncerArgs {
                 device_id: "device_id".to_string(),
+                device_file: Arc::new(device_file),
                 http_client: http_client.clone(),
                 token_mngr: Arc::new(token_mngr),
                 cfg_inst_cache: cfg_inst_cache.clone(),
@@ -351,6 +369,7 @@ pub mod sync {
                 deployment_dir: dir.clone(),
                 fsm_settings: fsm::Settings::default(),
                 cooldown_options,
+                agent_version: Device::default().agent_version,
             },
         )
         .unwrap();
@@ -388,12 +407,81 @@ pub mod sync {
     }
 
     #[tokio::test]
+    async fn agent_version() {
+        let dir = Dir::create_temp_dir("spawn").await.unwrap();
+        let auth_client = Arc::new(MockDevicesClient::default());
+        let (token_mngr, _) = create_token_manager(&dir, auth_client.clone()).await;
+
+        // define the new config instance
+        let http_client = Arc::new(MockClient::default());
+
+        // create the caches
+        let (cfg_inst_cache, _) =
+            ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
+                .await
+                .unwrap();
+        let (cfg_inst_content_cache, _) =
+            ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
+                .await
+                .unwrap();
+        let cfg_inst_cache = Arc::new(cfg_inst_cache);
+        let cfg_inst_content_cache = Arc::new(cfg_inst_content_cache);
+        let (device_file, _) = DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default()).await.unwrap();
+        let device_file = Arc::new(device_file);
+
+        let new_agent_version = "v1.0.1".to_string();
+        let cooldown_options = CooldownOptions {
+            base_secs: 10,
+            ..CooldownOptions::default()
+        };
+        let (syncer, _) = spawn(
+            32,
+            SyncerArgs {
+                device_id: "device_id".to_string(),
+                device_file: device_file.clone(),
+                http_client: http_client.clone(),
+                token_mngr: Arc::new(token_mngr),
+                cfg_inst_cache: cfg_inst_cache.clone(),
+                cfg_inst_content_cache: cfg_inst_content_cache.clone(),
+                deployment_dir: dir.clone(),
+                fsm_settings: fsm::Settings::default(),
+                cooldown_options,
+                agent_version: new_agent_version.clone(),
+            },
+        )
+        .unwrap();
+
+        let before = Utc::now();
+        syncer.sync().await.unwrap();
+        let after = Utc::now();
+
+        // check the device file has the correct version
+        let device = device_file.read().await.unwrap();
+        assert_eq!(device.agent_version, new_agent_version);
+
+        // check the sync state
+        let state = syncer.get_sync_state().await.unwrap();
+        assert_eq!(
+            syncer.get_cooldown_ends_at().await.unwrap(),
+            state.cooldown_ends_at
+        );
+        assert!(state.last_attempted_sync_at > before);
+        assert!(state.last_attempted_sync_at < after);
+        assert!(state.last_synced_at > before);
+        assert!(state.last_synced_at < after);
+        let base_cooldown_duration = TimeDelta::seconds(cooldown_options.base_secs);
+        assert!(state.cooldown_ends_at > before + base_cooldown_duration);
+        assert!(state.cooldown_ends_at < after + base_cooldown_duration);
+        assert_eq!(state.err_streak, 0);
+    }
+
+    #[tokio::test]
     async fn network_error() {
         let dir = Dir::create_temp_dir("spawn").await.unwrap();
         let auth_client = Arc::new(MockDevicesClient::default());
         let (token_mngr, _) = create_token_manager(&dir, auth_client.clone()).await;
 
-        let http_client = Arc::new(MockConfigInstancesClient::default());
+        let http_client = Arc::new(MockClient::default());
         http_client.set_list_all_config_instances(|| {
             Err(HTTPErr::MockErr(Box::new(MockErr {
                 is_network_connection_error: true,
@@ -414,6 +502,7 @@ pub mod sync {
             ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
+        let (device_file, _) = DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default()).await.unwrap();
 
         let cooldown_options = CooldownOptions {
             base_secs: 10,
@@ -423,6 +512,7 @@ pub mod sync {
             32,
             SyncerArgs {
                 device_id: "device_id".to_string(),
+                device_file: Arc::new(device_file),
                 http_client: http_client.clone(),
                 token_mngr: Arc::new(token_mngr),
                 cfg_inst_cache: Arc::new(cfg_inst_cache),
@@ -430,6 +520,7 @@ pub mod sync {
                 deployment_dir: dir.clone(),
                 fsm_settings: fsm::Settings::default(),
                 cooldown_options,
+                agent_version: Device::default().agent_version,
             },
         )
         .unwrap();
@@ -479,7 +570,7 @@ pub mod sync {
 
         // all errors need to be a network connection error for the syncer to return a
         // network connection error so only set one false to test this
-        let http_client = Arc::new(MockConfigInstancesClient::default());
+        let http_client = Arc::new(MockClient::default());
         http_client.set_list_all_config_instances(|| {
             Err(HTTPErr::MockErr(Box::new(MockErr {
                 is_network_connection_error: false,
@@ -500,6 +591,7 @@ pub mod sync {
             ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
+        let (device_file, _) = DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default()).await.unwrap();
 
         let cooldown_options = CooldownOptions {
             base_secs: 10,
@@ -509,6 +601,7 @@ pub mod sync {
             32,
             SyncerArgs {
                 device_id: "device_id".to_string(),
+                device_file: Arc::new(device_file),
                 http_client: http_client.clone(),
                 token_mngr: Arc::new(token_mngr),
                 cfg_inst_cache: Arc::new(cfg_inst_cache),
@@ -516,6 +609,7 @@ pub mod sync {
                 deployment_dir: dir.clone(),
                 fsm_settings: fsm::Settings::default(),
                 cooldown_options,
+                agent_version: Device::default().agent_version,
             },
         )
         .unwrap();
@@ -569,7 +663,7 @@ pub mod sync {
         let auth_client = Arc::new(MockDevicesClient::default());
         let (token_mngr, _) = create_token_manager(&dir, auth_client.clone()).await;
 
-        let http_client = Arc::new(MockConfigInstancesClient::default());
+        let http_client = Arc::new(MockClient::default());
         http_client.set_list_all_config_instances(|| {
             Err(HTTPErr::MockErr(Box::new(MockErr {
                 is_network_connection_error: false,
@@ -590,6 +684,7 @@ pub mod sync {
             ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
+        let (device_file, _) = DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default()).await.unwrap();
 
         let cooldown_options = CooldownOptions {
             base_secs: 10,
@@ -599,6 +694,7 @@ pub mod sync {
             32,
             SyncerArgs {
                 device_id: "device_id".to_string(),
+                device_file: Arc::new(device_file),
                 http_client: http_client.clone(),
                 token_mngr: Arc::new(token_mngr),
                 cfg_inst_cache: Arc::new(cfg_inst_cache),
@@ -606,6 +702,7 @@ pub mod sync {
                 deployment_dir: dir.clone(),
                 fsm_settings: fsm::Settings::default(),
                 cooldown_options,
+                agent_version: Device::default().agent_version,
             },
         )
         .unwrap();
@@ -748,7 +845,7 @@ pub mod sync {
         let dir = Dir::create_temp_dir("spawn").await.unwrap();
         let auth_client = Arc::new(MockDevicesClient::default());
         let (token_mngr, _) = create_token_manager(&dir, auth_client.clone()).await;
-        let http_client = Arc::new(MockConfigInstancesClient::default());
+        let http_client = Arc::new(MockClient::default());
 
         // create the caches
         let (cfg_inst_cache, _) =
@@ -759,6 +856,7 @@ pub mod sync {
             ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
+        let (device_file, _) = DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default()).await.unwrap();
 
         let cooldown_options = CooldownOptions {
             base_secs: 10,
@@ -768,6 +866,7 @@ pub mod sync {
             32,
             SyncerArgs {
                 device_id: "device_id".to_string(),
+                device_file: Arc::new(device_file),
                 http_client: http_client.clone(),
                 token_mngr: Arc::new(token_mngr),
                 cfg_inst_cache: Arc::new(cfg_inst_cache),
@@ -775,6 +874,7 @@ pub mod sync {
                 deployment_dir: dir.clone(),
                 fsm_settings: fsm::Settings::default(),
                 cooldown_options,
+                agent_version: Device::default().agent_version,
             },
         )
         .unwrap();
@@ -804,7 +904,7 @@ pub mod sync_if_not_in_cooldown {
         let dir = Dir::create_temp_dir("spawn").await.unwrap();
         let auth_client = Arc::new(MockDevicesClient::default());
         let (token_mngr, _) = create_token_manager(&dir, auth_client.clone()).await;
-        let http_client = Arc::new(MockConfigInstancesClient::default());
+        let http_client = Arc::new(MockClient::default());
 
         // create the caches
         let (cfg_inst_cache, _) =
@@ -815,6 +915,7 @@ pub mod sync_if_not_in_cooldown {
             ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
+        let (device_file, _) = DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default()).await.unwrap();
 
         let cooldown_options = CooldownOptions {
             base_secs: 10,
@@ -824,6 +925,7 @@ pub mod sync_if_not_in_cooldown {
             32,
             SyncerArgs {
                 device_id: "device_id".to_string(),
+                device_file: Arc::new(device_file),
                 http_client: http_client.clone(),
                 token_mngr: Arc::new(token_mngr),
                 cfg_inst_cache: Arc::new(cfg_inst_cache),
@@ -831,6 +933,7 @@ pub mod sync_if_not_in_cooldown {
                 deployment_dir: dir.clone(),
                 fsm_settings: fsm::Settings::default(),
                 cooldown_options,
+                agent_version: Device::default().agent_version,
             },
         )
         .unwrap();

@@ -283,7 +283,13 @@ async fn handle_ping_event<MQTTClientT: DeviceExt>(
     device_id: &str,
 ) {
     let message_id = match serde_json::from_slice::<Ping>(&publish.payload) {
-        Ok(ping) => ping.message_id,
+        Ok(ping) => {
+            info!(
+                "received ping request at {} with message id {}",
+                ping.timestamp, ping.message_id,
+            );
+            ping.message_id
+        }
         Err(e) => {
             error!("error deserializing ping request: {e:?}");
             return;
@@ -291,6 +297,8 @@ async fn handle_ping_event<MQTTClientT: DeviceExt>(
     };
     if let Err(e) = client.publish_device_pong(device_id, message_id).await {
         error!("error publishing ping response: {e:?}");
+    } else {
+        info!("successfully published ping response");
     }
 }
 

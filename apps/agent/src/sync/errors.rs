@@ -6,6 +6,7 @@ use crate::authn::errors::AuthnErr;
 use crate::cache::errors::CacheErr;
 use crate::crud::errors::CrudErr;
 use crate::deploy::errors::DeployErr;
+use crate::filesys::errors::FileSysErr;
 use crate::errors::{Code, HTTPCode, MiruError, Trace};
 use crate::http::errors::HTTPErr;
 use crate::storage::errors::StorageErr;
@@ -160,6 +161,36 @@ impl MiruError for SyncHTTPClientErr {
 impl fmt::Display for SyncHTTPClientErr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "HTTP client error: {}", self.source)
+    }
+}
+
+#[derive(Debug)]
+pub struct SyncFileSysErr {
+    pub source: FileSysErr,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for SyncFileSysErr {
+    fn code(&self) -> Code {
+        self.source.code()
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        self.source.http_status()
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        self.source.is_network_connection_error()
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        self.source.params()
+    }
+}
+
+impl fmt::Display for SyncFileSysErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "file system error: {}", self.source)
     }
 }
 
@@ -375,6 +406,7 @@ pub enum SyncErr {
     CacheErr(Box<SyncCacheErr>),
     CrudErr(Box<SyncCrudErr>),
     DeployErr(Box<SyncDeployErr>),
+    FileSysErr(Box<SyncFileSysErr>),
     HTTPClientErr(Box<SyncHTTPClientErr>),
     StorageErr(Box<SyncStorageErr>),
     SyncErrors(Box<SyncErrors>),
@@ -395,6 +427,7 @@ macro_rules! forward_error_method {
             SyncErr::CacheErr(e) => e.$method($($arg)?),
             SyncErr::CrudErr(e) => e.$method($($arg)?),
             SyncErr::DeployErr(e) => e.$method($($arg)?),
+            SyncErr::FileSysErr(e) => e.$method($($arg)?),
             SyncErr::HTTPClientErr(e) => e.$method($($arg)?),
             SyncErr::StorageErr(e) => e.$method($($arg)?),
             SyncErr::SyncErrors(e) => e.$method($($arg)?),

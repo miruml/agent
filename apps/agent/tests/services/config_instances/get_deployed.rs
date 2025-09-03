@@ -10,6 +10,7 @@ use config_agent::http::errors::{
 use config_agent::models::{
     config_instance::{ActivityStatus, ConfigInstance, TargetStatus},
     config_schema::ConfigSchema,
+    device::Device,
 };
 use config_agent::services::{
     config_instances::{get_deployed, get_deployed::GetDeployedArgs},
@@ -17,6 +18,7 @@ use config_agent::services::{
 };
 use config_agent::storage::{
     config_instances::{ConfigInstanceCache, ConfigInstanceContentCache},
+    device::DeviceFile,
     config_schemas::ConfigSchemaCache,
 };
 use config_agent::sync::syncer::{Syncer, SyncerArgs};
@@ -24,7 +26,9 @@ use config_agent::trace;
 use config_agent::utils::CooldownOptions;
 
 // test crates
-use crate::http::mock::{MockDevicesClient, MockConfigInstancesClient, MockConfigSchemasClient};
+use crate::http::mock::{
+    MockClient, MockDevicesClient, MockCfgSchsClient,
+};
 use crate::sync::syncer::{create_token_manager, spawn};
 
 // tokio crates
@@ -33,7 +37,7 @@ use tokio::task::JoinHandle;
 
 pub async fn create_syncer(
     dir: &Dir,
-    http_client: Arc<MockConfigInstancesClient>,
+    http_client: Arc<MockClient>,
 ) -> (Syncer, JoinHandle<()>) {
     let auth_client = Arc::new(MockDevicesClient::default());
     let (token_mngr, _) = create_token_manager(dir, auth_client.clone()).await;
@@ -47,9 +51,13 @@ pub async fn create_syncer(
             .await
             .unwrap();
 
+    let device = Device::default();
+    let (device_file, _) = DeviceFile::spawn_with_default(64, dir.file("device.json"), device.clone()).await.unwrap();
+
     spawn(
         32,
         SyncerArgs {
+            device_file: Arc::new(device_file),
             device_id: "device-id".to_string(),
             http_client: http_client.clone(),
             token_mngr: Arc::new(token_mngr),
@@ -58,6 +66,7 @@ pub async fn create_syncer(
             deployment_dir: dir.subdir("syncer"),
             fsm_settings: fsm::Settings::default(),
             cooldown_options: CooldownOptions::default(),
+            agent_version: device.agent_version.clone(),
         },
     )
     .unwrap()
@@ -82,7 +91,7 @@ pub mod errors {
             .unwrap();
 
         // create the mock http client
-        let mut cfg_sch_client = MockConfigSchemasClient::default();
+        let mut cfg_sch_client = MockCfgSchsClient::default();
         cfg_sch_client.set_find_one_config_schema(|| {
             Err(HTTPErr::ConfigSchemaNotFound(Box::new(
                 HTTPConfigSchemaNotFound {
@@ -93,8 +102,9 @@ pub mod errors {
         });
 
         // create the syncer
-        let cfg_inst_client = MockConfigInstancesClient::default();
-        let (syncer, _) = create_syncer(&dir, Arc::new(cfg_inst_client)).await;
+        let http_client = MockClient::default();
+        let (syncer, _) = create_syncer(
+            &dir, Arc::new(http_client)).await;
 
         // run the test
         let args = GetDeployedArgs {
@@ -136,7 +146,7 @@ pub mod errors {
             .unwrap();
 
         // create the mock http client
-        let mut cfg_sch_client = MockConfigSchemasClient::default();
+        let mut cfg_sch_client = MockCfgSchsClient::default();
         cfg_sch_client.set_find_one_config_schema(|| {
             Err(HTTPErr::MockErr(Box::new(MockErr {
                 is_network_connection_error: true,
@@ -144,8 +154,8 @@ pub mod errors {
         });
 
         // create the syncer
-        let cfg_inst_client = MockConfigInstancesClient::default();
-        let (syncer, _) = create_syncer(&dir, Arc::new(cfg_inst_client)).await;
+        let http_client = MockClient::default();
+        let (syncer, _) = create_syncer(&dir, Arc::new(http_client)).await;
 
         // run the test
         let args = GetDeployedArgs {
@@ -184,7 +194,7 @@ pub mod errors {
             .unwrap();
 
         // create the mock http client
-        let mut cfg_sch_client = MockConfigSchemasClient::default();
+        let mut cfg_sch_client = MockCfgSchsClient::default();
         cfg_sch_client.set_find_one_config_schema(|| {
             Err(HTTPErr::MockErr(Box::new(MockErr {
                 is_network_connection_error: true,
@@ -192,8 +202,8 @@ pub mod errors {
         });
 
         // create the syncer
-        let cfg_inst_client = MockConfigInstancesClient::default();
-        let (syncer, _) = create_syncer(&dir, Arc::new(cfg_inst_client)).await;
+        let http_client = MockClient::default();
+        let (syncer, _) = create_syncer(&dir, Arc::new(http_client)).await;
 
         // run the test
         let args = GetDeployedArgs {
@@ -266,16 +276,16 @@ pub mod success {
             .unwrap();
 
         // create the mock http client
-        let cfg_sch_client = MockConfigSchemasClient::default();
+        let cfg_sch_client = MockCfgSchsClient::default();
 
         // create the syncer
-        let cfg_inst_client = Arc::new(MockConfigInstancesClient::default());
-        cfg_inst_client.set_list_all_config_instances(|| {
+        let http_client = Arc::new(MockClient::default());
+        http_client.set_list_all_config_instances(|| {
             Err(HTTPErr::MockErr(Box::new(MockErr {
                 is_network_connection_error: true,
             })))
         });
-        let (syncer, _) = create_syncer(&dir, cfg_inst_client.clone()).await;
+        let (syncer, _) = create_syncer(&dir, http_client.clone()).await;
 
         // run the test
         let args = GetDeployedArgs {
@@ -332,15 +342,15 @@ pub mod success {
         };
 
         // create the mock http client
-        let mut cfg_sch_client = MockConfigSchemasClient::default();
+        let mut cfg_sch_client = MockCfgSchsClient::default();
         let cfg_sch_cloned = cfg_sch.clone();
         cfg_sch_client.set_find_one_config_schema(move || Ok(cfg_sch_cloned.clone()));
 
         // create the syncer
-        let cfg_inst_client = MockConfigInstancesClient::default();
+        let http_client = MockClient::default();
         let cfg_inst_cloned = cfg_inst.clone();
-        cfg_inst_client.set_list_all_config_instances(move || Ok(vec![cfg_inst_cloned.clone()]));
-        let (syncer, _) = create_syncer(&dir, Arc::new(cfg_inst_client)).await;
+        http_client.set_list_all_config_instances(move || Ok(vec![cfg_inst_cloned.clone()]));
+        let (syncer, _) = create_syncer(&dir, Arc::new(http_client)).await;
 
         // run the test
         let args = GetDeployedArgs {

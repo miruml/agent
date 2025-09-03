@@ -1,22 +1,111 @@
 use crate::crud::prelude::*;
+use crate::deploy::{apply::apply, fsm};
+use crate::filesys::dir::Dir;
 use crate::http::{
     config_instances::{
         ActivityStatusFilter, ConfigInstanceFiltersBuilder, ConfigInstancesExt, IDFilter,
     },
     search::SearchOperator,
 };
-use crate::models::config_instance::{ConfigInstance, TargetStatus};
+use crate::models::config_instance::{ActivityStatus, ConfigInstance, ErrorStatus, TargetStatus};
 use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceContentCache};
 use crate::sync::errors::*;
 use crate::trace;
 use openapi_client::models::{
-    ConfigInstance as BackendConfigInstance, ConfigInstanceActivityStatus, ConfigInstanceExpand,
+    ConfigInstance as BackendConfigInstance, ConfigInstanceActivityStatus, ConfigInstanceExpand, UpdateConfigInstanceRequest,
 };
 
 // external crates
 use tracing::{debug, error};
 
-pub async fn pull_config_instances<HTTPClientT: ConfigInstancesExt>(
+// =================================== SYNC ======================================== //
+pub async fn sync<HTTPClientT: ConfigInstancesExt>(
+    cfg_inst_cache: &ConfigInstanceCache,
+    cfg_inst_content_cache: &ConfigInstanceContentCache,
+    http_client: &HTTPClientT,
+    device_id: &str,
+    deployment_dir: &Dir,
+    fsm_settings: &fsm::Settings,
+    token: &str,
+) -> Result<(), SyncErr> {
+    let mut errors = Vec::new();
+
+    // pull config instances from server
+    debug!("Pulling config instances from server");
+    let result = pull(
+        cfg_inst_cache,
+        cfg_inst_content_cache,
+        http_client,
+        device_id,
+        token,
+    )
+    .await;
+    match result {
+        Ok(_) => (),
+        Err(e) => {
+            errors.push(e);
+        }
+    };
+
+    // read the config instances which need to be applied
+    debug!("Reading config instances which need to be applied");
+    let cfg_insts_to_apply = cfg_inst_cache
+        .find_where(|cfg_inst| fsm::is_action_required(fsm::next_action(cfg_inst, true)))
+        .await
+        .map_err(|e| {
+            SyncErr::CrudErr(Box::new(SyncCrudErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
+    let cfg_insts_to_apply = cfg_insts_to_apply
+        .into_iter()
+        .map(|cfg_inst| (cfg_inst.id.clone(), cfg_inst))
+        .collect();
+
+    // apply deployments
+    apply(
+        cfg_insts_to_apply,
+        cfg_inst_cache,
+        cfg_inst_content_cache,
+        deployment_dir,
+        fsm_settings,
+    )
+    .await
+    .map_err(|e| {
+        SyncErr::DeployErr(Box::new(SyncDeployErr {
+            source: e,
+            trace: trace!(),
+        }))
+    })?;
+
+    // push config instances to server
+    debug!("Pushing config instances to server");
+    let result = push(
+        cfg_inst_cache,
+        http_client,
+        token,
+    )
+    .await;
+    match result {
+        Ok(_) => (),
+        Err(e) => {
+            errors.push(e);
+        }
+    };
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(SyncErr::SyncErrors(Box::new(SyncErrors {
+            source: errors,
+            trace: trace!(),
+        })))
+    }
+}
+
+// =================================== PULL ======================================== //
+pub async fn pull<HTTPClientT: ConfigInstancesExt>(
     cfg_inst_cache: &ConfigInstanceCache,
     cfg_inst_content_cache: &ConfigInstanceContentCache,
     http_client: &HTTPClientT,
@@ -78,7 +167,7 @@ async fn fetch_active_cfg_insts<HTTPClientT: ConfigInstancesExt>(
 ) -> Result<Vec<BackendConfigInstance>, SyncErr> {
     let filters = ConfigInstanceFiltersBuilder::new(device_id.to_string())
         .with_activity_status_filter(ActivityStatusFilter {
-            not: false,
+            negate: false,
             op: SearchOperator::Equals,
             // we don't want to fetch 'created' or 'validating' activity statuses
             // because created instances because they have not cleared the validation
@@ -185,7 +274,7 @@ async fn fetch_cfg_insts_with_content<HTTPClientT: ConfigInstancesExt>(
     // read the unknown config instances from the server with config instance content expanded
     let filters = ConfigInstanceFiltersBuilder::new(device_id.to_string())
         .with_id_filter(IDFilter {
-            not: false,
+            negate: false,
             op: SearchOperator::Equals,
             val: ids.clone(),
         })
@@ -318,4 +407,88 @@ async fn update_target_status_instances(
     }
 
     Ok(())
+}
+
+
+// =================================== PUSH ======================================== //
+pub async fn push<HTTPClientT: ConfigInstancesExt>(
+    cfg_inst_cache: &ConfigInstanceCache,
+    http_client: &HTTPClientT,
+    token: &str,
+) -> Result<(), SyncErr> {
+    // get all unsynced config instances
+    let unsynced_cfg_insts = cfg_inst_cache.get_dirty_entries().await.map_err(|e| {
+        SyncErr::CacheErr(Box::new(SyncCacheErr {
+            source: e,
+            trace: trace!(),
+        }))
+    })?;
+    debug!(
+        "Found {} unsynced config instances: {:?}",
+        unsynced_cfg_insts.len(),
+        unsynced_cfg_insts
+    );
+
+
+    let mut errors = Vec::new();
+
+    // push each unsynced config instance to the server and update the cache
+    for unsynced_cfg_inst in unsynced_cfg_insts {
+        let inst = unsynced_cfg_inst.value;
+
+        // define the updates
+        let activity_status = ActivityStatus::to_backend(&inst.activity_status);
+        let error_status = ErrorStatus::to_backend(&inst.error_status);
+        let updates = UpdateConfigInstanceRequest {
+            activity_status: Some(activity_status),
+            error_status: Some(error_status),
+        };
+
+        // send to the server
+        debug!(
+            "Pushing config instance {} to the server with updates: {:?}",
+            inst.id, updates
+        );
+        if let Err(e) = http_client
+            .update_config_instance(&inst.id, &updates, token)
+            .await.map_err(|e| {
+                SyncErr::HTTPClientErr(Box::new(SyncHTTPClientErr {
+                    source: e,
+                    trace: trace!(),
+                }))
+            })
+        {
+            error!("Failed to push config instance {} to backend: {}", inst.id, e);
+            errors.push(e);
+            continue;
+        }
+
+        // update the cache
+        debug!("Updating cache for config instance {}", inst.id);
+        let inst_id = inst.id.clone();
+        if let Err(e) = cfg_inst_cache
+            .write(inst.id.clone(), inst, |_, _| false, true)
+            .await.map_err(|e| {
+                SyncErr::CacheErr(Box::new(SyncCacheErr {
+                    source: e,
+                    trace: trace!(),
+                }))
+            })
+        {
+            error!(
+                "Failed to update cache for config instance {} after pushing to the server: {}",
+                inst_id, e
+            );
+            errors.push(e);
+        }
+    }
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(SyncErr::SyncErrors(Box::new(SyncErrors {
+            source: errors,
+            trace: trace!(),
+        })))
+    }
 }

@@ -53,7 +53,7 @@ pub async fn install<HTTPClientT: DevicesExt>(
             id: device.id,
             name: device.name,
             session_id: device.session_id,
-            version: version_info().version,
+            agent_version: version_info().version,
             activated: true,
             status: DeviceStatus::Online,
             last_synced_at: DateTime::<Utc>::UNIX_EPOCH,

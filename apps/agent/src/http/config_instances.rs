@@ -231,31 +231,31 @@ impl ConfigInstanceFiltersBuilder {
 }
 
 pub struct IDFilter {
-    pub not: bool,
+    pub negate: bool,
     pub op: SearchOperator,
     pub val: Vec<String>,
 }
 
 pub struct ConfigSchemaIDFilter {
-    pub not: bool,
+    pub negate: bool,
     pub op: SearchOperator,
     pub val: Vec<String>,
 }
 
 pub struct TargetStatusFilter {
-    pub not: bool,
+    pub negate: bool,
     pub op: SearchOperator,
     pub val: Vec<ConfigInstanceTargetStatus>,
 }
 
 pub struct ActivityStatusFilter {
-    pub not: bool,
+    pub negate: bool,
     pub op: SearchOperator,
     pub val: Vec<ConfigInstanceActivityStatus>,
 }
 
 pub struct ErrorStatusFilter {
-    pub not: bool,
+    pub negate: bool,
     pub op: SearchOperator,
     pub val: Vec<ConfigInstanceErrorStatus>,
 }
@@ -268,7 +268,7 @@ pub fn build_search_query(filters: ConfigInstanceFilters) -> Option<String> {
             ConfigInstanceSearch::CONFIG_INSTANCE_SEARCH_ID,
             ids.op,
             ids.val,
-            ids.not,
+            ids.negate,
         ));
     }
     clauses.push(format_search_clause(
@@ -282,7 +282,7 @@ pub fn build_search_query(filters: ConfigInstanceFilters) -> Option<String> {
             ConfigInstanceSearch::CONFIG_INSTANCE_SEARCH_CONFIG_SCHEMA_ID,
             SearchOperator::Equals,
             config_schema_ids.val,
-            config_schema_ids.not,
+            config_schema_ids.negate,
         ));
     }
     if let Some(target_statuses) = filters.target_statuses {
@@ -290,7 +290,7 @@ pub fn build_search_query(filters: ConfigInstanceFilters) -> Option<String> {
             ConfigInstanceSearch::CONFIG_INSTANCE_SEARCH_TARGET_STATUS,
             SearchOperator::Equals,
             target_statuses.val,
-            target_statuses.not,
+            target_statuses.negate,
         ));
     }
     if let Some(activity_statuses) = filters.activity_statuses {
@@ -298,7 +298,7 @@ pub fn build_search_query(filters: ConfigInstanceFilters) -> Option<String> {
             ConfigInstanceSearch::CONFIG_INSTANCE_SEARCH_ACTIVITY_STATUS,
             SearchOperator::Equals,
             activity_statuses.val,
-            activity_statuses.not,
+            activity_statuses.negate,
         ));
     }
     if let Some(error_statuses) = filters.error_statuses {
@@ -306,7 +306,7 @@ pub fn build_search_query(filters: ConfigInstanceFilters) -> Option<String> {
             ConfigInstanceSearch::CONFIG_INSTANCE_SEARCH_ERROR_STATUS,
             SearchOperator::Equals,
             error_statuses.val,
-            error_statuses.not,
+            error_statuses.negate,
         ));
     }
     format_search_group(clauses, LogicalOperator::And).map(|s| format!("search={s}"))

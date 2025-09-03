@@ -16,11 +16,7 @@ use config_agent::models::{
 };
 use config_agent::server::errors::ServerErr;
 use config_agent::storage::caches::CacheCapacities;
-use config_agent::storage::device::DeviceFile;
 use config_agent::storage::layout::StorageLayout;
-
-use crate::authn::mock::MockTokenManager;
-use crate::http::mock::MockDevicesClient;
 
 // external crates
 use chrono::Utc;
@@ -33,7 +29,7 @@ pub mod init {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
         let layout = StorageLayout::new(dir);
         let result = AppState::init(
-            Device::default().version,
+            Device::default().agent_version,
             &layout,
             CacheCapacities::default(),
             Arc::new(HTTPClient::new("doesntmatter").await),
@@ -65,7 +61,7 @@ pub mod init {
             .unwrap();
 
         let result = AppState::init(
-            Device::default().version,
+            Device::default().agent_version,
             &layout,
             CacheCapacities::default(),
             Arc::new(HTTPClient::new("doesntmatter").await),
@@ -97,7 +93,7 @@ pub mod init {
         token_file.write_json(&token, false, false).await.unwrap();
 
         let (state, _) = AppState::init(
-            Device::default().version,
+            Device::default().agent_version,
             &layout,
             CacheCapacities::default(),
             Arc::new(HTTPClient::new("doesntmatter").await),
@@ -141,7 +137,7 @@ pub mod init {
         device_file.write_json(&device, false, false).await.unwrap();
 
         let (state, _) = AppState::init(
-            Device::default().version,
+            Device::default().agent_version,
             &layout,
             CacheCapacities::default(),
             Arc::new(HTTPClient::new("doesntmatter").await),
@@ -183,7 +179,7 @@ pub mod init {
         device_file.write_json(&device, false, false).await.unwrap();
 
         let _ = AppState::init(
-            Device::default().version,
+            Device::default().agent_version,
             &layout,
             CacheCapacities::default(),
             Arc::new(HTTPClient::new("doesntmatter").await),
@@ -199,93 +195,7 @@ pub mod init {
     }
 }
 
-pub mod update_agent_version {
-    use super::*;
 
-    #[tokio::test]
-    async fn update_agent_version_same_version() {
-        let dir = Dir::create_temp_dir("testing").await.unwrap();
-        let layout = StorageLayout::new(dir);
-
-
-        let agent_version = Device::default().version;
-        let device = Device {
-            version: agent_version.clone(),
-            ..Device::default()
-        };
-
-        let (device_file, _) = DeviceFile::spawn_with_default(
-            64,
-            layout.device_file(),
-            device,
-        )
-        .await
-        .unwrap();
-        let http_client = MockDevicesClient::default();
-        let token_mngr = MockTokenManager::new(Token::default());
-
-        AppState::update_agent_version(
-            &device_file,
-            &http_client,
-            &token_mngr,
-            agent_version.clone(),
-        )
-        .await
-        .unwrap();
-
-        // check the device file has the same version
-        let device = device_file.read().await.unwrap();
-        assert_eq!(device.version, agent_version);
-
-        // check the token manager has not been called
-        assert_eq!(token_mngr.num_get_token_calls(), 0);
-
-        // check the http client has been called
-        assert_eq!(http_client.num_update_device_calls(), 0);
-    }
-
-    #[tokio::test]
-    async fn update_agent_version_different_version() {
-        let dir = Dir::create_temp_dir("testing").await.unwrap();
-        let layout = StorageLayout::new(dir);
-
-        let old_agent_version = Device::default().version;
-        let new_agent_version = "v1.0.1".to_string();
-        let device = Device {
-            version: old_agent_version.clone(),
-            ..Device::default()
-        };
-
-        let (device_file, _) = DeviceFile::spawn_with_default(
-            64,
-            layout.device_file(),
-            device,
-        )
-        .await
-        .unwrap();
-        let http_client = MockDevicesClient::default();
-        let token_mngr = MockTokenManager::new(Token::default());
-
-        AppState::update_agent_version(
-            &device_file,
-            &http_client,
-            &token_mngr,
-            new_agent_version.clone(),
-        )
-        .await
-        .unwrap();
-
-        // check the device file has the correct version
-        let device = device_file.read().await.unwrap();
-        assert_eq!(device.version, new_agent_version);
-
-        // check the token manager has not been called
-        assert_eq!(token_mngr.num_get_token_calls(), 1);
-
-        // check the http client has been called
-        assert_eq!(http_client.num_update_device_calls(), 1);
-    }
-}
 
 
 pub mod shutdown {
@@ -309,7 +219,7 @@ pub mod shutdown {
         device_file.write_json(&device, false, false).await.unwrap();
 
         let (state, state_handle) = AppState::init(
-            Device::default().version,
+            Device::default().agent_version,
             &layout,
             CacheCapacities::default(),
             Arc::new(HTTPClient::new("doesntmatter").await),
@@ -346,7 +256,7 @@ pub mod shutdown {
 
         let before_shutdown = Utc::now();
         let (state, state_handle) = AppState::init(
-            Device::default().version,
+            Device::default().agent_version,
             &layout,
             CacheCapacities::default(),
             Arc::new(HTTPClient::new("doesntmatter").await),

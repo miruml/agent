@@ -57,7 +57,7 @@ impl DeviceExt for MQTTClient {
             timestamp: Utc::now().to_rfc3339(),
         };
         let payload_bytes = serde_json::to_vec(&payload).unwrap();
-        self.publish(&topic, QoS::AtLeastOnce, true, &payload_bytes)
+        self.publish(&topic, QoS::AtLeastOnce, false, &payload_bytes)
             .await
     }
 }
