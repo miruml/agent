@@ -16,8 +16,9 @@ use tracing::{error, info};
 #[tokio::main]
 async fn main() {
     // print the version and exit if that is all that is requested
+    let version_info = version_info();
     if has_version_flag() {
-        println!("{:?}", version_info());
+        println!("{:?}", version_info);
         return;
     }
 
@@ -69,7 +70,12 @@ async fn main() {
         ..Default::default()
     };
     info!("Running the server with options: {:?}", options);
-    let result = run(options, await_shutdown_signal()).await;
+    let result = run(
+        version_info.version,
+        options,
+        await_shutdown_signal(),
+    )
+    .await;
     if let Err(e) = result {
         error!("Failed to run the server: {e}");
     }

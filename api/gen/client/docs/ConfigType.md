@@ -10,7 +10,7 @@ Name | Type | Description | Notes
 **slug** | **String** | An immutable, code-friendly name for the config type | 
 **created_at** | **String** | Timestamp of when the config type was created | 
 **updated_at** | **String** | Timestamp of when the config type was last updated | 
-**user_validates_deployments** | **bool** | Whether the config type requires user validation for deployments | 
+**custom_validation_enabled** | **bool** | Whether this config type requires custom validation for its config instances | 
 **created_by_id** | **String** |  | 
 **updated_by_id** | **String** |  | 
 **created_by** | Option<[**models::Principal**](Principal.md)> |  | 

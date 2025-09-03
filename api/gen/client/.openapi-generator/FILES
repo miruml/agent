@@ -65,6 +65,7 @@ docs/TagList.md
 docs/TagType.md
 docs/TokenResponse.md
 docs/UpdateConfigInstanceRequest.md
+docs/UpdateDeviceFromAgentRequest.md
 docs/User.md
 docs/Workspace.md
 git_push.sh
@@ -134,5 +135,6 @@ src/models/tag_list.rs
 src/models/tag_type.rs
 src/models/token_response.rs
 src/models/update_config_instance_request.rs
+src/models/update_device_from_agent_request.rs
 src/models/user.rs
 src/models/workspace.rs

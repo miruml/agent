@@ -33,6 +33,7 @@ Class | Method | HTTP request | Description
 *ConfigSchemasApi* | [**list_config_schemas**](docs/ConfigSchemasApi.md#list_config_schemas) | **GET** /config_schemas | List the config schemas for a workspace
 *DevicesApi* | [**activate_device**](docs/DevicesApi.md#activate_device) | **POST** /devices/{device_id}/activate | Activate a device
 *DevicesApi* | [**issue_device_token**](docs/DevicesApi.md#issue_device_token) | **POST** /devices/{device_id}/issue_token | Issue a device token
+*DevicesApi* | [**update_device_by_agent**](docs/DevicesApi.md#update_device_by_agent) | **PATCH** /devices/{device_id} | Update a device by agent
 *ErrorsApi* | [**get_error**](docs/ErrorsApi.md#get_error) | **GET** /example-error | Get an error
 *MqttApi* | [**device_ping**](docs/MqttApi.md#device_ping) | **GET** /cmd/devices/{device_id}/ping | Ping a device
 *MqttApi* | [**device_pong**](docs/MqttApi.md#device_pong) | **GET** /resp/devices/{device_id}/pong | Ping device response
@@ -98,6 +99,7 @@ Class | Method | HTTP request | Description
  - [TagType](docs/TagType.md)
  - [TokenResponse](docs/TokenResponse.md)
  - [UpdateConfigInstanceRequest](docs/UpdateConfigInstanceRequest.md)
+ - [UpdateDeviceFromAgentRequest](docs/UpdateDeviceFromAgentRequest.md)
  - [User](docs/User.md)
  - [Workspace](docs/Workspace.md)
 

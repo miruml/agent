@@ -12,6 +12,7 @@ use crate::crypt::jwt;
 use crate::deploy::fsm;
 use crate::filesys::path::PathExt;
 use crate::http::client::HTTPClient;
+use crate::http::devices::DevicesExt;
 use crate::models::{
     device,
     device::{Device, DeviceStatus},
@@ -44,6 +45,7 @@ pub struct AppState {
 
 impl AppState {
     pub async fn init(
+        agent_version: String,
         layout: &StorageLayout,
         cache_capacities: CacheCapacities,
         http_client: Arc<HTTPClient>,
@@ -100,6 +102,15 @@ impl AppState {
             }))
         })?;
         let token_mngr = Arc::new(token_mngr);
+
+        // update the agent version
+        Self::update_agent_version(
+            &device_file,
+            http_client.as_ref(),
+            &token_mngr,
+            agent_version,
+        )
+        .await?;
 
         // initialize the syncer
         let (syncer, syncer_handle) = Syncer::spawn(
@@ -202,7 +213,6 @@ impl AppState {
             }))
         })?;
 
-        // always set the device to be offline on boot
         device_file
             .patch(device::Updates {
                 status: Some(DeviceStatus::Offline),
@@ -216,6 +226,63 @@ impl AppState {
                 }))
             })?;
         Ok((device_file, device_file_handle))
+    }
+
+    pub async fn update_agent_version<
+        HTTPClientT: DevicesExt,
+        TokenManagerT: TokenManagerExt,
+    >(
+        device_file: &DeviceFile,
+        http_client: &HTTPClientT,
+        token_mngr: &TokenManagerT,
+        agent_version: String,
+    ) -> Result<(), ServerErr> {
+        let device = device_file.read().await.map_err(|e| {
+            ServerErr::FileSysErr(Box::new(ServerFileSysErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
+        if device.version == agent_version {
+            return Ok(());
+        }
+
+        // update the device file
+        let updates = device::Updates {
+            version: Some(agent_version.clone()),
+            ..device::Updates::empty()
+        };
+
+        device_file.patch(updates).await.map_err(|e| {
+            ServerErr::FileSysErr(Box::new(ServerFileSysErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
+
+        // update the backend
+        let token = token_mngr.get_token().await.map_err(|e| {
+            ServerErr::AuthnErr(Box::new(ServerAuthnErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
+        http_client.update_device(
+            &device.id,
+            &openapi_client::models::UpdateDeviceFromAgentRequest {
+                agent_version: Some(agent_version),
+            },
+            &token.token
+        )
+            .await
+            .map_err(|e| {
+                ServerErr::HTTPErr(Box::new(ServerHTTPErr {
+                    source: e,
+                    trace: trace!(),
+                }))
+            })?;
+
+        Ok(())
     }
 
     pub async fn shutdown(&self) -> Result<(), ServerErr> {

@@ -41,6 +41,9 @@ pub struct Device {
     /// Session ID of the device
     #[serde(rename = "session_id")]
     pub session_id: String,
+    /// The version of the agent the device is running
+    #[serde(rename = "agent_version", deserialize_with = "Option::deserialize")]
+    pub agent_version: Option<String>,
     #[serde(rename = "created_by_id")]
     pub created_by_id: String,
     #[serde(rename = "updated_by_id")]
@@ -64,6 +67,7 @@ impl Device {
         created_at: String,
         updated_at: String,
         session_id: String,
+        agent_version: Option<String>,
         created_by_id: String,
         updated_by_id: String,
         created_by: Option<models::Principal>,
@@ -80,6 +84,7 @@ impl Device {
             created_at,
             updated_at,
             session_id,
+            agent_version,
             created_by_id,
             updated_by_id,
             created_by: created_by.map(Box::new),

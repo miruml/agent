@@ -9,26 +9,37 @@ use config_agent::http::devices::DevicesExt;
 use config_agent::http::errors::HTTPErr;
 use openapi_client::models::{
     ActivateDeviceRequest, ConfigInstance, ConfigInstanceList, ConfigSchema, ConfigSchemaList,
-    Device, HashSchemaSerializedRequest, IssueDeviceTokenRequest, SchemaDigestResponse,
+    Device, HashSchemaSerializedRequest, IssueDeviceTokenRequest, SchemaDigestResponse, UpdateDeviceFromAgentRequest,
     TokenResponse, UpdateConfigInstanceRequest,
 };
 
-// ================================== AUTH EXT ===================================== //
-pub struct MockAuthClient {
-    pub activate_device_result: Box<dyn Fn() -> Result<Device, HTTPErr> + Send + Sync>,
-    pub issue_device_token_result: Box<dyn Fn() -> Result<TokenResponse, HTTPErr> + Send + Sync>,
+// ================================ DEVICES EXT ==================================== //
+#[derive(Clone, Debug, PartialEq)]
+pub enum DeviceExtCall {
+    ActivateDevice,
+    IssueDeviceToken,
+    UpdateDevice,
 }
 
-impl Default for MockAuthClient {
+pub struct MockDevicesClient {
+    pub activate_device_result: Box<dyn Fn() -> Result<Device, HTTPErr> + Send + Sync>,
+    pub issue_device_token_result: Box<dyn Fn() -> Result<TokenResponse, HTTPErr> + Send + Sync>,
+    pub update_device_result: Box<dyn Fn() -> Result<Device, HTTPErr> + Send + Sync>,
+    pub calls: Arc<Mutex<Vec<DeviceExtCall>>>,
+}
+
+impl Default for MockDevicesClient {
     fn default() -> Self {
         Self {
             activate_device_result: Box::new(|| Ok(Device::default())),
             issue_device_token_result: Box::new(|| Ok(TokenResponse::default())),
+            update_device_result: Box::new(|| Ok(Device::default())),
+            calls: Arc::new(Mutex::new(Vec::new())),
         }
     }
 }
 
-impl DevicesExt for MockAuthClient {
+impl DevicesExt for MockDevicesClient {
     async fn activate_device(
         &self,
         _: &str,
@@ -45,6 +56,27 @@ impl DevicesExt for MockAuthClient {
     ) -> Result<TokenResponse, HTTPErr> {
         (self.issue_device_token_result)()
     }
+
+    async fn update_device(
+        &self,
+        _: &str,
+        _: &UpdateDeviceFromAgentRequest,
+        _: &str,
+    ) -> Result<Device, HTTPErr> {
+        self.calls.lock().unwrap().push(DeviceExtCall::UpdateDevice);
+        (self.update_device_result)()
+    }
+}
+
+impl MockDevicesClient {
+    pub fn num_update_device_calls(&self) -> usize {
+        self.calls
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|call| **call == DeviceExtCall::UpdateDevice)
+            .count()
+    }
 }
 
 // ============================ CONFIG INSTANCES EXT =============================== //
@@ -52,11 +84,13 @@ impl DevicesExt for MockAuthClient {
 type ListConfigInstancesFn = Box<dyn Fn() -> Result<ConfigInstanceList, HTTPErr> + Send + Sync>;
 type ListAllConfigInstancesFn = Box<dyn Fn() -> Result<Vec<ConfigInstance>, HTTPErr> + Send + Sync>;
 type UpdateConfigInstanceFn = Box<dyn Fn() -> Result<ConfigInstance, HTTPErr> + Send + Sync>;
+type UpdateDeviceFn = Box<dyn Fn() -> Result<Device, HTTPErr> + Send + Sync>;
 
 pub struct MockConfigInstancesClient {
     pub list_config_instances_fn: Arc<Mutex<ListConfigInstancesFn>>,
     pub list_all_config_instances_fn: Arc<Mutex<ListAllConfigInstancesFn>>,
     pub update_config_instance_fn: Arc<Mutex<UpdateConfigInstanceFn>>,
+    pub update_device_fn: Arc<Mutex<UpdateDeviceFn>>,
 }
 
 impl Default for MockConfigInstancesClient {
@@ -69,6 +103,7 @@ impl Default for MockConfigInstancesClient {
             update_config_instance_fn: Arc::new(Mutex::new(Box::new(|| {
                 Ok(ConfigInstance::default())
             }))),
+            update_device_fn: Arc::new(Mutex::new(Box::new(|| Ok(Device::default())))),
         }
     }
 }

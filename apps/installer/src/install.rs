@@ -3,8 +3,7 @@ use std::time::Duration;
 
 // internal crates
 use crate::errors::{
-    InstallerCryptErr, InstallerErr, InstallerFileSysErr, InstallerHTTPErr,
-    InstallerStorageErr,
+    InstallerCryptErr, InstallerErr, InstallerFileSysErr, InstallerHTTPErr, InstallerStorageErr,
 };
 use crate::{utils, utils::Colors};
 use config_agent::crypt::{jwt, rsa};
@@ -12,6 +11,7 @@ use config_agent::filesys::file::File;
 use config_agent::http::devices::DevicesExt;
 use config_agent::models::device::{Device, DeviceStatus};
 use config_agent::storage::{layout::StorageLayout, settings, setup::clean_storage_setup};
+use config_agent::utils::version_info;
 use config_agent::trace;
 use openapi_client::models::ActivateDeviceRequest;
 
@@ -53,6 +53,7 @@ pub async fn install<HTTPClientT: DevicesExt>(
             id: device.id,
             name: device.name,
             session_id: device.session_id,
+            version: version_info().version,
             activated: true,
             status: DeviceStatus::Online,
             last_synced_at: DateTime::<Utc>::UNIX_EPOCH,
@@ -115,7 +116,8 @@ pub async fn activate_device<HTTPClientT: DevicesExt>(
     })?;
     let payload = ActivateDeviceRequest {
         public_key_pem,
-        name: Some(device_name),
+        name: device_name,
+        agent_version: Some(version_info().version),
     };
     let device = http_client
         .activate_device(&device_id, &payload, token)

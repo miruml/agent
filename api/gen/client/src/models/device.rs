@@ -38,6 +38,9 @@ pub struct Device {
     /// Session ID of the device
     #[serde(rename = "session_id")]
     pub session_id: String,
+    /// The version of the agent the device is running
+    #[serde(rename = "agent_version", deserialize_with = "Option::deserialize")]
+    pub agent_version: Option<String>,
     #[serde(rename = "created_by_id")]
     pub created_by_id: String,
     #[serde(rename = "updated_by_id")]
@@ -51,7 +54,7 @@ pub struct Device {
 }
 
 impl Device {
-    pub fn new(object: Object, id: String, name: String, status: models::DeviceStatus, last_connected_at: Option<String>, last_disconnected_at: Option<String>, created_at: String, updated_at: String, session_id: String, created_by_id: String, updated_by_id: String, created_by: Option<models::Principal>, updated_by: Option<models::Principal>, device_tags: Option<models::DeviceTagPaginatedList>) -> Device {
+    pub fn new(object: Object, id: String, name: String, status: models::DeviceStatus, last_connected_at: Option<String>, last_disconnected_at: Option<String>, created_at: String, updated_at: String, session_id: String, agent_version: Option<String>, created_by_id: String, updated_by_id: String, created_by: Option<models::Principal>, updated_by: Option<models::Principal>, device_tags: Option<models::DeviceTagPaginatedList>) -> Device {
         Device {
             object,
             id,
@@ -62,6 +65,7 @@ impl Device {
             created_at,
             updated_at,
             session_id,
+            agent_version,
             created_by_id,
             updated_by_id,
             created_by: if let Some(x) = created_by {Some(Box::new(x))} else {None},

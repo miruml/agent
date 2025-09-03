@@ -1,11 +1,9 @@
-# ActivateDeviceRequest
+# UpdateDeviceFromAgentRequest
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**public_key_pem** | **String** | The public key in PEM format | 
-**name** | Option<**String**> |  | [optional]
 **agent_version** | Option<**String**> | The version of the agent the device is running | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

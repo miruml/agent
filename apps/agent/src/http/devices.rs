@@ -2,7 +2,7 @@
 use crate::http::client::HTTPClient;
 use crate::http::errors::HTTPErr;
 use openapi_client::models::{
-    ActivateDeviceRequest, Device, IssueDeviceTokenRequest, TokenResponse,
+    ActivateDeviceRequest, Device, IssueDeviceTokenRequest, TokenResponse, UpdateDeviceFromAgentRequest,
 };
 
 #[allow(async_fn_in_trait)]
@@ -19,6 +19,13 @@ pub trait DevicesExt: Send + Sync {
         device_id: &str,
         payload: &IssueDeviceTokenRequest,
     ) -> Result<TokenResponse, HTTPErr>;
+
+    async fn update_device(
+        &self,
+        device_id: &str,
+        payload: &UpdateDeviceFromAgentRequest,
+        token: &str,
+    ) -> Result<Device, HTTPErr>;
 }
 
 impl HTTPClient {
@@ -75,6 +82,29 @@ impl DevicesExt for HTTPClient {
 
         // parse the response
         self.parse_json_response_text::<TokenResponse>(text_resp, &context)
+            .await
+    }
+
+    async fn update_device(
+        &self,
+        device_id: &str,
+        payload: &UpdateDeviceFromAgentRequest,
+        token: &str,
+    ) -> Result<Device, HTTPErr> {
+        let url = self.device_url(device_id);
+        let (request, context) = self.build_patch_request(
+            &url,
+            self.marshal_json_payload(payload)?,
+            self.default_timeout,
+            Some(token),
+        )?;
+
+        // send the request (no caching)
+        let http_resp = self.send(request, &context).await?;
+        let text_resp = self.handle_response(http_resp, &context).await?;
+
+        // parse the response
+        self.parse_json_response_text::<Device>(text_resp, &context)
             .await
     }
 }

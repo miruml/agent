@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 **object** | **String** |  | 
 **id** | **String** | ID of the API key | 
 **name** | **String** | Name of the API key | 
+**deleted** | **bool** | Whether the API key is deleted | 
 **created_at** | **String** | Timestamp of when the API key was created | 
 **updated_at** | **String** | Timestamp of when the API key was last updated | 
 **created_by_id** | **String** | ID of the user who created the API key | 

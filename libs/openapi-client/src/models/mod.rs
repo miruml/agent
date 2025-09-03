@@ -112,6 +112,8 @@ pub mod token_response;
 pub use self::token_response::TokenResponse;
 pub mod update_config_instance_request;
 pub use self::update_config_instance_request::UpdateConfigInstanceRequest;
+pub mod update_device_from_agent_request;
+pub use self::update_device_from_agent_request::UpdateDeviceFromAgentRequest;
 pub mod user;
 pub use self::user::User;
 pub mod workspace;

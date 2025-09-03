@@ -2,7 +2,7 @@
 use std::sync::Arc;
 
 // internal crates
-use crate::http::mock::MockAuthClient;
+use crate::http::mock::MockDevicesClient;
 use config_agent::authn::{
     errors::AuthnErr,
     token::Token,
@@ -24,7 +24,7 @@ use tokio::task::JoinHandle;
 pub fn spawn(
     buffer_size: usize,
     device_id: String,
-    http_client: Arc<MockAuthClient>,
+    http_client: Arc<MockDevicesClient>,
     token_file: TokenFile,
     private_key_file: File,
 ) -> Result<(TokenManager, JoinHandle<()>), AuthnErr> {
@@ -130,7 +130,7 @@ pub mod shutdown {
             .await
             .unwrap();
 
-        let mock_http_client = MockAuthClient::default();
+        let mock_http_client = MockDevicesClient::default();
         let (token_mngr, worker_handle) = spawn(
             32,
             "device_id".to_string(),
@@ -159,7 +159,7 @@ pub mod get_token {
             .await
             .unwrap();
 
-        let mock_http_client = MockAuthClient::default();
+        let mock_http_client = MockDevicesClient::default();
 
         let (token_mngr, _) = spawn(
             32,
@@ -192,7 +192,7 @@ pub mod refresh_token {
             .unwrap();
 
         // prepare the mock http client
-        let mut mock_http_client = MockAuthClient::default();
+        let mut mock_http_client = MockDevicesClient::default();
         let expected = TokenResponse {
             token: "token".to_string(),
             expires_at: Utc::now().to_rfc3339(),
@@ -228,7 +228,7 @@ pub mod refresh_token {
             .unwrap();
 
         // prepare the mock http client
-        let mock_http_client = MockAuthClient {
+        let mock_http_client = MockDevicesClient {
             issue_device_token_result: Box::new(move || {
                 Err(HTTPErr::MockErr(Box::new(MockErr {
                     is_network_connection_error: false,
@@ -272,7 +272,7 @@ pub mod refresh_token {
             expires_at: expires_at.to_rfc3339(),
         };
         let resp_clone = resp.clone();
-        let mock_http_client = MockAuthClient {
+        let mock_http_client = MockDevicesClient {
             issue_device_token_result: Box::new(move || Ok(resp_clone.clone())),
             ..Default::default()
         };
@@ -318,7 +318,7 @@ pub mod refresh_token {
             expires_at: expires_at.to_rfc3339(),
         };
         let resp_clone = resp.clone();
-        let mock_http_client = MockAuthClient {
+        let mock_http_client = MockDevicesClient {
             issue_device_token_result: Box::new(move || Ok(resp_clone.clone())),
             ..Default::default()
         };

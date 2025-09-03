@@ -30,9 +30,9 @@ pub struct ConfigType {
     /// Timestamp of when the config type was last updated
     #[serde(rename = "updated_at")]
     pub updated_at: String,
-    /// Whether the config type requires user validation for deployments
-    #[serde(rename = "user_validates_deployments")]
-    pub user_validates_deployments: bool,
+    /// Whether this config type requires custom validation for its config instances
+    #[serde(rename = "custom_validation_enabled")]
+    pub custom_validation_enabled: bool,
     #[serde(rename = "created_by_id")]
     pub created_by_id: String,
     #[serde(rename = "updated_by_id")]
@@ -54,7 +54,7 @@ impl ConfigType {
         slug: String,
         created_at: String,
         updated_at: String,
-        user_validates_deployments: bool,
+        custom_validation_enabled: bool,
         created_by_id: String,
         updated_by_id: String,
         created_by: Option<models::Principal>,
@@ -68,7 +68,7 @@ impl ConfigType {
             slug,
             created_at,
             updated_at,
-            user_validates_deployments,
+            custom_validation_enabled,
             created_by_id,
             updated_by_id,
             created_by: created_by.map(Box::new),

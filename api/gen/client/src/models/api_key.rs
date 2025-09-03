@@ -21,6 +21,9 @@ pub struct ApiKey {
     /// Name of the API key
     #[serde(rename = "name")]
     pub name: String,
+    /// Whether the API key is deleted
+    #[serde(rename = "deleted")]
+    pub deleted: bool,
     /// Timestamp of when the API key was created
     #[serde(rename = "created_at")]
     pub created_at: String,
@@ -42,11 +45,12 @@ pub struct ApiKey {
 }
 
 impl ApiKey {
-    pub fn new(object: Object, id: String, name: String, created_at: String, updated_at: String, created_by_id: String, updated_by_id: String, created_by: Option<models::User>, updated_by: Option<models::User>, scopes: Option<models::ScopeList>) -> ApiKey {
+    pub fn new(object: Object, id: String, name: String, deleted: bool, created_at: String, updated_at: String, created_by_id: String, updated_by_id: String, created_by: Option<models::User>, updated_by: Option<models::User>, scopes: Option<models::ScopeList>) -> ApiKey {
         ApiKey {
             object,
             id,
             name,
+            deleted,
             created_at,
             updated_at,
             created_by_id,

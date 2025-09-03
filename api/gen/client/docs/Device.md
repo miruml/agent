@@ -13,6 +13,7 @@ Name | Type | Description | Notes
 **created_at** | **String** | Timestamp of when the device was created | 
 **updated_at** | **String** | Timestamp of when the device was last updated | 
 **session_id** | **String** | Session ID of the device | 
+**agent_version** | Option<**String**> | The version of the agent the device is running | 
 **created_by_id** | **String** |  | 
 **updated_by_id** | **String** |  | 
 **created_by** | Option<[**models::Principal**](Principal.md)> |  | 

@@ -24,7 +24,7 @@ use config_agent::trace;
 use config_agent::utils::CooldownOptions;
 
 // test crates
-use crate::http::mock::{MockAuthClient, MockConfigInstancesClient, MockConfigSchemasClient};
+use crate::http::mock::{MockDevicesClient, MockConfigInstancesClient, MockConfigSchemasClient};
 use crate::sync::syncer::{create_token_manager, spawn};
 
 // tokio crates
@@ -35,7 +35,7 @@ pub async fn create_syncer(
     dir: &Dir,
     http_client: Arc<MockConfigInstancesClient>,
 ) -> (Syncer, JoinHandle<()>) {
-    let auth_client = Arc::new(MockAuthClient::default());
+    let auth_client = Arc::new(MockDevicesClient::default());
     let (token_mngr, _) = create_token_manager(dir, auth_client.clone()).await;
 
     // create the caches
