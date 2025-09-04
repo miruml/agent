@@ -172,6 +172,7 @@ trap cleanup INT TERM QUIT HUP
 
 if systemctl is-active --quiet miru; then
     log "Temporarily disabling the curently running Miru Agent"
+    sudo systemctl stop miru >/dev/null 2>&1
 fi
 
 # CLI args
