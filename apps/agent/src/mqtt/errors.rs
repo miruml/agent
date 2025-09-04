@@ -160,6 +160,36 @@ impl fmt::Display for PublishErr {
 }
 
 #[derive(Debug)]
+pub struct SerdeErr {
+    pub source: serde_json::Error,
+    pub trace: Box<Trace>,
+}
+
+impl MiruError for SerdeErr {
+    fn code(&self) -> Code {
+        Code::InternalServerError
+    }
+
+    fn http_status(&self) -> HTTPCode {
+        HTTPCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn is_network_connection_error(&self) -> bool {
+        false
+    }
+
+    fn params(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl fmt::Display for SerdeErr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Serialization error: {}", self.source)
+    }
+}
+
+#[derive(Debug)]
 pub struct MockErr {
     pub is_authentication_error: bool,
     pub is_network_connection_error: bool,
@@ -200,6 +230,7 @@ pub enum MQTTError {
     TimeoutErr(Box<TimeoutErr>),
     PollErr(Box<PollErr>),
     PublishErr(Box<PublishErr>),
+    SerdeErr(Box<SerdeErr>),
 
     MockErr(Box<MockErr>),
 }
@@ -212,6 +243,7 @@ macro_rules! forward_error_method {
             MQTTError::TimeoutErr(e) => e.$method($($arg)?),
             MQTTError::PollErr(e) => e.$method($($arg)?),
             MQTTError::PublishErr(e) => e.$method($($arg)?),
+            MQTTError::SerdeErr(e) => e.$method($($arg)?),
             MQTTError::MockErr(e) => e.$method($($arg)?),
         }
     };

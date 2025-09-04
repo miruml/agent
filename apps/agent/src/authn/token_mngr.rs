@@ -207,7 +207,9 @@ impl<HTTPClientT: DevicesExt> Worker<HTTPClientT> {
                 }
                 WorkerCommand::GetToken { respond_to } => {
                     let token = self.token_mngr.get_token().await;
-                    respond_to.send(Ok(token)).unwrap();
+                    if respond_to.send(Ok(token)).is_err() {
+                        error!("Actor failed to send token");
+                    }
                 }
                 WorkerCommand::RefreshToken { respond_to } => {
                     let result = self.token_mngr.refresh_token().await;
