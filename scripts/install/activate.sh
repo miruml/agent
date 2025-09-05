@@ -109,8 +109,7 @@ print_mqtt_broker_host() {
 }
 
 device_name() {
-    default_device_name=$(hostname)
-    device_name=$(default_value "$default_device_name" "$@")
+    device_name=$(default_value "" "$@")
     for arg in "$@"; do
         case $arg in
         --device-name=*) device_name="${arg#*=}";;
@@ -134,19 +133,19 @@ report_token_existence() {
 }
 
 # version flag
-version_flag() {
-    version_flag=$(default_value "" "$@")
+version() {
+    version=$(default_value "" "$@")
     for arg in "$@"; do
         case $arg in
-        --version=*) version_flag="${arg#*=}";;
+        --version=*) version="${arg#*=}";;
         esac
     done
-    echo "$version_flag"
+    echo "$version"
 }
 
-print_version_flag() {
-    version_flag=$1
-    debug "Version flag: '$version_flag' (should be a semantic version string like 'v1.2.3')"
+print_version() {
+    version=$1
+    debug "Version: '$version' (should be a semantic version string like 'v1.2.3')"
 }
 
 ### COPIED ARGUMENT UTILITIES END ###
@@ -199,9 +198,9 @@ DEVICE_NAME=$(device_name "$@")
 if [ "$DEBUG" = true ]; then
     print_device_name "$DEVICE_NAME"
 fi
-VERSION=$(version_flag "$@")
+VERSION=$(version "$@")
 if [ "$DEBUG" = true ]; then
-    print_version_flag "$VERSION"
+    print_version "$VERSION"
 fi
 
 # Configuration
