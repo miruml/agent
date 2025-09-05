@@ -21,7 +21,7 @@ use tracing::{error, info};
 #[derive(Debug)]
 pub struct SingleThreadCachedFile<ContentT, UpdatesT>
 where
-    ContentT: Clone + Serialize + DeserializeOwned + Mergeable<UpdatesT>,
+    ContentT: Clone + Serialize + DeserializeOwned + Mergeable<UpdatesT> + PartialEq,
 {
     pub file: File,
     cache: Arc<ContentT>,
@@ -30,7 +30,7 @@ where
 
 impl<ContentT, UpdatesT> SingleThreadCachedFile<ContentT, UpdatesT>
 where
-    ContentT: Clone + Serialize + DeserializeOwned + Mergeable<UpdatesT>,
+    ContentT: Clone + Serialize + DeserializeOwned + Mergeable<UpdatesT> + PartialEq,
 {
     pub async fn new(file: File) -> Result<Self, FileSysErr> {
         let cache = file.read_json::<ContentT>().await?;
@@ -74,8 +74,13 @@ where
     }
 
     pub async fn patch(&mut self, updates: UpdatesT) -> Result<(), FileSysErr> {
+        let copy = (*self.cache).clone();
         let mut content = (*self.cache).clone();
         content.merge(updates);
+        // only write the content if it has changed
+        if content == copy {
+            return Ok(());
+        }
         self.write(content).await
     }
 }
@@ -86,11 +91,11 @@ pub trait ConcurrentUpdatesT: Send + Sync + 'static {}
 impl<T> ConcurrentUpdatesT for T where T: Send + Sync + 'static {}
 
 pub trait ConcurrentContentT<UpdatesT>:
-    Clone + Serialize + DeserializeOwned + Mergeable<UpdatesT> + Send + Sync + 'static
+    Clone + Serialize + DeserializeOwned + Mergeable<UpdatesT> + Send + Sync + 'static + PartialEq
 {
 }
 impl<T, U> ConcurrentContentT<U> for T where
-    T: Clone + Serialize + DeserializeOwned + Mergeable<U> + Send + Sync + 'static
+    T: Clone + Serialize + DeserializeOwned + Mergeable<U> + Send + Sync + 'static + PartialEq
 {
 }
 
@@ -116,7 +121,7 @@ where
 
 pub struct Worker<ContentT, UpdatesT>
 where
-    ContentT: Clone + Serialize + DeserializeOwned + Mergeable<UpdatesT>,
+    ContentT: Clone + Serialize + DeserializeOwned + Mergeable<UpdatesT> + PartialEq,
 {
     pub file: SingleThreadCachedFile<ContentT, UpdatesT>,
     pub receiver: Receiver<WorkerCommand<ContentT, UpdatesT>>,
@@ -124,7 +129,7 @@ where
 
 impl<ContentT, UpdatesT> Worker<ContentT, UpdatesT>
 where
-    ContentT: Clone + Serialize + DeserializeOwned + Mergeable<UpdatesT>,
+    ContentT: Clone + Serialize + DeserializeOwned + Mergeable<UpdatesT> + PartialEq,
 {
     pub async fn run(mut self) {
         while let Some(cmd) = self.receiver.recv().await {
