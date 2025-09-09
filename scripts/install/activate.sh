@@ -148,6 +148,23 @@ print_version() {
     debug "Version: '$version' (should be a semantic version string like 'v1.2.3')"
 }
 
+# allow reactivation flag
+allow_reactivation_flag() {
+    allow_reactivation_flag=$(default_value false "$@")
+    for arg in "$@"; do
+        case $arg in
+        --allow-reactivation) allow_reactivation_flag=true;;
+        --allow-reactivation=*) allow_reactivation_flag="${arg#*=}";;
+        esac
+    done
+    echo "$allow_reactivation_flag"
+}
+
+print_allow_reactivation_flag() {
+    allow_reactivation_flag=$1
+    debug "Allow reactivation: '$allow_reactivation_flag' (should be true or false)"
+}
+
 ### COPIED ARGUMENT UTILITIES END ###
 
 cleanup() {

@@ -149,6 +149,23 @@ print_version() {
     debug "Version: '$version' (should be a semantic version string like 'v1.2.3')"
 }
 
+# allow reactivation flag
+allow_reactivation_flag() {
+    allow_reactivation_flag=$(default_value false "$@")
+    for arg in "$@"; do
+        case $arg in
+        --allow-reactivation) allow_reactivation_flag=true;;
+        --allow-reactivation=*) allow_reactivation_flag="${arg#*=}";;
+        esac
+    done
+    echo "$allow_reactivation_flag"
+}
+
+print_allow_reactivation_flag() {
+    allow_reactivation_flag=$1
+    debug "Allow reactivation: '$allow_reactivation_flag' (should be true or false)"
+}
+
 ### COPIED ARGUMENT UTILITIES END ###
 
 
@@ -168,8 +185,9 @@ install_script_file() {
     echo "$install_script_file"
 }
 
-BACKEND_HOST=$(backend_host "$@")
-DEVICE_NAME=$(device_name "$@")
+BACKEND_HOST=$(backend_host --default="https://configs.api.miruml.com" "$@")
+DEVICE_NAME=$(device_name --default="$(hostname)" "$@")
+ALLOW_REACTIVATION=$(allow_reactivation_flag --default=false "$@")
 
 # create the device
 echo "Provisioning Device"
@@ -222,10 +240,14 @@ fi
 device_id=$(echo "$device" | jq -r '.id')
 device_name=$(echo "$device" | jq -r '.name')
 
+
 log "Creating activation token for device '$device_name'"
 response_body=$(curl --request POST \
   --url "$BACKEND_HOST"/v1/devices/"$device_id"/activation_token \
   --header "X-API-Key: $MIRU_API_KEY" \
+  --data "{
+  \"allow_reactivation\": $ALLOW_REACTIVATION
+}" \
   --write-out "\n%{http_code}" \
   --silent)
 
