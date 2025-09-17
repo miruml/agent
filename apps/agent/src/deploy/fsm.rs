@@ -12,6 +12,7 @@ pub enum NextAction {
     None,
     Deploy,
     Remove,
+    Archive,
     Wait(TimeDelta),
 }
 
@@ -32,7 +33,7 @@ pub fn next_action(cfg_inst: &ConfigInstance, use_cooldown: bool) -> NextAction 
             ActivityStatus::Created => NextAction::None,
             ActivityStatus::Validating => NextAction::None,
             ActivityStatus::Validated => NextAction::None,
-            ActivityStatus::Queued => NextAction::Remove,
+            ActivityStatus::Queued => NextAction::Archive,
             ActivityStatus::Deployed => NextAction::Remove,
             ActivityStatus::Removed => NextAction::None,
         },
@@ -45,10 +46,10 @@ pub fn next_action(cfg_inst: &ConfigInstance, use_cooldown: bool) -> NextAction 
             ActivityStatus::Removed => NextAction::Deploy,
         },
         TargetStatus::Removed => match cfg_inst.activity_status {
-            ActivityStatus::Created => NextAction::Remove,
-            ActivityStatus::Validating => NextAction::Remove,
-            ActivityStatus::Validated => NextAction::Remove,
-            ActivityStatus::Queued => NextAction::Remove,
+            ActivityStatus::Created => NextAction::Archive,
+            ActivityStatus::Validating => NextAction::Archive,
+            ActivityStatus::Validated => NextAction::Archive,
+            ActivityStatus::Queued => NextAction::Archive,
             ActivityStatus::Deployed => NextAction::Remove,
             ActivityStatus::Removed => NextAction::None,
         },
@@ -60,6 +61,7 @@ pub fn is_action_required(action: NextAction) -> bool {
         NextAction::None => false,
         NextAction::Deploy => true,
         NextAction::Remove => true,
+        NextAction::Archive => true,
         NextAction::Wait(_) => false,
     }
 }

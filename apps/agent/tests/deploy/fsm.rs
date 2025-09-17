@@ -92,7 +92,7 @@ pub mod next_action {
                 fsm::NextAction::None,
                 fsm::NextAction::None,
                 fsm::NextAction::None,
-                fsm::NextAction::Remove,
+                fsm::NextAction::Archive,
             );
         }
 
@@ -123,7 +123,7 @@ pub mod next_action {
                 fsm::NextAction::None,
                 fsm::NextAction::None,
                 fsm::NextAction::None,
-                fsm::NextAction::Remove,
+                fsm::NextAction::Archive,
             );
         }
 
@@ -160,7 +160,7 @@ pub mod next_action {
                 fsm::NextAction::None,
                 fsm::NextAction::None,
                 fsm::NextAction::None,
-                fsm::NextAction::Remove,
+                fsm::NextAction::Archive,
             );
         }
 
@@ -191,7 +191,7 @@ pub mod next_action {
                 fsm::NextAction::None,
                 fsm::NextAction::None,
                 fsm::NextAction::None,
-                fsm::NextAction::Remove,
+                fsm::NextAction::Archive,
             );
         }
 
@@ -228,7 +228,7 @@ pub mod next_action {
                 fsm::NextAction::None,
                 fsm::NextAction::None,
                 fsm::NextAction::None,
-                fsm::NextAction::Remove,
+                fsm::NextAction::Archive,
             );
         }
 
@@ -259,7 +259,7 @@ pub mod next_action {
                 fsm::NextAction::None,
                 fsm::NextAction::None,
                 fsm::NextAction::None,
-                fsm::NextAction::Remove,
+                fsm::NextAction::Archive,
             );
         }
 
@@ -293,10 +293,10 @@ pub mod next_action {
             validate_next_actions(
                 cfg_inst.clone(),
                 true,
-                fsm::NextAction::Remove,
-                fsm::NextAction::Remove,
+                fsm::NextAction::Archive,
+                fsm::NextAction::Archive,
                 fsm::NextAction::Deploy,
-                fsm::NextAction::Remove,
+                fsm::NextAction::Archive,
             );
         }
 
@@ -324,10 +324,10 @@ pub mod next_action {
             validate_next_actions(
                 cfg_inst.clone(),
                 false,
-                fsm::NextAction::Remove,
-                fsm::NextAction::Remove,
+                fsm::NextAction::Archive,
+                fsm::NextAction::Archive,
                 fsm::NextAction::Deploy,
-                fsm::NextAction::Remove,
+                fsm::NextAction::Archive,
             );
         }
 

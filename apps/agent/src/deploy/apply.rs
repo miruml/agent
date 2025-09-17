@@ -164,10 +164,14 @@ where
             )
             .await
         }
+        fsm::NextAction::Archive => {
+            archive(cfg_inst, observers).await
+        }
         fsm::NextAction::Wait(_) => (DeployResults::empty(), Ok(())),
     }
 }
 
+// =================================== DEPLOY ====================================== //
 async fn deploy<R1, R2>(
     cfg_inst: ConfigInstance,
     all_cfg_insts: &R1,
@@ -218,6 +222,7 @@ where
     .await
 }
 
+// =================================== REMOVE ====================================== //
 async fn remove<R1, R2>(
     mut cfg_inst: ConfigInstance,
     all_cfg_insts: &R1,
@@ -234,8 +239,8 @@ where
         let next_action = fsm::next_action(&cfg_inst, true);
         return (
             DeployResults::empty(),
-            Err(DeployErr::ConfigInstanceNotDeployableErr(Box::new(
-                ConfigInstanceNotDeployableErr {
+            Err(DeployErr::ConfigInstanceNotRemoveableErr(Box::new(
+                ConfigInstanceNotRemoveableErr {
                     cfg_inst,
                     next_action,
                     trace: trace!(),
@@ -366,4 +371,28 @@ pub fn matches_config_schema_and_next_action(
 ) -> bool {
     cfg_inst.config_schema_id == config_schema_id
         && fsm::next_action(cfg_inst, use_cooldown) == next_action
+}
+
+// =================================== ARCHIVE ===================================== //
+async fn archive(
+    cfg_inst: ConfigInstance,
+    observers: &mut [&mut dyn Observer],
+) -> (DeployResults, Result<(), DeployErr>) {
+    if fsm::next_action(&cfg_inst, true) != fsm::NextAction::Archive {
+        let next_action = fsm::next_action(&cfg_inst, true);
+        return (DeployResults::empty(), Err(DeployErr::ConfigInstanceNotArchiveableErr(Box::new(
+            ConfigInstanceNotArchiveableErr {
+                cfg_inst,
+                next_action,
+                trace: trace!(),
+            },
+        ))));
+    }
+
+    info!("Archiving config instance '{}' (it is not currently deployed)", cfg_inst.id);
+    let cfg_inst = fsm::remove(cfg_inst);
+    return (DeployResults{
+        to_remove: vec![cfg_inst.clone()],
+        to_deploy: vec![],
+    }, on_update(observers, &cfg_inst).await);
 }

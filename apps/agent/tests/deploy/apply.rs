@@ -1,5 +1,6 @@
 // std
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 // internal crates
 use config_agent::cache::{entry::CacheEntry, file::FileCache};
@@ -8,12 +9,13 @@ use config_agent::deploy::{
     errors::DeployErr,
     fsm::Settings,
 };
-use config_agent::filesys::dir::Dir;
+use config_agent::filesys::{dir::Dir, path::PathExt};
 use config_agent::models::config_instance::{
     ActivityStatus, ConfigInstance, ErrorStatus, TargetStatus,
 };
 use config_agent::storage::config_instances::{ConfigInstanceCache, ConfigInstanceContentCache};
 use config_agent::utils::calc_exp_backoff;
+use config_agent::logs::*;
 
 // external crates
 use chrono::{TimeDelta, Utc};
@@ -270,11 +272,20 @@ pub mod apply_func {
         let cfg_inst = ConfigInstance {
             relative_filepath: filepath.clone(),
             target_status: TargetStatus::Removed,
+            activity_status: ActivityStatus::Deployed,
             ..Default::default()
         };
 
-        // create the config instance in the cache
+        // create a dummy file at the file path to double check it is removed & not
+        // archived
         let dir = Dir::create_temp_dir("deploy").await.unwrap();
+        let file = dir.file(filepath.as_str());
+        file.write_json(&json!({"speed": 4}), true, true)
+            .await
+            .unwrap();
+
+
+        // create the config instance in the cache
         let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
             .await
             .unwrap();
@@ -309,6 +320,75 @@ pub mod apply_func {
 
         // check that the returned config instances' states were correctly updated
         assert_eq!(actual, expected);
+
+        // check that the file was removed
+        assert!(!file.exists());
+    }
+
+    #[tokio::test]
+    async fn archive_1() {
+        let _ = init(LogOptions {
+            stdout: true,
+            log_level: LogLevel::Info,
+            log_dir: PathBuf::from("/tmp/miru"),
+        });
+
+        // define the config instance
+        let filepath = "/test/filepath".to_string();
+        let cfg_inst = ConfigInstance {
+            relative_filepath: filepath.clone(),
+            target_status: TargetStatus::Removed,
+            activity_status: ActivityStatus::Queued,
+            ..Default::default()
+        };
+
+
+        // create a dummy file at the file path to double check it is archived & not
+        // removed
+        let dir = Dir::create_temp_dir("deploy").await.unwrap();
+        let file = dir.file(filepath.as_str());
+        file.write_json(&json!({"speed": 4}), true, true)
+            .await
+            .unwrap();
+
+        // create the config instance in the cache
+        let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
+            .await
+            .unwrap();
+        let (cfg_inst_content_cache, _) = ConfigInstanceContentCache::spawn(16, dir.clone(), 1000)
+            .await
+            .unwrap();
+        cfg_inst_content_cache
+            .write(cfg_inst.id.clone(), json!({"speed": 4}), |_, _| false, true)
+            .await
+            .unwrap();
+
+        // deploy the config instance
+        let settings = Settings::default();
+        let cfg_insts_to_apply = HashMap::from([(cfg_inst.id.clone(), cfg_inst.clone())]);
+        let result = apply(
+            cfg_insts_to_apply,
+            &cfg_inst_cache,
+            &cfg_inst_content_cache,
+            &dir,
+            &settings,
+        )
+        .await
+        .unwrap();
+        assert_eq!(result.len(), 1);
+        let actual = result[&cfg_inst.id].clone();
+
+        // define the expected config instance
+        let expected = ConfigInstance {
+            activity_status: ActivityStatus::Removed,
+            ..cfg_inst
+        };
+
+        // check that the returned config instances' states were correctly updated
+        assert_eq!(actual, expected);
+
+        // check that the file was not actually removed
+        assert!(file.exists());
     }
 
     #[tokio::test]
