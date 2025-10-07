@@ -168,15 +168,15 @@ print_allow_reactivation_flag() {
 ### COPIED ARGUMENT UTILITIES END ###
 
 # CLI args
-DEBUG=$(debug_flag --default=true "$@")
+DEBUG=$(debug_flag --default=false "$@")
 if [ "$DEBUG" = true ]; then
-    debug "Script: develop-install.sh"
+    debug "Script: uat-install.sh"
 fi
-BRANCH=$(git_branch --default=dev "$@")
+BRANCH=$(git_branch --default=main "$@")
 if [ "$DEBUG" = true ]; then
     print_git_branch "$BRANCH"
 fi
-PRERELEASE=$(prerelease_flag --default=true "$@")
+PRERELEASE=$(prerelease_flag --default=false "$@")
 if [ "$DEBUG" = true ]; then
     print_prerelease_flag "$PRERELEASE"
 fi
