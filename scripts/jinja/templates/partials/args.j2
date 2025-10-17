@@ -1,0 +1,14 @@
+{% macro parse(all_caps='', cabob_case='', default='') %}
+{{ all_caps }}={{ default }}
+for arg in "$@"; do
+    case $arg in
+    --{{ cabob_case }}=*) {{ all_caps }}="${arg#*=}";;
+    esac
+done
+{% endmacro %}
+
+{% macro debug(all_caps='', cabob_case='', hint='') %}
+if [ "$DEBUG" = true ]; then
+    debug "{{ cabob_case }}: '${{ all_caps }}' ({{ hint }})"
+fi
+{% endmacro %}

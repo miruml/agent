@@ -1,0 +1,88 @@
+#!/bin/sh
+set -e
+
+{% block header %}
+# Script: {{ script_name | default('unknown.sh') }}
+# Jinja Template: {{ template_name | default('unknown') }}
+# Build Timestamp: {{ build_time | default('unknown') }}
+{% if description %}
+# Description: {{ description }}
+{% endif %}
+{% endblock %}
+
+{% block display %}
+# DISPLAY #
+# ======= #
+{% include 'partials/display.sh' %}{{- "\n" -}}
+{% endblock %}
+
+{% block arguments %}
+{% from 'partials/args.j2' import parse as parse_arg, debug as debug_arg %}
+{%- if args -%}
+# ARGUMENTS #
+# ========= #
+{{- "\n" -}}
+{{- parse_arg(all_caps='DEBUG', cabob_case='debug', default='false') -}}{{- "\n" -}}
+{%- for key, arg in args.items() -%}
+    {{- parse_arg(
+        all_caps=arg.all_caps,
+        cabob_case=arg.cabob_case,
+        default=arg.default) 
+    -}}
+    {{- debug_arg(
+        all_caps=arg.all_caps,
+        cabob_case=arg.cabob_case,
+        hint=arg.hint) 
+    -}}{{- "\n" -}}
+{%- endfor -%}
+{%- endif -%}
+{%- endblock -%}
+
+# UTILITIES #
+# ========= #
+{% block required_commands %}
+cmd_exists() { 
+    command -v "$1" >/dev/null 2>&1
+}
+{{- "\n\n" -}}
+{%- if required_commands -%}
+for cmd in {{ required_commands }}; do
+    cmd_exists "$cmd" || fatal "$cmd is required but not installed"
+done
+{{- "\n\n" -}}
+{%- endif -%}
+{% endblock %}
+
+{% block utilities -%}
+
+{%- if utilities -%}
+{%- for utility in utilities -%}
+    {%- include utility -%}
+{%- endfor -%}
+{{- "\n" -}}
+{%- endif -%}
+{%- endblock %}
+
+{% block variables %}
+{%- if vars -%}
+# VARIABLES #
+# ========= #
+{{- "\n" -}}
+{%- for key, var in vars.items() -%}
+    {{- var.key }}="{{ var.value }}"{{- "\n" -}}
+{%- endfor -%}
+{%- endif -%}
+{% endblock %}
+
+# MAIN LOGIC #
+# ========== #
+{% block script_body -%}
+{%- endblock %}
+
+{%- block footer %}
+{%- if exit_code is defined %}
+exit {{ exit_code }}
+{%- else %}
+exit 0
+{%- endif %}
+{%- endblock %}

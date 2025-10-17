@@ -1,10 +1,10 @@
 #!/bin/sh
 set -e
 
-# Script: provision.sh
+# Script: staging-provision.sh
 # Jinja Template: provision.j2
 # Build Timestamp: 2025-10-18T14:40:04.579507
-# Description: Provision a device & install the miru agent
+# Description: Provision a device & install the miru agent in the staging environment
 
 # DISPLAY #
 # ======= #
@@ -69,7 +69,7 @@ if [ "$DEBUG" = true ]; then
     debug "allow-reactivation: '$ALLOW_REACTIVATION' (should be true or false)"
 fi
 
-BACKEND_HOST="https://configs.api.miruml.com"
+BACKEND_HOST="https://configs.dev.api.miruml.com"
 for arg in "$@"; do
     case $arg in
     --backend-host=*) BACKEND_HOST="${arg#*=}";;
@@ -79,7 +79,7 @@ if [ "$DEBUG" = true ]; then
     debug "backend-host: '$BACKEND_HOST' (should be the URL of the backend host)"
 fi
 
-MQTT_BROKER_HOST="mqtt.miruml.com"
+MQTT_BROKER_HOST="dev.mqtt.miruml.com"
 for arg in "$@"; do
     case $arg in
     --mqtt-broker-host=*) MQTT_BROKER_HOST="${arg#*=}";;

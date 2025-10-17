@@ -33,3 +33,6 @@ dist/
 zig*/
 
 .vscode/
+.venv/
+venv/
+.env/

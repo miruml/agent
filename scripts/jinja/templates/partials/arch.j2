@@ -1,0 +1,15 @@
+{% macro convert(var='') %}
+case ${{ var }} in
+    x86_64|amd64) {{ var }}="x86_64" ;;
+    aarch64|arm64) {{ var }}="arm64" ;;
+    *) fatal "Unsupported architecture: ${{ var }}" ;;
+esac
+{% endmacro %}
+
+{% macro convert_deb(var='') %}
+case ${{ var }} in
+    x86_64|amd64) {{ var }}="amd64" ;;
+    aarch64|arm64) {{ var }}="arm64" ;;
+    *) fatal "Unsupported architecture: ${{ var }}" ;;
+esac
+{% endmacro %}

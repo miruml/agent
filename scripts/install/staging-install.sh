@@ -1,10 +1,10 @@
 #!/bin/sh
 set -e
 
-# Script: provision.sh
-# Jinja Template: provision.j2
+# Script: staging-install.sh
+# Jinja Template: install.j2
 # Build Timestamp: 2025-10-18T14:40:04.579507
-# Description: Provision a device & install the miru agent
+# Description: Install the miru agent in the staging environment
 
 # DISPLAY #
 # ======= #
@@ -49,7 +49,7 @@ if [ "$DEBUG" = true ]; then
     debug "version: '$VERSION' (should be a semantic version string like 'v1.2.3')"
 fi
 
-DEVICE_NAME=$(hostname)
+DEVICE_NAME=''
 for arg in "$@"; do
     case $arg in
     --device-name=*) DEVICE_NAME="${arg#*=}";;
@@ -59,17 +59,7 @@ if [ "$DEBUG" = true ]; then
     debug "device-name: '$DEVICE_NAME' (should be the name of the device)"
 fi
 
-ALLOW_REACTIVATION=false
-for arg in "$@"; do
-    case $arg in
-    --allow-reactivation=*) ALLOW_REACTIVATION="${arg#*=}";;
-    esac
-done
-if [ "$DEBUG" = true ]; then
-    debug "allow-reactivation: '$ALLOW_REACTIVATION' (should be true or false)"
-fi
-
-BACKEND_HOST="https://configs.api.miruml.com"
+BACKEND_HOST="https://configs.dev.api.miruml.com"
 for arg in "$@"; do
     case $arg in
     --backend-host=*) BACKEND_HOST="${arg#*=}";;
@@ -79,7 +69,7 @@ if [ "$DEBUG" = true ]; then
     debug "backend-host: '$BACKEND_HOST' (should be the URL of the backend host)"
 fi
 
-MQTT_BROKER_HOST="mqtt.miruml.com"
+MQTT_BROKER_HOST="dev.mqtt.miruml.com"
 for arg in "$@"; do
     case $arg in
     --mqtt-broker-host=*) MQTT_BROKER_HOST="${arg#*=}";;
@@ -145,86 +135,6 @@ case $DEB_ARCH in
     *) fatal "Unsupported architecture: $DEB_ARCH" ;;
 esac
 
-# PROVISION THE DEVICE #
-# --------------------- #
-if [ -z "$MIRU_API_KEY" ]; then
-    echo "MIRU_API_KEY is not set"
-    exit 1
-fi
-
-response_body=$(curl --request POST \
-  --url "$BACKEND_HOST"/v1/devices \
-  --header 'Content-Type: application/json' \
-  --header "X-API-Key: $MIRU_API_KEY" \
-  --data "{
-  \"name\": \"$DEVICE_NAME\"
-}" \
-  --write-out "\n%{http_code}" \
-  --silent)
-
-# Extract HTTP status code (last line) and response body (everything else)
-http_code=$(echo "$response_body" | tail -n1)
-response_body=$(echo "$response_body" | head -n -1)
-
-# Check if the request succeeded
-if [ "$http_code" -eq 200 ] || [ "$http_code" -eq 201 ]; then
-    log "Created device '$DEVICE_NAME'"
-    device="$response_body"
-elif [ "$http_code" -eq 409 ]; then
-    log "Device '$DEVICE_NAME' already exists"
-    # Search for the device by name
-    response_body=$(curl --request GET \
-    --url "$BACKEND_HOST"/v1/devices?name="$DEVICE_NAME" \
-    --header "X-API-Key: $MIRU_API_KEY" \
-    --write-out "\n%{http_code}" \
-    --silent)
-
-    http_code=$(echo "$response_body" | tail -n1)
-    response_body=$(echo "$response_body" | head -n -1)
-
-    # check there is only one device
-    if [ "$(echo "$response_body" | jq -r '.data | length')" -ne 1 ]; then
-        error "Expected exactly one device with name '$DEVICE_NAME'. Instead got:"
-        fatal "$response_body"
-    fi
-
-    # Extract the first device from the array since the endpoint returns a list
-    device=$(echo "$response_body" | jq -r '.data[0]')
-else
-    error "Device creation failed (HTTP status $http_code)"
-    error "Response body:"
-    fatal "$response_body"
-fi
-
-device_id=$(echo "$device" | jq -r '.id')
-device_name=$(echo "$device" | jq -r '.name')
-
-
-log "Creating activation token for device '$device_name'"
-log "Allow reactivation: $ALLOW_REACTIVATION (must be true if the device has been activated before)"
-response_body=$(curl --request POST \
-  --url "$BACKEND_HOST"/v1/devices/"$device_id"/activation_token \
-  --header "X-API-Key: $MIRU_API_KEY" \
-  --data "{
-  \"allow_reactivation\": $ALLOW_REACTIVATION
-}" \
-  --write-out "\n%{http_code}" \
-  --silent)
-
-# Extract HTTP status code (last line) and response body (everything else)
-http_code=$(echo "$response_body" | tail -n1)
-response_body=$(echo "$response_body" | head -n -1)
-
-# Check if the request succeeded
-if [ "$http_code" -eq 200 ] || [ "$http_code" -eq 201 ]; then
-    log "Successfully created activation token"
-    MIRU_ACTIVATION_TOKEN=$(echo "$response_body" | jq -r '.token')
-else
-    error "Activation token request failed (HTTP status $http_code)"
-    error "Response body:"
-    fatal "$response_body"
-fi
-
 # DETERMINE THE VERSION #
 # --------------------- #
 if [ "$VERSION" = "" ]; then
@@ -253,6 +163,7 @@ else
     fi
 fi
 log "Version to install: ${VERSION}"
+
 # DOWNLOAD THE AGENT #
 # ------------------ #
 INSTALLED_VERSION=$(dpkg-query -W -f='${Version}' "$AGENT_DEB_PKG_NAME" 2>/dev/null || echo "")

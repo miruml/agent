@@ -10,7 +10,7 @@ snapshot:
 builds:
   - id: "agent"
     builder: rust
-    binary: "config-agent"
+    binary: "miru-agent"
     targets:
       - x86_64-unknown-linux-gnu
       - aarch64-unknown-linux-gnu
@@ -18,19 +18,7 @@ builds:
     command: zigbuild
     flags:
       - --release
-      - -p=config-agent
-
-  - id: "installer"
-    builder: rust
-    binary: "config-agent-installer"
-    targets:
-      - x86_64-unknown-linux-gnu
-      - aarch64-unknown-linux-gnu
-    dir: ..
-    command: zigbuild
-    flags:
-      - --release
-      - -p=config-agent-installer
+      - -p=miru-agent
 
 nfpms:
   - id: agent
@@ -40,8 +28,7 @@ nfpms:
     homepage: "https://miruml.com"
     maintainer: "Benjamin Smidt <ben@miruml.com>"
     description: |
-      Miru Configuration Agent
-      .
+      Miru Agent.
       Miru provides the infrastructure to version, manage, and deploy application configurations at scale. This debian package is the miru agent, which handles configuration deployment to your robots in production.
     
     formats:
@@ -83,22 +70,10 @@ nfpms:
 
 archives:
   - id: agent
+    ids: ["agent"]
     formats: [tar.gz]
     name_template: >-
       agent_
-      {{- title .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
-      {{- else }}{{ .Arch }}{{ end }}
-      {{- if .Arm }}v{{ .Arm }}{{ end }}
-    format_overrides:
-      - goos: windows
-        formats: [zip]
-
-  - id: installer
-    formats: [tar.gz]
-    name_template: >-
-      installer_
       {{- title .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
       {{- else if eq .Arch "386" }}i386
@@ -133,7 +108,6 @@ changelog:
       - "^fix"
       - "^perf"
       - "^revert"
-      
 
 release:
   prerelease: auto

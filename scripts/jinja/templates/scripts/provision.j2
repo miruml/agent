@@ -1,0 +1,30 @@
+{#- Activate script template extending base -#}
+{% extends "script.j2" %}
+
+{% block utilities %}
+{% include 'partials/utils/checksum.sh' %}{{- "\n" -}}
+{% endblock %}
+
+{% from 'partials/arch.j2' import convert as convert_arch, convert_deb as convert_deb_arch %}
+
+{% block script_body %}
+DEB_ARCH=$ARCH{{- "\n" -}}
+{{- convert_deb_arch(var='DEB_ARCH') -}}{{- "\n" -}}
+
+# PROVISION THE DEVICE #
+# --------------------- #
+{% include 'partials/utils/provision.sh' %}{{- "\n\n" -}}
+
+# DETERMINE THE VERSION #
+# --------------------- #
+{% include 'partials/utils/version.sh' %}{{- "\n" -}}
+
+# DOWNLOAD THE AGENT #
+# ------------------ #
+{% include 'partials/utils/download.sh' %}{{- "\n\n" -}}
+
+# ACTIVATE THE AGENT #
+# ------------------ #
+{% include 'partials/utils/activate.sh' %}{{- "\n" -}}
+
+{% endblock %}
