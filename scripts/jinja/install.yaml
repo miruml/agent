@@ -38,6 +38,7 @@ install_args: &install_args
     cabob_case: "prerelease"
     default: "false"
     hint: "should be true or false"
+    flag: true
   version:
     all_caps: "VERSION"
     cabob_case: "version"
@@ -83,6 +84,7 @@ provision_args: &provision_args
     cabob_case: "allow-reactivation"
     default: "false"
     hint: "should be true or false"
+    flag: true
 
 provision: &provision
   <<: *install

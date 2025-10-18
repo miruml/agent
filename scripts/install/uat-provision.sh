@@ -3,7 +3,7 @@ set -e
 
 # Script: uat-provision.sh
 # Jinja Template: provision.j2
-# Build Timestamp: 2025-10-18T15:38:31.156094
+# Build Timestamp: 2025-10-18T15:51:26.154827
 # Description: Provision a device & install the miru agent in the UAT environment
 
 # DISPLAY #
@@ -26,6 +26,7 @@ DEBUG=false
 for arg in "$@"; do
     case $arg in
     --debug=*) DEBUG="${arg#*=}";;
+    --debug) DEBUG=true;;
     esac
 done
 
@@ -33,6 +34,7 @@ PRERELEASE=false
 for arg in "$@"; do
     case $arg in
     --prerelease=*) PRERELEASE="${arg#*=}";;
+    --prerelease) PRERELEASE=true;;
     esac
 done
 if [ "$DEBUG" = true ]; then
@@ -63,6 +65,7 @@ ALLOW_REACTIVATION=false
 for arg in "$@"; do
     case $arg in
     --allow-reactivation=*) ALLOW_REACTIVATION="${arg#*=}";;
+    --allow-reactivation) ALLOW_REACTIVATION=true;;
     esac
 done
 if [ "$DEBUG" = true ]; then

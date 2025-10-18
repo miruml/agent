@@ -22,17 +22,25 @@ set -e
 # ARGUMENTS #
 # ========= #
 {{- "\n" -}}
-{{- parse_arg(all_caps='DEBUG', cabob_case='debug', default='false') -}}{{- "\n" -}}
+{{- parse_arg(
+    all_caps='DEBUG',
+    cabob_case='debug',
+    default='false',
+    flag=true
+) -}}{{- "\n" -}}
 {%- for key, arg in args.items() -%}
     {{- parse_arg(
         all_caps=arg.all_caps,
         cabob_case=arg.cabob_case,
-        default=arg.default) 
+        default=arg.default,
+        flag=arg.flag
+    ) 
     -}}
     {{- debug_arg(
         all_caps=arg.all_caps,
         cabob_case=arg.cabob_case,
-        hint=arg.hint) 
+        hint=arg.hint
+    ) 
     -}}{{- "\n" -}}
 {%- endfor -%}
 {%- endif -%}

@@ -1,8 +1,11 @@
-{% macro parse(all_caps='', cabob_case='', default='') %}
+{% macro parse(all_caps='', cabob_case='', default='', flag=false) %}
 {{ all_caps }}={{ default }}
 for arg in "$@"; do
     case $arg in
     --{{ cabob_case }}=*) {{ all_caps }}="${arg#*=}";;
+    {% if flag %}
+    --{{ cabob_case }}) {{ all_caps }}=true;;
+    {% endif %}
     esac
 done
 {% endmacro %}
