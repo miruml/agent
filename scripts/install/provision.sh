@@ -3,7 +3,7 @@ set -e
 
 # Script: provision.sh
 # Jinja Template: provision.j2
-# Build Timestamp: 2025-10-18T16:16:13.453193
+# Build Timestamp: 2025-10-18T16:21:02.936334
 # Description: Provision a device & install the Miru Agent
 
 # DISPLAY #
@@ -251,7 +251,7 @@ PATCH=$(echo "$VERSION" | cut -d '.' -f 3 | sed 's/[^0-9].*//')
 if ! echo "$MAJOR" | grep -q '^[0-9]\+$' || ! echo "$MINOR" | grep -q '^[0-9]\+$' || ! echo "$PATCH" | grep -q '^[0-9]\+$'; then
     fatal "Could not parse version '$VERSION' to determine if it is supported"
 else
-    if [ "$MAJOR" -lt 0 ] || [ "$MAJOR" -eq 0 ] && [ "$MINOR" -lt 6 ] || [ "$MAJOR" -eq 0 ] && [ "$MINOR" -eq 6 ] && [ "$PATCH" -lt 0 ]; then
+    if [ "$MAJOR" -lt 0 ] || [ "$MAJOR" -eq 0 ] && [ "$MINOR" -lt 6 ]; then
         fatal "Version v$VERSION has been deprecated, please install v0.6.0 or greater"
     fi
 fi
