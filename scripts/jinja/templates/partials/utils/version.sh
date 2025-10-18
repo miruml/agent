@@ -19,8 +19,8 @@ PATCH=$(echo "$VERSION" | cut -d '.' -f 3 | sed 's/[^0-9].*//')
 if ! echo "$MAJOR" | grep -q '^[0-9]\+$' || ! echo "$MINOR" | grep -q '^[0-9]\+$' || ! echo "$PATCH" | grep -q '^[0-9]\+$'; then
     fatal "Could not parse version '$VERSION' to determine if it is supported"
 else
-    if [ "$MAJOR" -lt 0 ] || [ "$MAJOR" -eq 0 ] && [ "$MINOR" -lt 5 ] || [ "$MAJOR" -eq 0 ] && [ "$MINOR" -eq 5 ] && [ "$PATCH" -lt 2 ]; then
-        fatal "Version v$VERSION has been deprecated, please install v0.5.2 or greater"
+    if [ "$MAJOR" -lt 0 ] || [ "$MAJOR" -eq 0 ] && [ "$MINOR" -lt 6 ] || [ "$MAJOR" -eq 0 ] && [ "$MINOR" -eq 6 ] && [ "$PATCH" -lt 0 ]; then
+        fatal "Version v$VERSION has been deprecated, please install v0.6.0 or greater"
     fi
 fi
 log "Version to install: ${VERSION}"
