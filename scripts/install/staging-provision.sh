@@ -3,8 +3,8 @@ set -e
 
 # Script: staging-provision.sh
 # Jinja Template: provision.j2
-# Build Timestamp: 2025-10-18T15:51:26.154827
-# Description: Provision a device & install the miru agent in the staging environment
+# Build Timestamp: 2025-10-18T16:16:13.453193
+# Description: Provision a device & install the Miru Agent in the staging environment
 
 # DISPLAY #
 # ======= #
@@ -266,7 +266,7 @@ fi
 if [ -n "$INSTALLED_VERSION" ]; then
     log "Version ${INSTALLED_VERSION} is currently installed"
 else
-    log "miru agent is not currently installed"
+    log "Miru Agent is not currently installed"
 fi
 
 CHECKSUMS_FILE="$DOWNLOAD_DIR/${CHECKSUMS_NAME}"
@@ -311,7 +311,7 @@ cleanup() {
     exit_code=$?
 
     # restart the agent
-    log "Restarting the miru agent"
+    log "Restarting the Miru Agent"
     sudo systemctl restart miru >/dev/null 2>&1
 
     exit $exit_code
@@ -319,7 +319,7 @@ cleanup() {
 
 trap cleanup EXIT INT TERM QUIT HUP
 
-log "Activating the miru agent..."
+log "Activating the Miru Agent..."
 if systemctl is-active --quiet miru; then
     log "Stopping the currently running agent"
     sudo systemctl stop miru >/dev/null 2>&1

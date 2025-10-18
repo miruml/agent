@@ -6,7 +6,7 @@ fi
 if [ -n "$INSTALLED_VERSION" ]; then
     log "Version ${INSTALLED_VERSION} is currently installed"
 else
-    log "miru agent is not currently installed"
+    log "Miru Agent is not currently installed"
 fi
 
 CHECKSUMS_FILE="$DOWNLOAD_DIR/${CHECKSUMS_NAME}"

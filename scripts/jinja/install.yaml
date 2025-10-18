@@ -92,7 +92,7 @@ provision: &provision
 scripts:
   - name: "install.sh"
     template: "install.j2" 
-    description: "Install the miru agent"
+    description: "Install the Miru Agent"
     variables: 
       <<: *install
       args: 
@@ -101,7 +101,7 @@ scripts:
         mqtt_broker_host: *prod_mqtt_broker_host
   - name: "staging-install.sh"
     template: "install.j2" 
-    description: "Install the miru agent in the staging environment"
+    description: "Install the Miru Agent in the staging environment"
     variables: 
       <<: *install
       args: 
@@ -110,7 +110,7 @@ scripts:
         mqtt_broker_host: *staging_mqtt_broker_host
   - name: "uat-install.sh"
     template: "install.j2" 
-    description: "Install the miru agent in the UAT environment"
+    description: "Install the Miru Agent in the UAT environment"
     variables: 
       <<: *install
       args: 
@@ -119,7 +119,7 @@ scripts:
         mqtt_broker_host: *uat_mqtt_broker_host
   - name: "provision.sh"
     template: "provision.j2" 
-    description: "Provision a device & install the miru agent"
+    description: "Provision a device & install the Miru Agent"
     variables:
       <<: *provision
       args:
@@ -128,7 +128,7 @@ scripts:
         mqtt_broker_host: *prod_mqtt_broker_host
   - name: "staging-provision.sh"
     template: "provision.j2" 
-    description: "Provision a device & install the miru agent in the staging environment"
+    description: "Provision a device & install the Miru Agent in the staging environment"
     variables:
       <<: *provision
       args:
@@ -137,7 +137,7 @@ scripts:
         mqtt_broker_host: *staging_mqtt_broker_host
   - name: "uat-provision.sh"
     template: "provision.j2" 
-    description: "Provision a device & install the miru agent in the UAT environment"
+    description: "Provision a device & install the Miru Agent in the UAT environment"
     variables:
       <<: *provision
       args:
