@@ -3,7 +3,7 @@ set -e
 
 # Script: uat-provision.sh
 # Jinja Template: provision.j2
-# Build Timestamp: 2025-10-18T16:21:02.936334
+# Build Timestamp: 2025-10-18T18:55:55.525914
 # Description: Provision a device & install the Miru Agent in the UAT environment
 
 # DISPLAY #
@@ -150,7 +150,7 @@ esac
 
 # PROVISION THE DEVICE #
 # --------------------- #
-if [ -z "$MIRU_API_KEY" ]; then
+if [ "$MIRU_API_KEY" = "" ]; then
     echo "MIRU_API_KEY is not set"
     exit 1
 fi
@@ -256,6 +256,7 @@ else
     fi
 fi
 log "Version to install: ${VERSION}"
+
 # DOWNLOAD THE AGENT #
 # ------------------ #
 INSTALLED_VERSION=$(dpkg-query -W -f='${Version}' "$AGENT_DEB_PKG_NAME" 2>/dev/null || echo "")

@@ -1,4 +1,4 @@
-if [ -z "$MIRU_API_KEY" ]; then
+if [ "$MIRU_API_KEY" = "" ]; then
     echo "MIRU_API_KEY is not set"
     exit 1
 fi
