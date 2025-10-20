@@ -11,6 +11,10 @@
 DEB_ARCH=$ARCH{{- "\n" -}}
 {{- convert_deb_arch(var='DEB_ARCH') -}}{{- "\n" -}}
 
+# USE PROVIDED PACKAGE #
+# -------------------- #
+{% include 'partials/utils/parse-from-pkg.sh' %}{{- "\n\n" -}}
+
 # DETERMINE THE VERSION #
 # --------------------- #
 {% include 'partials/utils/version.sh' %}{{- "\n\n" -}}

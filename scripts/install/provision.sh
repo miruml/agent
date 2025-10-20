@@ -3,7 +3,7 @@ set -e
 
 # Script: provision.sh
 # Jinja Template: provision.j2
-# Build Timestamp: 2025-10-18T18:55:55.525914
+# Build Timestamp: 2025-10-19T20:44:31.182247
 # Description: Provision a device & install the Miru Agent
 
 # DISPLAY #
@@ -57,8 +57,21 @@ for arg in "$@"; do
     --device-name=*) DEVICE_NAME="${arg#*=}";;
     esac
 done
+if [ -z "$DEVICE_NAME" ]; then
+    fatal "The --device-name argument is required but not provided"
+fi
 if [ "$DEBUG" = true ]; then
     debug "device-name: '$DEVICE_NAME' (should be the name of the device)"
+fi
+
+FROM_PKG=''
+for arg in "$@"; do
+    case $arg in
+    --from-pkg=*) FROM_PKG="${arg#*=}";;
+    esac
+done
+if [ "$DEBUG" = true ]; then
+    debug "from-pkg: '$FROM_PKG' (should be the path to the agent package on this machine)"
 fi
 
 ALLOW_REACTIVATION=false
@@ -137,7 +150,8 @@ ARCH="$(uname -m)"
 DOWNLOAD_DIR="$HOME/.miru/downloads"
 AGENT_DEB_PKG_NAME="miru-agent"
 GITHUB_REPO="miruml/agent"
-CHECKSUMS_NAME="checksums.txt"
+CHECKSUMS_FILE="$DOWNLOAD_DIR/checksums.txt"
+DEB_PKG_MIME_TYPE="application/vnd.debian.binary-package"
 
 # MAIN LOGIC #
 # ========== #
@@ -148,9 +162,30 @@ case $DEB_ARCH in
     *) fatal "Unsupported architecture: $DEB_ARCH" ;;
 esac
 
+# USE PROVIDED PACKAGE #
+# -------------------- #
+if [ -n "$FROM_PKG" ]; then
+    log "Installing from package on local machine: '$FROM_PKG'"
+    if [ ! -f "$FROM_PKG" ]; then
+        fatal "The provided package does not exist on this machine: '$FROM_PKG'"
+    fi
+    if [ "$(file -b --mime-type "$FROM_PKG")" != "$DEB_PKG_MIME_TYPE" ]; then
+        fatal "The provided package is not a valid Debian package. Expected mimetype '$DEB_PKG_MIME_TYPE' but got '$(file -b --mime-type "$FROM_PKG")'."
+    fi
+    if [ "$(dpkg -f "$FROM_PKG" Package)" != "$AGENT_DEB_PKG_NAME" ]; then
+        fatal "The provided package is not a valid Miru Agent package. Expected package name '$AGENT_DEB_PKG_NAME' but got '$(dpkg -f "$FROM_PKG" Package)'."
+    fi
+    if [ "$(dpkg -f "$FROM_PKG" Architecture)" != "$DEB_ARCH" ]; then
+        fatal "The provided package architecture ($(dpkg -f "$FROM_PKG" Architecture)) does not match this machine's architecture ($DEB_ARCH)."
+    fi
+    AGENT_DEB_PKG=$FROM_PKG
+
+    VERSION=$(dpkg -f "$FROM_PKG" Version)
+fi
+
 # PROVISION THE DEVICE #
 # --------------------- #
-if [ "$MIRU_API_KEY" = "" ]; then
+if [ -z "$MIRU_API_KEY" ]; then
     echo "MIRU_API_KEY is not set"
     exit 1
 fi
@@ -230,7 +265,7 @@ fi
 
 # DETERMINE THE VERSION #
 # --------------------- #
-if [ "$VERSION" = "" ]; then
+if [ -z "$VERSION" ]; then
     if [ "$PRERELEASE" = true ]; then
         log "Fetching latest pre-release version..."
         VERSION=$(curl -sL "https://api.github.com/repos/${GITHUB_REPO}/releases" | 
@@ -264,31 +299,24 @@ INSTALLED_VERSION=$(dpkg-query -W -f='${Version}' "$AGENT_DEB_PKG_NAME" 2>/dev/n
 if [ -n "$INSTALLED_VERSION" ]; then
     INSTALLED_VERSION=$(echo "$INSTALLED_VERSION" | sed 's/~/-/g')
 fi
-if [ -n "$INSTALLED_VERSION" ]; then
-    log "Version ${INSTALLED_VERSION} is currently installed"
-else
-    log "Miru Agent is not currently installed"
-fi
 
-CHECKSUMS_FILE="$DOWNLOAD_DIR/${CHECKSUMS_NAME}"
-AGENT_DEB_PKG="$DOWNLOAD_DIR/${AGENT_DEB_PKG_NAME}.deb"
 if [ "$INSTALLED_VERSION" != "$VERSION" ]; then
+    rm -rf "$DOWNLOAD_DIR"
     mkdir -p "$DOWNLOAD_DIR"
 
-    if [ -n "$INSTALLED_VERSION" ]; then
-        log "Downloading version ${VERSION} to replace version ${INSTALLED_VERSION}"
-    else
+    # download the agent deb package if not provided locally
+    if [ -z "$AGENT_DEB_PKG" ] || [ ! -f "$AGENT_DEB_PKG" ]; then
         log "Downloading version ${VERSION}"
+        AGENT_DEB_PKG="$DOWNLOAD_DIR/${AGENT_DEB_PKG_NAME}.deb"
+        AGENT_DEB_PKG_URL="https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}/${AGENT_DEB_PKG_NAME}_${VERSION}_${DEB_ARCH}.deb"
+        curl -#fL "$AGENT_DEB_PKG_URL" -o "$AGENT_DEB_PKG" ||
+            fatal "Failed to download ${AGENT_DEB_PKG_NAME}"
     fi
 
-    AGENT_DEB_PKG_URL="https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}/${AGENT_DEB_PKG_NAME}_${VERSION}_${DEB_ARCH}.deb"
-    CHECKSUM_URL="https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}/agent_${VERSION}_checksums.txt"
-
     # download the checksums file
+    CHECKSUM_URL="https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}/agent_${VERSION}_checksums.txt"
     curl -fsSL "$CHECKSUM_URL" -o "$CHECKSUMS_FILE" || fatal "Failed to download checksums.txt"
 
-    curl -#fL "$AGENT_DEB_PKG_URL" -o "$AGENT_DEB_PKG" ||
-        fatal "Failed to download ${AGENT_DEB_PKG_NAME}"
     EXPECTED_CHECKSUM=$(grep "${AGENT_DEB_PKG_NAME}_${VERSION}_${DEB_ARCH}.deb" "$CHECKSUMS_FILE" | cut -d ' ' -f 1)
     if [ -n "$EXPECTED_CHECKSUM" ]; then
         verify_checksum "$AGENT_DEB_PKG" "$EXPECTED_CHECKSUM" ||
@@ -297,13 +325,17 @@ if [ "$INSTALLED_VERSION" != "$VERSION" ]; then
         fatal "Checksums not found inside $CHECKSUM_URL" 
     fi
 
-    log "Installing version ${VERSION}"
+    if [ -n "$INSTALLED_VERSION" ]; then
+        log "Replacing version ${INSTALLED_VERSION} with version ${VERSION}"
+    else
+        log "Installing version ${VERSION}"
+    fi
     sudo dpkg -i "$AGENT_DEB_PKG" || fatal "Failed to install the agent"
 
     log "Removing downloaded files"
     rm -rf "$DOWNLOAD_DIR"
 else 
-    log "Skipping download of version ${VERSION} because it is already installed"
+    log "Version ${VERSION} is already installed"
 fi
 
 # ACTIVATE THE AGENT #
@@ -334,7 +366,7 @@ if [ -n "$DEVICE_NAME" ]; then
     args="$args --device-name=$DEVICE_NAME"
 fi
 
-if [ "$MIRU_ACTIVATION_TOKEN" = "" ]; then
+if [ -z "$MIRU_ACTIVATION_TOKEN" ]; then
     fatal "The MIRU_ACTIVATION_TOKEN environment variable is not set"
 fi
 

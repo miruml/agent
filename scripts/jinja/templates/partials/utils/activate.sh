@@ -24,7 +24,7 @@ if [ -n "$DEVICE_NAME" ]; then
     args="$args --device-name=$DEVICE_NAME"
 fi
 
-if [ "$MIRU_ACTIVATION_TOKEN" = "" ]; then
+if [ -z "$MIRU_ACTIVATION_TOKEN" ]; then
     fatal "The MIRU_ACTIVATION_TOKEN environment variable is not set"
 fi
 

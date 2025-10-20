@@ -1,10 +1,10 @@
 #!/bin/sh
 set -e
 
-# Script: staging-install.sh
+# Script: install.sh
 # Jinja Template: install.j2
-# Build Timestamp: 2025-10-19T20:44:31.182247
-# Description: Install the Miru Agent in the staging environment
+# Build Timestamp: 2025-10-19T19:02:13.570369
+# Description: Install the Miru Agent
 
 # DISPLAY #
 # ======= #
@@ -61,17 +61,17 @@ if [ "$DEBUG" = true ]; then
     debug "device-name: '$DEVICE_NAME' (should be the name of the device)"
 fi
 
-FROM_PKG=''
+FROM_PKG=""
 for arg in "$@"; do
     case $arg in
     --from-pkg=*) FROM_PKG="${arg#*=}";;
     esac
 done
 if [ "$DEBUG" = true ]; then
-    debug "from-pkg: '$FROM_PKG' (should be the path to the agent package on this machine)"
+    debug "from-pkg: '$FROM_PKG' (should be a file path to the agent package)"
 fi
 
-BACKEND_HOST="https://configs.dev.api.miruml.com"
+BACKEND_HOST="https://configs.api.miruml.com"
 for arg in "$@"; do
     case $arg in
     --backend-host=*) BACKEND_HOST="${arg#*=}";;
@@ -81,7 +81,7 @@ if [ "$DEBUG" = true ]; then
     debug "backend-host: '$BACKEND_HOST' (should be the URL of the backend host)"
 fi
 
-MQTT_BROKER_HOST="dev.mqtt.miruml.com"
+MQTT_BROKER_HOST="mqtt.miruml.com"
 for arg in "$@"; do
     case $arg in
     --mqtt-broker-host=*) MQTT_BROKER_HOST="${arg#*=}";;
@@ -148,9 +148,9 @@ case $DEB_ARCH in
     *) fatal "Unsupported architecture: $DEB_ARCH" ;;
 esac
 
-# USE PROVIDED PACKAGE #
-# -------------------- #
-if [ -n "$FROM_PKG" ]; then
+# USE LOCAL AGENT PACKAGE #
+# ----------------------- #
+if [ "$FROM_PKG" != "" ]; then
     log "Installing from package on local machine: '$FROM_PKG'"
     if [ ! -f "$FROM_PKG" ]; then
         fatal "The provided package does not exist on this machine: '$FROM_PKG'"
@@ -272,7 +272,7 @@ if [ -n "$DEVICE_NAME" ]; then
     args="$args --device-name=$DEVICE_NAME"
 fi
 
-if [ -z "$MIRU_ACTIVATION_TOKEN" ]; then
+if [ "$MIRU_ACTIVATION_TOKEN" = "" ]; then
     fatal "The MIRU_ACTIVATION_TOKEN environment variable is not set"
 fi
 

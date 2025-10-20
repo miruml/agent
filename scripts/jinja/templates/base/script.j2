@@ -26,14 +26,16 @@ set -e
     all_caps='DEBUG',
     cabob_case='debug',
     default='false',
-    flag=true
+    flag=true,
+    required=false
 ) -}}{{- "\n" -}}
 {%- for key, arg in args.items() -%}
     {{- parse_arg(
         all_caps=arg.all_caps,
         cabob_case=arg.cabob_case,
         default=arg.default,
-        flag=arg.flag
+        flag=arg.flag,
+        required=arg.required
     ) 
     -}}
     {{- debug_arg(

@@ -1,4 +1,10 @@
-{% macro parse(all_caps='', cabob_case='', default='', flag=false) %}
+{% macro parse(
+    all_caps='',
+    cabob_case='',
+    default='',
+    required=false,
+    flag=false
+) %}
 {{ all_caps }}={{ default }}
 for arg in "$@"; do
     case $arg in
@@ -8,6 +14,11 @@ for arg in "$@"; do
     {% endif %}
     esac
 done
+{% if required %}
+if [ -z "${{ all_caps }}" ]; then
+    fatal "The --{{ cabob_case }} argument is required but not provided"
+fi
+{% endif %}
 {% endmacro %}
 
 {% macro debug(all_caps='', cabob_case='', hint='') %}

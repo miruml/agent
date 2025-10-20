@@ -3,31 +3,24 @@ INSTALLED_VERSION=$(dpkg-query -W -f='${Version}' "$AGENT_DEB_PKG_NAME" 2>/dev/n
 if [ -n "$INSTALLED_VERSION" ]; then
     INSTALLED_VERSION=$(echo "$INSTALLED_VERSION" | sed 's/~/-/g')
 fi
-if [ -n "$INSTALLED_VERSION" ]; then
-    log "Version ${INSTALLED_VERSION} is currently installed"
-else
-    log "Miru Agent is not currently installed"
-fi
 
-CHECKSUMS_FILE="$DOWNLOAD_DIR/${CHECKSUMS_NAME}"
-AGENT_DEB_PKG="$DOWNLOAD_DIR/${AGENT_DEB_PKG_NAME}.deb"
 if [ "$INSTALLED_VERSION" != "$VERSION" ]; then
+    rm -rf "$DOWNLOAD_DIR"
     mkdir -p "$DOWNLOAD_DIR"
 
-    if [ -n "$INSTALLED_VERSION" ]; then
-        log "Downloading version ${VERSION} to replace version ${INSTALLED_VERSION}"
-    else
+    # download the agent deb package if not provided locally
+    if [ -z "$AGENT_DEB_PKG" ] || [ ! -f "$AGENT_DEB_PKG" ]; then
         log "Downloading version ${VERSION}"
+        AGENT_DEB_PKG="$DOWNLOAD_DIR/${AGENT_DEB_PKG_NAME}.deb"
+        AGENT_DEB_PKG_URL="https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}/${AGENT_DEB_PKG_NAME}_${VERSION}_${DEB_ARCH}.deb"
+        curl -#fL "$AGENT_DEB_PKG_URL" -o "$AGENT_DEB_PKG" ||
+            fatal "Failed to download ${AGENT_DEB_PKG_NAME}"
     fi
 
-    AGENT_DEB_PKG_URL="https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}/${AGENT_DEB_PKG_NAME}_${VERSION}_${DEB_ARCH}.deb"
-    CHECKSUM_URL="https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}/agent_${VERSION}_checksums.txt"
-
     # download the checksums file
+    CHECKSUM_URL="https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}/agent_${VERSION}_checksums.txt"
     curl -fsSL "$CHECKSUM_URL" -o "$CHECKSUMS_FILE" || fatal "Failed to download checksums.txt"
 
-    curl -#fL "$AGENT_DEB_PKG_URL" -o "$AGENT_DEB_PKG" ||
-        fatal "Failed to download ${AGENT_DEB_PKG_NAME}"
     EXPECTED_CHECKSUM=$(grep "${AGENT_DEB_PKG_NAME}_${VERSION}_${DEB_ARCH}.deb" "$CHECKSUMS_FILE" | cut -d ' ' -f 1)
     if [ -n "$EXPECTED_CHECKSUM" ]; then
         verify_checksum "$AGENT_DEB_PKG" "$EXPECTED_CHECKSUM" ||
@@ -36,11 +29,15 @@ if [ "$INSTALLED_VERSION" != "$VERSION" ]; then
         fatal "Checksums not found inside $CHECKSUM_URL" 
     fi
 
-    log "Installing version ${VERSION}"
+    if [ -n "$INSTALLED_VERSION" ]; then
+        log "Replacing version ${INSTALLED_VERSION} with version ${VERSION}"
+    else
+        log "Installing version ${VERSION}"
+    fi
     sudo dpkg -i "$AGENT_DEB_PKG" || fatal "Failed to install the agent"
 
     log "Removing downloaded files"
     rm -rf "$DOWNLOAD_DIR"
 else 
-    log "Skipping download of version ${VERSION} because it is already installed"
+    log "Version ${VERSION} is already installed"
 fi

@@ -1,4 +1,4 @@
-if [ "$VERSION" = "" ]; then
+if [ -z "$VERSION" ]; then
     if [ "$PRERELEASE" = true ]; then
         log "Fetching latest pre-release version..."
         VERSION=$(curl -sL "https://api.github.com/repos/${GITHUB_REPO}/releases" | 

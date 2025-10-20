@@ -1,146 +1,236 @@
 global_variables:
   build_time: "{{ build_time }}"
 
+# ARGUMENTS #
+# ========= #
+# device names
+optional_device_name: &optional_device_name
+  all_caps: "DEVICE_NAME"
+  cabob_case: "device-name"
+  default: "''"
+  hint: "should be the name of the device"
+
+required_device_name: &required_device_name
+  all_caps: "DEVICE_NAME"
+  cabob_case: "device-name"
+  default: "$(hostname)"
+  hint: "should be the name of the device"
+  required: true
+
+# optional version
+optional_version: &optional_version
+  all_caps: "VERSION"
+  cabob_case: "version"
+  default: "''"
+  hint: "should be a semantic version string like 'v1.2.3'"
+
+# prerelease
+prerelease_flag: &prerelease_flag
+  all_caps: "PRERELEASE"
+  cabob_case: "prerelease"
+  default: "false"
+  hint: "should be true or false"
+  flag: true
+
+allow_reactivation_flag: &allow_reactivation_flag
+  all_caps: "ALLOW_REACTIVATION"
+  cabob_case: "allow-reactivation"
+  default: "false"
+  hint: "should be true or false"
+  flag: true
+
+# from package
+from_pkg: &from_pkg
+  all_caps: "FROM_PKG"
+  cabob_case: "from-pkg"
+  default: "''"
+  hint: "should be the path to the agent package on this machine"
+
+# backend hosts
 prod_backend_host: &prod_backend_host
   all_caps: "BACKEND_HOST"
   cabob_case: "backend-host"
   default: "\"https://configs.api.miruml.com\""
   hint: "should be the URL of the backend host"
-prod_mqtt_broker_host: &prod_mqtt_broker_host
-  all_caps: "MQTT_BROKER_HOST"
-  cabob_case: "mqtt-broker-host"
-  default: "\"mqtt.miruml.com\""
 
 staging_backend_host: &staging_backend_host
   all_caps: "BACKEND_HOST"
   cabob_case: "backend-host"
   default: "\"https://configs.dev.api.miruml.com\""
   hint: "should be the URL of the backend host"
-staging_mqtt_broker_host: &staging_mqtt_broker_host
-  all_caps: "MQTT_BROKER_HOST"
-  cabob_case: "mqtt-broker-host"
-  default: "\"dev.mqtt.miruml.com\""
 
 uat_backend_host: &uat_backend_host
   all_caps: "BACKEND_HOST"
   cabob_case: "backend-host"
   default: "\"https://uat.api.miruml.com\""
   hint: "should be the URL of the backend host"
+
+# mqtt broker hosts
+prod_mqtt_broker_host: &prod_mqtt_broker_host
+  all_caps: "MQTT_BROKER_HOST"
+  cabob_case: "mqtt-broker-host"
+  default: "\"mqtt.miruml.com\""
+
+staging_mqtt_broker_host: &staging_mqtt_broker_host
+  all_caps: "MQTT_BROKER_HOST"
+  cabob_case: "mqtt-broker-host"
+  default: "\"dev.mqtt.miruml.com\""
+
 uat_mqtt_broker_host: &uat_mqtt_broker_host
   all_caps: "MQTT_BROKER_HOST"
   cabob_case: "mqtt-broker-host"
   default: "\"uat.mqtt.miruml.com\""
 
+# VARIABLES #
+# ========= #
+arch: &arch
+  key: "ARCH"
+  value: "$(uname -m)"
 
-install_args: &install_args
-  prerelease:
-    all_caps: "PRERELEASE"
-    cabob_case: "prerelease"
-    default: "false"
-    hint: "should be true or false"
-    flag: true
-  version:
-    all_caps: "VERSION"
-    cabob_case: "version"
-    default: "''"
-    hint: "should be a semantic version string like 'v1.2.3'"
-  device_name:
-    all_caps: "DEVICE_NAME"
-    cabob_case: "device-name"
-    default: "''"
-    hint: "should be the name of the device"
+download_dir: &download_dir
+  key: "DOWNLOAD_DIR"
+  value: "$HOME/.miru/downloads"
 
-install: &install
-  args: *install_args
-  vars:
-    arch:
-      key: "ARCH"
-      value: "$(uname -m)"
-    download_dir:
-      key: "DOWNLOAD_DIR"
-      value: "$HOME/.miru/downloads"
-    agent_deb_pkg_name:
-      key: "AGENT_DEB_PKG_NAME"
-      value: "miru-agent"
-    github_repo:
-      key: "GITHUB_REPO"
-      value: "miruml/agent"
-    checksums_name:
-      key: "CHECKSUMS_NAME"
-      value: "checksums.txt"
-  required_commands: "curl grep cut jq"
-  utilities:
-      - "partials/utils/checksum.sh"
+agent_deb_pkg_name: &agent_deb_pkg_name
+  key: "AGENT_DEB_PKG_NAME"
+  value: "miru-agent"
 
-provision_args: &provision_args
-  <<: *install_args
-  device_name:
-    all_caps: "DEVICE_NAME"
-    cabob_case: "device-name"
-    default: "$(hostname)"
-    hint: "should be the name of the device"
-  allow_reactivation:
-    all_caps: "ALLOW_REACTIVATION"
-    cabob_case: "allow-reactivation"
-    default: "false"
-    hint: "should be true or false"
-    flag: true
+github_repo: &github_repo
+  key: "GITHUB_REPO"
+  value: "miruml/agent"
 
-provision: &provision
-  <<: *install
-  args: *provision_args
+checksums_file: &checksums_file
+  key: "CHECKSUMS_FILE"
+  value: "$DOWNLOAD_DIR/checksums.txt"
+
+debian_pkg_mime_type: &debian_pkg_mime_type
+  key: "DEB_PKG_MIME_TYPE"
+  value: "application/vnd.debian.binary-package"
+
+# UTILITIES #
+# ========= #
+required_commands: &required_commands "curl grep cut jq"
+
+checksum_utility: &checksum_utility
+  - "partials/utils/checksum.sh"
+
+# INSTALL SCRIPTS #
+# =============== #
+base_install_args: &base_install_args
+  prerelease: *prerelease_flag
+  version: *optional_version
+  device_name: *optional_device_name
+  from_pkg: *from_pkg
+
+base_install_vars: &base_install_vars
+  arch: *arch
+  download_dir: *download_dir
+  agent_deb_pkg_name: *agent_deb_pkg_name
+  github_repo: *github_repo
+  checksums_file: *checksums_file
+  debian_pkg_mime_type: *debian_pkg_mime_type
+
+prod_install: &prod_install
+  args: 
+    <<: *base_install_args
+    backend_host: *prod_backend_host
+    mqtt_broker_host: *prod_mqtt_broker_host
+  vars: *base_install_vars
+  required_commands: *required_commands
+  utilities: *checksum_utility
+
+staging_install: &staging_install
+  args: 
+    <<: *base_install_args
+    backend_host: *staging_backend_host
+    mqtt_broker_host: *staging_mqtt_broker_host
+  vars: *base_install_vars
+  required_commands: *required_commands
+  utilities: *checksum_utility
+
+uat_install: &uat_install
+  args: 
+    <<: *base_install_args
+    backend_host: *uat_backend_host
+    mqtt_broker_host: *uat_mqtt_broker_host
+  vars: *base_install_vars
+  required_commands: *required_commands
+  utilities: *checksum_utility
+
+# PROVISION SCRIPT CONFIGURATION #
+# =============================== #
+base_provision_args: &base_provision_args
+  prerelease: *prerelease_flag
+  version: *optional_version
+  device_name: *required_device_name
+  from_pkg: *from_pkg
+  allow_reactivation: *allow_reactivation_flag
+
+base_provision_vars: &base_provision_vars
+  arch: *arch
+  download_dir: *download_dir
+  agent_deb_pkg_name: *agent_deb_pkg_name
+  github_repo: *github_repo
+  checksums_file: *checksums_file
+  debian_pkg_mime_type: *debian_pkg_mime_type
+
+prod_provision: &prod_provision
+  args: 
+    <<: *base_provision_args
+    backend_host: *prod_backend_host
+    mqtt_broker_host: *prod_mqtt_broker_host
+  vars: *base_provision_vars
+  required_commands: *required_commands
+  utilities: *checksum_utility
+
+staging_provision: &staging_provision
+  args: 
+    <<: *base_provision_args
+    backend_host: *staging_backend_host
+    mqtt_broker_host: *staging_mqtt_broker_host
+  vars: *base_provision_vars
+  required_commands: *required_commands
+  utilities: *checksum_utility
+
+uat_provision: &uat_provision
+  args: 
+    <<: *base_provision_args
+    backend_host: *uat_backend_host
+    mqtt_broker_host: *uat_mqtt_broker_host
+  vars: *base_provision_vars
+  required_commands: *required_commands
+  utilities: *checksum_utility
+
+# SCRIPTS #
+# ======= #
 scripts:
+  # installs
   - name: "install.sh"
     template: "install.j2" 
     description: "Install the Miru Agent"
-    variables: 
-      <<: *install
-      args: 
-        <<: *install_args
-        backend_host: *prod_backend_host
-        mqtt_broker_host: *prod_mqtt_broker_host
+    variables: *prod_install
   - name: "staging-install.sh"
     template: "install.j2" 
     description: "Install the Miru Agent in the staging environment"
-    variables: 
-      <<: *install
-      args: 
-        <<: *install_args
-        backend_host: *staging_backend_host
-        mqtt_broker_host: *staging_mqtt_broker_host
+    variables: *staging_install
   - name: "uat-install.sh"
     template: "install.j2" 
     description: "Install the Miru Agent in the UAT environment"
-    variables: 
-      <<: *install
-      args: 
-        <<: *install_args
-        backend_host: *uat_backend_host
-        mqtt_broker_host: *uat_mqtt_broker_host
+    variables: *uat_install
+
+  # provisions
   - name: "provision.sh"
     template: "provision.j2" 
     description: "Provision a device & install the Miru Agent"
     variables:
-      <<: *provision
-      args:
-        <<: *provision_args
-        backend_host: *prod_backend_host
-        mqtt_broker_host: *prod_mqtt_broker_host
+      <<: *prod_provision
   - name: "staging-provision.sh"
     template: "provision.j2" 
     description: "Provision a device & install the Miru Agent in the staging environment"
     variables:
-      <<: *provision
-      args:
-        <<: *provision_args
-        backend_host: *staging_backend_host
-        mqtt_broker_host: *staging_mqtt_broker_host
+      <<: *staging_provision
   - name: "uat-provision.sh"
     template: "provision.j2" 
     description: "Provision a device & install the Miru Agent in the UAT environment"
     variables:
-      <<: *provision
-      args:
-        <<: *provision_args
-        backend_host: *uat_backend_host
-        mqtt_broker_host: *uat_mqtt_broker_host
+      <<: *uat_provision
