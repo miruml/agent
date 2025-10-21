@@ -93,12 +93,15 @@ changelog:
     - title: Bug Fixes
       regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
       order: 1
+    - title: Refactors
+      regexp: '^.*?refactor(\([[:word:]]+\))??!?:.+$'
+      order: 2
     - title: Performance
       regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
-      order: 2
+      order: 3
     - title: Reversions
       regexp: '^.*?revert(\([[:word:]]+\))??!?:.+$'
-      order: 3
+      order: 4
     - title: Others
       order: 999
 
@@ -106,6 +109,7 @@ changelog:
     include:
       - "^feat"
       - "^fix"
+      - "^refactor"
       - "^perf"
       - "^revert"
 
