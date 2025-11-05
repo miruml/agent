@@ -1,0 +1,4 @@
+OS=$(uname -s)
+if [ "$OS" != "Linux" ]; then
+    fatal "'${OS}' is not a supported operating system, the Miru Agent is only supported on Linux"
+fi

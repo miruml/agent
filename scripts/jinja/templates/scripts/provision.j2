@@ -8,8 +8,10 @@
 {% from 'partials/arch.j2' import convert as convert_arch, convert_deb as convert_deb_arch %}
 
 {% block script_body %}
+{% include 'partials/os.j2' %}{{- "\n" -}}
+
 DEB_ARCH=$ARCH{{- "\n" -}}
-{{- convert_deb_arch(var='DEB_ARCH') -}}{{- "\n" -}}
+{{- convert_deb_arch(var='DEB_ARCH') -}}{{- "\n\n" -}}
 
 # USE PROVIDED PACKAGE #
 # -------------------- #

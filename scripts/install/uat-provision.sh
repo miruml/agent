@@ -3,7 +3,7 @@ set -e
 
 # Script: uat-provision.sh
 # Jinja Template: provision.j2
-# Build Timestamp: 2025-10-19T20:44:31.182247
+# Build Timestamp: 2025-11-05T06:44:26.850762
 # Description: Provision a device & install the Miru Agent in the UAT environment
 
 # DISPLAY #
@@ -155,12 +155,17 @@ DEB_PKG_MIME_TYPE="application/vnd.debian.binary-package"
 
 # MAIN LOGIC #
 # ========== #
+OS=$(uname -s)
+if [ "$OS" != "Linux" ]; then
+    fatal "'${OS}' is not a supported operating system, the Miru Agent is only supported on Linux"
+fi
 DEB_ARCH=$ARCH
 case $DEB_ARCH in
     x86_64|amd64) DEB_ARCH="amd64" ;;
     aarch64|arm64) DEB_ARCH="arm64" ;;
     *) fatal "Unsupported architecture: $DEB_ARCH" ;;
 esac
+
 
 # USE PROVIDED PACKAGE #
 # -------------------- #
