@@ -3,7 +3,7 @@ set -e
 
 # Script: install.sh
 # Jinja Template: install.j2
-# Build Timestamp: 2025-11-05T06:44:26.850762
+# Build Timestamp: 2025-11-05T06:48:39.728780
 # Description: Install the Miru Agent
 
 # DISPLAY #
@@ -116,17 +116,14 @@ verify_checksum() {
     if cmd_exists sha256sum; then
         # use printf here for precise control over the spaces since sha256sum requires exactly two spaces in between the checksum and the file
         printf "%s  %s\n" "$expected_checksum" "$file" | sha256sum -c >/dev/null 2>&1 || {
-            warn "Checksum verification failed using sha256sum"
-            return 1
+            fatal "Checksum verification failed using sha256sum"
         }
     elif cmd_exists shasum; then
         printf "%s  %s\n" "$expected_checksum" "$file" | shasum -a 256 -c >/dev/null 2>&1 || {
-            warn "Checksum verification failed using shasum"
-            return 1
+            fatal "Checksum verification failed using shasum"
         }
     else
-        warn "Could not verify checksum: no sha256sum or shasum command found"
-        return 0
+        fatal "Could not verify checksum: no sha256sum or shasum command found"
     fi
 }
 
@@ -143,7 +140,7 @@ DEB_PKG_MIME_TYPE="application/vnd.debian.binary-package"
 # ========== #
 OS=$(uname -s)
 if [ "$OS" != "Linux" ]; then
-    fatal "'${OS}' is not a supported operating system, the Miru Agent is only supported on Linux"
+    fatal "'${OS}' is not a supported operating system, the Miru Agent is only supported on Linux machines"
 fi
 
 DEB_ARCH=$ARCH
