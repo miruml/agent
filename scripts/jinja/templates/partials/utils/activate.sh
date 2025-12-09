@@ -28,5 +28,8 @@ if [ -z "$MIRU_ACTIVATION_TOKEN" ]; then
     fatal "The MIRU_ACTIVATION_TOKEN environment variable is not set"
 fi
 
+# Reset the /srv/miru directory to be owned by the miru user and group
+sudo chown -R miru:miru /srv/miru
+
 # Execute the installer
 sudo -u miru -E env MIRU_ACTIVATION_TOKEN="$MIRU_ACTIVATION_TOKEN" /usr/sbin/miru-agent --install $args
