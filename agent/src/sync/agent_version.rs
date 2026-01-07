@@ -22,7 +22,10 @@ pub async fn push<HTTPClientT: DevicesExt>(
         return Ok(());
     }
 
-    info!("Detected new agent version: {} -> {}", device.agent_version, agent_version);
+    info!(
+        "Detected new agent version: {} -> {}",
+        device.agent_version, agent_version
+    );
 
     // update the device file
     let updates = device::Updates {
@@ -38,18 +41,21 @@ pub async fn push<HTTPClientT: DevicesExt>(
     })?;
 
     // update the backend
-    http_client.update_device(
-        &device.id,
-        &openapi_client::models::UpdateDeviceFromAgentRequest {
-            agent_version: Some(agent_version),
-        },
-        token
-    ).await.map_err(|e| {
-        SyncErr::HTTPClientErr(Box::new(SyncHTTPClientErr {
-            source: e,
-            trace: trace!(),
-        }))
-    })?;
+    http_client
+        .update_device(
+            &device.id,
+            &openapi_client::models::UpdateDeviceFromAgentRequest {
+                agent_version: Some(agent_version),
+            },
+            token,
+        )
+        .await
+        .map_err(|e| {
+            SyncErr::HTTPClientErr(Box::new(SyncHTTPClientErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
 
     Ok(())
 }

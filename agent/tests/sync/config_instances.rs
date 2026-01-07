@@ -9,14 +9,10 @@ use miru_agent::http::errors::*;
 use miru_agent::models::config_instance::{
     ActivityStatus, ConfigInstance, ErrorStatus, TargetStatus,
 };
-use miru_agent::storage::config_instances::{
-    ConfigInstanceCache, ConfigInstanceContentCache,
-};
+use miru_agent::storage::config_instances::{ConfigInstanceCache, ConfigInstanceContentCache};
 use miru_agent::sync::config_instances::{pull, push, sync};
 
-use crate::http::mock::{
-    MockCfgInstsClient, CfgInstsCall,
-};
+use crate::http::mock::{CfgInstsCall, MockCfgInstsClient};
 
 use openapi_client::models::UpdateConfigInstanceRequest;
 
@@ -91,14 +87,16 @@ pub mod sync {
 
         // pull fails
         let http_client = MockCfgInstsClient::default();
-        http_client.set_list_all_config_instances(move || Err(HTTPErr::MockErr(Box::new(MockErr {
-            is_network_connection_error: false,
-        }))));
+        http_client.set_list_all_config_instances(move || {
+            Err(HTTPErr::MockErr(Box::new(MockErr {
+                is_network_connection_error: false,
+            })))
+        });
 
         // create the caches with undeployed config instance
         let id = "new_instance".to_string();
         let content = serde_json::json!({"id": id});
-        let cfg_inst= ConfigInstance {
+        let cfg_inst = ConfigInstance {
             id: id.clone(),
             target_status: TargetStatus::Deployed,
             activity_status: ActivityStatus::Queued,
@@ -109,26 +107,18 @@ pub mod sync {
             ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
                 .await
                 .unwrap();
-        cfg_inst_cache.write(
-            id.clone(),
-            cfg_inst.clone(),
-            |_, _| true,
-            true,
-        )
-        .await
-        .unwrap();
+        cfg_inst_cache
+            .write(id.clone(), cfg_inst.clone(), |_, _| true, true)
+            .await
+            .unwrap();
         let (cfg_inst_content_cache, _) =
             ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
-        cfg_inst_content_cache.write(
-            id.clone(),
-            content.clone(),
-            |_, _| false,
-            true,
-        )
-        .await
-        .unwrap();
+        cfg_inst_content_cache
+            .write(id.clone(), content.clone(), |_, _| false, true)
+            .await
+            .unwrap();
         let cfg_inst_cache = Arc::new(cfg_inst_cache);
         let cfg_inst_content_cache = Arc::new(cfg_inst_content_cache);
 
@@ -163,14 +153,16 @@ pub mod sync {
 
         // pull fails
         let http_client = MockCfgInstsClient::default();
-        http_client.set_update_config_instance(move || Err(HTTPErr::MockErr(Box::new(MockErr {
-            is_network_connection_error: false,
-        }))));
+        http_client.set_update_config_instance(move || {
+            Err(HTTPErr::MockErr(Box::new(MockErr {
+                is_network_connection_error: false,
+            })))
+        });
 
         // create the caches with undeployed config instance
         let id = "new_instance".to_string();
         let content = serde_json::json!({"id": id});
-        let cfg_inst= ConfigInstance {
+        let cfg_inst = ConfigInstance {
             id: id.clone(),
             target_status: TargetStatus::Deployed,
             activity_status: ActivityStatus::Queued,
@@ -181,26 +173,18 @@ pub mod sync {
             ConfigInstanceCache::spawn(16, dir.file("cfg_inst_cache.json"), 1000)
                 .await
                 .unwrap();
-        cfg_inst_cache.write(
-            id.clone(),
-            cfg_inst.clone(),
-            |_, _| true,
-            true,
-        )
-        .await
-        .unwrap();
+        cfg_inst_cache
+            .write(id.clone(), cfg_inst.clone(), |_, _| true, true)
+            .await
+            .unwrap();
         let (cfg_inst_content_cache, _) =
             ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
-        cfg_inst_content_cache.write(
-            id.clone(),
-            content.clone(),
-            |_, _| false,
-            true,
-        )
-        .await
-        .unwrap();
+        cfg_inst_content_cache
+            .write(id.clone(), content.clone(), |_, _| false, true)
+            .await
+            .unwrap();
         let cfg_inst_cache = Arc::new(cfg_inst_cache);
         let cfg_inst_content_cache = Arc::new(cfg_inst_content_cache);
 
@@ -549,9 +533,7 @@ pub mod push {
         let http_client = MockCfgInstsClient::default();
 
         // push the config instances
-        push(&metadata_cache, &http_client, "token")
-            .await
-            .unwrap();
+        push(&metadata_cache, &http_client, "token").await.unwrap();
 
         // check the history
         assert_eq!(http_client.num_update_config_instance_calls(), 0);
@@ -576,9 +558,7 @@ pub mod push {
         let http_client = MockCfgInstsClient::default();
 
         // push the config instances
-        push(&metadata_cache, &http_client, "token")
-            .await
-            .unwrap();
+        push(&metadata_cache, &http_client, "token").await.unwrap();
 
         // check the history
         assert_eq!(http_client.num_update_config_instance_calls(), 0);
@@ -607,9 +587,7 @@ pub mod push {
         let http_client = MockCfgInstsClient::default();
 
         // push the config instances
-        push(&metadata_cache, &http_client, "token")
-            .await
-            .unwrap();
+        push(&metadata_cache, &http_client, "token").await.unwrap();
 
         // check the history
         assert_eq!(http_client.num_update_config_instance_calls(), 1);
@@ -623,7 +601,6 @@ pub mod push {
         };
         assert_eq!(actual, expected);
     }
-
 
     #[tokio::test]
     async fn update_config_instance_errors() {
@@ -655,7 +632,7 @@ pub mod push {
             })))
         });
 
-        // push the config instances -> should fail since the updates fail but each 
+        // push the config instances -> should fail since the updates fail but each
         // config instance should be attempted to be updated
         push(&metadata_cache, &http_client, "token")
             .await

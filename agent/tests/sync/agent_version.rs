@@ -15,30 +15,20 @@ pub mod push {
         let dir = Dir::create_temp_dir("testing").await.unwrap();
         let layout = StorageLayout::new(dir);
 
-
         let agent_version = Device::default().agent_version;
         let device = Device {
             agent_version: agent_version.clone(),
             ..Device::default()
         };
 
-        let (device_file, _) = DeviceFile::spawn_with_default(
-            64,
-            layout.device_file(),
-            device,
-        )
-        .await
-        .unwrap();
+        let (device_file, _) = DeviceFile::spawn_with_default(64, layout.device_file(), device)
+            .await
+            .unwrap();
         let http_client = MockDevicesClient::default();
 
-        push(
-            &device_file,
-            &http_client,
-            "token",
-            agent_version.clone(),
-        )
-        .await
-        .unwrap();
+        push(&device_file, &http_client, "token", agent_version.clone())
+            .await
+            .unwrap();
 
         // check the device file has the same version
         let device = device_file.read().await.unwrap();
@@ -60,13 +50,9 @@ pub mod push {
             ..Device::default()
         };
 
-        let (device_file, _) = DeviceFile::spawn_with_default(
-            64,
-            layout.device_file(),
-            device,
-        )
-        .await
-        .unwrap();
+        let (device_file, _) = DeviceFile::spawn_with_default(64, layout.device_file(), device)
+            .await
+            .unwrap();
         let http_client = MockDevicesClient::default();
 
         push(
@@ -86,5 +72,3 @@ pub mod push {
         assert_eq!(http_client.num_update_device_calls(), 1);
     }
 }
-
-

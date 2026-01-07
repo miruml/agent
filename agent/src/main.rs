@@ -97,12 +97,7 @@ async fn main() {
         ..Default::default()
     };
     info!("Running the server with options: {:?}", options);
-    let result = run(
-        version_info.version,
-        options,
-        await_shutdown_signal(),
-    )
-    .await;
+    let result = run(version_info.version, options, await_shutdown_signal()).await;
     if let Err(e) = result {
         error!("Failed to run the server: {e}");
     }

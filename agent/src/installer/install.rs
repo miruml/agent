@@ -10,8 +10,8 @@ use crate::installer::{display, errors::*};
 use crate::logs::{init, LogOptions};
 use crate::models::device::{Device, DeviceStatus};
 use crate::storage::{layout::StorageLayout, settings, setup::clean_storage_setup};
-use crate::utils::version_info;
 use crate::trace;
+use crate::utils::version_info;
 use openapi_client::models::ActivateDeviceRequest;
 
 // external crates
@@ -68,7 +68,10 @@ async fn install_helper(
     let http_client = HTTPClient::new(&settings.backend.base_url).await;
     let layout = StorageLayout::default();
     bootstrap(
-        &layout, &http_client, &settings, activation_token.as_str(),
+        &layout,
+        &http_client,
+        &settings,
+        activation_token.as_str(),
         cli_args.get("device-name").map(|name| name.to_string()),
     )
     .await?;
@@ -91,16 +94,17 @@ pub async fn bootstrap<HTTPClientT: DevicesExt>(
     let temp_dir = layout.temp_dir();
     let private_key_file = temp_dir.file("private.key");
     let public_key_file = temp_dir.file("public.key");
-    rsa::gen_key_pair(
-        4096, &private_key_file, &public_key_file, true,
-    ).await.map_err(|e| {
-        InstallErr::CryptErr(InstallCryptErr {source: e, trace: trace!()})
-    })?;
+    rsa::gen_key_pair(4096, &private_key_file, &public_key_file, true)
+        .await
+        .map_err(|e| {
+            InstallErr::CryptErr(InstallCryptErr {
+                source: e,
+                trace: trace!(),
+            })
+        })?;
 
     // activate the device
-    let device = activate(
-        http_client, &public_key_file, token, device_name,
-    ).await?;
+    let device = activate(http_client, &public_key_file, token, device_name).await?;
 
     // setup a clean storage layout with the new authentication & device id
     clean_storage_setup(
@@ -119,13 +123,21 @@ pub async fn bootstrap<HTTPClientT: DevicesExt>(
         settings,
         &private_key_file,
         &public_key_file,
-    ).await.map_err(|e| {
-        InstallErr::StorageErr(InstallStorageErr {source: e, trace: trace!()})
+    )
+    .await
+    .map_err(|e| {
+        InstallErr::StorageErr(InstallStorageErr {
+            source: e,
+            trace: trace!(),
+        })
     })?;
 
     // delete the temporary directory
     temp_dir.delete().await.map_err(|e| {
-        InstallErr::FileSysErr(InstallFileSysErr {source: e, trace: trace!()})
+        InstallErr::FileSysErr(InstallFileSysErr {
+            source: e,
+            trace: trace!(),
+        })
     })?;
 
     Ok(())
@@ -138,12 +150,18 @@ pub async fn activate<HTTPClientT: DevicesExt>(
     device_name: Option<String>,
 ) -> Result<openapi_client::models::Device, InstallErr> {
     let device_id = jwt::extract_device_id(token).map_err(|e| {
-        InstallErr::CryptErr(InstallCryptErr {source: e, trace: trace!()})
+        InstallErr::CryptErr(InstallCryptErr {
+            source: e,
+            trace: trace!(),
+        })
     })?;
 
     // activate the device with the server
     let public_key_pem = public_key_file.read_string().await.map_err(|e| {
-        InstallErr::FileSysErr(InstallFileSysErr {source: e, trace: trace!()})
+        InstallErr::FileSysErr(InstallFileSysErr {
+            source: e,
+            trace: trace!(),
+        })
     })?;
     let payload = ActivateDeviceRequest {
         public_key_pem,
@@ -154,14 +172,20 @@ pub async fn activate<HTTPClientT: DevicesExt>(
         .activate_device(&device_id, &payload, token)
         .await
         .map_err(|e| {
-            InstallErr::HTTPErr(InstallHTTPErr {source: e, trace: trace!()})
+            InstallErr::HTTPErr(InstallHTTPErr {
+                source: e,
+                trace: trace!(),
+            })
         })?;
 
     // complete
-    display::info(format!(
-        "Successfully activated this device as {}!",
-        display::color(&device.name, display::Colors::Green)
-    ).as_str());
+    display::info(
+        format!(
+            "Successfully activated this device as {}!",
+            display::color(&device.name, display::Colors::Green)
+        )
+        .as_str(),
+    );
 
     Ok(device)
 }

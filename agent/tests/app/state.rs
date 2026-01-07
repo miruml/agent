@@ -195,9 +195,6 @@ pub mod init {
     }
 }
 
-
-
-
 pub mod shutdown {
     use super::*;
 

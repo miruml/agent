@@ -9,8 +9,8 @@ use miru_agent::http::devices::DevicesExt;
 use miru_agent::http::errors::HTTPErr;
 use openapi_client::models::{
     ActivateDeviceRequest, ConfigInstance, ConfigInstanceList, ConfigSchema, ConfigSchemaList,
-    Device, HashSchemaSerializedRequest, IssueDeviceTokenRequest, SchemaDigestResponse, UpdateDeviceFromAgentRequest,
-    TokenResponse, UpdateConfigInstanceRequest,
+    Device, HashSchemaSerializedRequest, IssueDeviceTokenRequest, SchemaDigestResponse,
+    TokenResponse, UpdateConfigInstanceRequest, UpdateDeviceFromAgentRequest,
 };
 
 // ================================ MOCK CLIENT ==================================== //
@@ -29,7 +29,9 @@ impl DevicesExt for MockClient {
         payload: &ActivateDeviceRequest,
         token: &str,
     ) -> Result<Device, HTTPErr> {
-        self.devices_client.activate_device(device_id, payload, token).await
+        self.devices_client
+            .activate_device(device_id, payload, token)
+            .await
     }
 
     async fn issue_device_token(
@@ -37,7 +39,9 @@ impl DevicesExt for MockClient {
         device_id: &str,
         payload: &IssueDeviceTokenRequest,
     ) -> Result<TokenResponse, HTTPErr> {
-        self.devices_client.issue_device_token(device_id, payload).await
+        self.devices_client
+            .issue_device_token(device_id, payload)
+            .await
     }
 
     async fn update_device(
@@ -46,7 +50,9 @@ impl DevicesExt for MockClient {
         payload: &UpdateDeviceFromAgentRequest,
         token: &str,
     ) -> Result<Device, HTTPErr> {
-        self.devices_client.update_device(device_id, payload, token).await
+        self.devices_client
+            .update_device(device_id, payload, token)
+            .await
     }
 }
 
@@ -56,7 +62,9 @@ impl ConfigInstancesExt for MockClient {
         query_params: &str,
         token: &str,
     ) -> Result<ConfigInstanceList, HTTPErr> {
-        self.config_instances_client.list_config_instances(query_params, token).await
+        self.config_instances_client
+            .list_config_instances(query_params, token)
+            .await
     }
 
     async fn list_all_config_instances<I>(
@@ -69,7 +77,9 @@ impl ConfigInstancesExt for MockClient {
         I: IntoIterator + Send,
         I::Item: fmt::Display,
     {
-        self.config_instances_client.list_all_config_instances(filters, expansions, token).await
+        self.config_instances_client
+            .list_all_config_instances(filters, expansions, token)
+            .await
     }
 
     async fn update_config_instance(
@@ -78,7 +88,9 @@ impl ConfigInstancesExt for MockClient {
         updates: &UpdateConfigInstanceRequest,
         token: &str,
     ) -> Result<ConfigInstance, HTTPErr> {
-        self.config_instances_client.update_config_instance(config_instance_id, updates, token).await
+        self.config_instances_client
+            .update_config_instance(config_instance_id, updates, token)
+            .await
     }
 }
 
@@ -87,14 +99,16 @@ impl MockClient {
     where
         F: Fn() -> Result<Vec<ConfigInstance>, HTTPErr> + Send + Sync + 'static,
     {
-        self.config_instances_client.set_list_all_config_instances(list_all_config_instances_fn);
+        self.config_instances_client
+            .set_list_all_config_instances(list_all_config_instances_fn);
     }
 
     pub fn set_update_config_instance<F>(&self, update_config_instance_fn: F)
     where
         F: Fn() -> Result<ConfigInstance, HTTPErr> + Send + Sync + 'static,
     {
-        self.config_instances_client.set_update_config_instance(update_config_instance_fn);
+        self.config_instances_client
+            .set_update_config_instance(update_config_instance_fn);
     }
 }
 
@@ -242,7 +256,10 @@ impl MockCfgInstsClient {
 
 impl ConfigInstancesExt for MockCfgInstsClient {
     async fn list_config_instances(&self, _: &str, _: &str) -> Result<ConfigInstanceList, HTTPErr> {
-        self.calls.lock().unwrap().push(CfgInstsCall::ListConfigInstances);
+        self.calls
+            .lock()
+            .unwrap()
+            .push(CfgInstsCall::ListConfigInstances);
         (*self.list_config_instances_fn.lock().unwrap())()
     }
 
@@ -256,7 +273,10 @@ impl ConfigInstancesExt for MockCfgInstsClient {
         I: IntoIterator + Send,
         I::Item: fmt::Display,
     {
-        self.calls.lock().unwrap().push(CfgInstsCall::ListAllConfigInstances);
+        self.calls
+            .lock()
+            .unwrap()
+            .push(CfgInstsCall::ListAllConfigInstances);
         (*self.list_all_config_instances_fn.lock().unwrap())()
     }
 
@@ -266,7 +286,10 @@ impl ConfigInstancesExt for MockCfgInstsClient {
         request: &UpdateConfigInstanceRequest,
         _: &str,
     ) -> Result<ConfigInstance, HTTPErr> {
-        self.calls.lock().unwrap().push(CfgInstsCall::UpdateConfigInstance(request.clone()));
+        self.calls
+            .lock()
+            .unwrap()
+            .push(CfgInstsCall::UpdateConfigInstance(request.clone()));
         (*self.update_config_instance_fn.lock().unwrap())()
     }
 }

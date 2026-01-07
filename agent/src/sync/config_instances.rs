@@ -12,7 +12,8 @@ use crate::storage::config_instances::{ConfigInstanceCache, ConfigInstanceConten
 use crate::sync::errors::*;
 use crate::trace;
 use openapi_client::models::{
-    ConfigInstance as BackendConfigInstance, ConfigInstanceActivityStatus, ConfigInstanceExpand, UpdateConfigInstanceRequest,
+    ConfigInstance as BackendConfigInstance, ConfigInstanceActivityStatus, ConfigInstanceExpand,
+    UpdateConfigInstanceRequest,
 };
 
 // external crates
@@ -81,12 +82,7 @@ pub async fn sync<HTTPClientT: ConfigInstancesExt>(
 
     // push config instances to server
     debug!("Pushing config instances to server");
-    let result = push(
-        cfg_inst_cache,
-        http_client,
-        token,
-    )
-    .await;
+    let result = push(cfg_inst_cache, http_client, token).await;
     match result {
         Ok(_) => (),
         Err(e) => {
@@ -409,7 +405,6 @@ async fn update_target_status_instances(
     Ok(())
 }
 
-
 // =================================== PUSH ======================================== //
 pub async fn push<HTTPClientT: ConfigInstancesExt>(
     cfg_inst_cache: &ConfigInstanceCache,
@@ -428,7 +423,6 @@ pub async fn push<HTTPClientT: ConfigInstancesExt>(
         unsynced_cfg_insts.len(),
         unsynced_cfg_insts
     );
-
 
     let mut errors = Vec::new();
 
@@ -451,14 +445,18 @@ pub async fn push<HTTPClientT: ConfigInstancesExt>(
         );
         if let Err(e) = http_client
             .update_config_instance(&inst.id, &updates, token)
-            .await.map_err(|e| {
+            .await
+            .map_err(|e| {
                 SyncErr::HTTPClientErr(Box::new(SyncHTTPClientErr {
                     source: e,
                     trace: trace!(),
                 }))
             })
         {
-            error!("Failed to push config instance {} to backend: {}", inst.id, e);
+            error!(
+                "Failed to push config instance {} to backend: {}",
+                inst.id, e
+            );
             errors.push(e);
             continue;
         }
@@ -468,7 +466,8 @@ pub async fn push<HTTPClientT: ConfigInstancesExt>(
         let inst_id = inst.id.clone();
         if let Err(e) = cfg_inst_cache
             .write(inst.id.clone(), inst, |_, _| false, true)
-            .await.map_err(|e| {
+            .await
+            .map_err(|e| {
                 SyncErr::CacheErr(Box::new(SyncCacheErr {
                     source: e,
                     trace: trace!(),

@@ -43,7 +43,8 @@ pub async fn run(
         shutdown_tx.clone(),
         &mut shutdown_manager,
     )
-    .await {
+    .await
+    {
         Ok(state) => state,
         Err(e) => {
             error!("Failed to start server: {}", e);
@@ -120,12 +121,7 @@ async fn init(
     shutdown_tx: broadcast::Sender<()>,
     shutdown_manager: &mut ShutdownManager,
 ) -> Result<Arc<AppState>, ServerErr> {
-    let app_state = init_app_state(
-        agent_version,
-        options,
-        shutdown_manager,
-    )
-    .await?;
+    let app_state = init_app_state(agent_version, options, shutdown_manager).await?;
 
     init_token_refresh_worker(
         app_state.token_mngr.clone(),

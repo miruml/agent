@@ -18,27 +18,22 @@ use miru_agent::services::{
 };
 use miru_agent::storage::{
     config_instances::{ConfigInstanceCache, ConfigInstanceContentCache},
-    device::DeviceFile,
     config_schemas::ConfigSchemaCache,
+    device::DeviceFile,
 };
 use miru_agent::sync::syncer::{Syncer, SyncerArgs};
 use miru_agent::trace;
 use miru_agent::utils::CooldownOptions;
 
 // test crates
-use crate::http::mock::{
-    MockClient, MockDevicesClient, MockCfgSchsClient,
-};
+use crate::http::mock::{MockCfgSchsClient, MockClient, MockDevicesClient};
 use crate::sync::syncer::{create_token_manager, spawn};
 
 // tokio crates
 use serde_json::json;
 use tokio::task::JoinHandle;
 
-pub async fn create_syncer(
-    dir: &Dir,
-    http_client: Arc<MockClient>,
-) -> (Syncer, JoinHandle<()>) {
+pub async fn create_syncer(dir: &Dir, http_client: Arc<MockClient>) -> (Syncer, JoinHandle<()>) {
     let auth_client = Arc::new(MockDevicesClient::default());
     let (token_mngr, _) = create_token_manager(dir, auth_client.clone()).await;
 
@@ -52,7 +47,10 @@ pub async fn create_syncer(
             .unwrap();
 
     let device = Device::default();
-    let (device_file, _) = DeviceFile::spawn_with_default(64, dir.file("device.json"), device.clone()).await.unwrap();
+    let (device_file, _) =
+        DeviceFile::spawn_with_default(64, dir.file("device.json"), device.clone())
+            .await
+            .unwrap();
 
     spawn(
         32,
@@ -103,8 +101,7 @@ pub mod errors {
 
         // create the syncer
         let http_client = MockClient::default();
-        let (syncer, _) = create_syncer(
-            &dir, Arc::new(http_client)).await;
+        let (syncer, _) = create_syncer(&dir, Arc::new(http_client)).await;
 
         // run the test
         let args = GetDeployedArgs {

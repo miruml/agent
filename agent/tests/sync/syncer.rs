@@ -112,11 +112,10 @@ pub mod shutdown {
             ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
-        let (device_file, _) = DeviceFile::spawn_with_default(
-            64,
-            dir.file("device.json"),
-            Device::default(),
-        ).await.unwrap();
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default())
+                .await
+                .unwrap();
 
         let http_client = Arc::new(HTTPClient::new("doesntmatter").await);
         let (syncer, worker_handler) = Syncer::spawn(
@@ -160,7 +159,10 @@ pub mod subscribe {
             ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
-        let (device_file, _) = DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default()).await.unwrap();
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default())
+                .await
+                .unwrap();
 
         let cooldown_options = CooldownOptions {
             base_secs: 1,
@@ -247,7 +249,10 @@ pub mod subscribe {
             ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
-        let (device_file, _) = DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default()).await.unwrap();
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default())
+                .await
+                .unwrap();
 
         let cooldown_options = CooldownOptions {
             base_secs: 1,
@@ -351,7 +356,10 @@ pub mod sync {
                 .unwrap();
         let cfg_inst_cache = Arc::new(cfg_inst_cache);
         let cfg_inst_content_cache = Arc::new(cfg_inst_content_cache);
-        let (device_file, _) = DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default()).await.unwrap();
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default())
+                .await
+                .unwrap();
 
         let cooldown_options = CooldownOptions {
             base_secs: 10,
@@ -426,7 +434,10 @@ pub mod sync {
                 .unwrap();
         let cfg_inst_cache = Arc::new(cfg_inst_cache);
         let cfg_inst_content_cache = Arc::new(cfg_inst_content_cache);
-        let (device_file, _) = DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default()).await.unwrap();
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default())
+                .await
+                .unwrap();
         let device_file = Arc::new(device_file);
 
         let new_agent_version = "v1.0.1".to_string();
@@ -502,7 +513,10 @@ pub mod sync {
             ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
-        let (device_file, _) = DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default()).await.unwrap();
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default())
+                .await
+                .unwrap();
 
         let cooldown_options = CooldownOptions {
             base_secs: 10,
@@ -591,7 +605,10 @@ pub mod sync {
             ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
-        let (device_file, _) = DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default()).await.unwrap();
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default())
+                .await
+                .unwrap();
 
         let cooldown_options = CooldownOptions {
             base_secs: 10,
@@ -684,7 +701,10 @@ pub mod sync {
             ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
-        let (device_file, _) = DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default()).await.unwrap();
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default())
+                .await
+                .unwrap();
 
         let cooldown_options = CooldownOptions {
             base_secs: 10,
@@ -856,7 +876,10 @@ pub mod sync {
             ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
-        let (device_file, _) = DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default()).await.unwrap();
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default())
+                .await
+                .unwrap();
 
         let cooldown_options = CooldownOptions {
             base_secs: 10,
@@ -915,7 +938,10 @@ pub mod sync_if_not_in_cooldown {
             ConfigInstanceContentCache::spawn(16, dir.subdir("cfg_inst_content_cache"), 1000)
                 .await
                 .unwrap();
-        let (device_file, _) = DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default()).await.unwrap();
+        let (device_file, _) =
+            DeviceFile::spawn_with_default(64, dir.file("device.json"), Device::default())
+                .await
+                .unwrap();
 
         let cooldown_options = CooldownOptions {
             base_secs: 10,

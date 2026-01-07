@@ -220,8 +220,6 @@ impl AppState {
         Ok((device_file, device_file_handle))
     }
 
-
-
     pub async fn shutdown(&self) -> Result<(), ServerErr> {
         self.shutdown_device_file().await?;
 

@@ -9,7 +9,6 @@ use crate::filesys::errors::FileSysErr;
 use crate::http::errors::HTTPErr;
 use crate::storage::errors::StorageErr;
 
-
 #[derive(Debug)]
 pub struct InstallAuthnErr {
     pub source: AuthnErr,

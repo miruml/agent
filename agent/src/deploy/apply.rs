@@ -164,9 +164,7 @@ where
             )
             .await
         }
-        fsm::NextAction::Archive => {
-            archive(cfg_inst, observers).await
-        }
+        fsm::NextAction::Archive => archive(cfg_inst, observers).await,
         fsm::NextAction::Wait(_) => (DeployResults::empty(), Ok(())),
     }
 }
@@ -380,19 +378,28 @@ async fn archive(
 ) -> (DeployResults, Result<(), DeployErr>) {
     if fsm::next_action(&cfg_inst, true) != fsm::NextAction::Archive {
         let next_action = fsm::next_action(&cfg_inst, true);
-        return (DeployResults::empty(), Err(DeployErr::ConfigInstanceNotArchiveableErr(Box::new(
-            ConfigInstanceNotArchiveableErr {
-                cfg_inst,
-                next_action,
-                trace: trace!(),
-            },
-        ))));
+        return (
+            DeployResults::empty(),
+            Err(DeployErr::ConfigInstanceNotArchiveableErr(Box::new(
+                ConfigInstanceNotArchiveableErr {
+                    cfg_inst,
+                    next_action,
+                    trace: trace!(),
+                },
+            ))),
+        );
     }
 
-    info!("Archiving config instance '{}' (it is not currently deployed)", cfg_inst.id);
+    info!(
+        "Archiving config instance '{}' (it is not currently deployed)",
+        cfg_inst.id
+    );
     let cfg_inst = fsm::remove(cfg_inst);
-    return (DeployResults{
-        to_remove: vec![cfg_inst.clone()],
-        to_deploy: vec![],
-    }, on_update(observers, &cfg_inst).await);
+    return (
+        DeployResults {
+            to_remove: vec![cfg_inst.clone()],
+            to_deploy: vec![],
+        },
+        on_update(observers, &cfg_inst).await,
+    );
 }

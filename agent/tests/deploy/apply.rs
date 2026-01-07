@@ -10,12 +10,12 @@ use miru_agent::deploy::{
     fsm::Settings,
 };
 use miru_agent::filesys::{dir::Dir, path::PathExt};
+use miru_agent::logs::*;
 use miru_agent::models::config_instance::{
     ActivityStatus, ConfigInstance, ErrorStatus, TargetStatus,
 };
 use miru_agent::storage::config_instances::{ConfigInstanceCache, ConfigInstanceContentCache};
 use miru_agent::utils::calc_exp_backoff;
-use miru_agent::logs::*;
 
 // external crates
 use chrono::{TimeDelta, Utc};
@@ -284,7 +284,6 @@ pub mod apply_func {
             .await
             .unwrap();
 
-
         // create the config instance in the cache
         let (cfg_inst_cache, _) = ConfigInstanceCache::spawn(16, dir.file("metadata.json"), 1000)
             .await
@@ -341,7 +340,6 @@ pub mod apply_func {
             activity_status: ActivityStatus::Queued,
             ..Default::default()
         };
-
 
         // create a dummy file at the file path to double check it is archived & not
         // removed

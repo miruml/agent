@@ -7,11 +7,7 @@ use crate::authn::token_mngr::{TokenManager, TokenManagerExt};
 use crate::deploy::fsm;
 use crate::errors::*;
 use crate::filesys::dir::Dir;
-use crate::http::{
-    client::HTTPClient,
-    config_instances::ConfigInstancesExt,
-    devices::DevicesExt,
-};
+use crate::http::{client::HTTPClient, config_instances::ConfigInstancesExt, devices::DevicesExt};
 use crate::storage::{
     config_instances::{ConfigInstanceCache, ConfigInstanceContentCache},
     device::DeviceFile,
@@ -262,7 +258,9 @@ impl<HTTPClientT: ConfigInstancesExt + DevicesExt> SingleThreadSyncer<HTTPClient
             self.http_client.as_ref(),
             &token.token,
             self.agent_version.clone(),
-        ).await {
+        )
+        .await
+        {
             error!("Failed to push agent version to backend: {:?}", e);
             return Err(e);
         }
@@ -275,7 +273,8 @@ impl<HTTPClientT: ConfigInstancesExt + DevicesExt> SingleThreadSyncer<HTTPClient
             &self.deployment_dir,
             &self.fsm_settings,
             &token.token,
-        ).await
+        )
+        .await
     }
 }
 

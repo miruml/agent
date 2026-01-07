@@ -123,9 +123,9 @@ impl<'de> Deserialize<'de> for Device {
             activated: result
                 .activated
                 .unwrap_or_else(|| deserialize_error!("device", "activated", default.activated)),
-            agent_version: result
-                .agent_version
-                .unwrap_or_else(|| deserialize_error!("device", "agent_version", default.agent_version)),
+            agent_version: result.agent_version.unwrap_or_else(|| {
+                deserialize_error!("device", "agent_version", default.agent_version)
+            }),
             status: result
                 .status
                 .unwrap_or_else(|| deserialize_error!("device", "status", default.status)),

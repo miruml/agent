@@ -6,8 +6,8 @@ use crate::authn::errors::AuthnErr;
 use crate::cache::errors::CacheErr;
 use crate::crud::errors::CrudErr;
 use crate::deploy::errors::DeployErr;
-use crate::filesys::errors::FileSysErr;
 use crate::errors::{Code, HTTPCode, MiruError, Trace};
+use crate::filesys::errors::FileSysErr;
 use crate::http::errors::HTTPErr;
 use crate::storage::errors::StorageErr;
 

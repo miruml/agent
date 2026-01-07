@@ -37,10 +37,12 @@ impl DeviceExt for MQTTClient {
     async fn publish_device_sync(&self, device_id: &str) -> Result<(), MQTTError> {
         let topic = device_sync(device_id);
         let payload = SyncDevice { is_synced: true };
-        let payload_bytes = serde_json::to_vec(&payload).map_err(|e| MQTTError::SerdeErr(Box::new(SerdeErr {
-            source: e,
-            trace: trace!(),
-        })))?;
+        let payload_bytes = serde_json::to_vec(&payload).map_err(|e| {
+            MQTTError::SerdeErr(Box::new(SerdeErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
         self.publish(&topic, QoS::AtLeastOnce, true, &payload_bytes)
             .await
     }
@@ -60,10 +62,12 @@ impl DeviceExt for MQTTClient {
             message_id: ping_message_id,
             timestamp: Utc::now().to_rfc3339(),
         };
-        let payload_bytes = serde_json::to_vec(&payload).map_err(|e| MQTTError::SerdeErr(Box::new(SerdeErr {
-            source: e,
-            trace: trace!(),
-        })))?;
+        let payload_bytes = serde_json::to_vec(&payload).map_err(|e| {
+            MQTTError::SerdeErr(Box::new(SerdeErr {
+                source: e,
+                trace: trace!(),
+            }))
+        })?;
         self.publish(&topic, QoS::AtLeastOnce, false, &payload_bytes)
             .await
     }

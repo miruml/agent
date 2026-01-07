@@ -2,7 +2,8 @@
 use crate::http::client::HTTPClient;
 use crate::http::errors::HTTPErr;
 use openapi_client::models::{
-    ActivateDeviceRequest, Device, IssueDeviceTokenRequest, TokenResponse, UpdateDeviceFromAgentRequest,
+    ActivateDeviceRequest, Device, IssueDeviceTokenRequest, TokenResponse,
+    UpdateDeviceFromAgentRequest,
 };
 
 #[allow(async_fn_in_trait)]
