@@ -3,7 +3,7 @@ set -e
 
 # Script: install.sh
 # Jinja Template: install.j2
-# Build Timestamp: 2025-12-08T18:09:29.208118
+# Build Timestamp: 2026-01-07T13:37:16.792441
 # Description: Install the Miru Agent
 
 # DISPLAY #
@@ -71,7 +71,7 @@ if [ "$DEBUG" = true ]; then
     debug "from-pkg: '$FROM_PKG' (should be the path to the agent package on this machine)"
 fi
 
-BACKEND_HOST="https://configs.api.miruml.com"
+BACKEND_HOST="https://api.mirurobotics.com"
 for arg in "$@"; do
     case $arg in
     --backend-host=*) BACKEND_HOST="${arg#*=}";;
@@ -81,7 +81,7 @@ if [ "$DEBUG" = true ]; then
     debug "backend-host: '$BACKEND_HOST' (should be the URL of the backend host)"
 fi
 
-MQTT_BROKER_HOST="mqtt.miruml.com"
+MQTT_BROKER_HOST="mqtt.mirurobotics.com"
 for arg in "$@"; do
     case $arg in
     --mqtt-broker-host=*) MQTT_BROKER_HOST="${arg#*=}";;
@@ -132,7 +132,7 @@ verify_checksum() {
 ARCH="$(uname -m)"
 DOWNLOAD_DIR="$HOME/.miru/downloads"
 AGENT_DEB_PKG_NAME="miru-agent"
-GITHUB_REPO="miruml/agent"
+GITHUB_REPO="mirurobotics/agent"
 CHECKSUMS_FILE="$DOWNLOAD_DIR/checksums.txt"
 DEB_PKG_MIME_TYPE="application/vnd.debian.binary-package"
 

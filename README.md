@@ -1,1 +1,1 @@
-Visit the official Miru Agent documentation [here](http://docs.miruml.com/docs/agent-sdk)
+Visit the official Miru Agent documentation [here](http://docs.mirurobotics.com/docs/agent-sdk)

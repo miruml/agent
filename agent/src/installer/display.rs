@@ -47,7 +47,7 @@ pub fn print_title(title: &str) {
 }
 
 pub fn print_err_msg(err: Option<String>) {
-    println!("An error occurred during your installation. Contact us at ben@miruml.com for immediate support.\n");
+    println!("An error occurred during your installation. Contact us at ben@mirurobotics.com for immediate support.\n");
 
     if let Some(e) = err {
         println!("Error: {e}\n");

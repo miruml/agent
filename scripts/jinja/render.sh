@@ -46,6 +46,6 @@ fi
 log "Building scripts from Jinja2 templates..."
 cd "$SCRIPT_DIR"
 
-python3 build.py --config install.yaml --output-dir ../install
+python3 render.py --config install.yaml --output-dir ../install
 
 log "Build complete!"

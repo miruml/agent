@@ -38,7 +38,7 @@ impl Default for ConnectAddress {
     fn default() -> Self {
         Self {
             protocol: Protocol::SSL,
-            broker: "mqtt.miruml.com".to_string(),
+            broker: "mqtt.mirurobotics.com".to_string(),
             port: 8883,
         }
     }

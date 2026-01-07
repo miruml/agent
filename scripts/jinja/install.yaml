@@ -50,36 +50,36 @@ from_pkg: &from_pkg
 prod_backend_host: &prod_backend_host
   all_caps: "BACKEND_HOST"
   cabob_case: "backend-host"
-  default: "\"https://configs.api.miruml.com\""
+  default: "\"https://api.mirurobotics.com\""
   hint: "should be the URL of the backend host"
 
 staging_backend_host: &staging_backend_host
   all_caps: "BACKEND_HOST"
   cabob_case: "backend-host"
-  default: "\"https://configs.dev.api.miruml.com\""
+  default: "\"https://staging.api.mirurobotics.com\""
   hint: "should be the URL of the backend host"
 
 uat_backend_host: &uat_backend_host
   all_caps: "BACKEND_HOST"
   cabob_case: "backend-host"
-  default: "\"https://uat.api.miruml.com\""
+  default: "\"https://uat.api.mirurobotics.com\""
   hint: "should be the URL of the backend host"
 
 # mqtt broker hosts
 prod_mqtt_broker_host: &prod_mqtt_broker_host
   all_caps: "MQTT_BROKER_HOST"
   cabob_case: "mqtt-broker-host"
-  default: "\"mqtt.miruml.com\""
+  default: "\"mqtt.mirurobotics.com\""
 
 staging_mqtt_broker_host: &staging_mqtt_broker_host
   all_caps: "MQTT_BROKER_HOST"
   cabob_case: "mqtt-broker-host"
-  default: "\"dev.mqtt.miruml.com\""
+  default: "\"staging.mqtt.mirurobotics.com\""
 
 uat_mqtt_broker_host: &uat_mqtt_broker_host
   all_caps: "MQTT_BROKER_HOST"
   cabob_case: "mqtt-broker-host"
-  default: "\"uat.mqtt.miruml.com\""
+  default: "\"uat.mqtt.mirurobotics.com\""
 
 # VARIABLES #
 # ========= #
@@ -97,7 +97,7 @@ agent_deb_pkg_name: &agent_deb_pkg_name
 
 github_repo: &github_repo
   key: "GITHUB_REPO"
-  value: "miruml/agent"
+  value: "mirurobotics/agent"
 
 checksums_file: &checksums_file
   key: "CHECKSUMS_FILE"

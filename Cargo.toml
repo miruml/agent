@@ -8,7 +8,7 @@ members = [
 
 [workspace.package]
 edition = "2021"
-homepage = "https://miruml.com"
+homepage = "https://mirurobotics.com"
 rust-version = "1.84.0"
 version = "0.1.0"
 

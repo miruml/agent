@@ -63,7 +63,7 @@ impl Default for AppOptions {
             token_refresh_worker: TokenRefreshWorkerOptions::default(),
             fsm_settings: fsm::Settings::default(),
 
-            backend_base_url: "https://configs.api.miruml.com/agent/v1".to_string(),
+            backend_base_url: "https://api.mirurobotics.com/agent/v1".to_string(),
 
             enable_socket_server: true,
             server: ServerOptions::default(),

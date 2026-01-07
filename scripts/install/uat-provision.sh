@@ -3,7 +3,7 @@ set -e
 
 # Script: uat-provision.sh
 # Jinja Template: provision.j2
-# Build Timestamp: 2025-12-08T18:09:29.208118
+# Build Timestamp: 2026-01-07T13:37:16.792441
 # Description: Provision a device & install the Miru Agent in the UAT environment
 
 # DISPLAY #
@@ -85,7 +85,7 @@ if [ "$DEBUG" = true ]; then
     debug "allow-reactivation: '$ALLOW_REACTIVATION' (should be true or false)"
 fi
 
-BACKEND_HOST="https://uat.api.miruml.com"
+BACKEND_HOST="https://uat.api.mirurobotics.com"
 for arg in "$@"; do
     case $arg in
     --backend-host=*) BACKEND_HOST="${arg#*=}";;
@@ -95,7 +95,7 @@ if [ "$DEBUG" = true ]; then
     debug "backend-host: '$BACKEND_HOST' (should be the URL of the backend host)"
 fi
 
-MQTT_BROKER_HOST="uat.mqtt.miruml.com"
+MQTT_BROKER_HOST="uat.mqtt.mirurobotics.com"
 for arg in "$@"; do
     case $arg in
     --mqtt-broker-host=*) MQTT_BROKER_HOST="${arg#*=}";;
@@ -146,7 +146,7 @@ verify_checksum() {
 ARCH="$(uname -m)"
 DOWNLOAD_DIR="$HOME/.miru/downloads"
 AGENT_DEB_PKG_NAME="miru-agent"
-GITHUB_REPO="miruml/agent"
+GITHUB_REPO="mirurobotics/agent"
 CHECKSUMS_FILE="$DOWNLOAD_DIR/checksums.txt"
 DEB_PKG_MIME_TYPE="application/vnd.debian.binary-package"
 

@@ -95,7 +95,7 @@ pub struct Backend {
 impl Default for Backend {
     fn default() -> Self {
         Self {
-            base_url: "https://configs.api.miruml.com/agent/v1".to_string(),
+            base_url: "https://api.mirurobotics.com/agent/v1".to_string(),
         }
     }
 }
@@ -136,7 +136,7 @@ pub struct MQTTBroker {
 impl Default for MQTTBroker {
     fn default() -> Self {
         Self {
-            host: "mqtt.miruml.com".to_string(),
+            host: "mqtt.mirurobotics.com".to_string(),
         }
     }
 }

@@ -6,7 +6,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 
-class ScriptBuilder:
+class ScriptRenderer:
     def __init__(self, templates_dir="templates", output_dir="output"):
         self.templates_dir = Path(templates_dir)
         self.output_dir = Path(output_dir)
@@ -35,17 +35,17 @@ class ScriptBuilder:
         return value.replace("'", "'\"'\"'")
 
     def load_config(self, config_path: Path):
-        """Load build configuration"""
+        """Load render configuration"""
         with open(config_path, 'r') as f:
             return yaml.safe_load(f)
 
-    def build_script(self, script_config: dict, global_vars: dict):
-        """Build a single script from template"""
+    def render_script(self, script_config: dict, global_vars: dict):
+        """Render a single script from template"""
         script_name = script_config["name"]
         template_name = script_config["template"]
         description = script_config.get("description", "")
 
-        print(f"Building {script_name} from {template_name}...")
+        print(f"Rendering {script_name} from {template_name}...")
 
         try:
             # Load template
@@ -74,16 +74,16 @@ class ScriptBuilder:
             return True
 
         except Exception as e:
-            print(f"❌ Error building {script_name}: {e}")
+            print(f"❌ Error rendering {script_name}: {e}")
             return False
 
-    def build_all(self, config_path=None):
-        """Build all scripts from configuration"""
+    def render_all(self, config_path=None):
+        """Render all scripts from configuration"""
         config = self.load_config(config_path)
         global_vars = config.get("global_variables", {})
         global_vars["build_time"] = datetime.now().isoformat()
 
-        print("Building Miru shell scripts with Jinja2...")
+        print("Rendering Miru shell scripts with Jinja2...")
         print(f"Templates dir: {self.templates_dir}")
         print(f"Output dir: {self.output_dir}")
         print()
@@ -92,13 +92,13 @@ class ScriptBuilder:
         total_count = len(config["scripts"])
 
         for script_config in config["scripts"]:
-            if self.build_script(script_config, global_vars):
+            if self.render_script(script_config, global_vars):
                 success_count += 1
 
         print()
         print(
-            f"Build complete: {success_count}/{total_count} "
-            "scripts built successfully"
+            f"Render complete: {success_count}/{total_count} "
+            "scripts rendered successfully"
         )
 
         if success_count > 0:
@@ -113,7 +113,7 @@ class ScriptBuilder:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Build Miru shell scripts from Jinja2 templates",
+        description="Render Miru shell scripts from Jinja2 templates",
     )
     parser.add_argument(
         "--config",
@@ -136,8 +136,8 @@ def main():
 
     args = parser.parse_args()
 
-    builder = ScriptBuilder(args.templates_dir, args.output_dir)
-    success = builder.build_all(args.config)
+    renderer = ScriptRenderer(args.templates_dir, args.output_dir)
+    success = renderer.render_all(args.config)
 
     sys.exit(0 if success else 1)
 
