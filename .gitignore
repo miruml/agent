@@ -36,3 +36,9 @@ zig*/
 .venv/
 venv/
 .env/
+
+# python
+.mypy_cache/
+
+# api
+**/codegen/

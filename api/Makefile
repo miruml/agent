@@ -1,36 +1,30 @@
-# Common variables
-OPENAPI_DIR := ./openapi
-OPENAPI_BACKEND_SERVER_DIR := $(OPENAPI_DIR)/configs/backend-server
-OPENAPI_AGENT_SERVER_DIR := $(OPENAPI_DIR)/configs/agent-server
-
-# Agent API variables
-OPENAPI_CLIENT_FILE := $(OPENAPI_BACKEND_SERVER_DIR)/agent/openapi.gen.yaml
-OPENAPI_SERVER_FILE := $(OPENAPI_AGENT_SERVER_DIR)/openapi.gen.yaml
-CLIENT_GEN := gen/client
-SERVER_GEN := gen/server
+BACKEND_CLIENT_FILE:= specs/backend-client/v01.yaml
+BACKEND_CLIENT_CODEGEN_DIR := codegen/backend-client
+AGENT_SERVER_FILE := specs/agent-server/v01.yaml
+AGENT_SERVER_CODEGEN_DIR := codegen/agent-server
 
 gen: clean
-	make gen-client
-	make gen-server
+	make gen-backend-client
+	make gen-agent-server
 
-gen-client: clean-client
+gen-backend-client: clean-backend-client
 	openapi-generator-cli generate \
-	-i ${OPENAPI_CLIENT_FILE} \
+	-i ${BACKEND_CLIENT_FILE} \
 	-g rust \
-	-o ${CLIENT_GEN} \
+	-o ${BACKEND_CLIENT_CODEGEN_DIR} \
 	--additional-properties=packageName=openapi-client
 
-gen-server: clean-server
+gen-agent-server: clean-agent-server
 	openapi-generator-cli generate \
-	-i ${OPENAPI_SERVER_FILE} \
+	-i ${AGENT_SERVER_FILE} \
 	-g rust \
-	-o ${SERVER_GEN} \
+	-o ${AGENT_SERVER_CODEGEN_DIR} \
 	--additional-properties=packageName=openapi-server
 
-clean: clean-server clean-client
+clean: clean-backend-client clean-agent-server 
 
-clean-server:
-	rm -rf ${SERVER_GEN}
+clean-backend-client:
+	rm -rf ${BACKEND_CLIENT_CODEGEN_DIR}
 
-clean-client:
-	rm -rf ${CLIENT_GEN}
+clean-agent-server:
+	rm -rf ${AGENT_SERVER_CODEGEN_DIR}
